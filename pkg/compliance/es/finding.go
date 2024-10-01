@@ -221,7 +221,11 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 	return controlIDCount, nil
 }
 
-func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
+func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type,
+	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string,
+	severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
+	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus,
+	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any, jobIDs []string) ([]FindingsQueryHit, int64, error) {
 	idx := types.FindingsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
@@ -327,6 +331,9 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	}
 	if len(controlID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+	}
+	if len(jobIDs) > 0 {
+		filters = append(filters, kaytu.NewTermsFilter("parentComplianceJobID", jobIDs))
 	}
 	if len(severity) > 0 {
 		strSeverity := make([]string, 0)

@@ -8,6 +8,7 @@ import (
 )
 
 type FindingFilters struct {
+	JobID             []string                `json:"jobID"`
 	Connector         []source.Type           `json:"connector" example:"Azure"`
 	ResourceID        []string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceTypeID    []string                `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
