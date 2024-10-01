@@ -105,11 +105,12 @@ type ListControlsFilterResultControl struct {
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
 	FindingsSummary struct {
-		IncidentCount         int64 `json:"incident_count"`
-		NonIncidentCount      int64 `json:"non_incident_count"`
-		NonCompliantResources int   `json:"noncompliant_resources"`
-		CompliantResources    int   `json:"compliant_resources"`
-		ImpactedResources     int   `json:"impacted_resources"`
+		IncidentCount         int64    `json:"incident_count"`
+		NonIncidentCount      int64    `json:"non_incident_count"`
+		NonCompliantResources int      `json:"noncompliant_resources"`
+		CompliantResources    int      `json:"compliant_resources"`
+		ImpactedResources     int      `json:"impacted_resources"`
+		CostOptimization      *float64 `json:"cost_optimization"`
 	} `json:"findings_summary"`
 }
 

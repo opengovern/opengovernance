@@ -81,10 +81,17 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 
 // ListBenchmarksFiltered returns all benchmarks with the associated filters
 func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags map[string][]string, parentBenchmarkId []string,
-	assigned bool, connectionIds []string) ([]Benchmark, error) {
+	assigned bool, isSREBenchmark *bool, connectionIds []string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
 
+	if isSREBenchmark != nil {
+		if *isSREBenchmark {
+			tx = tx.Where("id ~* '^sre_.*'")
+		} else {
+			tx = tx.Where("id !~* '^sre_.*'")
+		}
+	}
 	if root {
 		tx = tx.Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)")
 	}

@@ -211,6 +211,7 @@ type GetBenchmarkListRequest struct {
 	Connectors        []string               `json:"connectors"`
 	Root              *bool                  `json:"root"`
 	Assigned          *bool                  `json:"assigned"`
+	IsSREBenchmark    *bool                  `json:"is_sre_benchmark"`
 	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
 	SortBy            string                 `json:"sort_by"`
 	Cursor            *int64                 `json:"cursor"`
@@ -321,6 +322,7 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	BenchmarkID                string                             `json:"benchmark_id"`
 	BenchmarkTitle             string                             `json:"benchmark_title"`
 	ComplianceScore            float64                            `json:"compliance_score"`
+	Connectors                 []source.Type                      `json:"connectors"` // Benchmark connectors
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
 	SeveritySummaryByIncidents types.SeverityResultV2             `json:"severity_summary_by_incidents"`
