@@ -14,6 +14,7 @@ type ResourceFinding struct {
 	ResourceType      string      `json:"resourceType"`
 	ResourceTypeLabel string      `json:"resourceTypeLabel"`
 	Connector         source.Type `json:"connector"`
+	ComplianceJobID   string      `json:"complianceJobID"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`

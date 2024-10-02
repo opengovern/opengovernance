@@ -40,6 +40,7 @@ import (
 	"github.com/google/uuid"
 	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	api4 "github.com/kaytu-io/open-governance/pkg/describe/api"
 	"github.com/kaytu-io/open-governance/pkg/onboard/api"
 	"gorm.io/gorm"
 )
@@ -3246,6 +3247,7 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v3/integrations [get]
 func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: api3.InternalRole}
 	healthStateStr := ctx.QueryParam("health_state")
 	connectors := httpserver.QueryArrayParam(ctx, "connectors")
 	nameRegex := ctx.QueryParam("name_regex")
@@ -3258,32 +3260,42 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 		return err
 	}
 
-	connectionData := map[string]api2.ConnectionData{}
-	connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil,
-		nil, nil, nil, nil, false, false)
-	if err != nil {
-		return err
-	}
-
 	var items []api.ListIntegrationsItem
 
 	for _, c := range integrations {
+		integrationTracker := c.ID.String()
+
 		item := api.ListIntegrationsItem{
 			IntegrationTracker:  c.ID.String(),
 			ID:                  c.SourceId,
 			Name:                c.Name,
-			Provider:            c.Connector.Name,
+			Provider:            c.Type,
 			OnboardDate:         c.CreatedAt,
 			HealthState:         c.HealthState,
 			LifecycleState:      api.ConnectionLifecycleState(c.LifecycleState),
 			LastHealthcheckTime: c.LastHealthCheckTime,
 			HealthReason:        c.HealthReason,
 		}
-		if d, ok := connectionData[item.ID]; ok {
-			if d.LastInventory != nil {
-				item.LastDiscovery = *d.LastInventory
-			}
+
+		lastJob, err := h.describeClient.GetIntegrationLastDiscoveryJob(clientCtx, api4.GetIntegrationLastDiscoveryJobRequest{
+			IntegrationInfo: struct {
+				Integration        *string `json:"integration"`
+				Type               *string `json:"type"`
+				ID                 *string `json:"id"`
+				IDName             *string `json:"id_name"`
+				IntegrationTracker *string `json:"integration_tracker"`
+			}{
+				IntegrationTracker: &integrationTracker,
+			},
+		})
+		if err != nil {
+			h.logger.Error("Failed to get integration last discovery job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get integration last discovery job")
 		}
+		if lastJob != nil {
+			item.LastDiscovery = lastJob.UpdatedAt
+		}
+
 		items = append(items, item)
 	}
 

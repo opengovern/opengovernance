@@ -6511,6 +6511,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 	var response api.ComplianceSummaryOfBenchmarkResponse
 
+	h.logger.Info("Jobs", zap.Any("jobs", summaryJobs))
 	summariesAtTime, err := es.GetComplianceSummaryByJobId(ctx, h.logger, h.client, summaryJobs, true)
 	if err != nil {
 		return err
@@ -6519,6 +6520,8 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	for k, _ := range summariesAtTime {
 		benchmarkId = k
 	}
+	h.logger.Info("BenchmarkSummary for Job", zap.Any("summary", summariesAtTime), zap.Any("job_is", summaryJobs),
+		zap.String("benchmark_id", benchmarkId))
 
 	controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmarkId)
 	if err != nil {
@@ -6724,12 +6727,16 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	}
 
 	var connectors []source.Type
-	if benchmark.Connector != nil {
-		connectors = source.ParseTypes(benchmark.Connector)
+	var title string
+	if benchmark != nil {
+		if benchmark.Connector != nil {
+			connectors = source.ParseTypes(benchmark.Connector)
+		}
+		title = benchmark.Title
 	}
 	response = api.ComplianceSummaryOfBenchmarkResponse{
-		BenchmarkID:                benchmark.ID,
-		BenchmarkTitle:             benchmark.Title,
+		BenchmarkID:                benchmarkId,
+		BenchmarkTitle:             title,
 		Connectors:                 connectors,
 		ComplianceScore:            complianceScore,
 		SeveritySummaryByControl:   controlSeverityResult,

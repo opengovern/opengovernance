@@ -301,10 +301,27 @@ UNION ALL
 	return job, nil
 }
 
-func (db Database) ListDescribeJobs() ([]model.DescribeConnectionJob, error) {
+func (db Database) ListDescribeJobs(connectionId string) (*model.DescribeConnectionJob, error) {
+	var job model.DescribeConnectionJob
+
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+		Where("connection_id = ?", connectionId).
+		Order("updated_at DESC").
+		Limit(1).
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
+func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Find(&job)
+	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", status).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -314,7 +331,7 @@ func (db Database) ListDescribeJobs() ([]model.DescribeConnectionJob, error) {
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
+func (db Database) LatestDescribeJobForIntegration(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", status).Find(&job)
