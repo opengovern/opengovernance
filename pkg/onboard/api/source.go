@@ -158,6 +158,7 @@ type GetSourceByFiltersRequest struct {
 
 type ListIntegrationsItem struct {
 	IntegrationTracker  string                   `json:"integration_tracker"`
+	ConnectionID        string                   `json:"connection_id"`
 	ID                  string                   `json:"id"`
 	Name                string                   `json:"name"`
 	Provider            source.Type              `json:"provider"`

@@ -3279,6 +3279,7 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 
 		item := api.ListIntegrationsItem{
 			IntegrationTracker:  c.ID.String(),
+			ConnectionID:        c.ID.String(),
 			ID:                  c.SourceId,
 			Name:                c.Name,
 			Provider:            c.Type,
