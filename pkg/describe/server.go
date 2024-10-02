@@ -107,6 +107,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
 	v3.GET("/jobs/interval", httpserver.AuthorizeHandler(h.ListJobsInterval, apiAuth.ViewerRole))
+	v3.GET("/jobs/compliance/summary/jobs", httpserver.AuthorizeHandler(h.GetSummaryJobs, apiAuth.ViewerRole))
 	v3.GET("/jobs/history/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobsHistory, apiAuth.ViewerRole))
 
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, apiAuth.AdminRole))
@@ -3316,6 +3317,32 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 		TotalCount: totalCount,
 		Items:      items,
 	})
+}
+
+// GetSummaryJobs godoc
+//
+//	@Summary	List jobs by job type and filters
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		job_ids		query	[]string	true	"Compliance Job ID"
+//	@Produce	json
+//	@Success	200	{object}	[]string
+//	@Router		/schedule/api/v3/jobs/compliance/summary/jobs [get]
+func (h HttpServer) GetSummaryJobs(ctx echo.Context) error {
+	jobIds := httpserver.QueryArrayParam(ctx, "job_ids")
+
+	jobs, err := h.DB.ListSummaryJobs(jobIds)
+	if err != nil {
+		h.Scheduler.logger.Error("could not get summary jobs", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get summary jobs")
+	}
+
+	var summaryJobIDs []string
+	for _, j := range jobs {
+		summaryJobIDs = append(summaryJobIDs, strconv.Itoa(int(j.ID)))
+	}
+
+	return ctx.JSON(http.StatusOK, summaryJobIDs)
 }
 
 func convertInterval(input string) (string, error) {

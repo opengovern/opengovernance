@@ -73,6 +73,9 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
 		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
+	} else {
+		resourceFinding.JobId = job.ID
+		resourceFinding.EvaluatedAt = job.CreatedAt.UnixMilli()
 	}
 	if resourceFinding.ResourceName == "" {
 		resourceFinding.ResourceName = resource.Name

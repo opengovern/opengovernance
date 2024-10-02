@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	v2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -153,4 +154,21 @@ type GetSourceByFiltersRequest struct {
 	Connector         *string `json:"connector"`
 	ProviderIdRegex   *string `json:"providerIdRegex"`
 	ProviderNameRegex *string `json:"providerNameRegex"`
+}
+
+type ListIntegrationsItem struct {
+	IntegrationTracker  string                   `json:"integration_tracker"`
+	ID                  string                   `json:"id"`
+	Name                string                   `json:"name"`
+	Provider            source.Type              `json:"provider"`
+	OnboardDate         time.Time                `json:"onboard_date"`
+	HealthState         source.HealthStatus      `json:"health_state"`
+	LifecycleState      ConnectionLifecycleState `json:"lifecycle_state"`
+	LastHealthcheckTime time.Time                `json:"last_healthcheck_time"`
+	HealthReason        *string                  `json:"health_reason"`
+	LastDiscovery       time.Time                `json:"last_discovery"`
+}
+
+type ListIntegrationsResponse struct {
+	Integrations []ListIntegrationsItem `json:"integrations"`
 }

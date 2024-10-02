@@ -244,6 +244,20 @@ UNION ALL
 	return job, nil
 }
 
+func (db Database) ListSummaryJobs(complianceJobIDs []string) ([]model.ComplianceSummarizer, error) {
+	var jobs []model.ComplianceSummarizer
+
+	tx := db.ORM.Model(model.ComplianceSummarizer{}).Where("parent_job_id IN ?", complianceJobIDs).Find(&jobs)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return jobs, nil
+}
+
 func (db Database) GetAllJobSummary(hours int, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
 	var job []model.JobSummary
 

@@ -135,7 +135,7 @@ func (db Database) GetSourceBySourceID(id string) (model.Connection, error) {
 	return s, nil
 }
 
-func (db Database) ListSourcesByFilters(connector, providerNameRegex, providerIdRegex *string) ([]model.Connection, error) {
+func (db Database) ListSourcesByFilters(connector, providerNameRegex, providerIdRegex *string, healthState *bool) ([]model.Connection, error) {
 	var s []model.Connection
 	tx := db.Orm.Model(&model.Connection{})
 
@@ -147,6 +147,37 @@ func (db Database) ListSourcesByFilters(connector, providerNameRegex, providerId
 	}
 	if providerIdRegex != nil {
 		tx = tx.Where("source_id ~* ?", *providerIdRegex)
+	}
+	if healthState != nil {
+		if *healthState {
+			tx = tx.Where("health_state = ?", source.HealthStatusHealthy)
+		} else {
+			tx = tx.Where("health_state = ?", source.HealthStatusUnhealthy)
+		}
+	}
+
+	tx = tx.Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) ListIntegrationsFiltered(connector []string, nameRegex, idRegex string, healthState source.HealthStatus) ([]model.Connection, error) {
+	var s []model.Connection
+	tx := db.Orm.Model(&model.Connection{})
+
+	if len(connector) > 0 {
+		tx = tx.Where("type = ?", connector)
+	}
+	if nameRegex != "" {
+		tx = tx.Where("name ~* ?", nameRegex)
+	}
+	if idRegex != "" {
+		tx = tx.Where("source_id ~* ?", idRegex)
+	}
+	if healthState != "" {
+		tx = tx.Where("health_state = ?", healthState)
 	}
 
 	tx = tx.Find(&s)
