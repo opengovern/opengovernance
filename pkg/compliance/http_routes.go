@@ -3329,6 +3329,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Router		/compliance/api/v3/controls [post]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
+	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
 
 	var req api.ListControlsFilterRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -3363,6 +3364,20 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		}
 	} else if len(req.ParentBenchmark) > 0 {
 		benchmarks = req.ParentBenchmark
+	}
+
+	var connectionIDs []string
+	if req.FindingFilters != nil {
+		connectionIDs = req.FindingFilters.ConnectionID
+	}
+	if len(connectionIDs) == 0 {
+		integrations, err := h.onboardClient.ListIntegrations(clientCtx, "healthy")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		for _, c := range integrations.Integrations {
+			connectionIDs = append(connectionIDs, c.ID)
+		}
 	}
 
 	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
@@ -3409,14 +3424,14 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				benchmarksFilter = req.FindingFilters.BenchmarkID
 			}
 			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
-				req.FindingFilters.Connector, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID,
+				req.FindingFilters.Connector, connectionIDs, req.FindingFilters.NotConnectionID,
 				req.FindingFilters.ResourceTypeID, benchmarksFilter, controlIDs, req.FindingFilters.Severity,
 				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
-			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
+			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, connectionIDs, nil,
 				nil, benchmarks, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
 				evaluatedAtTo, nil, esConformanceStatuses)
 		}

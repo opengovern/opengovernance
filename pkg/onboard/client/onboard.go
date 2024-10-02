@@ -41,6 +41,7 @@ type OnboardServiceClient interface {
 	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
 	PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error)
 	PurgeSampleData(ctx *httpclient.Context) error
+	ListIntegrations(ctx *httpclient.Context, healthState string) (*api.ListIntegrationsResponse, error)
 }
 
 type onboardClient struct {
@@ -471,4 +472,26 @@ func (s *onboardClient) ListConnectionGroups(ctx *httpclient.Context) ([]api.Con
 	}
 
 	return connectionGroup, nil
+}
+
+func (s *onboardClient) ListIntegrations(ctx *httpclient.Context, healthState string) (*api.ListIntegrationsResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/integrations", s.baseURL)
+	firstParamAttached := false
+	if len(healthState) > 0 {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += "health_state=" + string(healthState)
+	}
+	var response api.ListIntegrationsResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
 }
