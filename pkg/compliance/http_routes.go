@@ -4809,10 +4809,6 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	if req.Root != nil {
 		isRoot = *req.Root
 	}
-	assigned := true
-	if req.Assigned != nil {
-		assigned = *req.Assigned
-	}
 
 	benchmarkAssignmentsCount, err := h.db.GetBenchmarkAssignmentsCount()
 	if err != nil {
@@ -4864,7 +4860,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, assigned, req.IsSREBenchmark, connectionIDs)
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, req.Assigned, req.IsSREBenchmark, connectionIDs)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
