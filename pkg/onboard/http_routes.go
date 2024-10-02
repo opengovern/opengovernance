@@ -3242,20 +3242,32 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			health_state		query		string	false	""
 //	@Param			connectors			query		[]string	false	""
+//	@Param			integration_tracker			query		[]string	false	""
 //	@Param			name_regex			query		string	false	""
 //	@Param			id_regex			query		string	false	""
+//	@Param			per_page	query		int		false	"PerPage"
+//	@Param			cursor		query		int		false	"Cursor"
 //	@Success		200			{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v3/integrations [get]
 func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: api3.InternalRole}
 	healthStateStr := ctx.QueryParam("health_state")
 	connectors := httpserver.QueryArrayParam(ctx, "connectors")
+	integrationTracker := httpserver.QueryArrayParam(ctx, "integration_tracker")
 	nameRegex := ctx.QueryParam("name_regex")
 	idRegex := ctx.QueryParam("id_regex")
-
+	perPageStr := ctx.QueryParam("per_page")
+	cursorStr := ctx.QueryParam("cursor")
+	var perPage, cursor int64
+	if perPageStr != "" {
+		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
+	}
+	if cursorStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+	}
 	healthState, _ := source.ParseHealthStatus(healthStateStr)
 
-	integrations, err := h.db.ListIntegrationsFiltered(connectors, nameRegex, idRegex, healthState)
+	integrations, err := h.db.ListIntegrationsFiltered(integrationTracker, connectors, nameRegex, idRegex, healthState)
 	if err != nil {
 		return err
 	}
@@ -3298,8 +3310,19 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 
 		items = append(items, item)
 	}
-
+	totalCount := len(items)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ID < items[j].ID
+	})
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
 	return ctx.JSON(http.StatusOK, api.ListIntegrationsResponse{
 		Integrations: items,
+		TotalCount:   totalCount,
 	})
 }

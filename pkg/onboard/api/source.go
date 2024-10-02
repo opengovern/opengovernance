@@ -171,4 +171,5 @@ type ListIntegrationsItem struct {
 
 type ListIntegrationsResponse struct {
 	Integrations []ListIntegrationsItem `json:"integrations"`
+	TotalCount   int                    `json:"total_count"`
 }
