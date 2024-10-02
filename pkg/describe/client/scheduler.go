@@ -33,6 +33,7 @@ type SchedulerServiceClient interface {
 	RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
+	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeConnectionJob, error)
 }
 
 type schedulerClient struct {
@@ -249,4 +250,20 @@ func (s *schedulerClient) ListComplianceJobsHistory(ctx *httpclient.Context, int
 		return nil, err
 	}
 	return &resp, nil
+}
+
+func (s *schedulerClient) GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeConnectionJob, error) {
+	url := fmt.Sprintf("%s/api/v3/integration/discovery/last-job", s.baseURL)
+	payload, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	var job model.DescribeConnectionJob
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), payload, &job); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &job, nil
 }

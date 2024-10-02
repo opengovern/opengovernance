@@ -152,6 +152,21 @@ type GetComplianceJobsHistoryResponse struct {
 	IntegrationInfo []IntegrationInfo   `json:"integration_info"`
 }
 
+type BenchmarkAuditHistoryItem struct {
+	JobId                uint                `json:"job_id"`
+	BenchmarkId          string              `json:"benchmark_id"`
+	JobStatus            ComplianceJobStatus `json:"job_status"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
+	IntegrationInfo      []IntegrationInfo   `json:"integration_info"`
+	NumberOfIntegrations int                 `json:"number_of_integrations"`
+}
+
+type BenchmarkAuditHistoryResponse struct {
+	Items      []BenchmarkAuditHistoryItem `json:"items"`
+	TotalCount int                         `json:"total_count"`
+}
+
 type GetAnalyticsJobsHistoryRequest struct {
 	SortBy  *string `json:"sort_by"`
 	Cursor  *int64  `json:"cursor"`
@@ -293,6 +308,32 @@ type ListComplianceJobsRequest struct {
 	SortBy      *string    `json:"sort_by"`
 	Cursor      *int64     `json:"cursor"`
 	PerPage     *int64     `json:"per_page"`
+}
+
+type BenchmarkAuditHistoryRequest struct {
+	IntegrationInfo []struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
+	JobStatus []string   `json:"job_status"`
+	StartTime time.Time  `json:"start_time"`
+	EndTime   *time.Time `json:"end_time"`
+	SortBy    *string    `json:"sort_by"`
+	Cursor    *int64     `json:"cursor"`
+	PerPage   *int64     `json:"per_page"`
+}
+
+type GetIntegrationLastDiscoveryJobRequest struct {
+	IntegrationInfo struct {
+		Integration        *string `json:"integration"`
+		Type               *string `json:"type"`
+		ID                 *string `json:"id"`
+		IDName             *string `json:"id_name"`
+		IntegrationTracker *string `json:"integration_tracker"`
+	} `json:"integration_info"`
 }
 
 type GetDescribeJobsHistoryByIntegrationRequest struct {

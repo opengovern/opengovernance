@@ -102,6 +102,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.GET("/job/query/:job_id", httpserver.AuthorizeHandler(h.GetAsyncQueryRunJobStatus, apiAuth.ViewerRole))
 	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
+	v3.POST("/benchmark/:benchmark_id/run-history", httpserver.AuthorizeHandler(h.BenchmarkAuditHistory, apiAuth.ViewerRole))
 	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
@@ -111,6 +112,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.GET("/jobs/history/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobsHistory, apiAuth.ViewerRole))
 
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, apiAuth.AdminRole))
+
+	v3.GET("/integration/discovery/last-job", httpserver.AuthorizeHandler(h.GetIntegrationLastDiscoveryJob, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -2066,6 +2069,182 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResults)
+}
+
+// BenchmarkAuditHistory godoc
+//
+//	@Summary	Get compliance jobs history for give connection
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request			body	api.BenchmarkAuditHistoryRequest	true	"List jobs request"
+//	@Param		benchmark_id	query	string	true	"Benchmark ID to get the run history for"
+//	@Produce	json
+//	@Success	200	{object}	api.BenchmarkAuditHistoryResponse
+//	@Router		/schedule/api/v3/benchmark/:benchmark_id/run-history [post]
+func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	benchmarkID := ctx.Param("benchmark_id")
+
+	var request api.BenchmarkAuditHistoryRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var connections []onboardapi.Connection
+	for _, info := range request.IntegrationInfo {
+		if info.IntegrationTracker != nil {
+			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if connection != nil {
+				connections = append(connections, *connection)
+			}
+			continue
+		}
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         info.Integration,
+				ProviderNameRegex: info.IDName,
+				ProviderIdRegex:   info.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connections = append(connections, connectionsTmp...)
+	}
+
+	connectionInfo := make(map[string]api.IntegrationInfo)
+	var connectionIDs []string
+	for _, c := range connections {
+		connectionInfo[c.ID.String()] = api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
+		}
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+
+	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, request.StartTime, request.EndTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	var items []api.BenchmarkAuditHistoryItem
+	for _, j := range jobs {
+		item := api.BenchmarkAuditHistoryItem{
+			JobId:       j.ID,
+			BenchmarkId: j.BenchmarkID,
+			JobStatus:   j.Status.ToApi(),
+			CreatedAt:   j.CreatedAt,
+			UpdatedAt:   j.UpdatedAt,
+		}
+		for _, c := range j.ConnectionIDs {
+			if info, ok := connectionInfo[c]; ok {
+				item.IntegrationInfo = append(item.IntegrationInfo, info)
+			}
+		}
+
+		items = append(items, item)
+	}
+
+	totalCount := len(items)
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].JobId < items[j].JobId
+			})
+		case "updated_at", "updatedat":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].UpdatedAt.Before(items[j].UpdatedAt)
+			})
+		case "created_at", "createdat":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].CreatedAt.Before(items[j].CreatedAt)
+			})
+		case "benchmarkid":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].BenchmarkId < items[j].BenchmarkId
+			})
+		case "jobstatus":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].JobStatus < items[j].JobStatus
+			})
+		default:
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].JobId < items[j].JobId
+			})
+		}
+	} else {
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].JobId < items[j].JobId
+		})
+	}
+	if request.PerPage != nil {
+		if request.Cursor == nil {
+			items = utils.Paginate(1, *request.PerPage, items)
+		} else {
+			items = utils.Paginate(*request.Cursor, *request.PerPage, items)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, api.BenchmarkAuditHistoryResponse{
+		Items:      items,
+		TotalCount: totalCount,
+	})
+}
+
+// GetIntegrationLastDiscoveryJob godoc
+//
+//	@Summary	Get Last dicovery job for integration
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request			body	api.GetIntegrationLastDiscoveryJobRequest	true	"List jobs request"
+//	@Produce	json
+//	@Success	200	{object}	model2.DescribeConnectionJob
+//	@Router		/schedule/api/v3/integration/discovery/last-job [post]
+func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	var request api.GetIntegrationLastDiscoveryJobRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	var connection onboardapi.Connection
+	if request.IntegrationInfo.IntegrationTracker != nil {
+		connectionTmp, err := h.Scheduler.onboardClient.GetSource(clientCtx, *request.IntegrationInfo.IntegrationTracker)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if connectionTmp != nil {
+			connection = *connectionTmp
+		}
+	} else {
+		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
+			onboardapi.GetSourceByFiltersRequest{
+				Connector:         request.IntegrationInfo.Integration,
+				ProviderNameRegex: request.IntegrationInfo.IDName,
+				ProviderIdRegex:   request.IntegrationInfo.ID,
+			})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		connection = connectionsTmp[0]
+	}
+
+	job, err := h.DB.ListDescribeJobs(connection.ID.String())
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get describe jobs", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get describe jobs")
+	}
+
+	return ctx.JSON(http.StatusOK, job)
 }
 
 // ListAnalyticsJobs godoc
