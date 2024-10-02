@@ -3240,11 +3240,11 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			health_state		query		string	false	""
-//	@Param			connectors			query		[]string	false	""
+//	@Param			health_state				query		string	false	""
+//	@Param			connectors					query		[]string	false	""
 //	@Param			integration_tracker			query		[]string	false	""
-//	@Param			name_regex			query		string	false	""
-//	@Param			id_regex			query		string	false	""
+//	@Param			name_regex					query		string	false	""
+//	@Param			id_regex					query		string	false	""
 //	@Param			per_page	query		int		false	"PerPage"
 //	@Param			cursor		query		int		false	"Cursor"
 //	@Success		200			{object}	[]api.ConnectorCount
