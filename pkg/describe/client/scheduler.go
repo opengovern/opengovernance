@@ -32,6 +32,7 @@ type SchedulerServiceClient interface {
 	PurgeSampleData(ctx *httpclient.Context) error
 	RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
+	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
 }
 
 type schedulerClient struct {
@@ -65,6 +66,30 @@ func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, userId string, r
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *schedulerClient) GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error) {
+	url := fmt.Sprintf("%s/api/v3/jobs/compliance/summary/jobs", s.baseURL)
+	firstParamAttached := false
+	if len(jobIDs) > 0 {
+		for _, connection := range jobIDs {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("job_ids=%s", connection)
+		}
+	}
+	var jobs []string
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &jobs); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return jobs, nil
 }
 
 func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error) {

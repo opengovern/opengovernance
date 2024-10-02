@@ -98,6 +98,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v3 := r.Group("/api/v3")
 	v3.GET("/connector", httpserver.AuthorizeHandler(h.ListConnectorsV2, api3.ViewerRole))
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.InternalRole))
+	v3.GET("/integrations", httpserver.AuthorizeHandler(h.ListIntegrations, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -3023,7 +3024,7 @@ func (h HttpHandler) ListSourcesByFilters(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetSourceByFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetSourceByFilters")
 
-	sources, err := h.db.ListSourcesByFilters(request.Connector, request.ProviderNameRegex, request.ProviderIdRegex)
+	sources, err := h.db.ListSourcesByFilters(request.Connector, request.ProviderNameRegex, request.ProviderIdRegex, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -3228,5 +3229,65 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ListConnectorsV2Response{
 		Connectors: items,
 		TotalCount: int64(totalCount),
+	})
+}
+
+// ListIntegrations godoc
+//
+//	@Summary		List Integrations
+//	@Description	List Integrations with filters
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			health_state		query		string	false	""
+//	@Param			connectors			query		[]string	false	""
+//	@Param			name_regex			query		string	false	""
+//	@Param			id_regex			query		string	false	""
+//	@Success		200			{object}	[]api.ConnectorCount
+//	@Router			/onboard/api/v3/integrations [get]
+func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
+	healthStateStr := ctx.QueryParam("health_state")
+	connectors := httpserver.QueryArrayParam(ctx, "connectors")
+	nameRegex := ctx.QueryParam("name_regex")
+	idRegex := ctx.QueryParam("id_regex")
+
+	healthState, _ := source.ParseHealthStatus(healthStateStr)
+
+	integrations, err := h.db.ListIntegrationsFiltered(connectors, nameRegex, idRegex, healthState)
+	if err != nil {
+		return err
+	}
+
+	connectionData := map[string]api2.ConnectionData{}
+	connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil,
+		nil, nil, nil, nil, false, false)
+	if err != nil {
+		return err
+	}
+
+	var items []api.ListIntegrationsItem
+
+	for _, c := range integrations {
+		item := api.ListIntegrationsItem{
+			IntegrationTracker:  c.ID.String(),
+			ID:                  c.SourceId,
+			Name:                c.Name,
+			Provider:            c.Connector.Name,
+			OnboardDate:         c.CreatedAt,
+			HealthState:         c.HealthState,
+			LifecycleState:      api.ConnectionLifecycleState(c.LifecycleState),
+			LastHealthcheckTime: c.LastHealthCheckTime,
+			HealthReason:        c.HealthReason,
+		}
+		if d, ok := connectionData[item.ID]; ok {
+			if d.LastInventory != nil {
+				item.LastDiscovery = *d.LastInventory
+			}
+		}
+		items = append(items, item)
+	}
+
+	return ctx.JSON(http.StatusOK, api.ListIntegrationsResponse{
+		Integrations: items,
 	})
 }
