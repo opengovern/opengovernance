@@ -35,7 +35,7 @@ func CloneAndShowDiff(logger *zap.Logger, repoURL, targetDir, firstCommitSHA, se
 
 	if isRemoteURI(repoURL) {
 		logger.Info("Cloning repository", zap.String("source", repoURL), zap.String("destination", targetDir))
-		err = CloneRepository(logger, repoURL, targetDir)
+		_, err = CloneRepository(logger, repoURL, targetDir)
 		if err != nil {
 			logger.Error("Failed to clone repository using fetch package", zap.Error(err))
 			os.Exit(1)
