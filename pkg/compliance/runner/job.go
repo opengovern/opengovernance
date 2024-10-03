@@ -149,231 +149,231 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
 	)
 	totalFindingCountMap := make(map[string]int)
-	for _, caller := range j.ExecutionPlan.Callers {
-		findings, err := j.ExtractFindings(w.logger, w.benchmarkCache, caller, res, j.ExecutionPlan.Query)
+
+	findings, err := j.ExtractFindings(w.logger, w.benchmarkCache, j.ExecutionPlan.Callers[0], res, j.ExecutionPlan.Query)
+	if err != nil {
+		return 0, err
+	}
+	w.logger.Info("Extracted findings", zap.Int("count", len(findings)),
+		zap.Uint("job_id", j.ID),
+		zap.String("benchmarkID", j.ExecutionPlan.Callers[0].RootBenchmark))
+
+	findingsMap := make(map[string]types.Finding)
+	for i, f := range findings {
+		f := f
+		keys, idx := f.KeysAndIndex()
+		f.EsID = es.HashOf(keys...)
+		f.EsIndex = idx
+		findings[i] = f
+		findingsMap[f.EsID] = f
+	}
+
+	filters := make([]kaytu.BoolFilter, 0)
+	filters = append(filters, kaytu.NewTermFilter("benchmarkID", j.ExecutionPlan.Callers[0].RootBenchmark))
+	filters = append(filters, kaytu.NewTermFilter("controlID", j.ExecutionPlan.Callers[0].ControlID))
+	for _, parentBenchmarkID := range []string{j.ExecutionPlan.Callers[0].RootBenchmark} {
+		filters = append(filters, kaytu.NewTermFilter("parentBenchmarks", parentBenchmarkID))
+	}
+	filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
+	if j.ExecutionPlan.ConnectionID != nil {
+		filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
+	}
+
+	newFindings := make([]types.Finding, 0, len(findings))
+	findingsEvents := make([]types.FindingEvent, 0, len(findings))
+
+	trackDrifts := false
+	for _, f := range j.ExecutionPlan.Callers {
+		if f.TracksDriftEvents {
+			trackDrifts = true
+			break
+		}
+	}
+
+	filtersJSON, _ := json.Marshal(filters)
+	w.logger.Info("Old finding query", zap.Int("length", len(findings)), zap.String("filters", string(filtersJSON)))
+	paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
+	if err != nil {
+		w.logger.Error("failed to create paginator", zap.Error(err))
+		return 0, err
+	}
+	closePaginator := func() {
+		if err := paginator.Close(ctx); err != nil {
+			w.logger.Error("failed to close paginator", zap.Error(err))
+		}
+	}
+
+	for paginator.HasNext() {
+		oldFindings, err := paginator.NextPage(ctx)
 		if err != nil {
+			w.logger.Error("failed to get next page", zap.Error(err))
+			closePaginator()
 			return 0, err
 		}
-		w.logger.Info("Extracted findings", zap.Int("count", len(findings)),
-			zap.Uint("job_id", j.ID),
-			zap.String("benchmarkID", caller.RootBenchmark))
 
-		findingsMap := make(map[string]types.Finding)
-		for i, f := range findings {
+		w.logger.Info("Old finding", zap.Int("length", len(oldFindings)))
+		for _, f := range oldFindings {
 			f := f
-			keys, idx := f.KeysAndIndex()
-			f.EsID = es.HashOf(keys...)
-			f.EsIndex = idx
-			findings[i] = f
-			findingsMap[f.EsID] = f
-		}
-
-		filters := make([]kaytu.BoolFilter, 0)
-		filters = append(filters, kaytu.NewTermFilter("benchmarkID", caller.RootBenchmark))
-		filters = append(filters, kaytu.NewTermFilter("controlID", caller.ControlID))
-		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
-			filters = append(filters, kaytu.NewTermFilter("parentBenchmarks", parentBenchmarkID))
-		}
-		filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
-		if j.ExecutionPlan.ConnectionID != nil {
-			filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
-		}
-
-		newFindings := make([]types.Finding, 0, len(findings))
-		findingsEvents := make([]types.FindingEvent, 0, len(findings))
-
-		trackDrifts := false
-		for _, f := range j.ExecutionPlan.Callers {
-			if f.TracksDriftEvents {
-				trackDrifts = true
-				break
-			}
-		}
-
-		filtersJSON, _ := json.Marshal(filters)
-		w.logger.Info("Old finding query", zap.Int("length", len(findings)), zap.String("filters", string(filtersJSON)))
-		paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
-		if err != nil {
-			w.logger.Error("failed to create paginator", zap.Error(err))
-			return 0, err
-		}
-		closePaginator := func() {
-			if err := paginator.Close(ctx); err != nil {
-				w.logger.Error("failed to close paginator", zap.Error(err))
-			}
-		}
-
-		for paginator.HasNext() {
-			oldFindings, err := paginator.NextPage(ctx)
-			if err != nil {
-				w.logger.Error("failed to get next page", zap.Error(err))
-				closePaginator()
-				return 0, err
-			}
-
-			w.logger.Info("Old finding", zap.Int("length", len(oldFindings)))
-			for _, f := range oldFindings {
-				f := f
-				newFinding, ok := findingsMap[f.EsID]
-				if !ok {
-					if f.StateActive {
-						f := f
-						f.StateActive = false
-						f.LastTransition = j.CreatedAt.UnixMilli()
-						f.ComplianceJobID = j.ID
-						f.ParentComplianceJobID = j.ParentJobID
-						f.EvaluatedAt = j.CreatedAt.UnixMilli()
-						reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
-						f.Reason = reason
-						fs := types.FindingEvent{
-							FindingEsID:               f.EsID,
-							ParentComplianceJobID:     j.ParentJobID,
-							ComplianceJobID:           j.ID,
-							PreviousConformanceStatus: f.ConformanceStatus,
-							ConformanceStatus:         f.ConformanceStatus,
-							PreviousStateActive:       true,
-							StateActive:               f.StateActive,
-							EvaluatedAt:               j.CreatedAt.UnixMilli(),
-							Reason:                    reason,
-
-							BenchmarkID:               f.BenchmarkID,
-							ControlID:                 f.ControlID,
-							ConnectionID:              f.ConnectionID,
-							Connector:                 f.Connector,
-							Severity:                  f.Severity,
-							KaytuResourceID:           f.KaytuResourceID,
-							ResourceID:                f.ResourceID,
-							ResourceType:              f.ResourceType,
-							ParentBenchmarkReferences: f.ParentBenchmarkReferences,
-						}
-						keys, idx := fs.KeysAndIndex()
-						fs.EsID = es.HashOf(keys...)
-						fs.EsIndex = idx
-
-						w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
-						if trackDrifts {
-							findingsEvents = append(findingsEvents, fs)
-						}
-						newFindings = append(newFindings, f)
-					} else {
-						w.logger.Info("Old finding found, it's inactive. doing nothing", zap.Any("finding", f))
-					}
-					continue
-				}
-
-				if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
-					(f.StateActive != newFinding.StateActive) {
-					newFinding.LastTransition = j.CreatedAt.UnixMilli()
-					newFinding.ComplianceJobID = j.ID
-					newFinding.ParentComplianceJobID = j.ParentJobID
+			newFinding, ok := findingsMap[f.EsID]
+			if !ok {
+				if f.StateActive {
+					f := f
+					f.StateActive = false
+					f.LastTransition = j.CreatedAt.UnixMilli()
+					f.ComplianceJobID = j.ID
+					f.ParentComplianceJobID = j.ParentJobID
+					f.EvaluatedAt = j.CreatedAt.UnixMilli()
+					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
+					f.Reason = reason
 					fs := types.FindingEvent{
 						FindingEsID:               f.EsID,
 						ParentComplianceJobID:     j.ParentJobID,
 						ComplianceJobID:           j.ID,
 						PreviousConformanceStatus: f.ConformanceStatus,
-						ConformanceStatus:         newFinding.ConformanceStatus,
-						PreviousStateActive:       f.StateActive,
-						StateActive:               newFinding.StateActive,
+						ConformanceStatus:         f.ConformanceStatus,
+						PreviousStateActive:       true,
+						StateActive:               f.StateActive,
 						EvaluatedAt:               j.CreatedAt.UnixMilli(),
-						Reason:                    newFinding.Reason,
+						Reason:                    reason,
 
-						BenchmarkID:               newFinding.BenchmarkID,
-						ControlID:                 newFinding.ControlID,
-						ConnectionID:              newFinding.ConnectionID,
-						Connector:                 newFinding.Connector,
-						Severity:                  newFinding.Severity,
-						KaytuResourceID:           newFinding.KaytuResourceID,
-						ResourceID:                newFinding.ResourceID,
-						ResourceType:              newFinding.ResourceType,
-						ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
+						BenchmarkID:               f.BenchmarkID,
+						ControlID:                 f.ControlID,
+						ConnectionID:              f.ConnectionID,
+						Connector:                 f.Connector,
+						Severity:                  f.Severity,
+						KaytuResourceID:           f.KaytuResourceID,
+						ResourceID:                f.ResourceID,
+						ResourceType:              f.ResourceType,
+						ParentBenchmarkReferences: f.ParentBenchmarkReferences,
 					}
 					keys, idx := fs.KeysAndIndex()
 					fs.EsID = es.HashOf(keys...)
 					fs.EsIndex = idx
 
-					w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
+					w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
 					if trackDrifts {
 						findingsEvents = append(findingsEvents, fs)
 					}
+					newFindings = append(newFindings, f)
 				} else {
-					w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
-					newFinding.LastTransition = f.LastTransition
-					newFinding.ComplianceJobID = j.ID
-					newFinding.ParentComplianceJobID = j.ParentJobID
+					w.logger.Info("Old finding found, it's inactive. doing nothing", zap.Any("finding", f))
 				}
-
-				newFindings = append(newFindings, newFinding)
-				delete(findingsMap, f.EsID)
-				delete(findingsMap, newFinding.EsID)
+				continue
 			}
-		}
-		closePaginator()
-		for _, newFinding := range findingsMap {
-			newFinding.LastTransition = j.CreatedAt.UnixMilli()
-			newFinding.ComplianceJobID = j.ID
-			newFinding.ParentComplianceJobID = j.ParentJobID
-			fs := types.FindingEvent{
-				FindingEsID:           newFinding.EsID,
-				ParentComplianceJobID: j.ParentJobID,
-				ComplianceJobID:       j.ID,
-				ConformanceStatus:     newFinding.ConformanceStatus,
-				StateActive:           newFinding.StateActive,
-				EvaluatedAt:           j.CreatedAt.UnixMilli(),
-				Reason:                newFinding.Reason,
 
-				BenchmarkID:               newFinding.BenchmarkID,
-				ControlID:                 newFinding.ControlID,
-				ConnectionID:              newFinding.ConnectionID,
-				Connector:                 newFinding.Connector,
-				Severity:                  newFinding.Severity,
-				KaytuResourceID:           newFinding.KaytuResourceID,
-				ResourceID:                newFinding.ResourceID,
-				ResourceType:              newFinding.ResourceType,
-				ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
-			}
-			keys, idx := fs.KeysAndIndex()
-			fs.EsID = es.HashOf(keys...)
-			fs.EsIndex = idx
+			if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
+				(f.StateActive != newFinding.StateActive) {
+				newFinding.LastTransition = j.CreatedAt.UnixMilli()
+				newFinding.ComplianceJobID = j.ID
+				newFinding.ParentComplianceJobID = j.ParentJobID
+				fs := types.FindingEvent{
+					FindingEsID:               f.EsID,
+					ParentComplianceJobID:     j.ParentJobID,
+					ComplianceJobID:           j.ID,
+					PreviousConformanceStatus: f.ConformanceStatus,
+					ConformanceStatus:         newFinding.ConformanceStatus,
+					PreviousStateActive:       f.StateActive,
+					StateActive:               newFinding.StateActive,
+					EvaluatedAt:               j.CreatedAt.UnixMilli(),
+					Reason:                    newFinding.Reason,
 
-			w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
-			if trackDrifts {
-				findingsEvents = append(findingsEvents, fs)
-			}
-			newFindings = append(newFindings, newFinding)
-		}
-
-		var docs []es.Doc
-		if trackDrifts {
-			for _, fs := range findingsEvents {
+					BenchmarkID:               newFinding.BenchmarkID,
+					ControlID:                 newFinding.ControlID,
+					ConnectionID:              newFinding.ConnectionID,
+					Connector:                 newFinding.Connector,
+					Severity:                  newFinding.Severity,
+					KaytuResourceID:           newFinding.KaytuResourceID,
+					ResourceID:                newFinding.ResourceID,
+					ResourceType:              newFinding.ResourceType,
+					ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
+				}
 				keys, idx := fs.KeysAndIndex()
 				fs.EsID = es.HashOf(keys...)
 				fs.EsIndex = idx
 
-				docs = append(docs, fs)
+				w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
+				if trackDrifts {
+					findingsEvents = append(findingsEvents, fs)
+				}
+			} else {
+				w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
+				newFinding.LastTransition = f.LastTransition
+				newFinding.ComplianceJobID = j.ID
+				newFinding.ParentComplianceJobID = j.ParentJobID
 			}
-		}
-		for _, f := range newFindings {
-			keys, idx := f.KeysAndIndex()
-			f.EsID = es.HashOf(keys...)
-			f.EsIndex = idx
-			docs = append(docs, f)
-		}
-		mapKey := strings.Builder{}
-		mapKey.WriteString(caller.RootBenchmark)
-		mapKey.WriteString("$$")
-		mapKey.WriteString(caller.ControlID)
-		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
-			mapKey.WriteString("$$")
-			mapKey.WriteString(parentBenchmarkID)
-		}
-		if _, ok := totalFindingCountMap[mapKey.String()]; !ok {
-			totalFindingCountMap[mapKey.String()] = len(newFindings)
-		}
 
-		if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
-			w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", caller.RootBenchmark), zap.String("control_id", caller.ControlID))
-			return 0, err
+			newFindings = append(newFindings, newFinding)
+			delete(findingsMap, f.EsID)
+			delete(findingsMap, newFinding.EsID)
 		}
+	}
+	closePaginator()
+	for _, newFinding := range findingsMap {
+		newFinding.LastTransition = j.CreatedAt.UnixMilli()
+		newFinding.ComplianceJobID = j.ID
+		newFinding.ParentComplianceJobID = j.ParentJobID
+		fs := types.FindingEvent{
+			FindingEsID:           newFinding.EsID,
+			ParentComplianceJobID: j.ParentJobID,
+			ComplianceJobID:       j.ID,
+			ConformanceStatus:     newFinding.ConformanceStatus,
+			StateActive:           newFinding.StateActive,
+			EvaluatedAt:           j.CreatedAt.UnixMilli(),
+			Reason:                newFinding.Reason,
+
+			BenchmarkID:               newFinding.BenchmarkID,
+			ControlID:                 newFinding.ControlID,
+			ConnectionID:              newFinding.ConnectionID,
+			Connector:                 newFinding.Connector,
+			Severity:                  newFinding.Severity,
+			KaytuResourceID:           newFinding.KaytuResourceID,
+			ResourceID:                newFinding.ResourceID,
+			ResourceType:              newFinding.ResourceType,
+			ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
+		}
+		keys, idx := fs.KeysAndIndex()
+		fs.EsID = es.HashOf(keys...)
+		fs.EsIndex = idx
+
+		w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
+		if trackDrifts {
+			findingsEvents = append(findingsEvents, fs)
+		}
+		newFindings = append(newFindings, newFinding)
+	}
+
+	var docs []es.Doc
+	if trackDrifts {
+		for _, fs := range findingsEvents {
+			keys, idx := fs.KeysAndIndex()
+			fs.EsID = es.HashOf(keys...)
+			fs.EsIndex = idx
+
+			docs = append(docs, fs)
+		}
+	}
+	for _, f := range newFindings {
+		keys, idx := f.KeysAndIndex()
+		f.EsID = es.HashOf(keys...)
+		f.EsIndex = idx
+		docs = append(docs, f)
+	}
+	mapKey := strings.Builder{}
+	mapKey.WriteString(j.ExecutionPlan.Callers[0].RootBenchmark)
+	mapKey.WriteString("$$")
+	mapKey.WriteString(j.ExecutionPlan.Callers[0].ControlID)
+	for _, parentBenchmarkID := range []string{j.ExecutionPlan.Callers[0].RootBenchmark} {
+		mapKey.WriteString("$$")
+		mapKey.WriteString(parentBenchmarkID)
+	}
+	if _, ok := totalFindingCountMap[mapKey.String()]; !ok {
+		totalFindingCountMap[mapKey.String()] = len(newFindings)
+	}
+
+	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
+		w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", j.ExecutionPlan.Callers[0].RootBenchmark),
+			zap.String("control_id", j.ExecutionPlan.Callers[0].ControlID))
+		return 0, err
 	}
 
 	totalFindingCount := 0

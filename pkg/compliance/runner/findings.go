@@ -171,7 +171,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			ComplianceJobID:           w.ID,
 			ParentComplianceJobID:     w.ParentJobID,
 			ParentBenchmarkReferences: benchmarkReferences,
-			ParentBenchmarks:          caller.ParentBenchmarkIDs,
+			ParentBenchmarks:          []string{caller.RootBenchmark},
 			LastTransition:            w.CreatedAt.UnixMilli(),
 		})
 	}
