@@ -249,8 +249,10 @@ type GetBenchmarkAssignmentsResponse struct {
 }
 
 type GetBenchmarkAssignmentsItem struct {
-	Integration IntegrationInfo `json:"integration"`
-	Assigned    bool            `json:"assigned"`
+	Integration              IntegrationInfo `json:"integration"`
+	Assigned                 bool            `json:"assigned"`
+	AssignmentType           *string         `json:"assignment_type"`
+	AssignmentChangePossible bool            `json:"assignment_change_possible"`
 }
 
 type IntegrationInfo struct {

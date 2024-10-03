@@ -5586,7 +5586,9 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 					ID:                 connection.ConnectionID,
 					IDName:             connection.ConnectionName,
 				},
-				Assigned: false,
+				AssignmentChangePossible: true,
+				AssignmentType:           nil,
+				Assigned:                 false,
 			}
 		}
 	}
@@ -5597,6 +5599,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 			h.logger.Error("cannot get explicit assignments", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "cannot get explicit assignments")
 		}
+		assignmentType2 := "explicit"
 		for _, assignment := range assignments {
 			if assignment.ConnectionId != nil {
 				connection, err := h.onboardClient.GetSource(clientCtx, *assignment.ConnectionId)
@@ -5610,12 +5613,16 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 						ID:                 connection.ConnectionID,
 						IDName:             connection.ConnectionName,
 					},
-					Assigned: true,
+					Assigned:                 true,
+					AssignmentChangePossible: true,
+					AssignmentType:           &assignmentType2,
 				}
 			}
 		}
 	}
 	if assignmentType == "implicit" || assignmentType == "any" {
+		assignmentType2 := "implicit"
+
 		if benchmark.AutoAssign {
 			var connectors []source.Type
 			for _, connector := range benchmark.Connector {
@@ -5640,7 +5647,9 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 						ID:                 connection.ConnectionID,
 						IDName:             connection.ConnectionName,
 					},
-					Assigned: true,
+					Assigned:                 true,
+					AssignmentChangePossible: false,
+					AssignmentType:           &assignmentType2,
 				}
 			}
 		}
