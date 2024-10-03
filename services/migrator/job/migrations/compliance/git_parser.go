@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/kaytu-io/open-governance/services/migrator/job/git"
 	"go.uber.org/zap"
 	"io/fs"
 	"os"
@@ -25,6 +26,7 @@ type GitParser struct {
 	queries         []db.Query
 	queryParams     []models.QueryParameter
 	controlsQueries map[string]db.Query
+	Comparison      *git.ComparisonResultGrouped
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -103,6 +105,14 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 		zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
 
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
+		//if g.Comparison != nil {
+		//	_, modified := g.Comparison.ModifiedFiles[path]
+		//	_, created := g.Comparison.CreatedFiles[path]
+		//
+		//	if !modified && !created {
+		//		return nil
+		//	}
+		//}
 		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
