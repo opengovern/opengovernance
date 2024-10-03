@@ -42,6 +42,8 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 		return "", err
 	}
 
+	logger.Info("finished fetching configz data")
+
 	ref, err := res.Head()
 	if err != nil {
 		logger.Error("failed to get head", zap.Error(err))
@@ -51,19 +53,19 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
 
-	os.RemoveAll(config.ControlEnrichmentGitPath)
-
-	res, err = git2.CloneRepository(logger, gitConfig.ControlEnrichmentGitURL, config.ControlEnrichmentGitPath)
-	if err != nil {
-		logger.Error("failed to clone repository", zap.Error(err))
-		return "", err
-	}
-	ref, err = res.Head()
-	if err != nil {
-		logger.Error("failed to get head", zap.Error(err))
-		return "", err
-	}
-	refs = append(refs, ref.Hash().String())
+	//os.RemoveAll(config.ControlEnrichmentGitPath)
+	//
+	//res, err = git2.CloneRepository(logger, gitConfig.ControlEnrichmentGitURL, config.ControlEnrichmentGitPath)
+	//if err != nil {
+	//	logger.Error("failed to clone repository", zap.Error(err))
+	//	return "", err
+	//}
+	//ref, err = res.Head()
+	//if err != nil {
+	//	logger.Error("failed to get head", zap.Error(err))
+	//	return "", err
+	//}
+	//refs = append(refs, ref.Hash().String())
 
 	refsJson, err := json.Marshal(refs)
 	if err != nil {
