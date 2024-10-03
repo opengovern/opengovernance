@@ -2,18 +2,14 @@ package job
 
 import (
 	"encoding/json"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/open-governance/pkg/metadata/client"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/services/migrator/config"
+	git2 "github.com/kaytu-io/open-governance/services/migrator/job/git"
 	"go.uber.org/zap"
 	"os"
-	"strings"
 )
 
 func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
@@ -38,29 +34,14 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	refs := make([]string, 0, 2)
 
-	var authMethod transport.AuthMethod
-	if gitConfig.githubToken != "" {
-		authMethod = &githttp.BasicAuth{
-			Username: "abc123",
-			Password: gitConfig.githubToken,
-		}
-	}
 	os.RemoveAll(config.ConfigzGitPath)
-	co := git.CloneOptions{
-		Auth:     authMethod,
-		URL:      gitConfig.AnalyticsGitURL,
-		Progress: os.Stdout,
-	}
-	if strings.Contains(co.URL, "@") {
-		newUrl, tag, _ := strings.Cut(co.URL, "@")
-		co.URL = newUrl
-		co.ReferenceName = plumbing.ReferenceName("refs/tags/" + tag)
-	}
-	res, err := git.PlainClone(config.ConfigzGitPath, false, &co)
+
+	res, err := git2.CloneRepository(logger, gitConfig.AnalyticsGitURL, config.ConfigzGitPath)
 	if err != nil {
-		logger.Error("Failure while cloning analytics repo", zap.Error(err))
+		logger.Error("failed to clone repository", zap.Error(err))
 		return "", err
 	}
+
 	ref, err := res.Head()
 	if err != nil {
 		logger.Error("failed to get head", zap.Error(err))
@@ -71,19 +52,10 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
 
 	os.RemoveAll(config.ControlEnrichmentGitPath)
-	co = git.CloneOptions{
-		Auth:     authMethod,
-		URL:      gitConfig.ControlEnrichmentGitURL,
-		Progress: os.Stdout,
-	}
-	if strings.Contains(co.URL, "@") {
-		newUrl, tag, _ := strings.Cut(co.URL, "@")
-		co.URL = newUrl
-		co.ReferenceName = plumbing.ReferenceName("refs/tags/" + tag)
-	}
-	res, err = git.PlainClone(config.ControlEnrichmentGitPath, false, &co)
+
+	res, err = git2.CloneRepository(logger, gitConfig.ControlEnrichmentGitURL, config.ControlEnrichmentGitPath)
 	if err != nil {
-		logger.Error("Failure while cloning control enrichment repo", zap.Error(err))
+		logger.Error("failed to clone repository", zap.Error(err))
 		return "", err
 	}
 	ref, err = res.Head()
