@@ -168,7 +168,7 @@ func (db Database) ListIntegrationsFiltered(integrationTracker, connector []stri
 	tx := db.Orm.Model(&model.Connection{})
 
 	if len(connector) > 0 {
-		tx = tx.Where("type = ?", connector)
+		tx = tx.Where("type IN ?", connector)
 	}
 	if nameRegex != "" {
 		tx = tx.Where("name ~* ?", nameRegex)
