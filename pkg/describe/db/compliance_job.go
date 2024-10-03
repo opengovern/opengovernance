@@ -366,7 +366,7 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 	tx := db.ORM.Model(&model.ComplianceJob{})
 
 	if len(connectionId) > 0 {
-		tx = tx.Where("connection_ids && ?", pq.Array(connectionId))
+		tx = tx.Where("(connection_ids && ?) OR (connection_ids IS NULL)", pq.Array(connectionId))
 	}
 
 	if len(benchmarkId) > 0 {
