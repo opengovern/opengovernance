@@ -5385,7 +5385,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
 	}
 	if mig != nil {
-		if mig.Status != "SUCCEEDED" {
+		if mig.Status == "PENDING" || mig.Status == "IN_PROGRESS" {
 			return echo.NewHTTPError(http.StatusBadRequest, "sync sample data already in progress")
 		}
 	}
