@@ -244,6 +244,15 @@ type GetBenchmarkListResponse struct {
 	TotalCount int                    `json:"total_count"`
 }
 
+type GetBenchmarkAssignmentsResponse struct {
+	Items []GetBenchmarkAssignmentsItem `json:"items"`
+}
+
+type GetBenchmarkAssignmentsItem struct {
+	Integration IntegrationInfo `json:"integration"`
+	Assigned    bool            `json:"assigned"`
+}
+
 type IntegrationInfo struct {
 	Integration        string `json:"integration"`
 	Type               string `json:"type"`
