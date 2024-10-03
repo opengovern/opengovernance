@@ -142,8 +142,8 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			connectionId = *w.ExecutionPlan.ConnectionID
 		}
 
-		benchmarkReferences := make([]string, 0, len(caller.ParentBenchmarkIDs))
-		for _, parentBenchmarkID := range caller.ParentBenchmarkIDs {
+		benchmarkReferences := make([]string, 0, len([]string{caller.RootBenchmark}))
+		for _, parentBenchmarkID := range []string{caller.RootBenchmark} {
 			benchmarkReferences = append(benchmarkReferences, benchmarkCache[parentBenchmarkID].ReferenceCode)
 		}
 
