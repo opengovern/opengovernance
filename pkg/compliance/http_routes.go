@@ -5522,7 +5522,8 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		assignment_type	query		string	true	"assignment type. options: implicit, explicit, any"
+//	@Param		assignment_type			query		string	true	"assignment type. options: implicit, explicit, any"
+//	@Param		include_potential		query		bool	true	"Include potentials"
 //	@Param		benchmark-id	path		string	true	"Benchmark ID"
 //	@Success	200				{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v3/benchmark/{benchmark-id}/assignments [get]
@@ -5537,12 +5538,50 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 		assignmentType = "any"
 	}
 
+	includePotential := true
+	if strings.ToLower(echoCtx.QueryParam("include_potential")) == "false" {
+		includePotential = false
+	}
+
 	// trace :
 	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkAssignments", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkAssignments")
 	defer span1.End()
 
-	connectionInfos := make(map[string]api.IntegrationInfo)
+	connectionInfos := make(map[string]api.GetBenchmarkAssignmentsItem)
+	benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if includePotential {
+		var connectors []source.Type
+		for _, connector := range benchmark.Connector {
+			connectorParsed, err := source.ParseType(connector)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			connectors = append(connectors, connectorParsed)
+		}
+		connections, err := h.onboardClient.ListSources(clientCtx, connectors)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		for _, connection := range connections {
+			if connection.HealthState != source.HealthStatusHealthy {
+				continue
+			}
+			connectionInfos[connection.ID.String()] = api.GetBenchmarkAssignmentsItem{
+				Integration: api.IntegrationInfo{
+					IntegrationTracker: connection.ID.String(),
+					Integration:        connection.Connector.String(),
+					ID:                 connection.ConnectionID,
+					IDName:             connection.ConnectionName,
+				},
+				Assigned: false,
+			}
+		}
+	}
 
 	if assignmentType == "explicit" || assignmentType == "any" {
 		assignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(ctx, benchmarkId)
@@ -5556,20 +5595,19 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
-				connectionInfos[*assignment.ConnectionId] = api.IntegrationInfo{
-					IntegrationTracker: connection.ID.String(),
-					Integration:        connection.Connector.String(),
-					ID:                 connection.ConnectionID,
-					IDName:             connection.ConnectionName,
+				connectionInfos[*assignment.ConnectionId] = api.GetBenchmarkAssignmentsItem{
+					Integration: api.IntegrationInfo{
+						IntegrationTracker: connection.ID.String(),
+						Integration:        connection.Connector.String(),
+						ID:                 connection.ConnectionID,
+						IDName:             connection.ConnectionName,
+					},
+					Assigned: true,
 				}
 			}
 		}
 	}
 	if assignmentType == "implicit" || assignmentType == "any" {
-		benchmark, err := h.db.GetBenchmark(ctx, benchmarkId)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
 		if benchmark.AutoAssign {
 			var connectors []source.Type
 			for _, connector := range benchmark.Connector {
@@ -5584,22 +5622,29 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			for _, connection := range connections {
-				connectionInfos[connection.ID.String()] = api.IntegrationInfo{
-					IntegrationTracker: connection.ID.String(),
-					Integration:        connection.Connector.String(),
-					ID:                 connection.ConnectionID,
-					IDName:             connection.ConnectionName,
-					Type:               api.GetTypeFromIntegration(connection.Connector.String()),
+				if connection.HealthState != source.HealthStatusHealthy {
+					continue
+				}
+				connectionInfos[connection.ID.String()] = api.GetBenchmarkAssignmentsItem{
+					Integration: api.IntegrationInfo{
+						IntegrationTracker: connection.ID.String(),
+						Integration:        connection.Connector.String(),
+						ID:                 connection.ConnectionID,
+						IDName:             connection.ConnectionName,
+					},
+					Assigned: true,
 				}
 			}
 		}
 	}
 
-	var results []api.IntegrationInfo
+	var results []api.GetBenchmarkAssignmentsItem
 	for _, info := range connectionInfos {
 		results = append(results, info)
 	}
-	return echoCtx.JSON(http.StatusOK, results)
+	return echoCtx.JSON(http.StatusOK, api.GetBenchmarkAssignmentsResponse{
+		Items: results,
+	})
 }
 
 // GetFindingsV2 godoc
