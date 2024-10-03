@@ -1345,15 +1345,12 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	if userID == "" {
 		userID = "system"
 	}
-	benchmarkID := ctx.Param("benchmark_id")
+	benchmarkID := strings.ToLower(ctx.Param("benchmark_id"))
 
 	var request api.RunBenchmarkByIdRequest
 	if err := ctx.Bind(&request); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-	if len(request.IntegrationInfo) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
 	var connections []onboardapi.Connection
