@@ -2119,13 +2119,20 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
 	for _, c := range connections {
+		connectionIDs = append(connectionIDs, c.ID.String())
+	}
+	connections2, err := h.Scheduler.onboardClient.ListSources(clientCtx, nil)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	for _, c := range connections2 {
 		connectionInfo[c.ID.String()] = api.IntegrationInfo{
 			IntegrationTracker: c.ID.String(),
 			Integration:        c.Connector.String(),
 			IDName:             c.ConnectionName,
 			ID:                 c.ConnectionID,
 		}
-		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
 	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, request.StartTime, request.EndTime)
@@ -2160,11 +2167,11 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			})
 		case "updated_at", "updatedat":
 			sort.Slice(items, func(i, j int) bool {
-				return items[i].UpdatedAt.Before(items[j].UpdatedAt)
+				return items[i].UpdatedAt.After(items[j].UpdatedAt)
 			})
 		case "created_at", "createdat":
 			sort.Slice(items, func(i, j int) bool {
-				return items[i].CreatedAt.Before(items[j].CreatedAt)
+				return items[i].CreatedAt.After(items[j].CreatedAt)
 			})
 		case "benchmarkid":
 			sort.Slice(items, func(i, j int) bool {
@@ -2176,12 +2183,12 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			})
 		default:
 			sort.Slice(items, func(i, j int) bool {
-				return items[i].JobId < items[j].JobId
+				return items[i].UpdatedAt.After(items[j].UpdatedAt)
 			})
 		}
 	} else {
 		sort.Slice(items, func(i, j int) bool {
-			return items[i].JobId < items[j].JobId
+			return items[i].UpdatedAt.After(items[j].UpdatedAt)
 		})
 	}
 	if request.PerPage != nil {
