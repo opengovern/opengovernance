@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
@@ -98,6 +101,49 @@ func (h Credential) NewAzureConnection(
 	return s
 }
 
+// ExtractObjectID parses the token and extracts the object ID (oid claim).
+func ExtractObjectID(tokenString string) (string, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		return "", fmt.Errorf("failed to parse token: %v", err)
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if oid, ok := claims["oid"].(string); ok {
+			return oid, nil
+		}
+		return "", fmt.Errorf("oid claim not found in token")
+	}
+	return "", fmt.Errorf("failed to parse claims")
+}
+
+// ValidateAzureSPN validates the Azure Service Principal credentials and extracts the object ID.
+func ValidateAzureSPN(clientID, clientSecret, tenantID string) (azcore.TokenCredential, string, error) {
+	cred, err := azidentity.NewClientSecretCredential(tenantID, clientID, clientSecret, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create ClientSecretCredential: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	scopes := []string{"https://management.azure.com/.default"}
+
+	token, err := cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: scopes,
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to acquire token: %v", err)
+	}
+
+	objectID, err := ExtractObjectID(token.Token)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to extract object ID from token: %v", err)
+	}
+
+	return cred, objectID, nil
+}
+
 func (h Credential) AzureMetadata(ctx context.Context, config connectors.AzureSubscriptionConfig) (*model.AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
@@ -168,26 +214,30 @@ func (h Credential) AzureHealthCheck(ctx context.Context, cred *model.Credential
 		return false, err
 	}
 
-	authConfig := azure.AuthConfig{
-		TenantID:            azureConfig.TenantID,
-		ObjectID:            azureConfig.ObjectID,
-		SecretID:            azureConfig.SecretID,
-		ClientID:            azureConfig.ClientID,
-		ClientSecret:        azureConfig.ClientSecret,
-		CertificatePath:     azureConfig.CertificatePath,
-		CertificatePassword: azureConfig.CertificatePass,
-		Username:            azureConfig.Username,
-		Password:            azureConfig.Password,
-	}
+	//authConfig := azure.AuthConfig{
+	//	TenantID:            azureConfig.TenantID,
+	//	ObjectID:            azureConfig.ObjectID,
+	//	SecretID:            azureConfig.SecretID,
+	//	ClientID:            azureConfig.ClientID,
+	//	ClientSecret:        azureConfig.ClientSecret,
+	//	CertificatePath:     azureConfig.CertificatePath,
+	//	CertificatePassword: azureConfig.CertificatePass,
+	//	Username:            azureConfig.Username,
+	//	Password:            azureConfig.Password,
+	//}
 
-	if err := azure.CheckSPNAccessPermission(authConfig); err != nil {
+	//if err := azure.CheckSPNAccessPermission(authConfig); err != nil {
+	//	return false, err
+	//}
+
+	if _, _, err := ValidateAzureSPN(azureConfig.ClientID, azureConfig.ClientSecret, azureConfig.TenantID); err != nil {
 		return false, err
 	}
 
-	entraExtra, err := azure.CheckEntraIDPermission(authConfig)
-	if err == nil && entraExtra.DefaultDomain != nil {
-		cred.Name = entraExtra.DefaultDomain
-	}
+	//entraExtra, err := azure.CheckEntraIDPermission(authConfig)
+	//if err == nil && entraExtra.DefaultDomain != nil {
+	//	cred.Name = entraExtra.DefaultDomain
+	//}
 
 	metadata, err := h.AzureMetadata(ctx, azureConfig)
 	if err != nil {
