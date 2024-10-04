@@ -149,7 +149,7 @@ type GetComplianceJobsHistoryResponse struct {
 	BenchmarkId     string              `json:"benchmark_id"`
 	JobStatus       ComplianceJobStatus `json:"job_status"`
 	DateTime        time.Time           `json:"date_time"`
-	IntegrationInfo []IntegrationInfo   `json:"integration_info"`
+	IntegrationInfo IntegrationInfo     `json:"integration_info"`
 }
 
 type BenchmarkAuditHistoryItem struct {
@@ -158,7 +158,7 @@ type BenchmarkAuditHistoryItem struct {
 	JobStatus            ComplianceJobStatus `json:"job_status"`
 	CreatedAt            time.Time           `json:"created_at"`
 	UpdatedAt            time.Time           `json:"updated_at"`
-	IntegrationInfo      []IntegrationInfo   `json:"integration_info"`
+	IntegrationInfo      IntegrationInfo     `json:"integration_info"`
 	NumberOfIntegrations int                 `json:"number_of_integrations"`
 }
 
@@ -209,10 +209,14 @@ type IntegrationInfo struct {
 	IntegrationTracker string `json:"integration_tracker"`
 }
 
-type RunBenchmarkResponse struct {
+type RunBenchmarkItem struct {
 	JobId           uint              `json:"job_id"`
 	BenchmarkId     string            `json:"benchmark_id"`
 	IntegrationInfo []IntegrationInfo `json:"integration_info"`
+}
+
+type RunBenchmarkResponse struct {
+	Jobs []RunBenchmarkItem `json:"jobs"`
 }
 
 type RunDiscoveryRequest struct {
@@ -251,12 +255,12 @@ type GetDescribeJobStatusResponse struct {
 }
 
 type GetComplianceJobStatusResponse struct {
-	JobId           uint              `json:"job_id"`
-	IntegrationInfo []IntegrationInfo `json:"integration_info"`
-	JobStatus       string            `json:"job_status"`
-	BenchmarkId     string            `json:"benchmark_id"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
+	JobId           uint            `json:"job_id"`
+	IntegrationInfo IntegrationInfo `json:"integration_info"`
+	JobStatus       string          `json:"job_status"`
+	BenchmarkId     string          `json:"benchmark_id"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
 }
 type GetAnalyticsJobStatusResponse struct {
 	JobId     uint      `json:"job_id"`
@@ -355,7 +359,7 @@ type GetDescribeJobsHistoryByIntegrationRequest struct {
 }
 
 type GetComplianceJobsHistoryByIntegrationRequest struct {
-	IntegrationInfo []struct {
+	IntegrationInfo struct {
 		Integration        *string `json:"integration"`
 		Type               *string `json:"type"`
 		ID                 *string `json:"id"`

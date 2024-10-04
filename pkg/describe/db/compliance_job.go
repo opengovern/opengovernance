@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"
@@ -163,7 +162,7 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 			compliance_jobs.updated_at, 
 			compliance_jobs.benchmark_id, 
 			compliance_jobs.status, 
-			compliance_jobs.connection_ids, 
+			compliance_jobs.connection_id, 
 			compliance_jobs.trigger_type, 
 			compliance_jobs.created_by,
 			COALESCE(array_agg(COALESCE(compliance_summarizers.id::text, '')), '{}') as summarizer_jobs
@@ -198,7 +197,7 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 
 func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_ids <@ ?", pq.Array(connectionIds)).Find(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_id IN ?", connectionIds).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -211,7 +210,7 @@ func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]m
 func (db Database) ListPendingComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).
-		Where("connection_ids <@ ?", pq.Array(connectionIds)).
+		Where("connection_id IN ?", connectionIds).
 		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress}).
 		Find(&job)
 	if tx.Error != nil {
@@ -366,7 +365,7 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 	tx := db.ORM.Model(&model.ComplianceJob{})
 
 	if len(connectionId) > 0 {
-		tx = tx.Where("(connection_ids && ?) OR (connection_ids IS NULL)", pq.Array(connectionId))
+		tx = tx.Where("connection_id IN ?", connectionId)
 	}
 
 	if len(benchmarkId) > 0 {
