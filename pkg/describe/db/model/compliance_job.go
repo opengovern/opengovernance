@@ -38,7 +38,7 @@ type ComplianceJob struct {
 	BenchmarkID         string
 	Status              ComplianceJobStatus
 	AreAllRunnersQueued bool
-	ConnectionIDs       pq.StringArray `gorm:"type:text[]"`
+	ConnectionID        string
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
 	CreatedBy           string

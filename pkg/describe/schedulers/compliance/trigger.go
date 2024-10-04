@@ -196,7 +196,7 @@ func (s *JobScheduler) buildRunners(
 }
 
 func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
-	lastJob *model.ComplianceJob, connectionIDs []string, manual bool, createdBy string) (uint, error) {
+	lastJob *model.ComplianceJob, connectionID string, manual bool, createdBy string) (uint, error) {
 	// delete old runners
 	if lastJob != nil {
 		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
@@ -220,7 +220,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		BenchmarkID:         benchmarkID,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
-		ConnectionIDs:       connectionIDs,
+		ConnectionID:        connectionID,
 		TriggerType:         triggerType,
 		CreatedBy:           createdBy,
 	}
@@ -246,30 +246,23 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		s.logger.Info("processing job with unqueued runners", zap.Uint("jobID", job.ID))
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
-		if len(job.ConnectionIDs) > 0 {
-			connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.InternalRole}, job.ConnectionIDs)
-			if err != nil {
-				s.logger.Error("error while getting sources", zap.Error(err))
-				continue
-			}
-			assignments = &complianceApi.BenchmarkAssignedEntities{}
-			for _, connection := range connections {
-				assignment := complianceApi.BenchmarkAssignedConnection{
-					ConnectionID:           connection.ID.String(),
-					ProviderConnectionID:   connection.ConnectionID,
-					ProviderConnectionName: connection.ConnectionName,
-					Connector:              connection.Connector,
-					Status:                 true,
-				}
-				assignments.Connections = append(assignments.Connections, assignment)
-			}
-		} else {
-			assignments, err = s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api.InternalRole}, job.BenchmarkID)
-			if err != nil {
-				s.logger.Error("error while listing assignments", zap.Error(err))
-				continue
-			}
+		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.InternalRole}, []string{job.ConnectionID})
+		if err != nil {
+			s.logger.Error("error while getting sources", zap.Error(err))
+			continue
 		}
+		assignments = &complianceApi.BenchmarkAssignedEntities{}
+		for _, connection := range connections {
+			assignment := complianceApi.BenchmarkAssignedConnection{
+				ConnectionID:           connection.ID.String(),
+				ProviderConnectionID:   connection.ConnectionID,
+				ProviderConnectionName: connection.ConnectionName,
+				Connector:              connection.Connector,
+				Status:                 true,
+			}
+			assignments.Connections = append(assignments.Connections, assignment)
+		}
+
 		var globalRunners []*model.ComplianceRunner
 		var runners []*model.ComplianceRunner
 		for _, it := range assignments.Connections {
