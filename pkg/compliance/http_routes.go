@@ -3575,6 +3575,18 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			sort.Slice(resultControls, func(i, j int) bool {
 				return resultControls[i].FindingsSummary.NonIncidentCount < resultControls[j].FindingsSummary.NonIncidentCount
 			})
+		case "noncompliant_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.NonCompliantResources < resultControls[j].FindingsSummary.NonCompliantResources
+			})
+		case "compliant_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.CompliantResources < resultControls[j].FindingsSummary.CompliantResources
+			})
+		case "impacted_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.ImpactedResources < resultControls[j].FindingsSummary.ImpactedResources
+			})
 		default:
 			sort.Slice(resultControls, func(i, j int) bool {
 				return resultControls[i].ID < resultControls[j].ID
@@ -3601,6 +3613,18 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		case "non-incidents", "nonincidents":
 			sort.Slice(resultControls, func(i, j int) bool {
 				return resultControls[i].FindingsSummary.NonIncidentCount > resultControls[j].FindingsSummary.NonIncidentCount
+			})
+		case "noncompliant_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.NonCompliantResources > resultControls[j].FindingsSummary.NonCompliantResources
+			})
+		case "compliant_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.CompliantResources > resultControls[j].FindingsSummary.CompliantResources
+			})
+		case "impacted_resources":
+			sort.Slice(resultControls, func(i, j int) bool {
+				return resultControls[i].FindingsSummary.ImpactedResources > resultControls[j].FindingsSummary.ImpactedResources
 			})
 		default:
 			sort.Slice(resultControls, func(i, j int) bool {
