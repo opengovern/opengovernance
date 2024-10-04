@@ -2165,6 +2165,7 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		}
 		if info, ok := connectionInfo[j.ConnectionID]; ok {
 			item.IntegrationInfo = info
+			item.NumberOfIntegrations = 1
 		}
 
 		items = append(items, item)
