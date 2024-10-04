@@ -28,6 +28,7 @@ type FindingFilters struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	} `json:"evaluatedAt"`
+	Interval *string `json:"interval" example:"5m"`
 }
 
 type FindingSummaryFilters struct {

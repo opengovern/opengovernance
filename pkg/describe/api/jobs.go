@@ -71,7 +71,9 @@ const (
 )
 
 type ListJobsRequest struct {
-	Interval     string   `json:"interval"`
+	Interval     *string  `json:"interval"`
+	From         *int64   `json:"from"`
+	To           *int64   `json:"to"`
 	PageStart    int      `json:"pageStart"`
 	PageEnd      int      `json:"pageEnd"`
 	TypeFilters  []string `json:"typeFilters"`
