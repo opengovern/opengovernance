@@ -203,7 +203,6 @@ type RunBenchmarkRequest struct {
 
 type IntegrationInfo struct {
 	Integration        string `json:"integration"`
-	Type               string `json:"type"`
 	ID                 string `json:"id"`
 	IDName             string `json:"id_name"`
 	IntegrationTracker string `json:"integration_tracker"`
