@@ -71,7 +71,9 @@ const (
 )
 
 type ListJobsRequest struct {
-	Interval     string   `json:"interval"`
+	Interval     *string  `json:"interval"`
+	From         *int64   `json:"from"`
+	To           *int64   `json:"to"`
 	PageStart    int      `json:"pageStart"`
 	PageEnd      int      `json:"pageEnd"`
 	TypeFilters  []string `json:"typeFilters"`
@@ -203,7 +205,6 @@ type RunBenchmarkRequest struct {
 
 type IntegrationInfo struct {
 	Integration        string `json:"integration"`
-	Type               string `json:"type"`
 	ID                 string `json:"id"`
 	IDName             string `json:"id_name"`
 	IntegrationTracker string `json:"integration_tracker"`

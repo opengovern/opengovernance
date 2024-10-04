@@ -200,11 +200,14 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) ListAllJobs(pageStart, pageEnd int, interval string, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
+func (db Database) ListAllJobs(pageStart, pageEnd int, interval *string, from *time.Time, to *time.Time, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
 	var job []model.Job
 
 	whereQuery := ""
 	var values []interface{}
+	if from != nil && to != nil && interval == nil {
+		values = append(values, *from, *to, *from, *to, *from, *to)
+	}
 
 	if len(typeFilter) > 0 || len(statusFilter) > 0 {
 		var queries []string
@@ -221,7 +224,9 @@ func (db Database) ListAllJobs(pageStart, pageEnd int, interval string, typeFilt
 		whereQuery = "WHERE " + strings.Join(queries, " AND ")
 	}
 
-	rawQuery := fmt.Sprintf(`
+	var rawQuery string
+	if interval != nil {
+		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
 (SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s')
@@ -232,6 +237,19 @@ UNION ALL
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, interval, whereQuery, sortBy, sortOrder)
+	} else if from != nil && to != nil {
+		rawQuery = fmt.Sprintf(`
+SELECT * FROM (
+(
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ?)
+UNION ALL 
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
+UNION ALL 
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
+)
+) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
+`, whereQuery, sortBy, sortOrder)
+	}
 
 	values = append(values, pageEnd-pageStart, pageStart)
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
@@ -258,12 +276,14 @@ func (db Database) ListSummaryJobs(complianceJobIDs []string) ([]model.Complianc
 	return jobs, nil
 }
 
-func (db Database) GetAllJobSummary(interval string, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
+func (db Database) GetAllJobSummary(interval *string, from *time.Time, to *time.Time, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
 	var job []model.JobSummary
 
 	whereQuery := ""
 	var values []interface{}
-
+	if from != nil && to != nil && interval == nil {
+		values = append(values, *from, *to, *from, *to, *from, *to)
+	}
 	if len(typeFilter) > 0 || len(statusFilter) > 0 {
 		var queries []string
 		if len(typeFilter) > 0 {
@@ -279,7 +299,9 @@ func (db Database) GetAllJobSummary(interval string, typeFilter []string, status
 		whereQuery = "WHERE " + strings.Join(queries, " AND ")
 	}
 
-	rawQuery := fmt.Sprintf(`
+	var rawQuery string
+	if interval != nil {
+		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
 (SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
@@ -290,7 +312,18 @@ UNION ALL
 )
 ) AS t %s;
 `, interval, whereQuery)
-
+	} else if from != nil && to != nil {
+		rawQuery = fmt.Sprintf(`
+SELECT * FROM (
+(
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
+UNION ALL 
+(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
+UNION ALL 
+(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
+)
+) AS t %s;`, whereQuery)
+	}
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -407,7 +440,7 @@ func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds [
 		tx = tx.Where("status IN ?", jobStatus)
 	}
 	if startTime != nil {
-		tx = tx.Where("updated_at >= ?", startTime)
+		tx = tx.Where("updated_at >= ?", *startTime)
 	}
 	if endTime != nil {
 		tx = tx.Where("updated_at <= ?", *endTime)

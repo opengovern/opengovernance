@@ -44,6 +44,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sort"
 	"strconv"
@@ -276,6 +277,9 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	}
 	if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	}
+	if req.Filters.Interval != nil {
+		evaluatedAtFrom, evaluatedAtTo, err = parseTimeInterval(*req.Filters.Interval)
 	}
 
 	var connectionIDs []string
@@ -7267,7 +7271,6 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 				ID:                 i.ID,
 				IDName:             i.IDName,
 				IntegrationTracker: i.IntegrationTracker,
-				Type:               i.Type,
 			})
 		}
 		item := api.ListComplianceJobsHistoryItem{
@@ -7536,4 +7539,50 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
+}
+
+func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
+	// Define regex patterns to extract the time components
+	patterns := map[string]*regexp.Regexp{
+		"days":    regexp.MustCompile(`(\d+)\s*days?`),
+		"hours":   regexp.MustCompile(`(\d+)\s*hours?`),
+		"minutes": regexp.MustCompile(`(\d+)\s*minutes?`),
+		"seconds": regexp.MustCompile(`(\d+)\s*seconds?`),
+	}
+
+	// Variables to store the extracted values
+	days, hours, minutes, seconds := 0, 0, 0, 0
+
+	// Extract and convert the values from the string
+	for key, pattern := range patterns {
+		match := pattern.FindStringSubmatch(intervalStr)
+		if len(match) > 1 {
+			value, err := strconv.Atoi(match[1])
+			if err != nil {
+				return nil, nil, fmt.Errorf("error parsing %s: %v", key, err)
+			}
+			switch key {
+			case "days":
+				days = value
+			case "hours":
+				hours = value
+			case "minutes":
+				minutes = value
+			case "seconds":
+				seconds = value
+			}
+		}
+	}
+
+	// Calculate total duration based on extracted values
+	duration := time.Duration(days)*24*time.Hour +
+		time.Duration(hours)*time.Hour +
+		time.Duration(minutes)*time.Minute +
+		time.Duration(seconds)*time.Second
+
+	// Calculate endTime as now and startTime by subtracting the duration
+	endTime := time.Now()
+	startTime := endTime.Add(-duration)
+
+	return &startTime, &endTime, nil
 }

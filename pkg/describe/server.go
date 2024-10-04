@@ -155,13 +155,23 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		sortOrder = "DESC"
 	}
 
-	request.Interval, err = convertInterval(request.Interval)
-	if err != nil {
-		h.Scheduler.logger.Error("failed to parse interval", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to parse interval")
+	var startTime, endTime *time.Time
+	if request.Interval != nil {
+		tmpInterval, err := convertInterval(*request.Interval)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to parse interval", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to parse interval")
+		}
+		request.Interval = &tmpInterval
+	} else if request.To != nil && request.From != nil {
+		endTimeTmp := time.Unix(*request.To, 0)
+		endTime = &endTimeTmp
+
+		startTimeTmp := time.Unix(*request.From, 0)
+		startTime = &startTimeTmp
 	}
 
-	describeJobs, err := h.DB.ListAllJobs(request.PageStart, request.PageEnd, request.Interval, request.TypeFilters,
+	describeJobs, err := h.DB.ListAllJobs(request.PageStart, request.PageEnd, request.Interval, startTime, endTime, request.TypeFilters,
 		request.StatusFilter, sortBy, sortOrder)
 	if err != nil {
 		return err
@@ -197,7 +207,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	}
 
 	var jobSummaries []api.JobSummary
-	summaries, err := h.DB.GetAllJobSummary(request.Interval, request.TypeFilters, request.StatusFilter)
+	summaries, err := h.DB.GetAllJobSummary(request.Interval, startTime, endTime, request.TypeFilters, request.StatusFilter)
 	if err != nil {
 		return err
 	}
