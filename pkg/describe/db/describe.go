@@ -200,7 +200,7 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) ListAllJobs(pageStart, pageEnd, hours int, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
+func (db Database) ListAllJobs(pageStart, pageEnd int, interval string, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
 	var job []model.Job
 
 	whereQuery := ""
@@ -224,14 +224,14 @@ func (db Database) ListAllJobs(pageStart, pageEnd, hours int, typeFilter []strin
 	rawQuery := fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]d HOURS')
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]d HOURS')
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS')
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
-`, hours, whereQuery, sortBy, sortOrder)
+`, interval, whereQuery, sortBy, sortOrder)
 
 	values = append(values, pageEnd-pageStart, pageStart)
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
@@ -258,7 +258,7 @@ func (db Database) ListSummaryJobs(complianceJobIDs []string) ([]model.Complianc
 	return jobs, nil
 }
 
-func (db Database) GetAllJobSummary(hours int, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
+func (db Database) GetAllJobSummary(interval string, typeFilter []string, statusFilter []string) ([]model.JobSummary, error) {
 	var job []model.JobSummary
 
 	whereQuery := ""
@@ -282,14 +282,14 @@ func (db Database) GetAllJobSummary(hours int, typeFilter []string, statusFilter
 	rawQuery := fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 UNION ALL 
-(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
+(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 UNION ALL 
-(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%[1]d HOURS' GROUP BY status )
+(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 )
 ) AS t %s;
-`, hours, whereQuery)
+`, interval, whereQuery)
 
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
