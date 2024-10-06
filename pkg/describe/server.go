@@ -103,7 +103,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/run-history", httpserver.AuthorizeHandler(h.BenchmarkAuditHistory, apiAuth.ViewerRole))
-	v3.POST("/benchmark/:benchmark_id/run-history/integrations", httpserver.AuthorizeHandler(h.BenchmarkAuditHistoryIntegrations, apiAuth.ViewerRole))
+	v3.GET("/benchmark/run-history/integrations", httpserver.AuthorizeHandler(h.BenchmarkAuditHistoryIntegrations, apiAuth.ViewerRole))
 	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
@@ -2236,7 +2236,7 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 //	@Tags		scheduler
 //	@Produce	json
 //	@Success	200	{object}	[]api.IntegrationInfo
-//	@Router		/schedule/api/v3/benchmark/:benchmark_id/run-history/integrations [get]
+//	@Router		/schedule/api/v3/benchmark/run-history/integrations [get]
 func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 
