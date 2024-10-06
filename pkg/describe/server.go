@@ -103,6 +103,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/run-history", httpserver.AuthorizeHandler(h.BenchmarkAuditHistory, apiAuth.ViewerRole))
+	v3.POST("/benchmark/:benchmark_id/run-history/integrations", httpserver.AuthorizeHandler(h.BenchmarkAuditHistoryIntegrations, apiAuth.ViewerRole))
 	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
@@ -2226,6 +2227,42 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		Items:      items,
 		TotalCount: totalCount,
 	})
+}
+
+// BenchmarkAuditHistoryIntegrations godoc
+//
+//	@Summary	Get compliance jobs history for give connection possible integrations
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Produce	json
+//	@Success	200	{object}	[]api.IntegrationInfo
+//	@Router		/schedule/api/v3/benchmark/:benchmark_id/run-history/integrations [get]
+func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+
+	connectionIDs, err := h.DB.GetComplianceJobsIntegrations()
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get compliance jobs integrations", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance jobs integrations")
+	}
+
+	connections, err := h.Scheduler.onboardClient.GetSources(clientCtx, connectionIDs)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var integrations []api.IntegrationInfo
+
+	for _, c := range connections {
+		integrations = append(integrations, api.IntegrationInfo{
+			IntegrationTracker: c.ID.String(),
+			Integration:        c.Connector.String(),
+			IDName:             c.ConnectionName,
+			ID:                 c.ConnectionID,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, integrations)
 }
 
 // GetIntegrationLastDiscoveryJob godoc

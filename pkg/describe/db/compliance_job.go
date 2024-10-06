@@ -387,6 +387,14 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 	return jobs, nil
 }
 
+func (db Database) GetComplianceJobsIntegrations() ([]string, error) {
+	var uniqueConnectionIDs []string
+	if err := db.ORM.Model(&model.ComplianceJob{}).Distinct("connection_id").Pluck("connection_id", &uniqueConnectionIDs).Error; err != nil {
+		return nil, err
+	}
+	return uniqueConnectionIDs, nil
+}
+
 func (db Database) CleanupAllComplianceJobs() error {
 	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceJob{})
 	if tx.Error != nil {

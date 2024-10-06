@@ -999,7 +999,7 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 	if mig == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "no migration job found")
 	}
-	jobsStatus := make(map[string]model.JobsStatus)
+	jobsStatus := make(map[string]model.JobInfo)
 
 	if len(mig.JobsStatus.Bytes) > 0 {
 		err := json.Unmarshal(mig.JobsStatus.Bytes, &jobsStatus)
@@ -1010,7 +1010,7 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 
 	var completedJobs int
 	for _, status := range jobsStatus {
-		if status == model.JobStatusCompleted || status == model.JobStatusFailed {
+		if status.Status == model.JobStatusCompleted || status.Status == model.JobStatusFailed {
 			completedJobs++
 		}
 	}
@@ -1023,13 +1023,13 @@ func (s *Server) GetMigrationStatus(echoCtx echo.Context) error {
 		Status:     mig.Status,
 		JobsStatus: jobsStatus,
 		Summary: struct {
-			TotalJobs     int     `json:"total_jobs"`
-			CompletedJobs int     `json:"completed_jobs"`
-			Progress      float64 `json:"progress"`
+			TotalJobs          int     `json:"total_jobs"`
+			CompletedJobs      int     `json:"completed_jobs"`
+			ProgressPercentage float64 `json:"progress_percentage"`
 		}{
-			TotalJobs:     len(jobsStatus),
-			CompletedJobs: completedJobs,
-			Progress:      jobProgress,
+			TotalJobs:          len(jobsStatus),
+			CompletedJobs:      completedJobs,
+			ProgressPercentage: jobProgress * 100,
 		},
 	})
 }
