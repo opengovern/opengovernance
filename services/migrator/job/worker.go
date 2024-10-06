@@ -110,9 +110,13 @@ func (w *Job) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	jobsStatus := make(map[string]model.JobsStatus)
+	jobsStatus := make(map[string]model.JobInfo)
 	for name, _ := range migrations {
-		jobsStatus[name] = model.JobStatusPending
+		jobsStatus[name] = model.JobInfo{
+			MigrationJobName: name,
+			Status:           model.JobStatusPending,
+			FailureReason:    "",
+		}
 	}
 
 	m.Status = "Started"
@@ -126,7 +130,11 @@ func (w *Job) Run(ctx context.Context) error {
 		if err != nil {
 			w.logger.Error("failed to get job status", zap.Error(err), zap.String("migrationName", name))
 		}
-		jobsStatus[name] = model.JobStatusInProgress
+		jobsStatus[name] = model.JobInfo{
+			MigrationJobName: name,
+			Status:           model.JobStatusInProgress,
+			FailureReason:    "",
+		}
 		m.Status = fmt.Sprintf("Running migration %s", name)
 
 		err = w.updateJob(m, m.Status, jobsStatus)
@@ -135,8 +143,8 @@ func (w *Job) Run(ctx context.Context) error {
 		}
 
 		updateFailed := false
-		err := mig.Run(ctx, w.conf, w.logger)
-		if err != nil {
+		migErr := mig.Run(ctx, w.conf, w.logger)
+		if migErr != nil {
 			w.logger.Error("failed to run migration", zap.Error(err), zap.String("migrationName", name))
 			updateFailed = true
 		}
@@ -147,9 +155,17 @@ func (w *Job) Run(ctx context.Context) error {
 		}
 		if updateFailed {
 			hasFailed = true
-			jobsStatus[name] = model.JobStatusFailed
+			jobsStatus[name] = model.JobInfo{
+				MigrationJobName: name,
+				Status:           model.JobStatusFailed,
+				FailureReason:    migErr.Error(),
+			}
 		} else {
-			jobsStatus[name] = model.JobStatusCompleted
+			jobsStatus[name] = model.JobInfo{
+				MigrationJobName: name,
+				Status:           model.JobStatusCompleted,
+				FailureReason:    "",
+			}
 		}
 		err = w.updateJob(m, m.Status, jobsStatus)
 		if err != nil {
@@ -172,7 +188,7 @@ func (w *Job) Run(ctx context.Context) error {
 	return nil
 }
 
-func (w *Job) updateJob(m *model.Migration, status string, jobsStatus map[string]model.JobsStatus) error {
+func (w *Job) updateJob(m *model.Migration, status string, jobsStatus map[string]model.JobInfo) error {
 	jobsStatusJson, err := json.Marshal(jobsStatus)
 	if err != nil {
 		return err
@@ -193,8 +209,8 @@ func (w *Job) updateJob(m *model.Migration, status string, jobsStatus map[string
 	return nil
 }
 
-func getJobsStatus(m *model.Migration) (map[string]model.JobsStatus, error) {
-	jobsStatus := make(map[string]model.JobsStatus)
+func getJobsStatus(m *model.Migration) (map[string]model.JobInfo, error) {
+	jobsStatus := make(map[string]model.JobInfo)
 
 	if len(m.JobsStatus.Bytes) > 0 {
 		err := json.Unmarshal(m.JobsStatus.Bytes, &jobsStatus)

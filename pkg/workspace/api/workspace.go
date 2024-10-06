@@ -137,12 +137,12 @@ type About struct {
 }
 
 type GetMigrationStatusResponse struct {
-	Status     string                      `json:"status"`
-	JobsStatus map[string]model.JobsStatus `json:"jobs_status"`
+	Status     string                   `json:"status"`
+	JobsStatus map[string]model.JobInfo `json:"jobs_status"`
 	Summary    struct {
-		TotalJobs     int     `json:"total_jobs"`
-		CompletedJobs int     `json:"completed_jobs"`
-		Progress      float64 `json:"progress"`
+		TotalJobs          int     `json:"total_jobs"`
+		CompletedJobs      int     `json:"completed_jobs"`
+		ProgressPercentage float64 `json:"progress_percentage"`
 	}
 }
 

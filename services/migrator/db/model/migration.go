@@ -14,6 +14,12 @@ const (
 	JobStatusFailed     JobsStatus = "FAILED"
 )
 
+type JobInfo struct {
+	MigrationJobName string     `json:"migrationJobName"`
+	Status           JobsStatus `json:"status"`
+	FailureReason    string     `json:"failureReason"`
+}
+
 type Migration struct {
 	ID         string `gorm:"primarykey"`
 	CreatedAt  time.Time
