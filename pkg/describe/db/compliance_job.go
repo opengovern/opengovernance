@@ -360,7 +360,7 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
 }
 
 func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkId []string, status []string,
-	startTime time.Time, endTime *time.Time) ([]model.ComplianceJob, error) {
+	startTime, endTime *time.Time) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{})
 
@@ -374,7 +374,9 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 	if len(status) > 0 {
 		tx = tx.Where("status IN ?", status)
 	}
-	tx = tx.Where("updated_at >= ?", startTime)
+	if startTime != nil {
+		tx = tx.Where("updated_at >= ?", *startTime)
+	}
 	if endTime != nil {
 		tx = tx.Where("updated_at <= ?", *endTime)
 	}

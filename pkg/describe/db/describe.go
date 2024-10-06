@@ -200,7 +200,8 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) ListAllJobs(pageStart, pageEnd int, interval *string, from *time.Time, to *time.Time, typeFilter []string, statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
+func (db Database) ListAllJobs(pageStart, pageEnd int, interval *string, from *time.Time, to *time.Time, typeFilter []string,
+	statusFilter []string, sortBy, sortOrder string) ([]model.Job, error) {
 	var job []model.Job
 
 	whereQuery := ""

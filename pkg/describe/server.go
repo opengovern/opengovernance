@@ -220,6 +220,63 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		})
 	}
 
+	switch sortOrder {
+	case "ASC":
+		switch strings.ToLower(string(request.SortBy)) {
+		case "id":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].ID < jobs[j].ID
+			})
+		case "connection_id":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].ConnectionID < jobs[j].ConnectionID
+			})
+		case "job_type":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].Type < jobs[j].Type
+			})
+		case "status":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].Status < jobs[j].Status
+			})
+		case "created_at", "createdat":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].CreatedAt.Before(jobs[j].CreatedAt)
+			})
+		case "updated_at", "updatedat":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].UpdatedAt.Before(jobs[j].UpdatedAt)
+			})
+		}
+	case "DESC":
+		switch strings.ToLower(string(request.SortBy)) {
+		case "id":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].ID > jobs[j].ID
+			})
+		case "connection_id":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].ConnectionID > jobs[j].ConnectionID
+			})
+		case "job_type":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].Type > jobs[j].Type
+			})
+		case "status":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].Status > jobs[j].Status
+			})
+		case "created_at", "createdat":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].CreatedAt.After(jobs[j].CreatedAt)
+			})
+		case "updated_at", "updatedat":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].UpdatedAt.After(jobs[j].UpdatedAt)
+			})
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, api.ListJobsResponse{
 		Jobs:      jobs,
 		Summaries: jobSummaries,
@@ -1296,7 +1353,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 
 	connectionId := ctx.Param("connection_id")
 
-	jobs, err := h.DB.ListComplianceJobsByFilters([]string{connectionId}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	jobs, err := h.DB.ListComplianceJobsByFilters([]string{connectionId}, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2038,7 +2095,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
-	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2160,7 +2217,15 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		}
 	}
 
-	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, request.StartTime, request.EndTime)
+	var startTime, endTime *time.Time
+	if request.Interval != nil {
+		startTime, endTime, err = parseTimeInterval(*request.Interval)
+	} else {
+		startTime = &request.StartTime
+		endTime = request.EndTime
+	}
+
+	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, startTime, endTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2589,7 +2654,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
 	for _, c := range connectionInfo {
-		jobs, err := h.DB.ListComplianceJobsByFilters([]string{c.IntegrationTracker}, request.BenchmarkId, request.JobStatus, request.StartTime, request.EndTime)
+		jobs, err := h.DB.ListComplianceJobsByFilters([]string{c.IntegrationTracker}, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -3983,4 +4048,50 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 		TotalCount: totalCount,
 		Items:      items,
 	})
+}
+
+func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
+	// Define regex patterns to extract the time components
+	patterns := map[string]*regexp.Regexp{
+		"days":    regexp.MustCompile(`(\d+)\s*days?`),
+		"hours":   regexp.MustCompile(`(\d+)\s*hours?`),
+		"minutes": regexp.MustCompile(`(\d+)\s*minutes?`),
+		"seconds": regexp.MustCompile(`(\d+)\s*seconds?`),
+	}
+
+	// Variables to store the extracted values
+	days, hours, minutes, seconds := 0, 0, 0, 0
+
+	// Extract and convert the values from the string
+	for key, pattern := range patterns {
+		match := pattern.FindStringSubmatch(intervalStr)
+		if len(match) > 1 {
+			value, err := strconv.Atoi(match[1])
+			if err != nil {
+				return nil, nil, fmt.Errorf("error parsing %s: %v", key, err)
+			}
+			switch key {
+			case "days":
+				days = value
+			case "hours":
+				hours = value
+			case "minutes":
+				minutes = value
+			case "seconds":
+				seconds = value
+			}
+		}
+	}
+
+	// Calculate total duration based on extracted values
+	duration := time.Duration(days)*24*time.Hour +
+		time.Duration(hours)*time.Hour +
+		time.Duration(minutes)*time.Minute +
+		time.Duration(seconds)*time.Second
+
+	// Calculate endTime as now and startTime by subtracting the duration
+	endTime := time.Now()
+	startTime := endTime.Add(-duration)
+
+	return &startTime, &endTime, nil
 }

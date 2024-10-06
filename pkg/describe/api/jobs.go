@@ -324,6 +324,7 @@ type BenchmarkAuditHistoryRequest struct {
 		IntegrationTracker *string `json:"integration_tracker"`
 	} `json:"integration_info"`
 	JobStatus []string   `json:"job_status"`
+	Interval  *string    `json:"interval"`
 	StartTime time.Time  `json:"start_time"`
 	EndTime   *time.Time `json:"end_time"`
 	SortBy    *string    `json:"sort_by"`
