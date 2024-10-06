@@ -4067,7 +4067,7 @@ func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 	}
 	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
 
-	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
+	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		connectionGroup = []string{"healthy"}
 	}
 	connectionIDs, err := h.getConnectionIdFilterFromInputs(echoCtx.Request().Context(), connectionIds, connectionGroup)
