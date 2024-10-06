@@ -236,7 +236,7 @@ UNION ALL
 (SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
-`, interval, whereQuery, sortBy, sortOrder)
+`, *interval, whereQuery, sortBy, sortOrder)
 	} else if from != nil && to != nil {
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
@@ -311,7 +311,7 @@ UNION ALL
 (SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 )
 ) AS t %s;
-`, interval, whereQuery)
+`, *interval, whereQuery)
 	} else if from != nil && to != nil {
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
