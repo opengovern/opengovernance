@@ -2252,7 +2252,12 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	req.Filters.ConnectionID, err = h.getConnectionIdFilterFromInputs(ctx, req.Filters.ConnectionID, req.Filters.ConnectionGroup)
+	connectionGroupId := req.Filters.ConnectionGroup
+	if len(req.Filters.ConnectionID) == 0 && len(req.Filters.ConnectionGroup) == 0 {
+		connectionGroupId = []string{"healthy"}
+	}
+
+	req.Filters.ConnectionID, err = h.getConnectionIdFilterFromInputs(ctx, req.Filters.ConnectionID, connectionGroupId)
 	if err != nil {
 		return err
 	}
@@ -4055,7 +4060,17 @@ func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	controlID := echoCtx.Param("controlId")
-	connectionIDs, err := h.getConnectionIdFilterFromParams(echoCtx)
+	connectionIds := httpserver2.QueryArrayParam(echoCtx, ConnectionIdParam)
+	connectionIds, err := httpserver2.ResolveConnectionIDs(echoCtx, connectionIds)
+	if err != nil {
+		return err
+	}
+	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
+
+	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
+		connectionGroup = []string{"healthy"}
+	}
+	connectionIDs, err := h.getConnectionIdFilterFromInputs(echoCtx.Request().Context(), connectionIds, connectionGroup)
 	if err != nil {
 		return err
 	}
