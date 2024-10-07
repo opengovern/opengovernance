@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
+	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/services/migrator/config"
 	"go.uber.org/zap"
 
@@ -58,7 +59,12 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
 		return err
 	}
-	logger.Info("extracted controls and benchmarks", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)))
+	if err := p.ExtractQueryViews(config.QueryViewsGitPath); err != nil {
+		logger.Error("failed to extract query views", zap.Error(err))
+		return err
+	}
+
+	logger.Info("extracted controls, benchmarks and query views", zap.Int("controls", len(p.controls)), zap.Int("benchmarks", len(p.benchmarks)), zap.Int("query_views", len(p.queries)))
 
 	loadedQueries := make(map[string]bool)
 	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -109,6 +115,22 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	})
 	if err != nil {
 		logger.Error("failed to insert query params", zap.Error(err))
+		return err
+	}
+
+	err = dbMetadata.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		tx.Model(&models.QueryView{}).Where("1=1").Unscoped().Delete(&models.QueryView{})
+		for _, obj := range p.queryViews {
+			err := tx.Create(&obj).Error
+			if err != nil {
+				logger.Error("error while inserting query view", zap.Error(err))
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert query views", zap.Error(err))
 		return err
 	}
 

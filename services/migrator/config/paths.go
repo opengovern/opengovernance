@@ -8,6 +8,7 @@ const (
 	SpendGitPath              = ConfigzGitPath + "/analytics/cloud-spend"
 	QueriesGitPath            = ConfigzGitPath + "/queries"
 	ComplianceGitPath         = ConfigzGitPath + "/compliance"
+	QueryViewsGitPath         = ConfigzGitPath + "/views"
 	ResourceCollectionGitPath = ConfigzGitPath + "/resource-collections"
 	ConnectionGroupGitPath    = ConfigzGitPath + "/connection_groups"
 )

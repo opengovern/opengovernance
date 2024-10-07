@@ -17,6 +17,7 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&models.ConfigMetadata{},
 		&models.QueryParameter{},
+		&models.QueryView{},
 	)
 	if err != nil {
 		return err
