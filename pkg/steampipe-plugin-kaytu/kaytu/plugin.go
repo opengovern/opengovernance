@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
-func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *steampipesdk.SelfClient, metadataClient pg.Client) {
+func updateViewsInDatabase(ctx context.Context, selfClient *steampipesdk.SelfClient, metadataClient pg.Client) {
 	var queryViews []models.QueryView
 
 	err := metadataClient.DB().Find(&queryViews).Error
@@ -47,14 +47,14 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 func newZapLogger() (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
 	cfg.OutputPaths = []string{
-		"~/.steampipe/log/kaytu.log",
+		"/home/steampipe/.steampipe/logs/kaytu.log",
 	}
 	return cfg.Build()
 }
 
 var logger, _ = newZapLogger()
 
-func initViews(ctx context.Context, p *plugin.Plugin) {
+func initViews(ctx context.Context) {
 	logger.Info("Initializing materialized views")
 	logger.Info("Creating self client")
 	logger.Sync()
@@ -81,7 +81,7 @@ func initViews(ctx context.Context, p *plugin.Plugin) {
 		return
 	}
 
-	updateViewsInDatabase(ctx, p, selfClient, metadataClient)
+	updateViewsInDatabase(ctx, selfClient, metadataClient)
 
 	selfClient.GetConnection().Close()
 	db, _ := metadataClient.DB().DB()
@@ -107,7 +107,7 @@ func initViews(ctx context.Context, p *plugin.Plugin) {
 				logger.Sync()
 				continue
 			}
-			updateViewsInDatabase(ctx, p, selfClient, metadataClient)
+			updateViewsInDatabase(ctx, selfClient, metadataClient)
 			query := `CREATE OR REPLACE FUNCTION RefreshAllMaterializedViews(schema_arg TEXT DEFAULT 'public')
 RETURNS INT AS $$
 DECLARE
@@ -169,7 +169,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 		},
 	}
 
-	initViews(ctx, p)
+	initViews(ctx)
 
 	return p
 }

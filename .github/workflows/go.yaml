@@ -250,6 +250,7 @@ jobs:
       - build
       - tag
       - deploy-steampipe-plugin-kaytu
+      - deploy-query-runner-worker
     permissions:
       id-token: write
       contents: read
@@ -683,6 +684,7 @@ jobs:
       - build
       - tag
       - deploy-steampipe-plugin-kaytu
+      - deploy-compliance-report-worker
     permissions:
       id-token: write
       contents: read
@@ -842,6 +844,8 @@ jobs:
     needs:
       - build
       - tag
+      - deploy-steampipe-plugin-kaytu
+      - deploy-steampipe
     permissions:
       id-token: write
       contents: read
