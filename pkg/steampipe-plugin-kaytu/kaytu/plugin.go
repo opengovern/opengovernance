@@ -34,7 +34,7 @@ func updateViewsInDatabase(ctx context.Context, selfClient *steampipesdk.SelfCli
 			continue
 		}
 
-		query := "CREATE MATERIALIZED VIEW IF NOT EXISTS" + view.ID + " AS " + view.Query
+		query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query
 		_, err = selfClient.GetConnection().Exec(ctx, query)
 		if err != nil {
 			logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
