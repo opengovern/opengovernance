@@ -477,7 +477,7 @@ func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBa
 	if err := g.ExtractControls(path.Join(compliancePath, "controls"), controlEnrichmentBasePath); err != nil {
 		return err
 	}
-	if err := g.ExtractBenchmarks(path.Join(compliancePath, "benchmarks")); err != nil {
+	if err := g.ExtractBenchmarks(path.Join(compliancePath, "frameworks")); err != nil {
 		return err
 	}
 	if err := g.CheckForDuplicate(); err != nil {
