@@ -2,11 +2,11 @@ package kaytu
 
 import (
 	"context"
-	"github.com/hashicorp/go-hclog"
 	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
 	"github.com/kaytu-io/open-governance/pkg/utils"
+	"go.uber.org/zap"
 	"os"
 	"time"
 
@@ -20,7 +20,7 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 
 	err := metadataClient.DB().Find(&queryViews).Error
 	if err != nil {
-		p.Logger.Error("Error fetching query views from metadata", err)
+		logger.Error("Error fetching query views from metadata", zap.Error(err))
 		return
 	}
 
@@ -28,23 +28,33 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 		dropQuery := "DROP MATERIALIZED VIEW IF EXISTS " + view.ID + " CASCADE"
 		_, err := selfClient.GetConnection().Exec(ctx, dropQuery)
 		if err != nil {
-			p.Logger.Error("Error dropping materialized view", err, "view", view.ID)
+			logger.Error("Error dropping materialized view", zap.Error(err), zap.String("view", view.ID))
 			continue
 		}
 
 		query := "CREATE MATERIALIZED VIEW IF NOT EXISTS" + view.ID + " AS " + view.Query
 		_, err = selfClient.GetConnection().Exec(ctx, query)
 		if err != nil {
-			p.Logger.Error("Error creating materialized view", err, "view", view.ID)
+			logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
 			continue
 		}
 	}
 }
 
+func newZapLogger() (*zap.Logger, error) {
+	cfg := zap.NewProductionConfig()
+	cfg.OutputPaths = []string{
+		"~/.steampipe/log/kaytu.log",
+	}
+	return cfg.Build()
+}
+
+var logger, _ = newZapLogger()
+
 func initViews(ctx context.Context, p *plugin.Plugin) {
 	selfClient, err := steampipesdk.NewSelfClient(ctx)
 	if err != nil {
-		p.Logger.Error("Error creating self client for init materialized views", err)
+		logger.Error("Error creating self client for init materialized views", zap.Error(err))
 		return
 	}
 	metadataClientConfig := config.ClientConfig{
@@ -57,27 +67,31 @@ func initViews(ctx context.Context, p *plugin.Plugin) {
 	}
 	metadataClient, err := pg.NewMetadataClient(metadataClientConfig, ctx)
 	if err != nil {
-		p.Logger.Error("Error creating metadata client for init materialized views", err)
+		logger.Error("Error creating metadata client for init materialized views", zap.Error(err))
 		return
 	}
 
 	updateViewsInDatabase(ctx, p, selfClient, metadataClient)
+
+	selfClient.GetConnection().Close()
+	db, _ := metadataClient.DB().DB()
+	db.Close()
 
 	ticker := time.NewTicker(2 * time.Hour)
 	go func() {
 		for range ticker.C {
 			selfClient, err := steampipesdk.NewSelfClient(ctx)
 			if err != nil {
-				p.Logger.Error("Error creating self client for refreshing materialized views", err)
+				logger.Error("Error creating self client for refreshing materialized views", zap.Error(err))
 				continue
 			}
 			metadataClient, err := pg.NewMetadataClient(metadataClientConfig, ctx)
 			if err != nil {
-				p.Logger.Error("Error creating metadata client for init materialized views", err)
+				logger.Error("Error creating metadata client for init materialized views", zap.Error(err))
 				return
 			}
 			if err != nil {
-				p.Logger.Error("Error creating metadata client for refreshing materialized views", err)
+				logger.Error("Error creating metadata client for refreshing materialized views", zap.Error(err))
 				continue
 			}
 			updateViewsInDatabase(ctx, p, selfClient, metadataClient)
@@ -103,14 +117,18 @@ $$ LANGUAGE plpgsql;`
 
 			_, err = selfClient.GetConnection().Exec(ctx, query)
 			if err != nil {
-				p.Logger.Error("Error creating RefreshAllMaterializedViews function", err)
+				logger.Error("Error creating RefreshAllMaterializedViews function", zap.Error(err))
 				continue
 			}
 			_, err = selfClient.GetConnection().Exec(ctx, "SELECT RefreshAllMaterializedViews('public')")
 			if err != nil {
-				p.Logger.Error("Error refreshing materialized views", err)
+				logger.Error("Error refreshing materialized views", zap.Error(err))
 				continue
 			}
+
+			selfClient.GetConnection().Close()
+			db, _ := metadataClient.DB().DB()
+			db.Close()
 		}
 	}()
 }
@@ -134,16 +152,6 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"kaytu_api_benchmark_summary":  tableKaytuApiBenchmarkSummary(ctx),
 			"kaytu_api_benchmark_controls": tableKaytuApiBenchmarkControls(ctx),
 		},
-	}
-	if p.Logger == nil {
-		outputFilePath := "~/.steampipe/log/kaytu.log"
-		outputFile, err := os.OpenFile(outputFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return nil
-		}
-		p.Logger = hclog.New(&hclog.LoggerOptions{
-			Output: outputFile,
-		})
 	}
 
 	initViews(ctx, p)
