@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/open-governance/pkg/utils"
 	"go.uber.org/zap"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
@@ -25,21 +26,29 @@ func updateViewsInDatabase(ctx context.Context, selfClient *steampipesdk.SelfCli
 		return
 	}
 
-	for _, view := range queryViews {
-		dropQuery := "DROP MATERIALIZED VIEW IF EXISTS " + view.ID + " CASCADE"
-		_, err := selfClient.GetConnection().Exec(ctx, dropQuery)
-		if err != nil {
-			logger.Error("Error dropping materialized view", zap.Error(err), zap.String("view", view.ID))
-			logger.Sync()
-			continue
-		}
+initLoop:
+	for i := 0; i < 60; i++ {
+		time.Sleep(10 * time.Second)
 
-		query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query
-		_, err = selfClient.GetConnection().Exec(ctx, query)
-		if err != nil {
-			logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
-			logger.Sync()
-			continue
+		for _, view := range queryViews {
+			dropQuery := "DROP MATERIALIZED VIEW IF EXISTS " + view.ID + " CASCADE"
+			_, err := selfClient.GetConnection().Exec(ctx, dropQuery)
+			if err != nil {
+				logger.Error("Error dropping materialized view", zap.Error(err), zap.String("view", view.ID))
+				logger.Sync()
+				continue
+			}
+
+			query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query
+			_, err = selfClient.GetConnection().Exec(ctx, query)
+			if strings.Contains(err.Error(), "SQLSTATE 42P01") {
+				continue initLoop
+			}
+			if err != nil {
+				logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
+				logger.Sync()
+				continue
+			}
 		}
 	}
 }
@@ -169,7 +178,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 		},
 	}
 
-	initViews(ctx)
+	go initViews(ctx)
 
 	return p
 }
