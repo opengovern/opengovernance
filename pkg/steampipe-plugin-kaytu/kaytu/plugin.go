@@ -21,6 +21,7 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 	err := metadataClient.DB().Find(&queryViews).Error
 	if err != nil {
 		logger.Error("Error fetching query views from metadata", zap.Error(err))
+		logger.Sync()
 		return
 	}
 
@@ -29,6 +30,7 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 		_, err := selfClient.GetConnection().Exec(ctx, dropQuery)
 		if err != nil {
 			logger.Error("Error dropping materialized view", zap.Error(err), zap.String("view", view.ID))
+			logger.Sync()
 			continue
 		}
 
@@ -36,6 +38,7 @@ func updateViewsInDatabase(ctx context.Context, p *plugin.Plugin, selfClient *st
 		_, err = selfClient.GetConnection().Exec(ctx, query)
 		if err != nil {
 			logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
+			logger.Sync()
 			continue
 		}
 	}
@@ -52,9 +55,13 @@ func newZapLogger() (*zap.Logger, error) {
 var logger, _ = newZapLogger()
 
 func initViews(ctx context.Context, p *plugin.Plugin) {
+	logger.Info("Initializing materialized views")
+	logger.Info("Creating self client")
+	logger.Sync()
 	selfClient, err := steampipesdk.NewSelfClient(ctx)
 	if err != nil {
 		logger.Error("Error creating self client for init materialized views", zap.Error(err))
+		logger.Sync()
 		return
 	}
 	metadataClientConfig := config.ClientConfig{
@@ -65,9 +72,12 @@ func initViews(ctx context.Context, p *plugin.Plugin) {
 		PgUser:     utils.GetPointer("steampipe_user"),
 		PgDatabase: utils.GetPointer("metadata"),
 	}
+	logger.Info("Creating metadata client")
+	logger.Sync()
 	metadataClient, err := pg.NewMetadataClient(metadataClientConfig, ctx)
 	if err != nil {
 		logger.Error("Error creating metadata client for init materialized views", zap.Error(err))
+		logger.Sync()
 		return
 	}
 
@@ -83,15 +93,18 @@ func initViews(ctx context.Context, p *plugin.Plugin) {
 			selfClient, err := steampipesdk.NewSelfClient(ctx)
 			if err != nil {
 				logger.Error("Error creating self client for refreshing materialized views", zap.Error(err))
+				logger.Sync()
 				continue
 			}
 			metadataClient, err := pg.NewMetadataClient(metadataClientConfig, ctx)
 			if err != nil {
 				logger.Error("Error creating metadata client for init materialized views", zap.Error(err))
+				logger.Sync()
 				return
 			}
 			if err != nil {
 				logger.Error("Error creating metadata client for refreshing materialized views", zap.Error(err))
+				logger.Sync()
 				continue
 			}
 			updateViewsInDatabase(ctx, p, selfClient, metadataClient)
@@ -118,11 +131,13 @@ $$ LANGUAGE plpgsql;`
 			_, err = selfClient.GetConnection().Exec(ctx, query)
 			if err != nil {
 				logger.Error("Error creating RefreshAllMaterializedViews function", zap.Error(err))
+				logger.Sync()
 				continue
 			}
 			_, err = selfClient.GetConnection().Exec(ctx, "SELECT RefreshAllMaterializedViews('public')")
 			if err != nil {
 				logger.Error("Error refreshing materialized views", zap.Error(err))
+				logger.Sync()
 				continue
 			}
 
