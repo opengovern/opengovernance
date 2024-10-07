@@ -6,6 +6,7 @@ type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
 	Title             string              `json:"Title" yaml:"Title"`
 	SectionCode       string              `json:"SectionCode" yaml:"SectionCode"`
+	Connectors        []string            `json:"Connectors" yaml:"Connectors"`
 	Description       string              `json:"Description" yaml:"Description"`
 	Children          []string            `json:"Children" yaml:"Children"`
 	Tags              map[string][]string `json:"Tags" yaml:"Tags"`

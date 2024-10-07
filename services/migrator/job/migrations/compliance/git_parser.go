@@ -296,6 +296,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
+			Connector:         o.Connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
