@@ -511,10 +511,10 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 		return fmt.Errorf("ListWorkspaces: %v", err)
 	}
 
-	version := "unspecified"
+	version := ""
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
-		Namespace: workspace.ID,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 		Name:      "kaytu-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
