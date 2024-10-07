@@ -6,7 +6,6 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/jackc/pgtype"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/pkg/types"
@@ -293,10 +292,22 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			})
 		}
 
+		var connectors []string
+		if len(o.Connectors) > 0 {
+			connectors = o.Connectors
+		} else {
+			if strings.HasPrefix(o.ID, "aws_") {
+				connectors = []string{"AWS"}
+			} else if strings.HasPrefix(o.ID, "azure_") {
+				connectors = []string{"Azure"}
+			}
+		}
+
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
+			Connector:         connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
@@ -311,29 +322,29 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 		b.Metadata = metadataJsonb
 
-		var connectors []source.Type
-		connectorMap := make(map[string]bool)
-
-		for _, controls := range g.controls {
-			if contains(o.Controls, controls.ID) {
-				b.Controls = append(b.Controls, controls)
-				for _, connector := range controls.Connector {
-					if _, exists := connectorMap[connector]; !exists {
-						c, err := source.ParseType(connector)
-						if err != nil {
-							return err
-						}
-						connectors = append(connectors, c)
-						connectorMap[connector] = true
-					}
-				}
-			}
-		}
-		var cs []string
-		for _, c := range connectors {
-			cs = append(cs, c.String())
-		}
-		b.Connector = cs
+		//var connectors []source.Type
+		//connectorMap := make(map[string]bool)
+		//
+		//for _, controls := range g.controls {
+		//	if contains(o.Controls, controls.ID) {
+		//		b.Controls = append(b.Controls, controls)
+		//		for _, connector := range controls.Connector {
+		//			if _, exists := connectorMap[connector]; !exists {
+		//				c, err := source.ParseType(connector)
+		//				if err != nil {
+		//					return err
+		//				}
+		//				connectors = append(connectors, c)
+		//				connectorMap[connector] = true
+		//			}
+		//		}
+		//	}
+		//}
+		//var cs []string
+		//for _, c := range connectors {
+		//	cs = append(cs, c.String())
+		//}
+		//b.Connector = cs
 
 		if len(o.Controls) != len(b.Controls) {
 			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
