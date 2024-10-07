@@ -2,6 +2,7 @@ package kaytu
 
 import (
 	"context"
+	"github.com/hashicorp/go-hclog"
 	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
@@ -133,6 +134,16 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"kaytu_api_benchmark_summary":  tableKaytuApiBenchmarkSummary(ctx),
 			"kaytu_api_benchmark_controls": tableKaytuApiBenchmarkControls(ctx),
 		},
+	}
+	if p.Logger == nil {
+		outputFilePath := "~/.steampipe/log/kaytu.log"
+		outputFile, err := os.OpenFile(outputFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil
+		}
+		p.Logger = hclog.New(&hclog.LoggerOptions{
+			Output: outputFile,
+		})
 	}
 
 	initViews(ctx, p)
