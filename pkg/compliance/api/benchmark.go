@@ -211,7 +211,7 @@ type GetBenchmarkListRequest struct {
 	Connectors        []string               `json:"connectors"`
 	Root              *bool                  `json:"root"`
 	Assigned          *bool                  `json:"assigned"`
-	IsSREBenchmark    *bool                  `json:"is_sre_benchmark"`
+	IsBaseline        *bool                  `json:"is_baseline"`
 	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
 	SortBy            string                 `json:"sort_by"`
 	Cursor            *int64                 `json:"cursor"`
