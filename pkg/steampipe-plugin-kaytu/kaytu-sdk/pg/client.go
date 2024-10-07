@@ -54,6 +54,11 @@ func NewInventoryClientCached(c config.ClientConfig, cache *connection.Connectio
 	return client, nil
 }
 
+func NewMetadataClient(c config.ClientConfig, ctx context.Context) (Client, error) {
+	c.PgDatabase = aws.String("metadata")
+	return NewClient(ctx, c)
+}
+
 func NewClient(ctx context.Context, c config.ClientConfig) (Client, error) {
 	if c.PgHost == nil || len(*c.PgHost) == 0 {
 		host := os.Getenv("PG_HOST")

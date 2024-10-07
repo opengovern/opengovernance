@@ -25,6 +25,7 @@ type GitParser struct {
 	controls        []db.Control
 	queries         []db.Query
 	queryParams     []models.QueryParameter
+	queryViews      []models.QueryView
 	controlsQueries map[string]db.Query
 	Comparison      *git.ComparisonResultGrouped
 }
@@ -488,6 +489,34 @@ func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBa
 		return err
 	}
 	return nil
+}
+
+func (g *GitParser) ExtractQueryViews(viewsPath string) error {
+	return filepath.WalkDir(viewsPath, func(path string, d fs.DirEntry, err error) error {
+		if !strings.HasSuffix(path, ".yaml") {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			g.logger.Error("failed to read query view", zap.String("path", path), zap.Error(err))
+			return err
+		}
+
+		var obj QueryView
+		err = yaml.Unmarshal(content, &obj)
+		if err != nil {
+			g.logger.Error("failed to unmarshal query view", zap.String("path", path), zap.Error(err))
+			return err
+		}
+
+		g.queryViews = append(g.queryViews, models.QueryView{
+			ID:    obj.ID,
+			Query: obj.Query,
+		})
+
+		return nil
+	})
 }
 
 func contains[T uint | int | string](arr []T, ob T) bool {

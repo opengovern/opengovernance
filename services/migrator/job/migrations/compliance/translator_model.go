@@ -26,3 +26,8 @@ type Control struct {
 	Tags               map[string][]string `json:"Tags" yaml:"Tags"`
 	Managed            bool                `json:"Managed" yaml:"Managed"`
 }
+
+type QueryView struct {
+	ID    string `json:"id" yaml:"ID"`
+	Query string `json:"query" yaml:"Query"`
+}

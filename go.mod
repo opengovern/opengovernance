@@ -25,6 +25,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.5
 	github.com/aws/smithy-go v1.20.4
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
+	github.com/cjlapao/common-go v0.0.39
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/dexidp/dex/api/v2 v2.2.0
 	github.com/envoyproxy/go-control-plane v0.12.0
@@ -34,6 +35,7 @@ require (
 	github.com/goccy/go-yaml v1.11.2
 	github.com/gogo/googleapis v1.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
@@ -42,7 +44,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/kaytu-io/kaytu-aws-describer v0.58.3
 	github.com/kaytu-io/kaytu-azure-describer v0.36.2
-	github.com/kaytu-io/kaytu-util v0.0.0-20240913202447-fff8217e252a
+	github.com/kaytu-io/kaytu-util v0.0.0-20241007100447-12b2e77fff2b
 	github.com/kaytu-io/pennywise v1.7.16
 	github.com/kaytu-io/plugin-aws v0.6.18
 	github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02
@@ -367,7 +369,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cjlapao/common-go v0.0.39 // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
 	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
 	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0 // indirect
@@ -420,7 +421,6 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/glog v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
