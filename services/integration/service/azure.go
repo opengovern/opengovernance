@@ -618,6 +618,8 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 		connection.Metadata = jsonMetadata
 	}
 
+	assetDiscoveryAttached = true
+	spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery // LIKE AWS (CHECK LATER)
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {

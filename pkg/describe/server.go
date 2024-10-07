@@ -151,9 +151,9 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		sortBy = string(request.SortBy)
 	}
 
-	sortOrder := "ASC"
-	if request.SortOrder == api.JobSortOrder_DESC {
-		sortOrder = "DESC"
+	sortOrder := "DESC"
+	if request.SortOrder == api.JobSortOrder_ASC {
+		sortOrder = "ASC"
 	}
 
 	var startTime, endTime *time.Time
@@ -220,8 +220,8 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		})
 	}
 
-	switch sortOrder {
-	case "ASC":
+	switch strings.ToLower(sortOrder) {
+	case "asc":
 		switch strings.ToLower(string(request.SortBy)) {
 		case "id":
 			sort.Slice(jobs, func(i, j int) bool {
@@ -247,8 +247,12 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 			sort.Slice(jobs, func(i, j int) bool {
 				return jobs[i].UpdatedAt.Before(jobs[j].UpdatedAt)
 			})
+		default:
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].UpdatedAt.Before(jobs[j].UpdatedAt)
+			})
 		}
-	case "DESC":
+	case "desc":
 		switch strings.ToLower(string(request.SortBy)) {
 		case "id":
 			sort.Slice(jobs, func(i, j int) bool {
@@ -271,6 +275,10 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 				return jobs[i].CreatedAt.After(jobs[j].CreatedAt)
 			})
 		case "updated_at", "updatedat":
+			sort.Slice(jobs, func(i, j int) bool {
+				return jobs[i].UpdatedAt.After(jobs[j].UpdatedAt)
+			})
+		default:
 			sort.Slice(jobs, func(i, j int) bool {
 				return jobs[i].UpdatedAt.After(jobs[j].UpdatedAt)
 			})
