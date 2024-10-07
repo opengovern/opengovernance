@@ -1,5 +1,7 @@
 # OpenGovernance
 
+![App Screenshot](https://raw.githubusercontent.com/kaytu-io/open-governance/b714c9bce4bd59e8bc4305007f88d856aeb360fe/screenshots/app%20-%20screenshot%202.png)
+
 OpenGovernance is a platform designed to help streamline compliance, security, and operations across your cloud and on-premises environments. Built with developers in mind, it manages policies in Git, supports easy parameterization, and allows for straightforward customization to meet your specific requirements.
 
 Unlike traditional governance tools that can be complex to set up and maintain, OpenGovernance is user-friendly and easy to operate. You can have your governance framework up and running in under two minutes without dealing with intricate configurations.
@@ -10,7 +12,8 @@ By optimizing your compliance and governance processes, OpenGovernance helps red
 
 Explore how OpenGovernance can help manage your compliance, security, and operations more effectively.
 
-![enter image description here]([docs/app - screenshot 2.png](https://github.com/kaytu-io/open-governance/blob/8a50cbfc8d072a2407ce72be8ce93f2e205d991b/docs/app%20-%20screenshot%202.png))
+
+
 
 ## Build
 
