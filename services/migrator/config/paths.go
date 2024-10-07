@@ -7,7 +7,7 @@ const (
 	AssetsGitPath             = ConfigzGitPath + "/analytics/cloud-infra"
 	SpendGitPath              = ConfigzGitPath + "/analytics/cloud-spend"
 	QueriesGitPath            = ConfigzGitPath + "/queries"
-	ComplianceGitPath         = ConfigzGitPath + "/policies"
+	ComplianceGitPath         = ConfigzGitPath + "/compliance"
 	ResourceCollectionGitPath = ConfigzGitPath + "/resource-collections"
 	ConnectionGroupGitPath    = ConfigzGitPath + "/connection_groups"
 )
