@@ -1,10 +1,16 @@
 # OpenGovernance
 
-OpenGovernance streamlines governance across multi-cloud and multi-platform environments by centralizing discovery, policy enforcement, compliance checking, and change tracking. Your infrastructure, regardless of where it resides, remains secure, optimized, and compliant.
+OpenGovernance is a platform designed to help streamline compliance, security, and operations across your cloud and on-premises environments. Built with developers in mind, it manages policies in Git, supports easy parameterization, and allows for straightforward customization to meet your specific requirements.
 
-Think of it as a Customer Data Platform for your entire tech stack. It provides a unified view—cloud providers, Kubernetes clusters, code repositories, security tools—allowing for effective governance from a single platform.
+Unlike traditional governance tools that can be complex to set up and maintain, OpenGovernance is user-friendly and easy to operate. You can have your governance framework up and running in under two minutes without dealing with intricate configurations.
 
-![enter image description here](https://docs.opengovernance.io/~gitbook/image?url=https://content.gitbook.com/content/flsJtdaedb8TrA13g8H6/blobs/flOcrYsPU0eBrF73O6tN/Screenshot%2520by%2520Dropbox%2520Capture.png&width=768&dpr=4&quality=100&sign=424ffc86&sv=1)
+OpenGovernance can replace legacy compliance systems by providing a unified interface, reducing the need for multiple separate installations. It supports managing standards like SOC2 and HIPAA, ensuring your organization stays compliant with less effort.
+
+By optimizing your compliance and governance processes, OpenGovernance helps reduce operational costs. Below, we share results from implementing OpenGovernance in our production environments, highlighting improved efficiency and lower operational overhead compared to older governance solutions.
+
+Explore how OpenGovernance can help manage your compliance, security, and operations more effectively.
+
+![enter image description here]([docs/app - screenshot 2.png](https://github.com/kaytu-io/open-governance/blob/8a50cbfc8d072a2407ce72be8ce93f2e205d991b/docs/app%20-%20screenshot%202.png))
 
 ## Build
 
