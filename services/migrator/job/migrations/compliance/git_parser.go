@@ -292,11 +292,22 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			})
 		}
 
+		var connectors []string
+		if len(o.Connectors) > 0 {
+			connectors = o.Connectors
+		} else {
+			if strings.HasPrefix(o.ID, "aws_") {
+				connectors = []string{"AWS"}
+			} else if strings.HasPrefix(o.ID, "azure_") {
+				connectors = []string{"Azure"}
+			}
+		}
+
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
-			Connector:         o.Connectors,
+			Connector:         connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
