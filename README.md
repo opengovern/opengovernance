@@ -1,4 +1,10 @@
-# OpenGovernance
+<p align="center">
+  <a href="https://opengovernance.io">
+    <img src="https://github.com/kaytu-io/website/blob/34af0c464c3a75b1382b63ae4d0f8024f008c858/connectors/icons/open-governance.svg" alt="OpenGovernance">
+  </a>
+</p>
+
+<p align="center"> <em>🚀 Full Stack Governance - govern across clouds, platforms 🚀 Steampipe Compatible, 🚀 high-performance security controls, 🚀 scalable across clouds and platforms, 🚀 compliance, security, operations under one roof.</em> </p>
 
 OpenGovernance streamline governance, compliance, security, and operations across your cloud and on-premises environments. Built with developers in mind, it manages policies in Git, supports easy parameterization, and allows for straightforward customization to meet your specific requirements.
 
@@ -10,6 +16,16 @@ OpenGovernance can replace legacy compliance systems by providing a unified inte
 
 By optimizing your compliance and governance processes, OpenGovernance helps reduce operational costs.
 
+## 🌟 Features:
+- **Centralized Multi-Cloud Governance**: Manage AWS, Azure, and GCP policies from one platform.
+- **Steampipe Compatibility**: Leverage existing queries and data sources with ease.
+- **Track History & Capture Evidence**: Keep an audit trail and ensure regulatory compliance.
+- **Automated Compliance & Security**: Built-in policies for SOC 2, HIPAA, and more across multiple clouds.
+- **Customizable Policy Controls**: Use simple SQL to define and enforce your standards.
+- **Vendor-Neutral & Open Source**: Flexible integration with existing tools and platforms.
+- **Role-Based Access Control (RBAC)**: Secure, fine-grained access management.
+- **User-Friendly Interface**: Intuitive, multilingual UI
+- **Dynamic Reporting & Dashboards**: Customizable dashboards and reports for governance insights.
 
 ## ⚡️ Quick start on Kubernetes:
 
