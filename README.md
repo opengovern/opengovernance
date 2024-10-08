@@ -18,15 +18,13 @@ By optimizing your compliance and governance processes, OpenGovernance helps red
 
 ## 🌟 Features:
 - **Centralized Multi-Cloud Governance**: Manage AWS, Azure, and GCP policies from one platform.
-- **Steampipe Compatibility**: Leverage existing queries and data sources with ease.
+- **Steampipe Compatibility**: Leverage Steampipe Queries, and utilize vendor neutral polices
 - **Batteries included**: Over 2,500 unique policies and 50+ benchmarks, including built-in support for NIST, HIPAA, SOC 2, CIS, and more across multiple clouds.
-- **Track History & Capture Evidence**: Keep an audit trail and ensure regulatory compliance.
-- **Automated Compliance & Security**: Built-in policies for SOC 2, HIPAA, and more across multiple clouds.
+- **Track History & Capture Evidence**: Keep an audit trail and ensure regulatory compliance, over time
 - **Customizable Policy Controls**: Use simple SQL to define and enforce your standards.
 - **Vendor-Neutral & Open Source**: Flexible integration with existing tools and platforms.
-- **Role-Based Access Control (RBAC)**: Secure, fine-grained access management.
-- **User-Friendly Interface**: Intuitive, multilingual UI
-- **Dynamic Reporting & Dashboards**: Customizable dashboards and reports for governance insights.
+- **Role-Based Access Control (RBAC)**: Secure, fine-grained access management. SSO/OIDC available.
+- **User-Friendly Interface**: Intuitive, WebUI, with API
 
 ## ⚡️ Quick start on Kubernetes:
 
@@ -36,7 +34,7 @@ By optimizing your compliance and governance processes, OpenGovernance helps red
 helm repo add opengovernance https://kaytu-io.github.io/kaytu-charts && helm repo update
 ```
 
-### Run Helm Install
+### Install with Helm
 ```bash
 helm install -n opengovernance opengovernance opengovernance/open-governance --create-namespace --timeout=10m
 ```
