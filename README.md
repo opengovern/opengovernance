@@ -1,12 +1,12 @@
-<p align="center">
+<p align="right">
   <a href="https://opengovernance.io">
     <img src="https://github.com/kaytu-io/website/blob/34af0c464c3a75b1382b63ae4d0f8024f008c858/connectors/icons/open-governance.svg" alt="OpenGovernance">
   </a>
 </p>
 
-<p align="center"> <em>🚀 Full Stack Governance - govern across clouds, platforms 🚀 Steampipe Compatible, 🚀 high-performance security controls, 🚀 scalable across clouds and platforms, 🚀 compliance, security, operations under one roof.</em> </p>
+<p align="center"> <em>🚀 Full Stack Governance,🚀 Goven across clouds, platforms, and tools 🚀 Maintain policies as Code,🚀 Steampipe Compatible, 🚀 Unify Security, Compliance, and Ops.</em> </p>
 
-OpenGovernance streamlines governance, compliance, security, and operations across your cloud environments, platforms, and on-premises infrastructures. Designed with developers in mind, our Steampipe-compatible query engine manages policies in Git, enabling you to enforce best-in-class policies, optimize costs, enhance efficiency and reliability, and adhere to the Well-Architected Framework.
+OpenGovernance simplifies governance, compliance, security, and operations across clouds, platforms, and on-premises. Steampipe-compatible and Git-managed, it enforces top policies, optimizes costs, boosts efficiency and reliability, and aligns with the Well-Architected Framework.
 
 ![App Screenshot](https://raw.githubusercontent.com/kaytu-io/open-governance/b714c9bce4bd59e8bc4305007f88d856aeb360fe/screenshots/app%20-%20screenshot%201.png)
 
