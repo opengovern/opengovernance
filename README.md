@@ -6,19 +6,20 @@
 
 <p align="center"> <em>🚀 Full Stack Governance - govern across clouds, platforms 🚀 Steampipe Compatible, 🚀 high-performance security controls, 🚀 scalable across clouds and platforms, 🚀 compliance, security, operations under one roof.</em> </p>
 
-OpenGovernance streamline governance, compliance, security, and operations across your cloud and on-premises environments. Built with developers in mind, it manages policies in Git, supports easy parameterization, and allows for straightforward customization to meet your specific requirements.
+OpenGovernance streamlines governance, compliance, security, and operations across your cloud environments, platforms, and on-premises infrastructures. Designed with developers in mind, our Steampipe-compatible query engine manages policies in Git, enabling you to enforce best-in-class policies, optimize costs, enhance efficiency and reliability, and adhere to the Well-Architected Framework.
 
 ![App Screenshot](https://raw.githubusercontent.com/kaytu-io/open-governance/b714c9bce4bd59e8bc4305007f88d856aeb360fe/screenshots/app%20-%20screenshot%201.png)
 
-Unlike traditional governance tools that can be complex to set up and maintain, OpenGovernance is user-friendly and easy to operate. You can have your governance framework up and running in a few minutes minutes without dealing with intricate configurations.
+Unlike traditional governance tools that are complex to set up and maintain, OpenGovernance is user-friendly and easy to operate. You can have your governance framework up and running in minutes without dealing with intricate configurations.
 
-OpenGovernance can replace legacy compliance systems by providing a unified interface, reducing the need for multiple separate installations. It supports managing standards like SOC2 and HIPAA, ensuring your organization stays compliant with less effort.
+Additionally, OpenGovernance replaces legacy compliance systems by providing a unified interface, eliminating the need for multiple separate installations. It supports managing standards like SOC2 and HIPAA, ensuring your organization stays compliant with less effort.
 
 By optimizing your compliance and governance processes, OpenGovernance helps reduce operational costs.
 
 ## 🌟 Features:
 - **Centralized Multi-Cloud Governance**: Manage AWS, Azure, and GCP policies from one platform.
 - **Steampipe Compatibility**: Leverage existing queries and data sources with ease.
+- **Batteries included**: Over 2,500 unique policies and 50+ benchmarks, including built-in support for NIST, HIPAA, SOC 2, CIS, and more across multiple clouds.
 - **Track History & Capture Evidence**: Keep an audit trail and ensure regulatory compliance.
 - **Automated Compliance & Security**: Built-in policies for SOC 2, HIPAA, and more across multiple clouds.
 - **Customizable Policy Controls**: Use simple SQL to define and enforce your standards.
