@@ -1281,7 +1281,6 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Param			email_address	path	string	true	"Request Body"
 //	@Success		200
 //	@Router			/auth/api/v3/user/password/check [get]
 func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
