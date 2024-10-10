@@ -1022,25 +1022,29 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users count")
 	}
 	adminAccount := false
+	var firstUser *db.User
 	if count == 1 {
-		firstUser, err := r.db.GetFirstUser()
+		firstUser, err = r.db.GetFirstUser()
 		if err != nil {
 			r.logger.Error("failed to get first user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get first user")
 		}
 		if firstUser.StaticOwner {
 			adminAccount = true
-			err = r.db.DisableUserByEmail(firstUser.Email)
-			if err != nil {
-				r.logger.Error("failed to disable first user", zap.Error(err))
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to disable first user")
-			}
 		}
 	} else if count == 0 {
 		adminAccount = true
 	}
 	if adminAccount && (req.Role == nil || *req.Role != api2.AdminRole) {
 		return echo.NewHTTPError(http.StatusBadRequest, "You should define admin role")
+	}
+
+	if adminAccount && firstUser != nil {
+		err = r.db.DisableUserByEmail(firstUser.Email)
+		if err != nil {
+			r.logger.Error("failed to disable first user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to disable first user")
+		}
 	}
 
 	connector := ""
