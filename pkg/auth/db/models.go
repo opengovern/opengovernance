@@ -42,6 +42,7 @@ type User struct {
 	UserUuid              uuid.UUID
 	Email                 string
 	EmailVerified         bool
+	StaticOwner           bool
 	FamilyName            string
 	GivenName             string
 	Locale                string
@@ -65,6 +66,7 @@ type User struct {
 	Blocked               bool
 	RequirePasswordChange bool `gorm:"default:true"`
 	Connector             string
+	Disabled              bool
 }
 
 type WorkspaceMap struct {

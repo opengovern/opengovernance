@@ -218,6 +218,9 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			zap.String("userId", user.ExternalUserID),
 			zap.String("email", user.Email),
 			zap.Error(err))
+		if errors.Is(err, errors.New("user disabled")) {
+			return unAuth, nil
+		}
 	}
 	user.WorkspaceAccess = theUser.AppMetadata.WorkspaceAccess
 	user.GlobalAccess = theUser.AppMetadata.GlobalAccess
