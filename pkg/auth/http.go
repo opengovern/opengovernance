@@ -1014,8 +1014,10 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
 
+	connector := ""
 	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
 	if req.Password != nil {
+		connector = "local"
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			r.logger.Error("failed to create dex client", zap.Error(err))
@@ -1099,6 +1101,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		UserId:       userId,
 		AppMetadata:  appMetadataJsonb,
 		UserMetadata: userMetadataJsonb,
+		Connector:    connector,
 	}
 	err = r.db.CreateUser(newUser)
 	if err != nil {
@@ -1128,7 +1131,15 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
 
-	if req.Password != nil {
+	user, err := r.db.GetUserByEmail(req.EmailAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user not found")
+	}
+
+	if req.Password != nil && user.Connector == "local" {
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			r.logger.Error("failed to create dex client", zap.Error(err))
@@ -1165,6 +1176,12 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
 			}
 		}
+
+		err = r.db.UserPasswordUpdated(req.EmailAddress)
+		if err != nil {
+			r.logger.Error("failed to update user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
+		}
 	}
 
 	wm, err := r.db.GetWorkspaceMapByName("main")
@@ -1174,13 +1191,6 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 	}
 
 	if req.Role != nil {
-		user, err := r.db.GetUserByEmail(req.EmailAddress)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
-		}
-		if user == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "user not found")
-		}
 		auth0User, err := r.auth0Service.GetUser(user.UserId)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")

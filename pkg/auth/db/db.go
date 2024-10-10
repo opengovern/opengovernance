@@ -343,3 +343,14 @@ func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([
 	}
 	return users, nil
 }
+
+func (db Database) UserPasswordUpdated(email string) error {
+	tx := db.Orm.Model(&User{}).
+		Where("email = ?", email).
+		Update("password_changed", true)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
