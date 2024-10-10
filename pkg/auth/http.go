@@ -89,8 +89,10 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
 
 	v3 := e.Group("/api/v3")
-	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.AdminRole))
-	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.AdminRole))
+	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
+	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
+	v3.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
+	v3.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
 	v3.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
 	v3.POST("/setup", r.Setup)
 	v3.POST("/setup/check", r.SetupCheck)
@@ -1281,14 +1283,11 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 //	@Produce		json
 //	@Param			email_address	path	string	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/{email_address}/password/change [delete]
+//	@Router			/auth/api/v3/user/password/check [get]
 func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
-	emailAddress := ctx.Param("email_address")
-	if emailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
-	}
+	userId := httpserver.GetUserID(ctx)
 
-	user, err := r.db.GetUserByEmail(emailAddress)
+	user, err := r.db.GetUser(userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
@@ -1297,8 +1296,101 @@ func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 	}
 
 	if user.RequirePasswordChange {
-		return ctx.String(http.StatusOK, "REQUIRED")
+		return ctx.String(http.StatusOK, "CHANGE_REQUIRED")
 	} else {
-		return ctx.String(http.StatusOK, "NOT_REQUIRED")
+		return ctx.String(http.StatusOK, "CHANGE_NOT_REQUIRED")
 	}
+}
+
+// ResetUserPassword godoc
+//
+//	@Summary		Reset current user password
+//	@Description	Reset current user password
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v3/user/password/reset [post]
+func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
+	userId := httpserver.GetUserID(ctx)
+
+	user, err := r.db.GetUser(userId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user not found")
+	}
+
+	var req api.ResetUserPasswordRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if user.Connector != "local" {
+		return echo.NewHTTPError(http.StatusBadRequest, "user connector should be local")
+	}
+
+	dexClient, err := newDexClient(dexGrpcAddress)
+	if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+	}
+
+	dexReq := &dexApi.VerifyPasswordReq{
+		Email:    user.Email,
+		Password: req.CurrentPassword,
+	}
+
+	resp, err := dexClient.VerifyPassword(context.TODO(), dexReq)
+	if err != nil {
+		r.logger.Error("failed to validate dex password", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to validate dex password")
+	}
+	if resp.NotFound {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+	if !resp.Verified {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current password is not correct")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		r.logger.Error("failed to hash token", zap.Error(err))
+		return err
+	}
+
+	passwordUpdateReq := &dexApi.UpdatePasswordReq{
+		Email:   user.Email,
+		NewHash: hashedPassword,
+	}
+
+	passwordUpdateResp, err := dexClient.UpdatePassword(context.TODO(), passwordUpdateReq)
+	if err != nil {
+		r.logger.Error("failed to update dex password", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+	}
+	if passwordUpdateResp.NotFound {
+		dexReq := &dexApi.CreatePasswordReq{
+			Password: &dexApi.Password{
+				UserId: fmt.Sprintf("dex|%s", user.Email),
+				Email:  user.Email,
+				Hash:   hashedPassword,
+			},
+		}
+
+		_, err = dexClient.CreatePassword(context.TODO(), dexReq)
+		if err != nil {
+			r.logger.Error("failed to create dex password", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		}
+	}
+
+	err = r.db.UserPasswordUpdated(user.Email)
+	if err != nil {
+		r.logger.Error("failed to update user", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
