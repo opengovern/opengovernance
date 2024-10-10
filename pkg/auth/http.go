@@ -1016,6 +1016,33 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
 
+	count, err := r.db.GetUsersCount()
+	if err != nil {
+		r.logger.Error("failed to get users count", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get users count")
+	}
+	adminAccount := false
+	if count == 1 {
+		firstUser, err := r.db.GetFirstUser()
+		if err != nil {
+			r.logger.Error("failed to get first user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get first user")
+		}
+		if firstUser.StaticOwner {
+			adminAccount = true
+			err = r.db.DisableUserByEmail(firstUser.Email)
+			if err != nil {
+				r.logger.Error("failed to disable first user", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to disable first user")
+			}
+		}
+	} else if count == 0 {
+		adminAccount = true
+	}
+	if adminAccount && (req.Role == nil || *req.Role != api2.AdminRole) {
+		return echo.NewHTTPError(http.StatusBadRequest, "You should define admin role")
+	}
+
 	connector := ""
 	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
 	if req.Password != nil {
@@ -1093,6 +1120,11 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal user metadata")
 	}
 
+	requirePasswordChange := true
+	if adminAccount {
+		requirePasswordChange = false
+	}
+
 	newUser := &db.User{
 		UserUuid:              uuid.New(),
 		Email:                 req.EmailAddress,
@@ -1104,7 +1136,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		AppMetadata:           appMetadataJsonb,
 		UserMetadata:          userMetadataJsonb,
 		Connector:             connector,
-		RequirePasswordChange: true,
+		RequirePasswordChange: requirePasswordChange,
 	}
 	err = r.db.CreateUser(newUser)
 	if err != nil {
@@ -1180,7 +1212,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			}
 		}
 
-		err = r.db.UserPasswordUpdated(req.EmailAddress)
+		err = r.db.UserPasswordUpdatedByEmail(req.EmailAddress)
 		if err != nil {
 			r.logger.Error("failed to update user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
@@ -1367,7 +1399,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 	passwordUpdateResp, err := dexClient.UpdatePassword(context.TODO(), passwordUpdateReq)
 	if err != nil {
 		r.logger.Error("failed to update dex password", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to update dex password")
 	}
 	if passwordUpdateResp.NotFound {
 		dexReq := &dexApi.CreatePasswordReq{
@@ -1385,7 +1417,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		}
 	}
 
-	err = r.db.UserPasswordUpdated(user.Email)
+	err = r.db.UserPasswordUpdatedByEmail(user.Email)
 	if err != nil {
 		r.logger.Error("failed to update user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")

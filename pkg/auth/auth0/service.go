@@ -81,6 +81,15 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 			return nil, err
 		}
 
+		count, err := a.database.GetUsersCount()
+		if err != nil {
+			return nil, err
+		}
+		staticOwner := false
+		if count == 0 {
+			staticOwner = true
+		}
+
 		user = &db.User{
 			UserUuid:     uuid.New(),
 			Email:        email,
@@ -91,11 +100,16 @@ func (a *Service) GetOrCreateUser(userID, email string) (*User, error) {
 			UserId:       userID,
 			AppMetadata:  appMetadataJsonb,
 			UserMetadata: userMetadataJsonb,
+			StaticOwner:  staticOwner,
 		}
 		err = a.database.CreateUser(user)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if user.Disabled {
+		return nil, errors.New("user disabled")
 	}
 
 	resp, err := DbUserToApi(user)

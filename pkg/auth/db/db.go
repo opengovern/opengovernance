@@ -278,6 +278,26 @@ func (db Database) GetUser(userId string) (*User, error) {
 	return &s, nil
 }
 
+func (db Database) GetUsersCount() (int64, error) {
+	var count int64
+	tx := db.Orm.Model(&User{}).
+		Count(&count)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
+func (db Database) GetFirstUser() (*User, error) {
+	var user User
+	tx := db.Orm.Model(&User{}).
+		First(&user)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &user, nil
+}
+
 func (db Database) UpdateUserAppMetadataAndLastLogin(userId string, metadata pgtype.JSONB, lastLogin *time.Time) error {
 	tx := db.Orm.Model(&User{}).
 		Where("user_id = ?", userId).
@@ -344,10 +364,21 @@ func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([
 	return users, nil
 }
 
-func (db Database) UserPasswordUpdated(email string) error {
+func (db Database) UserPasswordUpdatedByEmail(email string) error {
 	tx := db.Orm.Model(&User{}).
 		Where("email = ?", email).
 		Update("require_password_change", false)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) DisableUserByEmail(email string) error {
+	tx := db.Orm.Model(&User{}).
+		Where("email = ?", email).
+		Update("disabled", true)
 
 	if tx.Error != nil {
 		return tx.Error
