@@ -347,7 +347,7 @@ func (db Database) SearchUsers(ws string, email *string, emailVerified *bool) ([
 func (db Database) UserPasswordUpdated(email string) error {
 	tx := db.Orm.Model(&User{}).
 		Where("email = ?", email).
-		Update("password_changed", true)
+		Update("require_password_change", false)
 
 	if tx.Error != nil {
 		return tx.Error
