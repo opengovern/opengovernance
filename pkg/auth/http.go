@@ -1092,16 +1092,17 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	newUser := &db.User{
-		UserUuid:     uuid.New(),
-		Email:        req.EmailAddress,
-		Username:     req.EmailAddress,
-		Name:         req.EmailAddress,
-		IdLifecycle:  db.UserLifecycleActive,
-		Role:         role,
-		UserId:       userId,
-		AppMetadata:  appMetadataJsonb,
-		UserMetadata: userMetadataJsonb,
-		Connector:    connector,
+		UserUuid:              uuid.New(),
+		Email:                 req.EmailAddress,
+		Username:              req.EmailAddress,
+		Name:                  req.EmailAddress,
+		IdLifecycle:           db.UserLifecycleActive,
+		Role:                  role,
+		UserId:                userId,
+		AppMetadata:           appMetadataJsonb,
+		UserMetadata:          userMetadataJsonb,
+		Connector:             connector,
+		RequirePasswordChange: true,
 	}
 	err = r.db.CreateUser(newUser)
 	if err != nil {
@@ -1269,4 +1270,35 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 		return nil, fmt.Errorf("dial: %v", err)
 	}
 	return dexApi.NewDexClient(conn), nil
+}
+
+// CheckUserPasswordChangeRequired godoc
+//
+//	@Summary		Delete User
+//	@Description	Delete User.
+//	@Security		BearerToken
+//	@Tags			keys
+//	@Produce		json
+//	@Param			email_address	path	string	true	"Request Body"
+//	@Success		200
+//	@Router			/auth/api/v3/user/{email_address}/password/change [delete]
+func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
+	emailAddress := ctx.Param("email_address")
+	if emailAddress == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+	}
+
+	user, err := r.db.GetUserByEmail(emailAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user not found")
+	}
+
+	if user.RequirePasswordChange {
+		return ctx.String(http.StatusOK, "REQUIRED")
+	} else {
+		return ctx.String(http.StatusOK, "NOT_REQUIRED")
+	}
 }
