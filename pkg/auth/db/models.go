@@ -39,30 +39,32 @@ type ApiKey struct {
 
 type User struct {
 	gorm.Model
-	UserUuid      uuid.UUID
-	Email         string
-	EmailVerified bool
-	FamilyName    string
-	GivenName     string
-	Locale        string
-	Name          string
-	Nickname      string
-	Picture       string
-	UserId        string
-	IdLifecycle   UserLifecycle
-	Role          api.Role
-	ConnectorId   string
-	ExternalId    string
-	UserMetadata  pgtype.JSONB
-	LastLogin     time.Time
-	LastIp        string
-	LoginsCount   int
-	AppMetadata   pgtype.JSONB
-	Username      string
-	PhoneNumber   string
-	PhoneVerified bool
-	Multifactor   pq.StringArray `gorm:"type:text[]"`
-	Blocked       bool
+	UserUuid        uuid.UUID
+	Email           string
+	EmailVerified   bool
+	FamilyName      string
+	GivenName       string
+	Locale          string
+	Name            string
+	Nickname        string
+	Picture         string
+	UserId          string
+	IdLifecycle     UserLifecycle
+	Role            api.Role
+	ConnectorId     string
+	ExternalId      string
+	UserMetadata    pgtype.JSONB
+	LastLogin       time.Time
+	LastIp          string
+	LoginsCount     int
+	AppMetadata     pgtype.JSONB
+	Username        string
+	PhoneNumber     string
+	PhoneVerified   bool
+	Multifactor     pq.StringArray `gorm:"type:text[]"`
+	Blocked         bool
+	PasswordChanged bool
+	Connector       string
 }
 
 type WorkspaceMap struct {
