@@ -322,29 +322,11 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 		b.Metadata = metadataJsonb
 
-		//var connectors []source.Type
-		//connectorMap := make(map[string]bool)
-		//
-		//for _, controls := range g.controls {
-		//	if contains(o.Controls, controls.ID) {
-		//		b.Controls = append(b.Controls, controls)
-		//		for _, connector := range controls.Connector {
-		//			if _, exists := connectorMap[connector]; !exists {
-		//				c, err := source.ParseType(connector)
-		//				if err != nil {
-		//					return err
-		//				}
-		//				connectors = append(connectors, c)
-		//				connectorMap[connector] = true
-		//			}
-		//		}
-		//	}
-		//}
-		//var cs []string
-		//for _, c := range connectors {
-		//	cs = append(cs, c.String())
-		//}
-		//b.Connector = cs
+		for _, controls := range g.controls {
+			if contains(o.Controls, controls.ID) {
+				b.Controls = append(b.Controls, controls)
+			}
+		}
 
 		if len(o.Controls) != len(b.Controls) {
 			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
