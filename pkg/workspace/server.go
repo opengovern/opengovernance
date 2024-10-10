@@ -963,17 +963,42 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/loaded [put]
 func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
-	ws, err := s.db.GetWorkspaceByName("main")
+	ctx := httpclient.FromEchoContext(echoCtx)
+	ctx.UserRole = api2.AdminRole
+
+	onboardURL := strings.ReplaceAll(s.cfg.Onboard.BaseURL, "%NAMESPACE%", s.cfg.KaytuOctopusNamespace)
+	onboardClient := client.NewOnboardServiceClient(onboardURL)
+
+	connections, err := onboardClient.ListSources(ctx, nil)
 	if err != nil {
-		s.logger.Error("failed to get workspace", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
 	}
 
-	if ws.ContainSampleData {
-		return echoCtx.String(http.StatusOK, "True")
-	} else {
-		return echoCtx.String(http.StatusOK, "False")
+	connectionChecks := strings.Split(s.cfg.SampledataIntegrationsCheck, ",")
+	connectionsMap := make(map[string]bool)
+	for _, c := range connectionChecks {
+		connectionsMap[c] = true
 	}
+
+	credentials, err := onboardClient.ListCredentials(ctx, nil, nil, nil, 0, 0)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
+	}
+	credentialsMap := make(map[string]bool)
+	for _, c := range credentials.Credentials {
+		credentialsMap[c.ID] = true
+	}
+
+	for _, c := range connections {
+		if _, ok := connectionsMap[c.ID.String()]; !ok {
+			return echoCtx.String(http.StatusOK, "False")
+		} else {
+			if _, ok2 := credentialsMap[c.CredentialID]; ok2 {
+				return echoCtx.String(http.StatusOK, "False")
+			}
+		}
+	}
+	return echoCtx.String(http.StatusOK, "True")
 }
 
 // GetMigrationStatus godoc

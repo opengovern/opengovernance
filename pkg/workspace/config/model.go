@@ -17,8 +17,9 @@ type Config struct {
 
 	Vault vault.Config `yaml:"vault" koanf:"vault"`
 
-	KaytuOctopusNamespace string `yaml:"kaytu_octopus_namespace" koanf:"kaytu_octopus_namespace"`
-	PrimaryDomainURL      string `yaml:"primary_domain_url" koanf:"primary_domain_url"`
-	KaytuWorkspaceVersion string `yaml:"kaytu_workspace_version" koanf:"kaytu_workspace_version"`
-	DexGrpcAddr           string `yaml:"dex_grpc_addr" koanf:"dex_grpc_addr"`
+	KaytuOctopusNamespace       string `yaml:"kaytu_octopus_namespace" koanf:"kaytu_octopus_namespace"`
+	PrimaryDomainURL            string `yaml:"primary_domain_url" koanf:"primary_domain_url"`
+	KaytuWorkspaceVersion       string `yaml:"kaytu_workspace_version" koanf:"kaytu_workspace_version"`
+	DexGrpcAddr                 string `yaml:"dex_grpc_addr" koanf:"dex_grpc_addr"`
+	SampledataIntegrationsCheck string `yaml:"sampledata_integrations_check" koanf:"sampledata_integrations_check"`
 }
