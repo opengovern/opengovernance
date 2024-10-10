@@ -623,7 +623,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {
-			healthMessage = "Failed to find read permission"
+			healthMessage = "failed to find read permission"
 		} else {
 			healthMessage = err.Error()
 		}
