@@ -70,3 +70,8 @@ type CheckRequest struct {
 	AwsCredentials   *entity.AWSCredentialConfig   `json:"aws_credentials"`
 	AzureCredentials *entity.AzureCredentialConfig `json:"azure_credentials"`
 }
+
+type ResetUserPasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
