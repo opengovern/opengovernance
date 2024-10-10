@@ -782,7 +782,7 @@ func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connect
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {
-			healthMessage = "Failed to find read permission"
+			healthMessage = "failed to find read permission"
 		} else {
 			healthMessage = err.Error()
 		}

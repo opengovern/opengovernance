@@ -193,10 +193,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 	outputS, span := tracer.Start(ctx, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_CreateSource(loop)")
 
+	assetDiscoveryAttached = true
+	spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
 	if !assetDiscoveryAttached && !spendAttached {
 		var healthMessage string
 		if err == nil {
-			healthMessage = "Failed to find read permission"
+			healthMessage = "failed to find read permission"
 		} else {
 			healthMessage = err.Error()
 		}
