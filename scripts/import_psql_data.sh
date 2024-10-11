@@ -10,7 +10,8 @@ echo "$POSTGRESQL_PORT"
 echo "$POSTGRESQL_USERNAME"
 echo "$POSTGRESQL_PASSWORD"
 
-PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "metadata" << EOF
+
+PGPASSWORD="$POSTGRESQL_PASSWORD" psql --host="$POSTGRESQL_HOST" --port="$POSTGRESQL_PORT" --username "$POSTGRESQL_USERNAME" --dbname "onboard" << EOF
 INSERT INTO sources (
     id, source_id, name, email, type, description, lifecycle_state,
     asset_discovery_method, health_state, last_health_check_time,
