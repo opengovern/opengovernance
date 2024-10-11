@@ -1307,7 +1307,8 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			response.Records = append(response.Records, record)
 		}
 
-		response.TotalCount = topFieldTotalResponse.Aggregations.BucketCount.Value
+		//response.TotalCount = topFieldTotalResponse.Aggregations.BucketCount.Value
+		response.TotalCount = len(response.Records)
 	case "controlid":
 		resControlIDs := make([]string, 0, len(topFieldTotalResponse.Aggregations.FieldFilter.Buckets))
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
