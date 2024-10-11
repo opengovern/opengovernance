@@ -797,7 +797,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	var mig *model.Migration
-	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).First(&mig)
+	tx := s.migratorDb.Orm.Model(&model.Migration{}).Where("id = ?", model2.MigrationJobName).Find(&mig)
 	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")

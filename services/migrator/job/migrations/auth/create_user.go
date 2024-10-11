@@ -52,11 +52,13 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	dexClient, err := newDexClient(conf.DexGrpcAddress)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
 		return err
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(conf.DefaultDexUserPassword), bcrypt.DefaultCost)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to generate password", zap.Error(err))
 		return err
 	}
 
@@ -71,11 +73,13 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	_, err = dexClient.CreatePassword(ctx, &req)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex password", zap.Error(err))
 		return err
 	}
 
 	wm, err := dbm.GetWorkspaceMapByName("main")
 	if err != nil {
+		logger.Error("Auth Migrator: failed to get workspace", zap.Error(err))
 		return err
 	}
 
@@ -87,12 +91,14 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	appMetadataJson, err := json.Marshal(appMetadata)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to marshal app metadata json", zap.Error(err))
 		return err
 	}
 
 	appMetadataJsonb := pgtype.JSONB{}
 	err = appMetadataJsonb.Set(appMetadataJson)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to set app metadata json", zap.Error(err))
 		return err
 	}
 
@@ -116,6 +122,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {
+		logger.Error("Auth Migrator: failed to create user in database", zap.Error(err))
 		return err
 	}
 
