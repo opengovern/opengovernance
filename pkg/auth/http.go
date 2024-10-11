@@ -1040,10 +1040,10 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	if adminAccount && firstUser != nil {
-		err = r.db.DisableUserByEmail(firstUser.Email)
+		err = r.DoDeleteUser(firstUser.Email)
 		if err != nil {
-			r.logger.Error("failed to disable first user", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to disable first user")
+			r.logger.Error("failed to delete first user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete first user")
 		}
 	}
 
@@ -1264,6 +1264,15 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
 
+	err := r.DoDeleteUser(emailAddress)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
@@ -1298,8 +1307,7 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 		r.logger.Error("failed to delete user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
 	}
-
-	return ctx.NoContent(http.StatusOK)
+	return nil
 }
 
 func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
