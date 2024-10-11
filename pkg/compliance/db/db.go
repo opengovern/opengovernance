@@ -80,7 +80,7 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 }
 
 // ListBenchmarksFiltered returns all benchmarks with the associated filters
-func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags map[string][]string, parentBenchmarkId []string,
+func (db Database) ListBenchmarksFiltered(ctx context.Context, titleRegex *string, root bool, tags map[string][]string, parentBenchmarkId []string,
 	assigned *bool, isBaseline *bool, connectionIds []string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
@@ -91,6 +91,9 @@ func (db Database) ListBenchmarksFiltered(ctx context.Context, root bool, tags m
 		} else {
 			tx = tx.Where("id !~* '^baseline_.*'")
 		}
+	}
+	if titleRegex != nil {
+		tx = tx.Where("title ~* ?", *titleRegex)
 	}
 	if root {
 		tx = tx.Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)")

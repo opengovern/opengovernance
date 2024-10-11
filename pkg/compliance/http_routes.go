@@ -4912,7 +4912,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
-	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, isRoot, req.Tags, req.ParentBenchmarkID, req.Assigned, req.IsBaseline, connectionIDs)
+	benchmarks, err := h.db.ListBenchmarksFiltered(ctx, req.TitleRegex, isRoot, req.Tags, req.ParentBenchmarkID, req.Assigned, req.IsBaseline, connectionIDs)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -6331,7 +6331,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 	var err error
 	if len(req.Benchmarks) == 0 {
 		assigned := false
-		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, *req.IsRoot, nil, nil, &assigned, nil, nil)
+		benchmarks, err = h.db.ListBenchmarksFiltered(ctx, nil, *req.IsRoot, nil, nil, &assigned, nil, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
