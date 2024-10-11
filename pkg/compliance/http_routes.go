@@ -1401,7 +1401,8 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 				TotalCount: totalCountMap[item.Key],
 			})
 		}
-		response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
+		//response.TotalCount = topFieldResponse.Aggregations.BucketCount.Value
+		response.TotalCount = len(response.Records)
 	}
 
 	sort.Slice(response.Records, func(i, j int) bool {
