@@ -66,7 +66,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Password: &dexApi.Password{
 			Email:    conf.DefaultDexUserEmail,
 			Username: conf.DefaultDexUserName,
-			UserId:   conf.DefaultDexUserID,
+			UserId:   fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 			Hash:     hashedPassword,
 		},
 	}
@@ -115,10 +115,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Name:         conf.DefaultDexUserEmail,
 		IdLifecycle:  db.UserLifecycleActive,
 		Role:         role,
-		UserId:       conf.DefaultDexUserID,
+		UserId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 		AppMetadata:  appMetadataJsonb,
 		UserMetadata: userMetadataJsonb,
 		StaticOwner:  true,
+		Connector:    "local",
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {

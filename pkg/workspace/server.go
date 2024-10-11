@@ -802,7 +802,9 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 		s.logger.Error("failed to get migration", zap.Error(tx.Error))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get migration")
 	}
-	if mig != nil {
+
+	if mig != nil && mig.ID == model2.MigrationJobName {
+		s.logger.Info("last migration job", zap.Any("job", *mig))
 		if mig.Status != "COMPLETED" {
 			return echo.NewHTTPError(http.StatusBadRequest, "sync sample data already in progress")
 		}
