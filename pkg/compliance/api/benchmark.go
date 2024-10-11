@@ -201,6 +201,7 @@ type GetBenchmarkDetailsResponse struct {
 }
 
 type GetBenchmarkListRequest struct {
+	TitleRegex        *string                `json:"title_regex"`
 	ParentBenchmarkID []string               `json:"parent_benchmark_id"`
 	Tags              map[string][]string    `json:"tags"`
 	TagsRegex         *string                `json:"tags_regex"`
