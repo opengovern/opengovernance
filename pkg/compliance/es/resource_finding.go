@@ -696,17 +696,22 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 		},
 	})
 
-	requestQuery := make(map[string]any, 0)
-	if len(nestedFilters) > 0 {
-		requestQuery["nested"] = map[string]any{
-			"path":  "findings",
-			"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
-		}
+	requestQuery := make(map[string]any)
+
+	nestedQuery := map[string]any{
+		"path":  "findings",
+		"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 	}
+
 	if len(filters) > 0 {
 		requestQuery["bool"] = map[string]any{
-			"filter": filters,
+			"must": []map[string]any{
+				{"nested": nestedQuery},
+				{"bool": map[string]any{"filter": filters}},
+			},
 		}
+	} else if len(nestedFilters) > 0 {
+		requestQuery["nested"] = nestedQuery
 	}
 	if len(requestQuery) > 0 {
 		request["query"] = requestQuery
