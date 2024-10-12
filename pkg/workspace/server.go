@@ -805,7 +805,7 @@ func (s *Server) SyncDemo(echoCtx echo.Context) error {
 
 	if mig != nil && mig.ID == model2.MigrationJobName {
 		s.logger.Info("last migration job", zap.Any("job", *mig))
-		if mig.Status != "COMPLETED" {
+		if mig.Status != "COMPLETED" && mig.UpdatedAt.After(time.Now().Add(-1*10*time.Minute)) {
 			return echo.NewHTTPError(http.StatusBadRequest, "sync sample data already in progress")
 		}
 	}
