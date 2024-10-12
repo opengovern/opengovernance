@@ -1000,6 +1000,9 @@ func (s *Server) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 			}
 		}
 	}
+	if len(connections) == 0 {
+		return echoCtx.String(http.StatusOK, "False")
+	}
 	return echoCtx.String(http.StatusOK, "True")
 }
 
