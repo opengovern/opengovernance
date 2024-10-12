@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,28 +77,41 @@ func ProcessJSONFile(ctx context.Context, logger *zap.Logger, osClient *opensear
 
 	var requests []map[string]interface{}
 
-	scanner := bufio.NewScanner(file)
+	reader := bufio.NewReader(file)
 
-	for scanner.Scan() {
+	for {
+		line, err := reader.ReadString('\n')
 
-		var doc map[string]interface{}
-		err := json.Unmarshal([]byte(scanner.Text()), &doc)
-		if err != nil {
-			fmt.Println(err.Error())
-			logger.Error("Error decoding data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
-			return
-		}
-
-		requests = append(requests, doc)
-
-		if len(requests) >= bulkSize {
-			err = BulkIndexData(ctx, osClient, requests)
+		if len(line) > 0 {
+			var doc map[string]interface{}
+			err = json.Unmarshal([]byte(line), &doc)
 			if err != nil {
-				logger.Error("Error Bulking file", zap.String("indexName", indexName), zap.Error(err))
+				fmt.Println(err.Error())
+				logger.Error("Error decoding data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
 				return
 			}
 
-			requests = nil
+			requests = append(requests, doc)
+
+			if len(requests) >= bulkSize {
+				err = BulkIndexData(ctx, osClient, requests)
+				if err != nil {
+					logger.Error("Error Bulking file", zap.String("indexName", indexName), zap.Error(err))
+					return
+				}
+
+				requests = nil
+			}
+		}
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			fmt.Println(err.Error())
+			logger.Error("Error reading data file", zap.String("filePath", filePath), zap.String("indexName", indexName), zap.Error(err))
+			return
 		}
 	}
 

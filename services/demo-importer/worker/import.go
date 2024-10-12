@@ -11,6 +11,8 @@ import (
 	"go.uber.org/zap"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -79,7 +81,8 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 
 	logger.Info("Read Data Files Done", zap.String("files", strings.Join(dataFiles, ",")))
 
-	totalTasks := int64(len(indexConfigs))
+	var wg sync.WaitGroup
+	var totalTasks int64
 	var completedTasks int64
 
 	for _, file := range dataFiles {
@@ -89,28 +92,35 @@ func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, 
 
 		indexName := strings.TrimSuffix(filepath.Base(file), ".json")
 		if _, exists := indexConfigs[indexName]; exists {
+			atomic.AddInt64(&totalTasks, 1)
+			wg.Add(1)
 
-			ProcessJSONFile(ctx, logger, client, file, indexName)
+			go func(file, indexName string) {
+				defer wg.Done()
+				ProcessJSONFile(ctx, logger, client, file, indexName)
 
-			completedTasks += 1
+				atomic.AddInt64(&completedTasks, 1)
 
-			m.Status = fmt.Sprintf("Importing Indices")
-			var progress float64
-			if totalTasks > 0 {
-				progress = float64(completedTasks) / float64(totalTasks)
-			}
-			jobsStatus := model.ESImportProgress{
-				Progress: progress,
-			}
-			err = updateJob(migratorDb, m, m.Status, jobsStatus)
-			if err != nil {
-				fmt.Println("Error updating migration job:", err.Error())
-			}
-			fmt.Printf("Completed %d/%d tasks\n", completedTasks, totalTasks)
+				m.Status = fmt.Sprintf("Importing Indices")
+				var progress float64
+				if totalTasks > 0 {
+					progress = float64(completedTasks) / float64(totalTasks)
+				}
+				jobsStatus := model.ESImportProgress{
+					Progress: progress,
+				}
+				err = updateJob(migratorDb, m, m.Status, jobsStatus)
+				if err != nil {
+					fmt.Println("Error updating migration job:", err.Error())
+				}
+				fmt.Printf("Completed %d/%d tasks\n", completedTasks, totalTasks)
+			}(file, indexName)
 		} else {
 			fmt.Println("No index config found for file: %s", file)
 		}
 	}
+
+	wg.Wait()
 
 	fmt.Println("All indexing operations completed.")
 
