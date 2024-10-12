@@ -606,7 +606,7 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 	connectionIDs []string, notConnectionIDs []string,
 	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
-	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
+	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
 	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" {
 		return nil, fmt.Errorf("field %s is not supported", field)
 	}
@@ -651,6 +651,32 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				"resourceCollections": resourceCollections,
+			},
+		})
+	}
+	if endTime != nil && startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if endTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+				},
 			},
 		})
 	}

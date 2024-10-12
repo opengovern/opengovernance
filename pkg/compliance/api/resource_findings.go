@@ -84,6 +84,7 @@ type ResourceFindingFilters struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	}
+	Interval *string `json:"interval"`
 }
 
 type ResourceFindingsSort struct {
