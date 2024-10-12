@@ -735,16 +735,24 @@ type FindingsTopFieldResponse struct {
 func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
-	size int) (*FindingsTopFieldResponse, error) {
-	filters := make([]kaytu.BoolFilter, 0)
+	size int, startTime, endTime *time.Time) (*FindingsTopFieldResponse, error) {
+	filters := make([]map[string]any, 0)
 
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"benchmarkID": benchmarkID,
+			},
+		})
 	}
 
 	if len(controlID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"controlID": controlID,
+			},
+		})
 	}
 
 	if len(conformanceStatuses) > 0 {
@@ -752,7 +760,11 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu
 		for _, cf := range conformanceStatuses {
 			cfStrs = append(cfStrs, string(cf))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", cfStrs))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"conformanceStatus": cfStrs,
+			},
+		})
 	}
 
 	if len(severity) > 0 {
@@ -760,23 +772,43 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu
 		for _, s := range severity {
 			sevStrs = append(sevStrs, string(s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("severity", sevStrs))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"severity": sevStrs,
+			},
+		})
 	}
 
 	if len(connectionIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionIDs))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"connectionID": connectionIDs,
+			},
+		})
 	}
 
 	if len(jobIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentComplianceJobID", jobIDs))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"parentComplianceJobID": jobIDs,
+			},
+		})
 	}
 
 	if len(notConnectionIDs) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionIDs)))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"connectionID": notConnectionIDs,
+			},
+		})
 	}
 
 	if len(resourceTypeID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypeID))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"resourceType": resourceTypeID,
+			},
+		})
 	}
 
 	if len(connectors) > 0 {
@@ -784,7 +816,11 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu
 		for _, c := range connectors {
 			connectorsStr = append(connectorsStr, c.String())
 		}
-		filters = append(filters, kaytu.NewTermsFilter("connector", connectorsStr))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"connector": connectorsStr,
+			},
+		})
 	}
 
 	if len(stateActives) > 0 {
@@ -792,9 +828,44 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu
 		for _, s := range stateActives {
 			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"stateActive": strStateActive,
+			},
+		})
 	} else {
-		filters = append(filters, kaytu.NewTermFilter("stateActive", "true"))
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"stateActive": "true",
+			},
+		})
+	}
+
+	if endTime != nil && startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if endTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"lte": endTime.UnixMilli(),
+				},
+			},
+		})
+	} else if startTime != nil {
+		filters = append(filters, map[string]any{
+			"range": map[string]any{
+				"evaluatedAt": map[string]any{
+					"gte": startTime.UnixMilli(),
+				},
+			},
+		})
 	}
 
 	root := map[string]any{}
@@ -1064,7 +1135,7 @@ type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
 
 func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 	connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
+	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
@@ -1126,12 +1197,41 @@ func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, l
 	}
 
 	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
+	if (terms != nil && len(terms) > 0) || (endTime != nil || startTime != nil) {
 		var filters []map[string]any
-		for k, vs := range terms {
+
+		if terms != nil && len(terms) > 0 {
+			for k, vs := range terms {
+				filters = append(filters, map[string]any{
+					"terms": map[string]any{
+						k: vs,
+					},
+				})
+			}
+		}
+		if endTime != nil && startTime != nil {
 			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
+				"range": map[string]any{
+					"evaluatedAt": map[string]any{
+						"gte": startTime.UnixMilli(),
+						"lte": endTime.UnixMilli(),
+					},
+				},
+			})
+		} else if endTime != nil {
+			filters = append(filters, map[string]any{
+				"range": map[string]any{
+					"evaluatedAt": map[string]any{
+						"lte": endTime.UnixMilli(),
+					},
+				},
+			})
+		} else if startTime != nil {
+			filters = append(filters, map[string]any{
+				"range": map[string]any{
+					"evaluatedAt": map[string]any{
+						"gte": startTime.UnixMilli(),
+					},
 				},
 			})
 		}

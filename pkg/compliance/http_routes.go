@@ -1013,6 +1013,9 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
 //	@Param			jobId				query		[]string						false	"Job ID to filter"
+//	@Param			startTime			query		int64					false	"Start time to filter by"
+//	@Param			endTime				query		int64					false	"End time to filter by"
+//	@Param			interval			query		string					false	"Time interval to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
@@ -1049,6 +1052,33 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		}
 	}
 
+	var endTime *time.Time
+	var startTime *time.Time
+
+	intervalStr := echoCtx.QueryParam("interval")
+	if intervalStr != "" {
+		startTime, endTime, err = parseTimeInterval(intervalStr)
+		if err != nil {
+			h.logger.Error("failed to parse time interval", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to parse time interval")
+		}
+	} else {
+		if endTimeStr := echoCtx.QueryParam("endTime"); endTimeStr != "" {
+			endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid endTime")
+			}
+			endTime = utils.GetPointer(time.Unix(endTimeInt, 0))
+		}
+		if startTimeStr := echoCtx.QueryParam("startTime"); startTimeStr != "" {
+			startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid startTime")
+			}
+			startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
+		}
+	}
+
 	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
@@ -1069,14 +1099,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	var response api.GetTopFieldResponse
 	topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs, jobIDs,
-		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount))
+		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount), startTime, endTime)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
 	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs, jobIDs,
-		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000)
+		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000, startTime, endTime)
 	if err != nil {
 		h.logger.Error("failed to get top field total", zap.Error(err))
 		return err
@@ -1242,7 +1272,8 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		}
 
 		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
-			ctx, h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil)
+			ctx, h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil,
+			startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
@@ -1276,7 +1307,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		}
 
 		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "connectionID",
-			resConnectionIDs, notConnectionIDs, nil, controlIDs, benchmarkIDs, severities, nil)
+			resConnectionIDs, notConnectionIDs, nil, controlIDs, benchmarkIDs, severities, nil, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
 			return err
@@ -1355,7 +1386,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		}
 
 		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "controlID",
-			connectionIDs, notConnectionIDs, nil, resControlIDs, benchmarkIDs, severities, nil)
+			connectionIDs, notConnectionIDs, nil, resControlIDs, benchmarkIDs, severities, nil, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
 			return err
@@ -2277,11 +2308,15 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 	}
 
 	var evaluatedAtFrom, evaluatedAtTo *time.Time
-	if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
-		evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
-	}
-	if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
-		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+	if req.Filters.Interval != nil && *req.Filters.Interval != "" {
+		evaluatedAtFrom, evaluatedAtTo, err = parseTimeInterval(*req.Filters.Interval)
+	} else {
+		if req.Filters.EvaluatedAt.From != nil && *req.Filters.EvaluatedAt.From != 0 {
+			evaluatedAtFrom = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.From, 0))
+		}
+		if req.Filters.EvaluatedAt.To != nil && *req.Filters.EvaluatedAt.To != 0 {
+			evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
+		}
 	}
 
 	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
@@ -2644,12 +2679,15 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
 			topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
-				nil, connectionIDs, nil, nil, []string{b.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+				nil, connectionIDs, nil, nil, []string{b.ID}, nil, nil,
+				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(), []bool{true}, topAccountCount)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil,
+				connectionIDs, nil, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(),
+				[]bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -2886,13 +2924,17 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
+			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
+			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount)
+		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
+			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
+			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -6414,13 +6456,17 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, req.ShowTop)
 		if req.ShowTop > 0 {
-			res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, nil, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop)
+			res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
+				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
+				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
 
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil, nil, nil, nil, []string{benchmark.ID}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop)
+			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
+				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
+				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -6689,7 +6735,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	if showTop > 0 {
 		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil,
 			nil, nil, nil, []string{benchmarkId}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(),
-			[]bool{true}, int(showTop))
+			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
@@ -6697,7 +6743,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 			nil, nil, nil, nil, []string{benchmarkId}, nil, nil,
-			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop))
+			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
