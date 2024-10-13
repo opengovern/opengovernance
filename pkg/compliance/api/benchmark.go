@@ -8,6 +8,14 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+type BenchmarkAssignmentStatus string
+
+const (
+	BenchmarkAssignmentStatusEnabled    BenchmarkAssignmentStatus = "enabled"
+	BenchmarkAssignmentStatusDisabled   BenchmarkAssignmentStatus = "disabled"
+	BenchmarkAssignmentStatusAutoEnable BenchmarkAssignmentStatus = "auto-enable"
+)
+
 type Benchmark struct {
 	ID                string              `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
 	Title             string              `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
@@ -246,7 +254,8 @@ type GetBenchmarkListResponse struct {
 }
 
 type GetBenchmarkAssignmentsResponse struct {
-	Items []GetBenchmarkAssignmentsItem `json:"items"`
+	Items  []GetBenchmarkAssignmentsItem `json:"items"`
+	Status BenchmarkAssignmentStatus     `json:"status"`
 }
 
 type GetBenchmarkAssignmentsItem struct {
@@ -284,6 +293,8 @@ func GetTypeFromIntegration(integration string) string {
 
 type IntegrationFilterRequest struct {
 	Integration []IntegrationFilter `json:"integration"`
+	AutoEnable  bool
+	Disable     bool
 }
 
 type SeveritySummary struct {
