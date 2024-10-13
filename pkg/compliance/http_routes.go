@@ -5746,8 +5746,18 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	for _, info := range connectionInfos {
 		results = append(results, info)
 	}
+	var status api.BenchmarkAssignmentStatus
+	if benchmark.AutoAssign {
+		status = api.BenchmarkAssignmentStatusAutoEnable
+	} else if len(results) > 0 {
+		status = api.BenchmarkAssignmentStatusEnabled
+	} else {
+		status = api.BenchmarkAssignmentStatusDisabled
+	}
+
 	return echoCtx.JSON(http.StatusOK, api.GetBenchmarkAssignmentsResponse{
-		Items: results,
+		Items:  results,
+		Status: status,
 	})
 }
 
@@ -6025,11 +6035,6 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 		connections = append(connections, connectionsTmp...)
 	}
 
-	var connectionIDs []string
-	for _, c := range connections {
-		connectionIDs = append(connectionIDs, c.ID.String())
-	}
-
 	benchmarkId := echoCtx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
@@ -6055,8 +6060,6 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 	))
 	span1.End()
 
-	result := make([]api.BenchmarkAssignment, 0, len(connections))
-	// trace :
 	ctx, span4 := tracer.Start(ctx, "new_AddBenchmarkAssignment(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span4.SetName("new_AddBenchmarkAssignment(loop)")
 	defer span4.End()
@@ -6082,16 +6085,28 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 			attribute.String("Benchmark ID", assignment.BenchmarkId),
 		)
 		span5.End()
-
-		for _, connectionId := range connectionIDs {
-			result = append(result, api.BenchmarkAssignment{
-				BenchmarkId:  benchmarkId,
-				ConnectionId: utils.GetPointer(connectionId),
-				AssignedAt:   assignment.AssignedAt,
-			})
-		}
 	}
 	span4.End()
+
+	if req.AutoEnable {
+		err = h.db.SetBenchmarkAutoAssign(ctx, benchmarkId, true)
+		if err != nil {
+			h.logger.Error("failed to set auto assign", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set auto assign")
+		}
+	}
+	if req.Disable {
+		err = h.db.SetBenchmarkAutoAssign(ctx, benchmarkId, false)
+		if err != nil {
+			h.logger.Error("failed to set auto assign", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set auto assign")
+		}
+		err = h.db.DeleteBenchmarkAssignmentByBenchmarkId(ctx, benchmarkId)
+		if err != nil {
+			h.logger.Error("failed to delete benchmark assignments", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete benchmark assignments")
+		}
+	}
 
 	return echoCtx.NoContent(http.StatusOK)
 }
