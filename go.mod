@@ -50,7 +50,7 @@ require (
 	github.com/microsoftgraph/msgraph-sdk-go v1.36.0
 	github.com/nats-io/nats.go v1.36.0
 	github.com/open-policy-agent/opa v0.69.0
-	github.com/opengovern/og-aws-describer v0.58.9
+	github.com/opengovern/og-aws-describer v0.58.11
 	github.com/opengovern/og-azure-describer v0.36.6
 	github.com/opengovern/og-util v0.0.0-20241014001006-42f25ad9090c
 	github.com/opengovern/plugin-aws v0.7.3
