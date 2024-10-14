@@ -29,7 +29,7 @@ SERVICES=""
 while read -r SVC; do
 	cd cmd/$SVC
 	while read -r PKG; do
-		if [[ $PKG == *"kaytu"* ]]; then
+		if [[ $PKG == *"opengovernance"* ]]; then
 			PKGN=$(echo "$PKG" | sed 's;github.com/opengovern/opengovernance/;;g')
 			SEARCH="0"
 			while read -r CHANGE; do
