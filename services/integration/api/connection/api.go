@@ -799,6 +799,11 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 			if err2 != nil {
 				h.logger.Warn("failed to update credential health", zap.Error(err2), zap.String("connectionId", connection.SourceId))
 			}
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
+			if err != nil {
+				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return err
+			}
 			return err
 		}
 		_, err = h.credSvc.UpdateHealth(ctx, connection.Credential, source.HealthStatusHealthy, nil, true)
@@ -881,7 +886,16 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 				zap.Error(err),
 				zap.String("connectionId", connection.SourceId),
 			)
-
+			healthReason := err.Error()
+			_, err2 := h.credSvc.UpdateHealth(ctx, connection.Credential, source.HealthStatusUnhealthy, &healthReason, true)
+			if err2 != nil {
+				h.logger.Warn("failed to update credential health", zap.Error(err2), zap.String("connectionId", connection.SourceId))
+			}
+			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
+			if err != nil {
+				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+				return err
+			}
 			return err
 		}
 
