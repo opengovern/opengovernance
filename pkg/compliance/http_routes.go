@@ -6087,6 +6087,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 		span5.End()
 	}
 	span4.End()
+	h.logger.Info("integrations assignments checked")
 
 	if req.AutoEnable {
 		err = h.db.SetBenchmarkAutoAssign(ctx, benchmarkId, true)
@@ -6095,6 +6096,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set auto assign")
 		}
 	}
+	h.logger.Info("auto enable checked")
 	if req.Disable {
 		err = h.db.SetBenchmarkAutoAssign(ctx, benchmarkId, false)
 		if err != nil {
@@ -6107,6 +6109,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete benchmark assignments")
 		}
 	}
+	h.logger.Info("delete checked")
 
 	return echoCtx.NoContent(http.StatusOK)
 }

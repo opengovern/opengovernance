@@ -819,7 +819,7 @@ func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmark
 }
 
 func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(ctx context.Context, benchmarkId string) error {
-	tx := db.Orm.WithContext(ctx).Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Delete(&BenchmarkAssignment{})
+	tx := db.Orm.WithContext(ctx).Where("benchmark_id = ?", benchmarkId).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error
