@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 type BenchmarkAssignmentStatus string

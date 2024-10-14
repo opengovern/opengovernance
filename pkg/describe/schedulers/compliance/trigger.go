@@ -1,14 +1,14 @@
 package compliance
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/source"
+	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/compliance/runner"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"go.uber.org/zap"
 )
 

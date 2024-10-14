@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 type ConnectionLifecycleState string

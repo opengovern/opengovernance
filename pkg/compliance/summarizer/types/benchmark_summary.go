@@ -2,10 +2,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/opengovernance/pkg/utils"
 
 	"github.com/axiomhq/hyperloglog"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/opengovernance/pkg/types"
 )
 
 type Result struct {

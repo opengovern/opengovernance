@@ -3,13 +3,13 @@ package model
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
+	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-util/pkg/fp"
+	"github.com/opengovern/og-aws-describer/aws"
+	"github.com/opengovern/og-util/pkg/fp"
 )
 
 type AWSAccountType string

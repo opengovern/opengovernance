@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	demoimporter "github.com/kaytu-io/open-governance/services/demo-importer"
+	demoimporter "github.com/opengovern/opengovernance/services/demo-importer"
 	"os"
 	"os/signal"
 	"syscall"

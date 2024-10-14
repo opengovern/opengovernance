@@ -3,10 +3,10 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
-	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
 	"github.com/lib/pq"
+	"github.com/opengovern/opengovernance/pkg/compliance/runner"
+	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"gorm.io/gorm"
 	"time"
 )

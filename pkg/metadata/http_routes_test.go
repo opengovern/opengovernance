@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	api2 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	idocker "github.com/opengovern/og-util/pkg/dockertest"
+	"github.com/opengovern/og-util/pkg/postgres"
 
-	"github.com/kaytu-io/open-governance/pkg/metadata/api"
-	"github.com/kaytu-io/open-governance/pkg/metadata/internal/database"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/pkg/metadata/api"
+	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	"go.uber.org/zap"
 
 	"github.com/labstack/echo/v4"

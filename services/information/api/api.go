@@ -1,10 +1,10 @@
 package api
 
 import (
-	shared_entities "github.com/kaytu-io/kaytu-util/pkg/api/shared-entities"
-	"github.com/kaytu-io/open-governance/services/information/config"
-	"github.com/kaytu-io/open-governance/services/information/service"
 	"github.com/labstack/echo/v4"
+	shared_entities "github.com/opengovern/og-util/pkg/api/shared-entities"
+	"github.com/opengovern/opengovernance/services/information/config"
+	"github.com/opengovern/opengovernance/services/information/service"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

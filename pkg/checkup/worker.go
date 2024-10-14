@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/jq"
 
-	"github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )

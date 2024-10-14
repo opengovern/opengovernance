@@ -8,14 +8,14 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
-	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/og-util/pkg/config"
+	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
+	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
+	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +31,7 @@ type Config struct {
 type Worker struct {
 	config   Config
 	logger   *zap.Logger
-	esClient kaytu.Client
+	esClient opengovernance.Client
 	jq       *jq.JobQueue
 
 	inventoryClient inventoryClient.InventoryServiceClient
@@ -49,7 +49,7 @@ func NewWorker(
 	prometheusPushAddress string,
 	ctx context.Context,
 ) (*Worker, error) {
-	esClient, err := kaytu.NewClient(kaytu.ClientConfig{
+	esClient, err := opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{config.ElasticSearch.Address},
 		Username:      &config.ElasticSearch.Username,
 		Password:      &config.ElasticSearch.Password,

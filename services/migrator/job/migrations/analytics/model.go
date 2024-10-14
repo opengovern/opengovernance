@@ -1,8 +1,8 @@
 package analytics
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/shared"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
 )
 
 type Metric struct {

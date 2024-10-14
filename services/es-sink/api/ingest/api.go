@@ -1,9 +1,9 @@
 package ingest
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/es/ingest/entity"
-	"github.com/kaytu-io/open-governance/services/es-sink/service"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/es/ingest/entity"
+	"github.com/opengovern/opengovernance/services/es-sink/service"
 	"go.uber.org/zap"
 	"net/http"
 )

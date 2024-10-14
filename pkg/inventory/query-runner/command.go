@@ -2,7 +2,7 @@ package query_runner
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

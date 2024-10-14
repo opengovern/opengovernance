@@ -6,10 +6,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
-	onboard "github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	onboard "github.com/opengovern/opengovernance/services/integration/model"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/compliance/api"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/opengovernance/pkg/compliance/api"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
 type FindingsQueryResponse struct {
 	Hits struct {
-		Total kaytu.SearchTotal  `json:"total"`
-		Hits  []FindingsQueryHit `json:"hits"`
+		Total opengovernance.SearchTotal `json:"total"`
+		Hits  []FindingsQueryHit         `json:"hits"`
 	} `json:"hits"`
 	PitID string `json:"pit_id"`
 }
@@ -33,11 +33,11 @@ type FindingsQueryHit struct {
 }
 
 type FindingPaginator struct {
-	paginator *kaytu.BaseESPaginator
+	paginator *opengovernance.BaseESPaginator
 }
 
-func NewFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64, sort []map[string]any) (FindingPaginator, error) {
-	paginator, err := kaytu.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
+func NewFindingPaginator(client opengovernance.Client, idx string, filters []opengovernance.BoolFilter, limit *int64, sort []map[string]any) (FindingPaginator, error) {
+	paginator, err := opengovernance.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
 	if err != nil {
 		return FindingPaginator{}, err
 	}
@@ -96,78 +96,78 @@ type FindingsCountQueryHit struct {
 	} `json:"aggregations"`
 }
 
-func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
+func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
 	idx := types.FindingsIndex
-	var filters []kaytu.BoolFilter
+	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(resourceTypes) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
+		filters = append(filters, opengovernance.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(controlID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+		filters = append(filters, opengovernance.NewTermsFilter("controlID", controlID))
 	}
 	if len(severity) > 0 {
 		strSeverity := make([]string, 0)
 		for _, s := range severity {
 			strSeverity = append(strSeverity, string(s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
+		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
 	if len(conformanceStatuses) > 0 {
 		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
 			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
 	if len(connectionID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
+		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
 	}
 	if len(notConnectionID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
 	if len(provider) > 0 {
 		var connectors []string
 		for _, p := range provider {
 			connectors = append(connectors, p.String())
 		}
-		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
 		for _, s := range stateActive {
 			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+		filters = append(filters, opengovernance.NewTermsFilter("stateActive", strStateActive))
 	}
 	if lastTransitionFrom != nil && lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	} else if lastTransitionFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", ""))
 	} else if lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	}
 	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	} else if evaluatedAtFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", ""))
 	} else if evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
@@ -221,7 +221,7 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client ka
 	return controlIDCount, nil
 }
 
-func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, provider []source.Type,
+func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, provider []source.Type,
 	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus,
@@ -319,79 +319,79 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
 		"_id": "asc",
 	})
 
-	var filters []kaytu.BoolFilter
+	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(resourceTypes) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
+		filters = append(filters, opengovernance.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(controlID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+		filters = append(filters, opengovernance.NewTermsFilter("controlID", controlID))
 	}
 	if len(jobIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentComplianceJobID", jobIDs))
+		filters = append(filters, opengovernance.NewTermsFilter("parentComplianceJobID", jobIDs))
 	}
 	if len(severity) > 0 {
 		strSeverity := make([]string, 0)
 		for _, s := range severity {
 			strSeverity = append(strSeverity, string(s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
+		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
 	if len(conformanceStatuses) > 0 {
 		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
 			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
 	if len(connectionID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
+		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
 	}
 	if len(notConnectionID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
 	if len(provider) > 0 {
 		var connectors []string
 		for _, p := range provider {
 			connectors = append(connectors, p.String())
 		}
-		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
 		for _, s := range stateActive {
 			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+		filters = append(filters, opengovernance.NewTermsFilter("stateActive", strStateActive))
 	}
 	if lastTransitionFrom != nil && lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	} else if lastTransitionFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", ""))
 	} else if lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	}
 	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	} else if evaluatedAtFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", ""))
 	} else if evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
@@ -433,10 +433,10 @@ type FindingsCountResponse struct {
 	PitID string            `json:"pit_id"`
 }
 type FindingsCountHits struct {
-	Total kaytu.SearchTotal `json:"total"`
+	Total opengovernance.SearchTotal `json:"total"`
 }
 
-func FindingsCount(ctx context.Context, client kaytu.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
+func FindingsCount(ctx context.Context, client opengovernance.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
 	idx := types.FindingsIndex
 
 	filters := make([]map[string]any, 0)
@@ -522,7 +522,7 @@ type FindingFiltersAggregationResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	resourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
@@ -531,76 +531,76 @@ func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client kaytu.
 ) (*FindingFiltersAggregationResponse, error) {
 	idx := types.FindingsIndex
 
-	var filters []kaytu.BoolFilter
+	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(resourceTypes) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
+		filters = append(filters, opengovernance.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(controlID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+		filters = append(filters, opengovernance.NewTermsFilter("controlID", controlID))
 	}
 	if len(severity) > 0 {
 		strSeverity := make([]string, 0)
 		for _, s := range severity {
 			strSeverity = append(strSeverity, string(s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
+		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
 	if len(conformanceStatuses) > 0 {
 		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
 			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
 	if len(connectionID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
+		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
 	}
 	if len(notConnectionID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
 	if len(connector) > 0 {
 		var connectors []string
 		for _, p := range connector {
 			connectors = append(connectors, p.String())
 		}
-		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
 		for _, s := range stateActive {
 			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+		filters = append(filters, opengovernance.NewTermsFilter("stateActive", strStateActive))
 	}
 	if lastTransitionFrom != nil && lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	} else if lastTransitionFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", ""))
 	} else if lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	}
 	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	} else if evaluatedAtFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", ""))
 	} else if evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}
@@ -666,7 +666,7 @@ type FindingKPIResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client) (*FindingKPIResponse, error) {
+func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client) (*FindingKPIResponse, error) {
 	root := make(map[string]any)
 	root["size"] = 0
 	root["track_total_hits"] = true
@@ -732,7 +732,7 @@ type FindingsTopFieldResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int, startTime, endTime *time.Time) (*FindingsTopFieldResponse, error) {
@@ -927,7 +927,7 @@ type ResourceTypesFindingsSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func ResourceTypesFindingsSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func ResourceTypesFindingsSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
 	var filters []map[string]any
 
@@ -1016,7 +1016,7 @@ type FindingsFieldCountByControlResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
@@ -1133,7 +1133,7 @@ type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
 	terms := make(map[string]any)
@@ -1270,7 +1270,7 @@ type FindingCountPerKaytuResourceIdsResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logger, client kaytu.Client, kaytuResourceIds []string,
+func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logger, client opengovernance.Client, kaytuResourceIds []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
 ) (map[string]int, error) {
 	var filters []map[string]any
@@ -1358,7 +1358,7 @@ type FindingsPerControlForResourceIdResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client kaytu.Client, kaytuResourceId string) ([]types.Finding, error) {
+func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, kaytuResourceId string) ([]types.Finding, error) {
 	request := map[string]any{
 		"aggs": map[string]any{
 			"control_id_group": map[string]any{
@@ -1412,7 +1412,7 @@ func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logge
 	return findings, nil
 }
 
-func FetchFindingByID(ctx context.Context, logger *zap.Logger, client kaytu.Client, findingID string) (*types.Finding, error) {
+func FetchFindingByID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, findingID string) (*types.Finding, error) {
 	query := map[string]any{
 		"query": map[string]any{
 			"term": map[string]any{
@@ -1441,7 +1441,7 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client kaytu.Clie
 	return &resp.Hits.Hits[0].Source, nil
 }
 
-func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Client, resourceIDs []string, notResourceIDs []string,
+func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, notResourceIDs []string,
 	provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, notResourceTypes []string,
 	benchmarkID []string, notBenchmarkID []string, controlID []string, notControlID []string, severity []types.FindingSeverity,
 	notSeverity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, notLastTransitionFrom *time.Time,
@@ -1524,108 +1524,108 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client kaytu.Clien
 		"_id": "asc",
 	})
 
-	var filters []kaytu.BoolFilter
+	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(notResourceIDs) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("resourceID", notResourceIDs)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("resourceID", notResourceIDs)))
 	}
 	if len(resourceTypes) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("resourceType", resourceTypes))
+		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
 	}
 	if len(notResourceTypes) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("resourceType", notResourceTypes)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("resourceType", notResourceTypes)))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
+		filters = append(filters, opengovernance.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(notBenchmarkID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("parentBenchmarks", notBenchmarkID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("parentBenchmarks", notBenchmarkID)))
 	}
 	if len(controlID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("controlID", controlID))
+		filters = append(filters, opengovernance.NewTermsFilter("controlID", controlID))
 	}
 	if len(notControlID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("controlID", notControlID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("controlID", notControlID)))
 	}
 	if len(severity) > 0 {
 		strSeverity := make([]string, 0)
 		for _, s := range severity {
 			strSeverity = append(strSeverity, string(s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("severity", strSeverity))
+		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
 	if len(notSeverity) > 0 {
 		strSeverity := make([]string, 0)
 		for _, s := range notSeverity {
 			strSeverity = append(strSeverity, string(s))
 		}
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("severity", strSeverity)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("severity", strSeverity)))
 	}
 	if len(conformanceStatuses) > 0 {
 		strConformanceStatus := make([]string, 0)
 		for _, cr := range conformanceStatuses {
 			strConformanceStatus = append(strConformanceStatus, string(cr))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
 	if len(connectionID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
+		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
 	}
 	if len(notConnectionID) > 0 {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("connectionID", notConnectionID)))
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
 	if len(provider) > 0 {
 		var connectors []string
 		for _, p := range provider {
 			connectors = append(connectors, p.String())
 		}
-		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
 		for _, s := range stateActive {
 			strStateActive = append(strStateActive, fmt.Sprintf("%v", s))
 		}
-		filters = append(filters, kaytu.NewTermsFilter("stateActive", strStateActive))
+		filters = append(filters, opengovernance.NewTermsFilter("stateActive", strStateActive))
 	}
 	if lastTransitionFrom != nil && lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	} else if lastTransitionFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", lastTransitionFrom.UnixMilli()),
 			"", ""))
 	} else if lastTransitionTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", lastTransitionTo.UnixMilli())))
 	}
 	if notLastTransitionFrom != nil && notLastTransitionTo != nil {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", notLastTransitionFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", notLastTransitionTo.UnixMilli()))))
 	} else if notLastTransitionFrom != nil {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewRangeFilter("lastTransition",
 			"", fmt.Sprintf("%d", notLastTransitionFrom.UnixMilli()),
 			"", "")))
 	} else if notLastTransitionTo != nil {
-		filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewRangeFilter("lastTransition",
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewRangeFilter("lastTransition",
 			"", "",
 			"", fmt.Sprintf("%d", notLastTransitionTo.UnixMilli()))))
 	}
 	if evaluatedAtFrom != nil && evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	} else if evaluatedAtFrom != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", fmt.Sprintf("%d", evaluatedAtFrom.UnixMilli()),
 			"", ""))
 	} else if evaluatedAtTo != nil {
-		filters = append(filters, kaytu.NewRangeFilter("evaluatedAt",
+		filters = append(filters, opengovernance.NewRangeFilter("evaluatedAt",
 			"", "",
 			"", fmt.Sprintf("%d", evaluatedAtTo.UnixMilli())))
 	}

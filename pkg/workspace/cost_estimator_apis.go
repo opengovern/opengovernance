@@ -2,9 +2,9 @@ package workspace
 
 import (
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator"
-	kaytuResources "github.com/kaytu-io/open-governance/pkg/workspace/costestimator/resources"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator"
+	kaytuResources "github.com/opengovern/opengovernance/pkg/workspace/costestimator/resources"
 
 	"github.com/labstack/echo/v4"
 	"net/http"

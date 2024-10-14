@@ -3,11 +3,11 @@ package inventory
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"os"
 
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	config3 "github.com/kaytu-io/open-governance/pkg/inventory/config"
+	"github.com/opengovern/og-util/pkg/config"
+	config3 "github.com/opengovern/opengovernance/pkg/inventory/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

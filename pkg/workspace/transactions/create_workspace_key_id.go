@@ -3,10 +3,10 @@ package transactions
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
-	"github.com/kaytu-io/open-governance/pkg/workspace/config"
-	"github.com/kaytu-io/open-governance/pkg/workspace/db"
+	"github.com/opengovern/og-util/pkg/vault"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/config"
+	"github.com/opengovern/opengovernance/pkg/workspace/db"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )

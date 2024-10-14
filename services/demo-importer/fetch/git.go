@@ -6,7 +6,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/kaytu-io/open-governance/services/demo-importer/types"
+	"github.com/opengovern/opengovernance/services/demo-importer/types"
 	"go.uber.org/zap"
 	"os"
 	"strings"

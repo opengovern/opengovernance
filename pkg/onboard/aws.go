@@ -8,10 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	"github.com/opengovern/og-aws-describer/aws/describer"
+	"github.com/opengovern/opengovernance/pkg/describe/connectors"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 )
 

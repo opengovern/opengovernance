@@ -1,11 +1,11 @@
 package api
 
 import (
-	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/open-governance/services/es-sink/api/ingest"
-	"github.com/kaytu-io/open-governance/services/es-sink/service"
 	"github.com/labstack/echo/v4"
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opengovernance/services/es-sink/api/ingest"
+	"github.com/opengovern/opengovernance/services/es-sink/service"
 	"go.uber.org/zap"
 )
 

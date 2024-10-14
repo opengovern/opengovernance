@@ -3,7 +3,7 @@ package cost_test
 import (
 	"testing"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/cost"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/cost"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )

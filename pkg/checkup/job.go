@@ -2,15 +2,15 @@ package checkup
 
 import (
 	"fmt"
-	authAPI "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	authAPI "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"strconv"
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/kaytu-io/open-governance/pkg/checkup/api"
-	"github.com/kaytu-io/open-governance/pkg/onboard/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/opengovernance/pkg/checkup/api"
+	"github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"

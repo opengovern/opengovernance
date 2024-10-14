@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/open-governance/pkg/inventory"
-	"github.com/kaytu-io/open-governance/services/migrator/config"
-	"github.com/kaytu-io/open-governance/services/migrator/db"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/pkg/inventory"
+	"github.com/opengovern/opengovernance/services/migrator/config"
+	"github.com/opengovern/opengovernance/services/migrator/db"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -18,12 +18,12 @@ import (
 )
 
 type ResourceCollection struct {
-	ID          string                             `json:"id" yaml:"id"`
-	Name        string                             `json:"name" yaml:"name"`
-	Tags        map[string][]string                `json:"tags" yaml:"tags"`
-	Filters     []kaytu.ResourceCollectionFilter   `json:"filters" yaml:"filters"`
-	Description string                             `json:"description" yaml:"description"`
-	Status      inventory.ResourceCollectionStatus `json:"status" yaml:"status"`
+	ID          string                                    `json:"id" yaml:"id"`
+	Name        string                                    `json:"name" yaml:"name"`
+	Tags        map[string][]string                       `json:"tags" yaml:"tags"`
+	Filters     []opengovernance.ResourceCollectionFilter `json:"filters" yaml:"filters"`
+	Description string                                    `json:"description" yaml:"description"`
+	Status      inventory.ResourceCollectionStatus        `json:"status" yaml:"status"`
 }
 
 type Migration struct {

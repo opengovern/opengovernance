@@ -2,7 +2,7 @@ package database
 
 import (
 	"errors"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

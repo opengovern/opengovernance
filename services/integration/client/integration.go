@@ -3,9 +3,9 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/services/integration/api/entity"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/services/integration/api/entity"
 	"net/http"
 )
 

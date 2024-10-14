@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	queryrunnerscheduler "github.com/kaytu-io/open-governance/pkg/describe/schedulers/query-runner"
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,36 +19,35 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
-	azureDescriberLocal "github.com/kaytu-io/kaytu-azure-describer/local"
-	authAPI "github.com/kaytu-io/kaytu-util/pkg/api"
-	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"github.com/kaytu-io/kaytu-util/proto/src/golang"
-	"github.com/kaytu-io/open-governance/pkg/analytics"
-	"github.com/kaytu-io/open-governance/pkg/checkup"
-	checkupAPI "github.com/kaytu-io/open-governance/pkg/checkup/api"
-	"github.com/kaytu-io/open-governance/pkg/compliance/client"
-	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
-	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
-	"github.com/kaytu-io/open-governance/pkg/describe/config"
-	"github.com/kaytu-io/open-governance/pkg/describe/db"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	"github.com/kaytu-io/open-governance/pkg/describe/schedulers/compliance"
-	"github.com/kaytu-io/open-governance/pkg/describe/schedulers/discovery"
-	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
-	workspaceClient "github.com/kaytu-io/open-governance/pkg/workspace/client"
 	"github.com/nats-io/nats.go/jetstream"
+	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
+	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
+	authAPI "github.com/opengovern/og-util/pkg/api"
+	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/ticker"
+	"github.com/opengovern/og-util/proto/src/golang"
+	"github.com/opengovern/opengovernance/pkg/analytics"
+	"github.com/opengovern/opengovernance/pkg/checkup"
+	checkupAPI "github.com/opengovern/opengovernance/pkg/checkup/api"
+	"github.com/opengovern/opengovernance/pkg/compliance/client"
+	"github.com/opengovern/opengovernance/pkg/compliance/runner"
+	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/pkg/describe/config"
+	"github.com/opengovern/opengovernance/pkg/describe/db"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/describe/schedulers/compliance"
+	"github.com/opengovern/opengovernance/pkg/describe/schedulers/discovery"
+	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
+	workspaceClient "github.com/opengovern/opengovernance/pkg/workspace/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -127,7 +127,7 @@ type Scheduler struct {
 	inventoryClient  inventoryClient.InventoryServiceClient
 	sinkClient       esSinkClient.EsSinkServiceClient
 	authGrpcClient   envoyAuth.AuthorizationClient
-	es               kaytu.Client
+	es               opengovernance.Client
 
 	jq *jq.JobQueue
 
@@ -241,7 +241,7 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = db.Database{ORM: orm}
 
-	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
+	s.es, err = opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{conf.ElasticSearch.Address},
 		Username:      &conf.ElasticSearch.Username,
 		Password:      &conf.ElasticSearch.Password,

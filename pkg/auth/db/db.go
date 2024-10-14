@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"

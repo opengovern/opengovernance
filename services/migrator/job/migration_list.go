@@ -1,16 +1,16 @@
 package job
 
 import (
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/analytics"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/auth"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/compliance"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/elasticsearch"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/inventory"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/onboard"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/resource_collection"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/resource_info"
-	"github.com/kaytu-io/open-governance/services/migrator/job/migrations/workspace"
-	"github.com/kaytu-io/open-governance/services/migrator/job/types"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/analytics"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/auth"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/compliance"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/elasticsearch"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/inventory"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/onboard"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/resource_collection"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/resource_info"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/workspace"
+	"github.com/opengovern/opengovernance/services/migrator/job/types"
 )
 
 var migrations = map[string]types.Migration{

@@ -2,8 +2,8 @@ package entities
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/open-governance/pkg/onboard/api"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/opengovernance/pkg/onboard/api"
+	"github.com/opengovern/opengovernance/services/integration/model"
 )
 
 func NewCredential(credential model.Credential) api.Credential {

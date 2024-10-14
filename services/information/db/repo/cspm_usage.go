@@ -3,7 +3,7 @@ package repo
 import (
 	"context"
 	"errors"
-	"github.com/kaytu-io/open-governance/services/information/db/model"
+	"github.com/opengovern/opengovernance/services/information/db/model"
 	"gorm.io/gorm"
 )
 

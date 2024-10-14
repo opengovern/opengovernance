@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 const DeleteTasksIndex = "delete_tasks"
@@ -55,8 +55,8 @@ type GetDeleteTasksResponse struct {
 	Hits GetDeleteTasksHits `json:"hits"`
 }
 type GetDeleteTasksHits struct {
-	Total kaytu.SearchTotal   `json:"total"`
-	Hits  []GetDeleteTasksHit `json:"hits"`
+	Total opengovernance.SearchTotal `json:"total"`
+	Hits  []GetDeleteTasksHit        `json:"hits"`
 }
 type GetDeleteTasksHit struct {
 	ID      string     `json:"_id"`
@@ -68,7 +68,7 @@ type GetDeleteTasksHit struct {
 	Sort    []any      `json:"sort"`
 }
 
-func GetDeleteTasks(ctx context.Context, client kaytu.Client) (*GetDeleteTasksResponse, error) {
+func GetDeleteTasks(ctx context.Context, client opengovernance.Client) (*GetDeleteTasksResponse, error) {
 	root := map[string]any{}
 	root["size"] = 10000
 	root["sort"] = []map[string]any{
@@ -91,6 +91,6 @@ func GetDeleteTasks(ctx context.Context, client kaytu.Client) (*GetDeleteTasksRe
 	return &response, nil
 }
 
-func DeleteDeleteTask(client kaytu.Client, id string) error {
+func DeleteDeleteTask(client opengovernance.Client, id string) error {
 	return client.Delete(id, DeleteTasksIndex)
 }

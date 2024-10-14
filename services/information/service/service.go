@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	shared_entities "github.com/kaytu-io/kaytu-util/pkg/api/shared-entities"
-	"github.com/kaytu-io/open-governance/services/information/config"
-	"github.com/kaytu-io/open-governance/services/information/db/model"
-	"github.com/kaytu-io/open-governance/services/information/db/repo"
+	shared_entities "github.com/opengovern/og-util/pkg/api/shared-entities"
+	"github.com/opengovern/opengovernance/services/information/config"
+	"github.com/opengovern/opengovernance/services/information/db/model"
+	"github.com/opengovern/opengovernance/services/information/db/repo"
 	"go.uber.org/zap"
 )
 

@@ -3,14 +3,14 @@ package api
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/alitto/pond"
-	"github.com/kaytu-io/open-governance/services/wastage/api/wastage"
-	"github.com/kaytu-io/open-governance/services/wastage/api/wastage/limit"
-	"github.com/kaytu-io/open-governance/services/wastage/config"
-	"github.com/kaytu-io/open-governance/services/wastage/cost"
-	"github.com/kaytu-io/open-governance/services/wastage/db/repo"
-	"github.com/kaytu-io/open-governance/services/wastage/ingestion"
-	"github.com/kaytu-io/open-governance/services/wastage/recommendation"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/opengovernance/services/wastage/api/wastage"
+	"github.com/opengovern/opengovernance/services/wastage/api/wastage/limit"
+	"github.com/opengovern/opengovernance/services/wastage/config"
+	"github.com/opengovern/opengovernance/services/wastage/cost"
+	"github.com/opengovern/opengovernance/services/wastage/db/repo"
+	"github.com/opengovern/opengovernance/services/wastage/ingestion"
+	"github.com/opengovern/opengovernance/services/wastage/recommendation"
 	"go.uber.org/zap"
 )
 

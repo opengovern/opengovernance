@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/inventory/api"
+	"github.com/opengovern/opengovernance/pkg/inventory/api"
 )
 
 type QueryRunResult struct {

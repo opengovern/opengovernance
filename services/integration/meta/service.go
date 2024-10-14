@@ -2,13 +2,13 @@ package meta
 
 import (
 	"errors"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/koanf"
-	metadata "github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/opengovern/og-util/pkg/koanf"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 )
 
 type Meta struct {

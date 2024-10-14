@@ -1,6 +1,6 @@
 package onboard
 
-import "github.com/kaytu-io/open-governance/services/integration/model"
+import "github.com/opengovern/opengovernance/services/integration/model"
 
 var defaultConnectionGroups = []model.ConnectionGroup{
 	{

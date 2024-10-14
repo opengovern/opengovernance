@@ -3,8 +3,8 @@ package db
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"gorm.io/gorm"
 )
 

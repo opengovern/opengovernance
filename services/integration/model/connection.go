@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )

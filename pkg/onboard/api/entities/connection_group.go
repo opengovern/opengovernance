@@ -2,9 +2,9 @@ package entities
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/kaytu-io/open-governance/pkg/onboard/api"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/og-util/pkg/steampipe"
+	"github.com/opengovern/opengovernance/pkg/onboard/api"
+	"github.com/opengovern/opengovernance/services/integration/model"
 )
 
 func NewConnectionGroup(ctx context.Context, steampipe *steampipe.Database, cg model.ConnectionGroup) (*api.ConnectionGroup, error) {

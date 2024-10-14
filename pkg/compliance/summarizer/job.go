@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"strings"
 
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/open-governance/pkg/compliance/es"
-	types2 "github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
-	es3 "github.com/kaytu-io/open-governance/pkg/describe/es"
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
-	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	es2 "github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/opengovernance/pkg/compliance/es"
+	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
+	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
+	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -27,8 +27,8 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 	// We have to sort by kaytuResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []kaytu.BoolFilter{
-		kaytu.NewTermFilter("stateActive", "true"),
+	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []opengovernance.BoolFilter{
+		opengovernance.NewTermFilter("stateActive", "true"),
 	}, nil, []map[string]any{
 		{"kaytuResourceID": "asc"},
 		{"resourceType": "asc"},
@@ -198,9 +198,9 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, currentResourceIds []string) error {
 	// Delete old resource findings
-	filters := make([]kaytu.BoolFilter, 0, 2)
-	filters = append(filters, kaytu.NewBoolMustNotFilter(kaytu.NewTermsFilter("kaytuResourceID", currentResourceIds)))
-	filters = append(filters, kaytu.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+	filters := make([]opengovernance.BoolFilter, 0, 2)
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("kaytuResourceID", currentResourceIds)))
+	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
 
 	root := map[string]any{
 		"query": map[string]any{

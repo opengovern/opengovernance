@@ -2,17 +2,17 @@ package query_runner
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/opengovern/og-util/pkg/jq"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	complianceClient "github.com/kaytu-io/open-governance/pkg/compliance/client"
-	"github.com/kaytu-io/open-governance/pkg/describe/config"
-	"github.com/kaytu-io/open-governance/pkg/describe/db"
-	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/ticker"
+	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
+	"github.com/opengovern/opengovernance/pkg/describe/config"
+	"github.com/opengovern/opengovernance/pkg/describe/db"
+	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ type JobScheduler struct {
 	logger              *zap.Logger
 	db                  db.Database
 	jq                  *jq.JobQueue
-	esClient            kaytu.Client
+	esClient            opengovernance.Client
 	inventoryClient     inventoryClient.InventoryServiceClient
 	complianceClient    complianceClient.ComplianceServiceClient
 	metadataClient      metadataClient.MetadataServiceClient
@@ -36,7 +36,7 @@ func New(
 	logger *zap.Logger,
 	db db.Database,
 	jq *jq.JobQueue,
-	esClient kaytu.Client,
+	esClient opengovernance.Client,
 	inventoryClient inventoryClient.InventoryServiceClient,
 	complianceClient complianceClient.ComplianceServiceClient,
 	metadataClient metadataClient.MetadataServiceClient,

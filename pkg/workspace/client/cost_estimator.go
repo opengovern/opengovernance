@@ -3,8 +3,8 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
 	"net/http"
 )
 

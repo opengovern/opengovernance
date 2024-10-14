@@ -3,13 +3,13 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/api"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
-	"github.com/kaytu-io/open-governance/pkg/auth/db"
+	"github.com/opengovern/opengovernance/pkg/auth/auth0"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 )
 
 type tokenStruct struct {

@@ -3,16 +3,16 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	analyticsDB "github.com/kaytu-io/open-governance/pkg/analytics/db"
-	"github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/source"
+	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
+	"github.com/opengovern/opengovernance/pkg/inventory/api"
 )
 
 type InventoryServiceClient interface {

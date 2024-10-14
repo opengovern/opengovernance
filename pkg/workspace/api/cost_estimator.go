@@ -1,8 +1,8 @@
 package api
 
 import (
-	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	aws "github.com/opengovern/og-aws-describer/aws/model"
+	azure "github.com/opengovern/og-azure-describer/azure/model"
 )
 
 type BaseRequest struct {

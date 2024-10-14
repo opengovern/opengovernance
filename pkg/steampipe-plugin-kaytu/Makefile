@@ -1,7 +1,7 @@
 .PHONY: install build clean
 
 build:
-	CC=/usr/bin/musl-gcc GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/steampipe-plugin-kaytu.plugin *.go
+	CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/steampipe-plugin-kaytu.plugin *.go
 
 docker-build:
 	docker build -f docker/Dockerfile . -t steampipe-plugin-kaytu:0.0.1

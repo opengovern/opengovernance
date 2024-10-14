@@ -2,8 +2,8 @@ package elasticsearch
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/services/migrator/config"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 	"io"
 	"io/fs"
@@ -31,7 +31,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	if len(conf.ElasticSearch.ExternalID) > 0 {
 		externalID = &conf.ElasticSearch.ExternalID
 	}
-	elastic, err := kaytu.NewClient(kaytu.ClientConfig{
+	elastic, err := opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{conf.ElasticSearch.Address},
 		Username:      &conf.ElasticSearch.Username,
 		Password:      &conf.ElasticSearch.Password,
@@ -112,7 +112,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	return finalErr
 }
 
-func CreateTemplate(ctx context.Context, es kaytu.Client, logger *zap.Logger, fp string) error {
+func CreateTemplate(ctx context.Context, es opengovernance.Client, logger *zap.Logger, fp string) error {
 	fn := filepath.Base(fp)
 	idx := strings.LastIndex(fn, ".")
 	fne := fn[:idx]

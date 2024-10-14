@@ -2,8 +2,8 @@ package metadata
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/open-governance/pkg/metadata/internal/database"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
 	"go.uber.org/zap"
 )
 

@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/analytics/es/spend"
-	inventoryAPI "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/analytics/es/spend"
+	inventoryAPI "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +43,7 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
+func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -158,7 +158,7 @@ type FetchConnectionDailySpendHistoryQueryResponse struct {
 	} `json:"hits"`
 }
 
-func FetchConnectionDailySpendHistory(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
+func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
 	filterPaths := make([]string, 0)
 	filterPaths = append(filterPaths, "hits.hits.sort")
 	filterPaths = append(filterPaths, "hits.hits._source.connections.connection_id")
@@ -283,7 +283,7 @@ type FetchConnectorDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorDailySpendHistoryByMetric(ctx context.Context, client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
+func FetchConnectorDailySpendHistoryByMetric(ctx context.Context, client opengovernance.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -398,7 +398,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(ctx context.Context, client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectionSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -510,7 +510,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(ctx context.Context, client kaytu.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectorSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -624,7 +624,7 @@ type SpendMetricResp struct {
 	CostValue  float64
 }
 
-func FetchSpendByMetric(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	if len(connectionIDs) > 0 {
 		return FetchSpendByMetricConnection(ctx, client, connectionIDs, connectors, metricIDs, startTime, endTime, size)
 	} else {
@@ -632,7 +632,7 @@ func FetchSpendByMetric(ctx context.Context, client kaytu.Client, connectionIDs 
 	}
 }
 
-func FetchSpendByMetricConnection(ctx context.Context, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnection(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -737,7 +737,7 @@ type FetchSpendByMetricConnectorQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendByMetricConnector(ctx context.Context, client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnector(ctx context.Context, client opengovernance.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -844,7 +844,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(ctx context.Context, client kaytu.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(ctx context.Context, client opengovernance.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -965,7 +965,7 @@ type CountAnalyticsSpendResponse struct {
 	} `json:"aggregations"`
 }
 
-func CountAnalyticsSpend(ctx context.Context, logger *zap.Logger, client kaytu.Client) (*CountAnalyticsSpendResponse, error) {
+func CountAnalyticsSpend(ctx context.Context, logger *zap.Logger, client opengovernance.Client) (*CountAnalyticsSpendResponse, error) {
 	query := make(map[string]any)
 	query["size"] = 0
 

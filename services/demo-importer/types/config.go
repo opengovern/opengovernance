@@ -1,6 +1,6 @@
 package types
 
-import "github.com/kaytu-io/kaytu-util/pkg/config"
+import "github.com/opengovern/og-util/pkg/config"
 
 type DemoImporterConfig struct {
 	IsManual bool `yaml:"is_manual"`

@@ -1,9 +1,9 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/og-util/pkg/source"
 	"gorm.io/gorm/clause"
 )
 

@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	esSinkClient "github.com/kaytu-io/kaytu-util/pkg/es/ingest/client"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
-	complianceClient "github.com/kaytu-io/open-governance/pkg/compliance/client"
-	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/config"
+	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/steampipe"
+	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
+	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
+	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
@@ -40,7 +40,7 @@ type Worker struct {
 	config           Config
 	logger           *zap.Logger
 	steampipeConn    *steampipe.Database
-	esClient         kaytu.Client
+	esClient         opengovernance.Client
 	jq               *jq.JobQueue
 	complianceClient complianceClient.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
@@ -77,7 +77,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	esClient, err := kaytu.NewClient(kaytu.ClientConfig{
+	esClient, err := opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{config.ElasticSearch.Address},
 		Username:      &config.ElasticSearch.Username,
 		Password:      &config.ElasticSearch.Password,

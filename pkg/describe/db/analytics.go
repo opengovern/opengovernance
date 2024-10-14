@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/analytics/api"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/analytics/api"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"gorm.io/gorm"
 )
 

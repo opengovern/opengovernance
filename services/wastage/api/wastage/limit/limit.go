@@ -3,7 +3,7 @@ package limit
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/open-governance/services/wastage/db/repo"
+	"github.com/opengovern/opengovernance/services/wastage/db/repo"
 	"go.uber.org/zap"
 	"strings"
 	"time"

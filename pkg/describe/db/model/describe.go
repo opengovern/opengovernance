@@ -1,10 +1,10 @@
 package model
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/describe/enums"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"gorm.io/gorm"
 	"time"
 )

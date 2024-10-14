@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/compliance/api"
-	"github.com/kaytu-io/open-governance/pkg/types"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/compliance/api"
+	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -26,18 +26,18 @@ type ResourceFindingsQueryHit struct {
 
 type ResourceFindingsQueryResponse struct {
 	Hits struct {
-		Total kaytu.SearchTotal          `json:"total"`
+		Total opengovernance.SearchTotal `json:"total"`
 		Hits  []ResourceFindingsQueryHit `json:"hits"`
 	} `json:"hits"`
 	PitID string `json:"pit_id"`
 }
 
 type ResourceFindingPaginator struct {
-	paginator *kaytu.BaseESPaginator
+	paginator *opengovernance.BaseESPaginator
 }
 
-func NewResourceFindingPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64, sort []map[string]any) (ResourceFindingPaginator, error) {
-	paginator, err := kaytu.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
+func NewResourceFindingPaginator(client opengovernance.Client, idx string, filters []opengovernance.BoolFilter, limit *int64, sort []map[string]any) (ResourceFindingPaginator, error) {
+	paginator, err := opengovernance.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
 	if err != nil {
 		return ResourceFindingPaginator{}, err
 	}
@@ -79,7 +79,7 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 	return values, nil
 }
 
-func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client kaytu.Client, connector []source.Type, connectionID []string,
+func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connector []source.Type, connectionID []string,
 	notConnectionID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, conformanceStatuses []types.ConformanceStatus,
 	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any, summaryJobIDs []string) ([]ResourceFindingsQueryHit, int64, error) {
@@ -295,7 +295,7 @@ type GetPerBenchmarkResourceSeverityResultResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
@@ -433,7 +433,7 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 	return result, nil
 }
 
-func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, summaryJobIDs string) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
@@ -601,7 +601,7 @@ type GetPerFieldResourceConformanceResultResponse struct {
 
 // GetPerFieldResourceConformanceResult
 // field could be: connectionID, benchmarkID, controlID, severity, conformanceStatus
-func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
 	connectionIDs []string, notConnectionIDs []string,
 	resourceCollections []string,
@@ -795,7 +795,7 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 	return result, nil
 }
 
-func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
 	connectionIDs []string, notConnectionIDs []string,
 	resourceCollections []string,

@@ -3,8 +3,8 @@ package query
 import (
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/price"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/price"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/product"
 )
 
 // Resource represents a single cloud resource. It has a unique Address and a collection of multiple

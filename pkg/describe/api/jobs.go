@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/analytics/api"
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/analytics/api"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"time"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"runtime"
 
-	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

@@ -6,16 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgtype"
-	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	runner2 "github.com/kaytu-io/open-governance/pkg/compliance/runner"
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
 	"github.com/labstack/echo/v4"
+	apiAuth "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/describe/enums"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	runner2 "github.com/opengovern/opengovernance/pkg/compliance/runner"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/sony/sonyflake"
 	"net/http"
 	"regexp"
@@ -24,19 +24,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	awsDescriberLocal "github.com/kaytu-io/kaytu-aws-describer/local"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	analyticsapi "github.com/kaytu-io/open-governance/pkg/analytics/api"
-	complianceapi "github.com/kaytu-io/open-governance/pkg/compliance/api"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
-	"github.com/kaytu-io/open-governance/pkg/describe/db"
-	model2 "github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	"github.com/kaytu-io/open-governance/pkg/describe/es"
-	onboardapi "github.com/kaytu-io/open-governance/pkg/onboard/api"
+	"github.com/opengovern/og-aws-describer/aws"
+	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
+	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
+	"github.com/opengovern/og-azure-describer/azure"
+	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
+	"github.com/opengovern/og-util/pkg/source"
+	analyticsapi "github.com/opengovern/opengovernance/pkg/analytics/api"
+	complianceapi "github.com/opengovern/opengovernance/pkg/compliance/api"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/pkg/describe/db"
+	model2 "github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/describe/es"
+	onboardapi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -1220,8 +1220,8 @@ type MigratorResponse struct {
 	PitID string
 }
 type MigratorHits struct {
-	Total kaytu.SearchTotal `json:"total"`
-	Hits  []MigratorHit     `json:"hits"`
+	Total opengovernance.SearchTotal `json:"total"`
+	Hits  []MigratorHit              `json:"hits"`
 }
 type MigratorHit struct {
 	ID      string        `json:"_id"`

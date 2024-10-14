@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/services/integration/db"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/services/integration/db"
+	"github.com/opengovern/opengovernance/services/integration/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

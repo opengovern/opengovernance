@@ -3,11 +3,11 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/open-governance/services/integration/model"
-	"github.com/kaytu-io/open-governance/services/migrator/config"
-	"github.com/kaytu-io/open-governance/services/migrator/db"
+	"github.com/opengovern/opengovernance/services/integration/model"
+	"github.com/opengovern/opengovernance/services/migrator/config"
+	"github.com/opengovern/opengovernance/services/migrator/db"
 
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

@@ -1,14 +1,14 @@
 package es_sink
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
-	es "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/koanf"
-	"github.com/kaytu-io/open-governance/services/es-sink/api"
-	"github.com/kaytu-io/open-governance/services/es-sink/config"
-	"github.com/kaytu-io/open-governance/services/es-sink/grpcApi"
-	"github.com/kaytu-io/open-governance/services/es-sink/service"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/jq"
+	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/opengovernance/services/es-sink/api"
+	"github.com/opengovern/opengovernance/services/es-sink/config"
+	"github.com/opengovern/opengovernance/services/es-sink/grpcApi"
+	"github.com/opengovern/opengovernance/services/es-sink/service"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

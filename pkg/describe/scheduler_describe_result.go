@@ -5,20 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
-	"github.com/kaytu-io/open-governance/pkg/describe/es"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/og-aws-describer/aws"
+	"github.com/opengovern/og-azure-describer/azure"
+	es2 "github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/ticker"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/pkg/describe/es"
 	"go.uber.org/zap"
 )
 
@@ -440,13 +440,13 @@ func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connect
 		return err
 	}
 
-	kaytu.CloseSafe(res)
+	opengovernance.CloseSafe(res)
 
 	res, err = s.es.ES().DeleteByQuery([]string{InventorySummaryIndex}, bytes.NewReader(query))
 	if err != nil {
 		return err
 	}
 
-	kaytu.CloseSafe(res)
+	opengovernance.CloseSafe(res)
 	return nil
 }

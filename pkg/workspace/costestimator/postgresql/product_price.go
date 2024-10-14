@@ -2,9 +2,9 @@ package postgresql
 
 import (
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/price"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
-	"github.com/kaytu-io/open-governance/pkg/workspace/db"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/price"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/product"
+	"github.com/opengovern/opengovernance/pkg/workspace/db"
 )
 
 // ProductRepository implements the product.Repository.

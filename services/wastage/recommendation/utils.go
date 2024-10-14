@@ -2,9 +2,9 @@ package recommendation
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/kaytu-io/open-governance/services/wastage/api/entity"
-	aws "github.com/kaytu-io/plugin-aws/plugin/proto/src/golang"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	"github.com/opengovern/opengovernance/services/wastage/api/entity"
+	aws "github.com/opengovern/plugin-aws/plugin/proto/src/golang"
+	gcp "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math"
 	"sort"

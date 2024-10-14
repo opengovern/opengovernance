@@ -3,9 +3,9 @@ package api
 import (
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	analyticsDB "github.com/kaytu-io/open-governance/pkg/analytics/db"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/og-util/pkg/source"
+	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
 )
 
 type Metric struct {

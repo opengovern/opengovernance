@@ -1,7 +1,7 @@
 package compliance
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/compliance/db"
+	"github.com/opengovern/opengovernance/pkg/compliance/db"
 )
 
 type BenchmarkControlsCache struct {

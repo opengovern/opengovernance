@@ -2,9 +2,9 @@ package resources
 
 import (
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/aws"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/azure"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/aws"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/azure"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/query"
 	"go.uber.org/zap"
 )
 

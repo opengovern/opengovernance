@@ -2,25 +2,25 @@ package inventory
 
 import (
 	"fmt"
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	complianceClient "github.com/kaytu-io/open-governance/pkg/compliance/client"
-	describeClient "github.com/kaytu-io/open-governance/pkg/describe/client"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
+	kaytuAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
+	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
+	kaytuAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
+	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
+	"github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/steampipe"
+	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
+	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client           kaytu.Client
+	client           opengovernance.Client
 	awsClient        kaytuAws.Client
 	azureClient      kaytuAzure.Client
 	db               Database
@@ -83,7 +83,7 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized steampipe database: ", steampipeConn)
 
-	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
+	h.client, err = opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{esConf.Address},
 		Username:      &esConf.Username,
 		Password:      &esConf.Password,

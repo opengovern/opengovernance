@@ -2,16 +2,16 @@ package compliance
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/jq"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/ticker"
-	"github.com/kaytu-io/open-governance/pkg/compliance/client"
-	"github.com/kaytu-io/open-governance/pkg/describe/config"
-	"github.com/kaytu-io/open-governance/pkg/describe/db"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/ticker"
+	"github.com/opengovern/opengovernance/pkg/compliance/client"
+	"github.com/opengovern/opengovernance/pkg/describe/config"
+	"github.com/opengovern/opengovernance/pkg/describe/db"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +25,7 @@ type JobScheduler struct {
 	onboardClient           onboardClient.OnboardServiceClient
 	db                      db.Database
 	jq                      *jq.JobQueue
-	esClient                kaytu.Client
+	esClient                opengovernance.Client
 	complianceIntervalHours time.Duration
 }
 
@@ -37,7 +37,7 @@ func New(
 	onboardClient onboardClient.OnboardServiceClient,
 	db db.Database,
 	jq *jq.JobQueue,
-	esClient kaytu.Client,
+	esClient opengovernance.Client,
 	complianceIntervalHours time.Duration,
 ) *JobScheduler {
 	return &JobScheduler{

@@ -1,11 +1,11 @@
 package api
 
 import (
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
-	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
+	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 const (

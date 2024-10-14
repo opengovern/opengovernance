@@ -1,6 +1,6 @@
 package compliance
 
-import "github.com/kaytu-io/open-governance/services/migrator/job/migrations/shared"
+import "github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
 
 type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`

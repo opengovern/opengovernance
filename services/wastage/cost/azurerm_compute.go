@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/services/wastage/api/entity"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/services/wastage/api/entity"
 	"net/http"
 	"time"
 )

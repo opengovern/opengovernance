@@ -2,16 +2,16 @@ package kaytu
 
 import (
 	"context"
-	steampipesdk "github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )

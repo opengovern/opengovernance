@@ -3,10 +3,10 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/kaytu-util/pkg/koanf"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
-	"github.com/kaytu-io/open-governance/pkg/onboard/config"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/og-util/pkg/vault"
+	"github.com/opengovern/opengovernance/pkg/onboard/config"
 	"os"
 
 	"github.com/spf13/cobra"

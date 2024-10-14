@@ -3,13 +3,13 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"net/http"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	compliance "github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/opengovern/og-util/pkg/source"
+	compliance "github.com/opengovern/opengovernance/pkg/compliance/api"
 )
 
 type ComplianceServiceClient interface {

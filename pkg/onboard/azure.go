@@ -6,12 +6,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
-	"github.com/kaytu-io/open-governance/services/integration/model"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
+	"github.com/opengovern/og-azure-describer/azure"
+	"github.com/opengovern/opengovernance/pkg/describe/connectors"
+	"github.com/opengovern/opengovernance/services/integration/model"
 	"go.uber.org/zap"
 )
 

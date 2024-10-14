@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
-	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	kaytuTrace "github.com/opengovern/og-util/pkg/trace"
+	apiv2 "github.com/opengovern/opengovernance/pkg/onboard/api/v2"
 	"go.opentelemetry.io/otel"
 	"io"
 	"net/http"
@@ -16,9 +16,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 
-	"github.com/kaytu-io/open-governance/pkg/onboard/api"
+	"github.com/opengovern/opengovernance/pkg/onboard/api"
 )
 
 type OnboardServiceClient interface {

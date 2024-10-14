@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/open-governance/services/integration/api/entity"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/opengovernance/services/integration/api/entity"
 	"time"
 )
 

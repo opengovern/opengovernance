@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/kaytu-io/open-governance/services/integration/model"
-	"github.com/kaytu-io/open-governance/services/integration/repository"
+	"github.com/opengovern/opengovernance/services/integration/model"
+	"github.com/opengovern/opengovernance/services/integration/repository"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

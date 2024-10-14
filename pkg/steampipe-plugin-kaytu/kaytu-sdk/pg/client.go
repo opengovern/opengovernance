@@ -5,8 +5,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"os"
 
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/open-governance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"

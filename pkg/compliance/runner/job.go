@@ -5,21 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/compliance/api"
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/pkg/compliance/api"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"io"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	complianceApi "github.com/kaytu-io/open-governance/pkg/compliance/api"
-	es2 "github.com/kaytu-io/open-governance/pkg/compliance/es"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/steampipe"
+	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
+	es2 "github.com/opengovern/opengovernance/pkg/compliance/es"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +52,7 @@ type JobConfig struct {
 	config        Config
 	logger        *zap.Logger
 	steampipeConn *steampipe.Database
-	esClient      kaytu.Client
+	esClient      opengovernance.Client
 }
 
 func (w *Worker) Initialize(ctx context.Context, j Job) error {
@@ -168,15 +168,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		findingsMap[f.EsID] = f
 	}
 
-	filters := make([]kaytu.BoolFilter, 0)
-	filters = append(filters, kaytu.NewTermFilter("benchmarkID", j.ExecutionPlan.Callers[0].RootBenchmark))
-	filters = append(filters, kaytu.NewTermFilter("controlID", j.ExecutionPlan.Callers[0].ControlID))
+	filters := make([]opengovernance.BoolFilter, 0)
+	filters = append(filters, opengovernance.NewTermFilter("benchmarkID", j.ExecutionPlan.Callers[0].RootBenchmark))
+	filters = append(filters, opengovernance.NewTermFilter("controlID", j.ExecutionPlan.Callers[0].ControlID))
 	for _, parentBenchmarkID := range []string{j.ExecutionPlan.Callers[0].RootBenchmark} {
-		filters = append(filters, kaytu.NewTermFilter("parentBenchmarks", parentBenchmarkID))
+		filters = append(filters, opengovernance.NewTermFilter("parentBenchmarks", parentBenchmarkID))
 	}
-	filters = append(filters, kaytu.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
+	filters = append(filters, opengovernance.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
 	if j.ExecutionPlan.ConnectionID != nil {
-		filters = append(filters, kaytu.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
+		filters = append(filters, opengovernance.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
 	}
 
 	newFindings := make([]types.Finding, 0, len(findings))
@@ -493,13 +493,13 @@ func (w *Worker) handleOldFindingsStateByTime(ctx context.Context, cutThreshold 
 			es.UpdateByQuery.WithContext(ctx),
 			es.UpdateByQuery.WithBody(bytes.NewReader(query)),
 		)
-		defer kaytu.CloseSafe(res)
+		defer opengovernance.CloseSafe(res)
 		if err != nil {
 			b, _ := io.ReadAll(res.Body)
 			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
 			return err
-		} else if err := kaytu.CheckError(res); err != nil {
-			if kaytu.IsIndexNotFoundErr(err) {
+		} else if err := opengovernance.CheckError(res); err != nil {
+			if opengovernance.IsIndexNotFoundErr(err) {
 				return nil
 			}
 			b, _ := io.ReadAll(res.Body)
@@ -522,13 +522,13 @@ func (w *Worker) handleOldFindingsStateByTime(ctx context.Context, cutThreshold 
 			bytes.NewReader(query),
 			es.DeleteByQuery.WithContext(ctx),
 		)
-		defer kaytu.CloseSafe(res)
+		defer opengovernance.CloseSafe(res)
 		if err != nil {
 			b, _ := io.ReadAll(res.Body)
 			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
 			return err
-		} else if err := kaytu.CheckError(res); err != nil {
-			if kaytu.IsIndexNotFoundErr(err) {
+		} else if err := opengovernance.CheckError(res); err != nil {
+			if opengovernance.IsIndexNotFoundErr(err) {
 				return nil
 			}
 			b, _ := io.ReadAll(res.Body)

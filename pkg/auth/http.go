@@ -13,12 +13,12 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/open-governance/pkg/auth/utils"
-	client2 "github.com/kaytu-io/open-governance/pkg/compliance/client"
-	api3 "github.com/kaytu-io/open-governance/pkg/describe/api"
-	client4 "github.com/kaytu-io/open-governance/pkg/describe/client"
-	"github.com/kaytu-io/open-governance/services/integration/api/entity"
-	client3 "github.com/kaytu-io/open-governance/services/integration/client"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
+	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
+	api3 "github.com/opengovern/opengovernance/pkg/describe/api"
+	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
+	"github.com/opengovern/opengovernance/services/integration/api/entity"
+	client3 "github.com/opengovern/opengovernance/services/integration/client"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,22 +29,22 @@ import (
 	"strings"
 	"time"
 
-	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	api2 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
 
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 
-	"github.com/kaytu-io/open-governance/pkg/auth/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/kaytu-io/open-governance/pkg/auth/auth0"
+	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/client"
+	"github.com/opengovern/opengovernance/pkg/workspace/client"
 
-	"github.com/kaytu-io/open-governance/pkg/auth/api"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"go.uber.org/zap"
 )
 

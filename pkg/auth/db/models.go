@@ -3,8 +3,8 @@ package db
 import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/api"
 	"gorm.io/gorm"
 	"time"
 )

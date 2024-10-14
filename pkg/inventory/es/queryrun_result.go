@@ -2,9 +2,9 @@ package es
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/pkg/inventory/api"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/pkg/inventory/api"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -36,7 +36,7 @@ type GetAsyncQueryRunResultResponse struct {
 	} `json:"hits"`
 }
 
-func GetAsyncQueryRunResult(ctx context.Context, logger *zap.Logger, client kaytu.Client, runID string) (*GetAsyncQueryRunResultSource, error) {
+func GetAsyncQueryRunResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client, runID string) (*GetAsyncQueryRunResultSource, error) {
 	idx := types.QueryRunIndex
 
 	request := map[string]any{

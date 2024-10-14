@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

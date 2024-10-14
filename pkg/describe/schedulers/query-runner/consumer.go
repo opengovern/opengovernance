@@ -3,8 +3,8 @@ package query_runner
 import (
 	"context"
 	"encoding/json"
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
 	"github.com/nats-io/nats.go/jetstream"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"go.uber.org/zap"
 )
 

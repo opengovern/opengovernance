@@ -2,9 +2,9 @@ package migrator
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	config2 "github.com/kaytu-io/open-governance/services/migrator/config"
-	"github.com/kaytu-io/open-governance/services/migrator/job"
+	"github.com/opengovern/og-util/pkg/config"
+	config2 "github.com/opengovern/opengovernance/services/migrator/config"
+	"github.com/opengovern/opengovernance/services/migrator/job"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

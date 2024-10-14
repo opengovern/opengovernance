@@ -2,12 +2,12 @@ package discovery
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/pkg/compliance/client"
-	config2 "github.com/kaytu-io/open-governance/pkg/describe/config"
-	"github.com/kaytu-io/open-governance/pkg/describe/db"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/pkg/compliance/client"
+	config2 "github.com/opengovern/opengovernance/pkg/describe/config"
+	"github.com/opengovern/opengovernance/pkg/describe/db"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -17,10 +17,10 @@ type Scheduler struct {
 	complianceClient client.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
 	db               db.Database
-	esClient         kaytu.Client
+	esClient         opengovernance.Client
 }
 
-func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, esClient kaytu.Client) *Scheduler {
+func New(conf config2.SchedulerConfig, logger *zap.Logger, complianceClient client.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, db db.Database, esClient opengovernance.Client) *Scheduler {
 	return &Scheduler{
 		conf:             conf,
 		logger:           logger,

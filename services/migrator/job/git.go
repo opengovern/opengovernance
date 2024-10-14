@@ -2,12 +2,12 @@ package job
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
-	"github.com/kaytu-io/open-governance/services/migrator/config"
-	git2 "github.com/kaytu-io/open-governance/services/migrator/job/git"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/pkg/metadata/client"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/services/migrator/config"
+	git2 "github.com/opengovern/opengovernance/services/migrator/job/git"
 	"go.uber.org/zap"
 	"os"
 )

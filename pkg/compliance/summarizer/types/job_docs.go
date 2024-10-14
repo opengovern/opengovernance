@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/es"
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
-	onboardApi "github.com/kaytu-io/open-governance/pkg/onboard/api"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/og-util/pkg/es"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
+	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
 

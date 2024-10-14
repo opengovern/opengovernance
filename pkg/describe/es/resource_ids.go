@@ -4,17 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/es"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
 type ResourceIdentifierFetchResponse struct {
 	Hits ResourceIdentifierFetchHits `json:"hits"`
 }
 type ResourceIdentifierFetchHits struct {
-	Total kaytu.SearchTotal            `json:"total"`
+	Total opengovernance.SearchTotal   `json:"total"`
 	Hits  []ResourceIdentifierFetchHit `json:"hits"`
 }
 type ResourceIdentifierFetchHit struct {
@@ -27,7 +27,7 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []any             `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client kaytu.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client opengovernance.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
@@ -62,7 +62,7 @@ func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client kayt
 	return &response, nil
 }
 
-func GetResourceIDsForAccountFromES(ctx context.Context, client kaytu.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountFromES(ctx context.Context, client opengovernance.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
@@ -115,7 +115,7 @@ type InventoryCountResponse struct {
 	} `json:"hits"`
 }
 
-func GetInventoryCountResponse(ctx context.Context, client kaytu.Client, resourceType string) (int64, error) {
+func GetInventoryCountResponse(ctx context.Context, client opengovernance.Client, resourceType string) (int64, error) {
 	query := fmt.Sprintf(`{"size": 0, "query": {"bool": {"filter": [{"term": {"resource_type": "%s"}}]}}}`, resourceType)
 
 	fmt.Println("GetInventoryCountResponse, query=", query)

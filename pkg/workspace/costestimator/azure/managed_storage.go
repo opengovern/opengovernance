@@ -2,10 +2,10 @@ package azure
 
 import (
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/util"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/product"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/query"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/util"
 	"github.com/shopspring/decimal"
 	"strings"
 )

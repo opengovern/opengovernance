@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"go.uber.org/zap"
 )
 
@@ -77,7 +77,7 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
@@ -207,7 +207,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, connectionIDs []string, from, to, granularity int64) (map[string][]BenchmarkTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
@@ -349,7 +349,7 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) == 0 {
 		return nil, fmt.Errorf("resource collections cannot be empty")
 	}
@@ -482,14 +482,14 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.C
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrend(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrend(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) > 0 {
 		return FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, resourceCollections, from, to)
 	}
 	return FetchBenchmarkSummaryTrendByConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, from, to)
 }
 
-func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
 	pathFilters := make([]string, 0, len(connectionIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
@@ -675,7 +675,7 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string,
 	connectionIDs []string, resourceCollections []string,
 	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
@@ -788,7 +788,7 @@ func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, clien
 	return benchmarkSummaries, nil
 }
 
-func GetComplianceSummaryByJobId(ctx context.Context, logger *zap.Logger, client kaytu.Client, summaryJobIDs []string, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
+func GetComplianceSummaryByJobId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, summaryJobIDs []string, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
 
 	idx := types.BenchmarkSummaryIndex
 
@@ -880,7 +880,7 @@ type BenchmarkSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
+func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
 	includes := []string{"Connections.Connections", "EvaluatedAtEpoch"}
 	pathFilters := make([]string, 0, 2)
 	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.Connections.*.Result")
@@ -933,7 +933,7 @@ func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client 
 	return nil, 0, nil
 }
 
-func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
+func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
 	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
@@ -1044,7 +1044,7 @@ type BenchmarksControlSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
+func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
 	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
 	if len(connectionIDs) > 0 {
 		includes = append(includes, "Connections.Connections")
@@ -1157,7 +1157,7 @@ func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client ka
 	return result, evAt, nil
 }
 
-func ListJobsSummariesAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func ListJobsSummariesAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, jobIDs []string,
 	connectionIDs []string, resourceCollections []string,
 	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/compliance/runner"
-	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/opengovernance/pkg/compliance/runner"
+	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
 	"go.uber.org/zap"
 )
 

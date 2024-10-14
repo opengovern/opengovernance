@@ -2,7 +2,7 @@ package model
 
 import (
 	"database/sql"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 	"gorm.io/datatypes"
 	"time"
 )

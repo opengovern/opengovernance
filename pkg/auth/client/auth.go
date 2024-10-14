@@ -3,11 +3,11 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"net/http"
 
-	"github.com/kaytu-io/open-governance/pkg/auth/api"
+	"github.com/opengovern/opengovernance/pkg/auth/api"
 )
 
 type AuthServiceClient interface {

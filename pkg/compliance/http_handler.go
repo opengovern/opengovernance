@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
-	metadataClient "github.com/kaytu-io/open-governance/pkg/metadata/client"
-	"github.com/kaytu-io/open-governance/services/migrator/db/model"
+	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"github.com/sashabaranov/go-openai"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -13,20 +13,20 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	describeClient "github.com/kaytu-io/open-governance/pkg/describe/client"
-	inventoryClient "github.com/kaytu-io/open-governance/pkg/inventory/client"
-	onboardClient "github.com/kaytu-io/open-governance/pkg/onboard/client"
+	"github.com/opengovern/og-util/pkg/postgres"
+	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
+	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/open-governance/pkg/compliance/db"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/pkg/compliance/db"
 
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
 	conf       ServerConfig
-	client     kaytu.Client
+	client     opengovernance.Client
 	db         db.Database
 	migratorDb db.Database
 	logger     *zap.Logger
@@ -111,7 +111,7 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
-	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
+	h.client, err = opengovernance.NewClient(opengovernance.ClientConfig{
 		Addresses:     []string{conf.ElasticSearch.Address},
 		Username:      &conf.ElasticSearch.Username,
 		Password:      &conf.ElasticSearch.Password,

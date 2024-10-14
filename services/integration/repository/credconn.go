@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/kaytu-io/open-governance/services/integration/db"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/opengovernance/services/integration/db"
+	"github.com/opengovern/opengovernance/services/integration/model"
 	"gorm.io/gorm"
 )
 

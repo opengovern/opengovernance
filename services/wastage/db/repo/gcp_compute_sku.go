@@ -3,8 +3,8 @@ package repo
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/open-governance/services/wastage/db/connector"
-	"github.com/kaytu-io/open-governance/services/wastage/db/model"
+	"github.com/opengovern/opengovernance/services/wastage/db/connector"
+	"github.com/opengovern/opengovernance/services/wastage/db/model"
 	"github.com/sony/sonyflake"
 	"gorm.io/gorm"
 	"time"

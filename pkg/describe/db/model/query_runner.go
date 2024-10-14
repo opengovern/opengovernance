@@ -1,7 +1,7 @@
 package model
 
 import (
-	queryrunner "github.com/kaytu-io/open-governance/pkg/inventory/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"gorm.io/gorm"
 )
 

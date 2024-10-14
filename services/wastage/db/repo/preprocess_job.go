@@ -2,8 +2,8 @@ package repo
 
 import (
 	"errors"
-	"github.com/kaytu-io/open-governance/services/wastage/db/connector"
-	"github.com/kaytu-io/open-governance/services/wastage/db/model"
+	"github.com/opengovern/opengovernance/services/wastage/db/connector"
+	"github.com/opengovern/opengovernance/services/wastage/db/model"
 	"gorm.io/gorm"
 )
 

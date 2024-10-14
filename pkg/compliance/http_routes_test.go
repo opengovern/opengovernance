@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -13,12 +13,12 @@ import (
 
 	"gorm.io/gorm"
 
-	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	idocker "github.com/opengovern/og-util/pkg/dockertest"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/ory/dockertest/v3"
 
-	"github.com/kaytu-io/open-governance/pkg/compliance/db"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/opengovernance/pkg/compliance/db"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 )

@@ -1,9 +1,9 @@
 package postgresql
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/workspace/db"
+	"github.com/opengovern/opengovernance/pkg/workspace/db"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/product"
 )
 
 // Backend is the MySQL implementation of the costestimation.Backend, using repositories that connect

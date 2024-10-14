@@ -3,9 +3,9 @@ package api
 import (
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 type DirectionType string
@@ -115,8 +115,8 @@ type SummaryQueryResponse struct {
 	Hits SummaryQueryHits `json:"hits"`
 }
 type SummaryQueryHits struct {
-	Total kaytu.SearchTotal `json:"total"`
-	Hits  []SummaryQueryHit `json:"hits"`
+	Total opengovernance.SearchTotal `json:"total"`
+	Hits  []SummaryQueryHit          `json:"hits"`
 }
 type SummaryQueryHit struct {
 	ID      string            `json:"_id"`

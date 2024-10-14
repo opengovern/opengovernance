@@ -3,8 +3,8 @@ package vault
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
-	"github.com/kaytu-io/open-governance/pkg/workspace/config"
+	"github.com/opengovern/og-util/pkg/vault"
+	"github.com/opengovern/opengovernance/pkg/workspace/config"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

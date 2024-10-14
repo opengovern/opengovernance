@@ -3,8 +3,8 @@ package db
 import (
 	"fmt"
 
-	"github.com/kaytu-io/kaytu-util/pkg/koanf"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

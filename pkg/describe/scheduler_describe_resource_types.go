@@ -2,16 +2,16 @@ package describe
 
 import (
 	"errors"
-	apiAuth "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	apiAuth "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	analyticsDb "github.com/kaytu-io/open-governance/pkg/analytics/db"
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/opengovern/og-aws-describer/aws"
+	"github.com/opengovern/og-azure-describer/azure"
+	analyticsDb "github.com/opengovern/opengovernance/pkg/analytics/db"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 )
 
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {

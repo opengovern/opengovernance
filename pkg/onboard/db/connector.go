@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/services/integration/model"
 )
 
 // ListConnectors gets list of all connectors

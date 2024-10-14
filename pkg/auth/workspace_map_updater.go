@@ -2,8 +2,8 @@ package auth
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"go.uber.org/zap"
 	"time"
 )

@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 func Includes[T string | source.Type | int64](arr []T, item T) bool {

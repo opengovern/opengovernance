@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/kaytu-io/open-governance/pkg/describe/connectors"
-	"github.com/kaytu-io/open-governance/services/integration/model"
+	"github.com/opengovern/opengovernance/pkg/describe/connectors"
+	"github.com/opengovern/opengovernance/services/integration/model"
 	"strings"
 	"time"
 
@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	"github.com/opengovern/og-util/pkg/source"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 )

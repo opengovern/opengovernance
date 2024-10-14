@@ -2,9 +2,9 @@ package query_runner
 
 import (
 	"context"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/steampipe"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"go.uber.org/zap"
 	"net/http"
 	"time"

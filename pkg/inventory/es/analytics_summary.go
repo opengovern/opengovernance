@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"math"
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/analytics/es/resource"
-	inventoryApi "github.com/kaytu-io/open-governance/pkg/inventory/api"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/analytics/es/resource"
+	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +40,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client, metricIDs []string, connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
+func FetchConnectionAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client, metricIDs []string, connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -172,7 +172,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FetchConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int,
 ) (map[string]CountWithTime, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
@@ -279,7 +279,7 @@ func FetchConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Lo
 	return result, nil
 }
 
-func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client,
+func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int,
 ) (map[string]map[string]CountWithTime, error) {
 	idx := resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
@@ -416,7 +416,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(ctx context.Context, logger *zap.Logger, client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectionMetricTrendSummaryPage(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -591,7 +591,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorMetricTrendSummaryPage(ctx context.Context, logger *zap.Logger, client kaytu.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectorMetricTrendSummaryPage(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
 	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
@@ -764,7 +764,7 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 	LatestEvaluatedAt int64
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(ctx context.Context, logger *zap.Logger, client kaytu.Client, connectors []source.Type, connectionIDs []string,
+func FetchConnectionAnalyticsResourcesCountAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connectors []source.Type, connectionIDs []string,
 	resourceCollections []string, metricIDs []string, t time.Time, size int,
 ) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
@@ -907,7 +907,7 @@ type AssetTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchAssetTableByDimension(ctx context.Context, logger *zap.Logger, client kaytu.Client, metricIds []string, granularity inventoryApi.TableGranularityType, dimension inventoryApi.DimensionType, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchAssetTableByDimension(ctx context.Context, logger *zap.Logger, client opengovernance.Client, metricIds []string, granularity inventoryApi.TableGranularityType, dimension inventoryApi.DimensionType, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -1043,7 +1043,7 @@ type CountAnalyticsMetricsResponse struct {
 	} `json:"aggregations"`
 }
 
-func CountAnalyticsMetrics(ctx context.Context, logger *zap.Logger, client kaytu.Client) (*CountAnalyticsMetricsResponse, error) {
+func CountAnalyticsMetrics(ctx context.Context, logger *zap.Logger, client opengovernance.Client) (*CountAnalyticsMetricsResponse, error) {
 	query := make(map[string]any)
 	query["size"] = 0
 

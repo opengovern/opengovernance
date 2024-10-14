@@ -1,14 +1,14 @@
 package aws
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/price"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/product"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/query"
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/util"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/price"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/product"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/query"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/util"
 	"github.com/shopspring/decimal"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/aws/region"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/aws/region"
 )
 
 // LB represents a Load Balancer definition that can be cost-estimated.

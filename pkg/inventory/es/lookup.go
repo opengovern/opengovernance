@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/describe"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/describe"
+	"github.com/opengovern/opengovernance/pkg/utils"
 )
 
 type ResourceTypeCountsResponse struct {
@@ -21,7 +21,7 @@ type ResourceTypeCountsResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetResourceTypeCounts(ctx context.Context, client kaytu.Client, connectors []source.Type, connectionIDs []string, resourceTypes []string, size int) (map[string]int, error) {
+func GetResourceTypeCounts(ctx context.Context, client opengovernance.Client, connectors []source.Type, connectionIDs []string, resourceTypes []string, size int) (map[string]int, error) {
 	var filters []any
 	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))

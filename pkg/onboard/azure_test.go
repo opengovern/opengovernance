@@ -3,7 +3,7 @@ package onboard
 import (
 	"context"
 
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/opengovern/og-azure-describer/azure"
 	"go.uber.org/zap"
 
 	"testing"

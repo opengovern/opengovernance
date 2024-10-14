@@ -1,6 +1,6 @@
 package models
 
-import "github.com/kaytu-io/open-governance/pkg/metadata/api"
+import "github.com/opengovern/opengovernance/pkg/metadata/api"
 
 type QueryParameter struct {
 	Key   string `gorm:"primaryKey"`

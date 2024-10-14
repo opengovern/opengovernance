@@ -2,7 +2,7 @@ package v2
 
 import (
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/source"
 )
 
 type CreateCredentialV2Request struct {

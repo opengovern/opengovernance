@@ -1,10 +1,10 @@
 package kaytu_client
 
 import (
-	aws "github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
-	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	aws "github.com/opengovern/og-aws-describer/aws/model"
+	kaytuAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
+	azure "github.com/opengovern/og-azure-describer/azure/model"
+	kaytuAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
 	"strings"
 )
 

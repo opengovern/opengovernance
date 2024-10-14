@@ -1,8 +1,8 @@
 package src
 
 import (
-	"github.com/kaytu-io/open-governance/pkg/metadata/internal/database"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 )
 
 const (

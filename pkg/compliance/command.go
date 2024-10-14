@@ -3,8 +3,8 @@ package compliance
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/httpserver"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

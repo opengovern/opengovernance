@@ -1,4 +1,4 @@
-module github.com/kaytu-io/open-governance
+module github.com/opengovern/opengovernance
 
 go 1.22.0
 
@@ -41,14 +41,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/hashicorp/vault/api v1.14.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/kaytu-io/kaytu-aws-describer v0.58.4
-	github.com/kaytu-io/kaytu-azure-describer v0.36.2
-	github.com/kaytu-io/kaytu-util v0.0.0-20241007100447-12b2e77fff2b
 	github.com/kaytu-io/pennywise v1.7.16
-	github.com/kaytu-io/plugin-aws v0.6.18
-	github.com/kaytu-io/plugin-gcp v0.0.0-20240717111217-187ef7b38a02
-	github.com/kaytu-io/plugin-kubernetes-internal v0.16.5
-	github.com/kaytu-io/terraform-package v0.0.0-20230928144906-ccb892d8c762
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
@@ -57,6 +50,13 @@ require (
 	github.com/microsoftgraph/msgraph-sdk-go v1.36.0
 	github.com/nats-io/nats.go v1.36.0
 	github.com/open-policy-agent/opa v0.69.0
+	github.com/opengovern/og-aws-describer v0.58.9
+	github.com/opengovern/og-azure-describer v0.36.6
+	github.com/opengovern/og-util v0.0.0-20241014001006-42f25ad9090c
+	github.com/opengovern/plugin-aws v0.7.3
+	github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b
+	github.com/opengovern/plugin-kubernetes-internal v0.18.12
+	github.com/opengovern/terraform-package v0.0.0-20241014133542-6abd29a60b10
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/opensearch-project/opensearch-go/v4 v4.2.0
 	github.com/ory/dockertest/v3 v3.10.0
@@ -83,7 +83,7 @@ require (
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.6
+	gorm.io/gorm v1.25.10
 	k8s.io/api v0.30.2
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
@@ -484,7 +484,7 @@ require (
 	github.com/knadh/koanf/providers/env v0.1.0 // indirect
 	github.com/knadh/koanf/providers/file v0.1.0 // indirect
 	github.com/knadh/koanf/providers/structs v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -494,6 +494,7 @@ require (
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/microsoft/kiota-http-go v1.3.1 // indirect
 	github.com/microsoft/kiota-serialization-form-go v1.0.0 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.0.6 // indirect

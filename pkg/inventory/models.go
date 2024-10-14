@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/inventory/api"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/inventory/api"
 	"gorm.io/gorm"
 )
 
@@ -190,7 +190,7 @@ type ResourceCollection struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	Filters []kaytu.ResourceCollectionFilter `gorm:"-:all"`
+	Filters []opengovernance.ResourceCollectionFilter `gorm:"-:all"`
 }
 
 func (r ResourceCollection) ToApi() api.ResourceCollection {

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/open-governance/pkg/compliance/summarizer"
-	types2 "github.com/kaytu-io/open-governance/pkg/compliance/summarizer/types"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
-	"github.com/kaytu-io/open-governance/pkg/types"
+	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
+	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
 

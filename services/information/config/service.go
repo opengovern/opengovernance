@@ -1,6 +1,6 @@
 package config
 
-import "github.com/kaytu-io/kaytu-util/pkg/koanf"
+import "github.com/opengovern/og-util/pkg/koanf"
 
 type InformationConfig struct {
 	Postgres koanf.Postgres   `json:"postgres,omitempty" koanf:"postgres"`

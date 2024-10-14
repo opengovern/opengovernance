@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAws "github.com/opengovern/og-aws-describer/aws"
 )
 
 //go:embed management_policy.json

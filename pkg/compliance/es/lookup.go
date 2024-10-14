@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/es"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
 const (
@@ -30,7 +30,7 @@ type LookupQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchLookupByResourceIDBatch(ctx context.Context, client kaytu.Client, resourceID []string) (map[string][]es.LookupResource, error) {
+func FetchLookupByResourceIDBatch(ctx context.Context, client opengovernance.Client, resourceID []string) (map[string][]es.LookupResource, error) {
 	if len(resourceID) == 0 {
 		return nil, nil
 	}
@@ -98,7 +98,7 @@ func FetchLookupByResourceIDBatch(ctx context.Context, client kaytu.Client, reso
 
 type ResourceQueryResponse struct {
 	Hits struct {
-		Total kaytu.SearchTotal `json:"total"`
+		Total opengovernance.SearchTotal `json:"total"`
 		Hits  []struct {
 			ID      string      `json:"_id"`
 			Score   float64     `json:"_score"`
@@ -111,7 +111,7 @@ type ResourceQueryResponse struct {
 	}
 }
 
-func FetchResourceByResourceIdAndType(ctx context.Context, client kaytu.Client, resourceId string, resourceType string) (*es.Resource, error) {
+func FetchResourceByResourceIdAndType(ctx context.Context, client opengovernance.Client, resourceId string, resourceType string) (*es.Resource, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{

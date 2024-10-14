@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/costestimator/cost"
+	"github.com/opengovern/opengovernance/pkg/workspace/costestimator/cost"
 )
 
 func TestPlan_ResourceDifferences(t *testing.T) {

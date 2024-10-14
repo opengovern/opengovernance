@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/open-governance/pkg/auth/db"
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"time"
 )
 

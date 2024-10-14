@@ -3,15 +3,15 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/kaytu-io/open-governance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
 )
 
 type TimeRangeFilter struct {

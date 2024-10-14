@@ -1,10 +1,10 @@
 package models
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/api"
 	"strings"
 
-	"github.com/kaytu-io/open-governance/pkg/metadata/errors"
+	"github.com/opengovern/opengovernance/pkg/metadata/errors"
 )
 
 type ConfigMetadataType string

@@ -2,11 +2,11 @@ package db
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/open-governance/pkg/workspace/config"
+	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/pkg/workspace/config"
 	"gorm.io/gorm/clause"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

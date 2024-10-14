@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	analyticsDb "github.com/kaytu-io/open-governance/pkg/analytics/db"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/og-util/pkg/source"
+	analyticsDb "github.com/opengovern/opengovernance/pkg/analytics/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

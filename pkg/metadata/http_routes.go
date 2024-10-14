@@ -2,8 +2,8 @@ package metadata
 
 import (
 	"errors"
-	api3 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -13,10 +13,10 @@ import (
 	_ "gorm.io/gorm"
 	"net/http"
 
-	"github.com/kaytu-io/open-governance/pkg/metadata/api"
-	"github.com/kaytu-io/open-governance/pkg/metadata/internal/src"
-	"github.com/kaytu-io/open-governance/pkg/metadata/models"
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/opengovernance/pkg/metadata/api"
+	"github.com/opengovern/opengovernance/pkg/metadata/internal/src"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 )
 
 func (h HttpHandler) Register(r *echo.Echo) {

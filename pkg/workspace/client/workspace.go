@@ -2,10 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"net/http"
 
-	"github.com/kaytu-io/open-governance/pkg/workspace/api"
+	"github.com/opengovern/opengovernance/pkg/workspace/api"
 )
 
 type WorkspaceServiceClient interface {

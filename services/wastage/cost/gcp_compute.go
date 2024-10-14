@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
-	gcp "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	gcp "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"net/http"
 	"time"
 )

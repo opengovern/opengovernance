@@ -3,7 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/open-governance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"

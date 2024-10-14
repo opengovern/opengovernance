@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/vault"
 )
 
 type ServerlessProviderType string

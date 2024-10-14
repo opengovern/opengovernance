@@ -6,12 +6,12 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/kaytu-io/terraform-package/external/backend"
-	azurem "github.com/kaytu-io/terraform-package/external/backend/remote-state/azure"
-	"github.com/kaytu-io/terraform-package/external/backend/remote-state/s3"
-	"github.com/kaytu-io/terraform-package/external/states"
-	"github.com/kaytu-io/terraform-package/external/states/statefile"
-	"github.com/kaytu-io/terraform-package/external/tfdiags"
+	"github.com/opengovern/terraform-package/external/backend"
+	azurem "github.com/opengovern/terraform-package/external/backend/remote-state/azure"
+	"github.com/opengovern/terraform-package/external/backend/remote-state/s3"
+	"github.com/opengovern/terraform-package/external/states"
+	"github.com/opengovern/terraform-package/external/states/statefile"
+	"github.com/opengovern/terraform-package/external/tfdiags"
 )
 
 type Config struct {

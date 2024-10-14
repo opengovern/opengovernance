@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	onboard "github.com/kaytu-io/open-governance/services/integration/model"
+	onboard "github.com/opengovern/opengovernance/services/integration/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

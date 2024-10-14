@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	authApi "github.com/kaytu-io/open-governance/pkg/auth/api"
-	"github.com/kaytu-io/open-governance/pkg/onboard/api"
-	apiv2 "github.com/kaytu-io/open-governance/pkg/onboard/api/v2"
-	"github.com/kaytu-io/open-governance/services/migrator/db/model"
+	"github.com/opengovern/og-util/pkg/source"
+	authApi "github.com/opengovern/opengovernance/pkg/auth/api"
+	"github.com/opengovern/opengovernance/pkg/onboard/api"
+	apiv2 "github.com/opengovern/opengovernance/pkg/onboard/api/v2"
+	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"time"
 )
 

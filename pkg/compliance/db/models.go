@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgtype"
-	"github.com/kaytu-io/open-governance/pkg/utils"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/open-governance/pkg/types"
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/opengovernance/pkg/types"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/open-governance/pkg/compliance/api"
+	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/opengovernance/pkg/compliance/api"
 
 	"gorm.io/gorm"
 )

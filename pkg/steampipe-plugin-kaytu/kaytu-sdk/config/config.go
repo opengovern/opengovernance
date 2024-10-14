@@ -2,7 +2,7 @@ package config
 
 import (
 	"context"
-	essdk "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	essdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/schema"

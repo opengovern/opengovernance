@@ -108,7 +108,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/kaytu-io.insteadOf https://github.com/kaytu-io
+      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
       - name: Build services
         id: build_services
         run: |
@@ -120,7 +120,7 @@ jobs:
           mkdir -p ./build
           if [ ! -z "$(cat ./build_services)" ]; then
             for f in $(cat ./build_services); do
-              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
+              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
             done
             chmod +x ./build/*
           fi
@@ -172,7 +172,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -281,7 +281,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -318,7 +318,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -715,7 +715,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-steampipe-plugin-kaytu:
     runs-on: ubuntu-latest
@@ -876,7 +876,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/QueryRunnerWorkerDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-import-data-script:
     runs-on: ubuntu-latest
@@ -903,7 +903,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/import-data-script:${{ needs.tag.outputs.latest_tag }}
           file: docker/ImportDataScriptDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-export-data-script:
     runs-on: ubuntu-latest
@@ -930,7 +930,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/export-data-script:${{ needs.tag.outputs.latest_tag }}
           file: docker/ExportDataScriptDockerfile
           build-args: |
-            PLUGIN_REGISTRY=ghcr.io/kaytu-io
+            PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
   deploy-demo-importer-worker:
     runs-on: ubuntu-latest
