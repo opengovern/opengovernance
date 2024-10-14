@@ -802,7 +802,6 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
 			if err != nil {
 				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
-				return err
 			}
 			return err
 		}
@@ -894,7 +893,6 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 			connection, err = h.connSvc.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, fp.Optional("Credential is not healthy"), fp.Optional(false), fp.Optional(false), true)
 			if err != nil {
 				h.logger.Error("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
-				return err
 			}
 			return err
 		}
