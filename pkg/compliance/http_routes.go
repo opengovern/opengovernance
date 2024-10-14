@@ -236,10 +236,10 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
-	if err != nil {
-		return err
-	}
+	//req.Filters.ConnectionID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.ConnectionID)
+	//if err != nil {
+	//	return err
+	//}
 
 	var response api.GetFindingsResponse
 
@@ -282,7 +282,6 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		evaluatedAtFrom, evaluatedAtTo, err = parseTimeInterval(*req.Filters.Interval)
 	}
 
-	var connectionIDs []string
 	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
@@ -290,19 +289,12 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	}
 	allSourcesMap := make(map[string]*onboardApi.Connection)
 	for _, src := range allSources {
-		if src.HealthState != source.HealthStatusHealthy {
-			continue
-		}
 		src := src
 		allSourcesMap[src.ID.String()] = &src
-		connectionIDs = append(connectionIDs, src.ID.String())
-	}
-	if len(req.Filters.ConnectionID) > 0 {
-		connectionIDs = req.Filters.ConnectionID
 	}
 
 	res, totalCount, err := es.FindingsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.Connector,
-		connectionIDs, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
+		req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
 		req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, req.Filters.JobID)
 	if err != nil {
