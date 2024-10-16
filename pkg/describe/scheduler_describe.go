@@ -626,7 +626,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
 		invokeOutput, err := s.lambdaClient.Invoke(ctx, &lambda.InvokeInput{
-			FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+			FunctionName:   awsSdk.String(fmt.Sprintf("og-%s-describer", strings.ToLower(dc.Connector.String()))),
 			LogType:        types.LogTypeTail,
 			Payload:        lambdaPayload,
 			InvocationType: types.InvocationTypeEvent,
@@ -673,7 +673,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			isFailed = true
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
-		sender, err := s.serviceBusClient.NewSender(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String())), nil)
+		sender, err := s.serviceBusClient.NewSender(fmt.Sprintf("og-%s-describer", strings.ToLower(dc.Connector.String())), nil)
 		if err != nil {
 			s.logger.Error("failed to create service bus sender",
 				zap.Uint("jobID", dc.ID),
