@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Integration struct {
 	Connector          string
 	Type               string
 	OnboardDate        time.Time
+	Metadata           pgtype.JSONB
 
 	CredentialID uuid.UUID
 

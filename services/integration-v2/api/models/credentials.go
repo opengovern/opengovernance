@@ -1,8 +1,9 @@
 package models
 
 type CreateRequest struct {
-	CredentialType string         `json:"type"`
-	Config         map[string]any `json:"config"`
+	IntegrationType string         `json:"integration_type"`
+	CredentialType  string         `json:"credential_type"`
+	Credentials     map[string]any `json:"credentials"`
 }
 
 type UpdateRequest struct {
