@@ -82,9 +82,19 @@ func (m *EsSinkModule) Start(ctx context.Context) {
 				err := m.elasticsearch.CreateIndexIfNotExist(ctx, m.logger, idx)
 				if err != nil {
 					m.logger.Error("failed to create index", zap.Error(err))
-					continue
+				} else {
+					m.existingIndices[idx] = true
 				}
-				m.existingIndices[idx] = true
+				indices, err := m.elasticsearch.ListIndices(ctx, m.logger)
+				if err != nil {
+					m.logger.Error("failed to list indices", zap.Error(err))
+				}
+				for _, idxx := range indices {
+					m.existingIndices[idxx] = true
+				}
+			}
+			if _, ok := m.existingIndices[idx]; !ok {
+				continue
 			}
 			resourceJson, err := json.Marshal(resource)
 			if err != nil {
