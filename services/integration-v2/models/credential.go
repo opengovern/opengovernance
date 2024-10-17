@@ -7,10 +7,9 @@ import (
 )
 
 type Credential struct {
-	ID              uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
-	CredentialType  string
-	HealthStatus    string
-	LastHealthCheck *time.Time
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
+	Secret         string    `json:"-"`
+	CredentialType string    `json:"credentialType"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
