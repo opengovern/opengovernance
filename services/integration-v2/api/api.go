@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/vault"
+	"github.com/opengovern/opengovernance/services/integration-v2/api/credentials"
 	"github.com/opengovern/opengovernance/services/integration-v2/db"
 	"go.uber.org/zap"
 )
@@ -20,20 +21,16 @@ func New(
 	logger *zap.Logger,
 	db db.Database,
 	vault vault.VaultSourceConfig,
-	vaultKeyId string,
-	masterAccessKey string,
-	masterSecretKey string,
 ) *API {
 	return &API{
-		logger:          logger.Named("api"),
-		database:        db,
-		vault:           vault,
-		vaultKeyId:      vaultKeyId,
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
+		logger:   logger.Named("api"),
+		database: db,
+		vault:    vault,
 	}
 }
 
 func (api *API) Register(e *echo.Echo) {
+	cred := credentials.New(api.vault, api.logger)
 
+	cred.Register(e.Group("/api/v1/credentials"))
 }

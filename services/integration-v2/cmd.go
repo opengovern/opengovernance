@@ -67,7 +67,7 @@ func Command() *cobra.Command {
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, db, vaultSc, cnf.Vault.KeyId, cnf.MasterAccessKey, cnf.MasterSecretKey),
+				api.New(logger, db, vaultSc),
 			)
 		},
 	}
