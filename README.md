@@ -31,12 +31,12 @@ By optimizing your compliance and governance processes, OpenGovernance helps red
 ### Add the Helm Repository:
 
 ```bash
-helm repo add opengovernance https://kaytu-io.github.io/kaytu-charts && helm repo update
+helm repo add opengovernance https://opengovern.github.io/charts && helm repo update
 ```
 
 ### Install with Helm
 ```bash
-helm install -n opengovernance opengovernance opengovernance/open-governance --create-namespace --timeout=10m
+helm install -n opengovernance opengovernance opengovernance/opengovernance --create-namespace --timeout=10m
 ```
 
 ### Expose the app
@@ -45,4 +45,4 @@ helm install -n opengovernance opengovernance opengovernance/open-governance --c
 kubectl port-forward -n opengovernance svc/nginx-proxy 8080:80
 ```
 Navigate to http://localhost:8080/ in your browser.
-To sign in, use admin@example.com as the username and password as the password.
+To sign in, use admin@opengovernance.io as the username and password as the password.
