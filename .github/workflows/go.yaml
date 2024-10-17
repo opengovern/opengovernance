@@ -11,10 +11,17 @@ on:
         description: "List of services to build"
         required: false
         default: "all"
+      deployTo:
+        type: choice
+        description: "Environment to deploy to"
+        options:
+          - "dev"
+          - "prod"
+        default: "dev"
   push:
-    branches: ["main"]
+    branches: ["main","dev"]
   pull_request:
-    branches: ["main"]
+    branches: ["main","dev"]
 
 jobs:
   tag:
@@ -41,6 +48,20 @@ jobs:
           else
             echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
           fi
+  tag-suffix:
+    runs-on: ubuntu-latest
+    environment: golang
+    outputs:
+      suffix: ${{ steps.suffix.outputs.suffix }}
+    steps:
+      - name: Determine Tag Suffix and Deployment Environment
+        id: suffix
+        run: |
+            if [[ "${{ github.ref_name }}" == "dev" || "${{ github.event.inputs.deployTo }}" == "dev" ]]; then
+              echo "suffix=-dev" >> "$GITHUB_OUTPUT"
+            else
+              echo "suffix=" >> "$GITHUB_OUTPUT"
+            fi
   build:
     runs-on: ubuntu-latest
     needs:
@@ -141,6 +162,7 @@ jobs:
     needs:
       - build
       - tag
+      - tag-suffix
       - deploy-steampipe-plugin-kaytu
     permissions:
       id-token: write
@@ -169,7 +191,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/SteampipeServiceDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -206,7 +228,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/AuthServiceDockerfile
           context: .
   deploy-checkup-worker:
@@ -241,7 +263,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/CheckupWorkerDockerfile
           context: .
   deploy-compliance-report-worker:
@@ -278,7 +300,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -315,7 +337,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -352,7 +374,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/ComplianceServiceDockerfile
           context: .
   deploy-describe-scheduler:
@@ -387,7 +409,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/DescribeSchedulerDockerfile
           context: .
   deploy-integration-service:
@@ -422,7 +444,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/IntegrationServiceDockerfile
           context: .
   deploy-es-sink-service:
@@ -457,7 +479,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/EsSinkServiceDockerfile
           context: .
   deploy-inventory-service:
@@ -492,7 +514,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/InventoryServiceDockerfile
           context: .
   deploy-metadata-service:
@@ -527,7 +549,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/MetadataServiceDockerfile
           context: .
   deploy-migrator-worker:
@@ -562,7 +584,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/MigratorDockerfile
           context: .
   deploy-onboard-service:
@@ -597,7 +619,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/OnboardServiceDockerfile
           context: .
   deploy-swagger-ui-and-redoc:
@@ -632,7 +654,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/SwaggerUIDockerfile
           context: .
       - name: Build and push Docker images - redoc
@@ -640,7 +662,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/redoc:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/redoc:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
@@ -675,7 +697,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/workspace-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/workspace-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/WorkspaceServiceDockerfile
           context: .
   deploy-analytics-worker:
@@ -712,7 +734,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -766,7 +788,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-kaytu:0.0.1
-            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-kaytu:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/SteampipePluginKaytuDockerfile
           context: .
   deploy-wastage-service:
@@ -801,7 +823,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/WastageServiceDockerfile
           context: .
   deploy-information-service:
@@ -836,7 +858,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/InformationServiceDockerfile
           context: .
   deploy-query-runner-worker:
@@ -873,7 +895,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/QueryRunnerWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -900,7 +922,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/import-data-script:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/import-data-script:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/ImportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -927,7 +949,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/export-data-script:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/export-data-script:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/ExportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
@@ -964,7 +986,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/DemoImporterDockerfile
           context: .
   deploy-dex-login:
@@ -989,6 +1011,6 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/dex-login:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/dex-login:${{ needs.tag.outputs.latest_tag }}${{ needs.tag-suffix.outputs.suffix }}
           file: docker/DexLoginDockerfile
           context: .
