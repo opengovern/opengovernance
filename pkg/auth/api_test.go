@@ -12,10 +12,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
 	idocker "github.com/opengovern/og-util/pkg/dockertest"
 	"github.com/opengovern/og-util/pkg/postgres"
-
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"github.com/opengovern/opengovernance/pkg/auth/auth0"
