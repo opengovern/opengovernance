@@ -50,6 +50,8 @@ jobs:
           fi
   tag-suffix:
     runs-on: ubuntu-latest
+    needs:
+      - tag
     environment: golang
     outputs:
       suffix: ${{ steps.suffix.outputs.suffix }}
@@ -66,6 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - tag
+      - tag-suffix
     environment: golang
     outputs:
       steampipe: ${{ steps.build_services.outputs.steampipe }}
