@@ -1,6 +1,7 @@
-package credentials
+package integrations
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
@@ -8,6 +9,7 @@ import (
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"github.com/opengovern/opengovernance/services/integration-v2/db"
+	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	models2 "github.com/opengovern/opengovernance/services/integration-v2/models"
 	"go.uber.org/zap"
 	"net/http"
@@ -38,7 +40,7 @@ func New(
 //	@Produce		json
 //	@Success		200
 //	@Param			request	body		entity.CreateRequest	true	"Request"
-//	@Router			/integration/api/v1/credentials [post]
+//	@Router			/integration/api/v1/integrations [post]
 func (h API) Create(c echo.Context) error {
 	var req models.CreateRequest
 
@@ -46,7 +48,28 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	secret, err := h.vault.Encrypt(c.Request().Context(), req.Config)
+	jsonData, err := json.Marshal(req.Credentials)
+	if err != nil {
+		h.logger.Error("failed to marshal json data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+	}
+
+	createCredentialFunction := interfaces.IntegrationTypes[req.IntegrationType]
+	credentials, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
+
+	if credentials == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+	}
+
+	err = credentials.HealthCheck()
+	if err != nil {
+		h.logger.Error("healthcheck failed", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
+	}
+
+	integrations, err := credentials.GetIntegrations()
+
+	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
 	if err != nil {
 		h.logger.Error("failed to encrypt secret", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
@@ -62,6 +85,14 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
 	}
 
+	for _, i := range integrations {
+		err = h.database.CreateIntegration(&i)
+		if err != nil {
+			h.logger.Error("failed to create credential", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+		}
+	}
+
 	return c.NoContent(http.StatusOK)
 }
 
@@ -73,8 +104,8 @@ func (h API) Create(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200
-//	@Param			credentialId	path	string	true	"CredentialID"
-//	@Router			/integration/api/v1/credentials/{credentialId} [delete]
+//	@Param			credentialId	path	string	true	"IntegrationID"
+//	@Router			/integration/api/v1/integrations/{integrationId} [delete]
 func (h API) Delete(c echo.Context) error {
 	credId, err := uuid.Parse(c.Param("credentialId"))
 	if err != nil {
@@ -92,13 +123,13 @@ func (h API) Delete(c echo.Context) error {
 
 // List godoc
 //
-//	@Summary		List credential
-//	@Description	List credential
+//	@Summary		List integrations
+//	@Description	List integrations
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200				{object}	models.ListResponse
-//	@Router			/integration/api/v1/credentials [get]
+//	@Router			/integration/api/v1/integrations [get]
 func (h API) List(c echo.Context) error {
 	credentials, err := h.database.ListCredentials()
 	if err != nil {
@@ -183,7 +214,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt config")
 	}
 
-	for k, v := range req.Config {
+	for k, v := range req.Credentials {
 		credentials[k] = v
 	}
 
