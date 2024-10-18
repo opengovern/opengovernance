@@ -1,4 +1,4 @@
-package aws
+package aws_account
 
 import "github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 
