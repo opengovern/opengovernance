@@ -1,4 +1,4 @@
-package azure
+package azure_subscription
 
 import (
 	"encoding/json"

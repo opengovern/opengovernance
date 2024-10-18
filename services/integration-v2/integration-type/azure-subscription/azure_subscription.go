@@ -1,4 +1,4 @@
-package azure
+package azure_subscription
 
 import (
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
