@@ -1,4 +1,4 @@
-package aws
+package aws_account
 
 import (
 	"encoding/json"

@@ -9,7 +9,7 @@ import (
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"github.com/opengovern/opengovernance/services/integration-v2/db"
-	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	models2 "github.com/opengovern/opengovernance/services/integration-v2/models"
 	"go.uber.org/zap"
 	"net/http"
@@ -54,7 +54,7 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	createCredentialFunction := interfaces.IntegrationTypes[req.IntegrationType]
+	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
 	credentials, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
 
 	if credentials == nil {
