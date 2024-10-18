@@ -75,8 +75,10 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 	}
 
+	credentialID := uuid.New()
+
 	err = h.database.CreateCredential(&models2.Credential{
-		ID:             uuid.New(),
+		ID:             credentialID,
 		Secret:         secret,
 		CredentialType: req.CredentialType,
 	})
@@ -86,6 +88,7 @@ func (h API) Create(c echo.Context) error {
 	}
 
 	for _, i := range integrations {
+		i.CredentialID = credentialID
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
 			h.logger.Error("failed to create credential", zap.Error(err))
