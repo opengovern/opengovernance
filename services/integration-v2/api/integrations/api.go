@@ -23,11 +23,13 @@ type API struct {
 
 func New(
 	vault vault.VaultSourceConfig,
+	database db.Database,
 	logger *zap.Logger,
 ) API {
 	return API{
-		vault:  vault,
-		logger: logger.Named("credentials"),
+		vault:    vault,
+		database: database,
+		logger:   logger.Named("credentials"),
 	}
 }
 

@@ -30,7 +30,7 @@ func New(
 }
 
 func (api *API) Register(e *echo.Echo) {
-	cred := integrations.New(api.vault, api.logger)
+	cred := integrations.New(api.vault, api.database, api.logger)
 
 	cred.Register(e.Group("/api/v1/integrations"))
 }

@@ -39,6 +39,11 @@ func Command() *cobra.Command {
 				return err
 			}
 
+			err = db.Initialize()
+			if err != nil {
+				return err
+			}
+
 			var vaultSc vault.VaultSourceConfig
 			switch cnf.Vault.Provider {
 			case vault.AwsKMS:
