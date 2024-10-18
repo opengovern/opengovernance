@@ -11,16 +11,10 @@ import (
 	config2 "github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
-	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
 	"os"
 	"strconv"
 
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
-
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
 
 	"crypto/rand"
 	"github.com/spf13/cobra"
@@ -36,17 +30,7 @@ var (
 	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
 	dexGrpcAddress               = os.Getenv("DEX_GRPC_ADDR")
-	auth0Domain                  = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID                = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientIDNative          = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
-	auth0ClientIDPennywiseNative = os.Getenv("AUTH0_CLIENT_ID_PENNYWISE_NATIVE")
-
-	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
-	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
-	auth0ManageClientSecret = os.Getenv("AUTH0_MANAGE_CLIENT_SECRET")
-	auth0Connection         = os.Getenv("AUTH0_CONNECTION")
-	auth0InviteTTL          = os.Getenv("AUTH0_INVITE_TTL")
-
+	
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
 	kaytuHost          = os.Getenv("KAYTU_HOST")
@@ -54,11 +38,6 @@ var (
 	kaytuPublicKeyStr  = os.Getenv("KAYTU_PUBLIC_KEY")
 	kaytuPrivateKeyStr = os.Getenv("KAYTU_PRIVATE_KEY")
 
-	workspaceBaseUrl   = os.Getenv("WORKSPACE_BASE_URL")
-	complianceBaseUrl  = os.Getenv("COMPLIANCE_BASE_URL")
-	integrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
-	describeBaseUrl    = os.Getenv("DESCRIBE_BASE_URL")
-	metadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
 )
 
 func Command() *cobra.Command {
@@ -87,22 +66,9 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	logger = logger.Named("auth")
+	logger = logger.Named("authV2")
 
-	verifier, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientID)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier: %w", err)
-	}
 
-	verifierNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDNative)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier: %w", err)
-	}
-
-	verifierPennywiseNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDPennywiseNative)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier pennywise: %w", err)
-	}
 
 	dexVerifier, err := newDexOidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {
@@ -111,16 +77,6 @@ func start(ctx context.Context) error {
 
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
-
-	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
-	complianceClient := client2.NewComplianceClient(complianceBaseUrl)
-	integrationClient := client3.NewIntegrationServiceClient(integrationBaseUrl)
-	schedulerClient := client4.NewSchedulerServiceClient(describeBaseUrl)
-
-	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse auth0InviteTTL=%s due to %v", auth0InviteTTL, err)
-	}
 
 	// setup postgres connection
 	cfg := postgres.Config{
@@ -266,39 +222,26 @@ func start(ctx context.Context) error {
 		}
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
-		auth0Connection, int(inviteTTL), adb)
 
 	authServer := &Server{
 		host:                    kaytuHost,
 		kaytuPublicKey:          kaytuPublicKey,
-		verifier:                verifier,
-		verifierNative:          verifierNative,
-		verifierPennywiseNative: verifierPennywiseNative,
+		
 		dexVerifier:             dexVerifier,
 		logger:                  logger,
-		workspaceClient:         workspaceClient,
-		complianceClient:        complianceClient,
-		integrationClient:       integrationClient,
+		
 		db:                      adb,
-		auth0Service:            auth0Service,
+		
 		updateLoginUserList:     nil,
 		updateLogin:             make(chan User, 100000),
 	}
-	go authServer.WorkspaceMapUpdater()
+
 	go authServer.UpdateLastLoginLoop()
 
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
 			logger: logger,
-			//emailService:    m,
-			workspaceClient:   workspaceClient,
-			complianceClient:  complianceClient,
-			integrationClient: integrationClient,
-			schedulerClient:   schedulerClient,
-			metadataBaseUrl:   metadataBaseUrl,
-			auth0Service:      auth0Service,
 			kaytuPrivateKey:   kaytuPrivateKey,
 			db:                adb,
 			authServer:        authServer,
