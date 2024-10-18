@@ -48,10 +48,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	//go:embed email/invite.html
-	inviteEmailTemplate string
-)
+// var (
+// 	//go:embed email/invite.html
+// 	inviteEmailTemplate string
+// )
 
 type httpRoutes struct {
 	logger *zap.Logger
