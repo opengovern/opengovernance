@@ -123,12 +123,12 @@ func (h API) Create(c echo.Context) error {
 //	@Param			credentialId	path	string	true	"IntegrationID"
 //	@Router			/integration/api/v1/integrations/{integrationId} [delete]
 func (h API) Delete(c echo.Context) error {
-	credId, err := uuid.Parse(c.Param("credentialId"))
+	integrationId, err := uuid.Parse(c.Param("integrationId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	err = h.database.DeleteCredential(credId)
+	err = h.database.DeleteIntegration(integrationId)
 	if err != nil {
 		h.logger.Error("failed to delete credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete credential")
@@ -147,23 +147,25 @@ func (h API) Delete(c echo.Context) error {
 //	@Success		200				{object}	models.ListResponse
 //	@Router			/integration/api/v1/integrations [get]
 func (h API) List(c echo.Context) error {
-	credentials, err := h.database.ListCredentials()
+	integrations, err := h.database.ListIntegration()
 	if err != nil {
 		h.logger.Error("failed to list credentials", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
 	}
 
-	var credentialItems []models.CredentialItem
-	for _, cred := range credentials {
-		credentialItems = append(credentialItems, models.CredentialItem{
-			ID:             cred.ID.String(),
-			CredentialType: cred.CredentialType,
-		})
+	var items []models.IntegrationItem
+	for _, integration := range integrations {
+		item, err := integration.ToApi()
+		if err != nil {
+			h.logger.Error("failed to convert integration to API model", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+		}
+		items = append(items, *item)
 	}
 
 	return c.JSON(http.StatusOK, models.ListResponse{
-		Credentials: credentialItems,
-		TotalCount:  len(credentials),
+		Integrations: items,
+		TotalCount:   len(items),
 	})
 }
 
@@ -176,23 +178,25 @@ func (h API) List(c echo.Context) error {
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string	true	"CredentialID"
-//	@Router			/integration/api/v1/credentials/{credentialId} [get]
+//	@Router			/integration/api/v1/integrations/{integrationId} [get]
 func (h API) Get(c echo.Context) error {
-	credId, err := uuid.Parse(c.Param("credentialId"))
+	integrationId, err := uuid.Parse(c.Param("integrationId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	credential, err := h.database.GetCredential(credId)
+	integration, err := h.database.GetIntegration(integrationId)
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
 	}
 
-	return c.JSON(http.StatusOK, models.CredentialItem{
-		ID:             credential.ID.String(),
-		CredentialType: credential.CredentialType,
-	})
+	item, err := integration.ToApi()
+	if err != nil {
+		h.logger.Error("failed to convert integration to API model", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+	}
+	return c.JSON(http.StatusOK, item)
 }
 
 // Update godoc
@@ -205,9 +209,9 @@ func (h API) Get(c echo.Context) error {
 //	@Success		200
 //	@Param			credentialId	path	string	true	"CredentialID"
 //	@Param			request	body		entity.CreateRequest	true	"Request"
-//	@Router			/integration/api/v1/credentials/{credentialId} [post]
+//	@Router			/integration/api/v1/integrations/{integrationId} [post]
 func (h API) Update(c echo.Context) error {
-	credId, err := uuid.Parse(c.Param("credentialId"))
+	credId, err := uuid.Parse(c.Param("integrationId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
@@ -255,7 +259,7 @@ func (h API) Update(c echo.Context) error {
 func (h API) Register(g *echo.Group) {
 	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
 	g.POST("", httpserver.AuthorizeHandler(h.Create, api.EditorRole))
-	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
-	g.GET("/:credentialId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
-	g.POST("/:credentialId", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
+	g.DELETE("/:integrationId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
+	g.GET("/:integrationId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
+	g.POST("/:integrationId", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
 }
