@@ -2,6 +2,7 @@ package aws_account
 
 import (
 	"encoding/json"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 )
@@ -57,4 +58,8 @@ func (c *AWSIAMCredentialsRoleWithRoleJump) ConvertToMap() map[string]any {
 	}
 
 	return result
+}
+
+func (c *AWSIAMCredentialsRoleWithRoleJump) CreateAWSSession() (*aws.Config, error) {
+	return nil, nil
 }
