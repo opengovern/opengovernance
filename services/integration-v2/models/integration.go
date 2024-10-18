@@ -18,6 +18,7 @@ type Integration struct {
 	Type               string
 	OnboardDate        time.Time
 	Metadata           pgtype.JSONB
+	Annotations        pgtype.JSONB
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 

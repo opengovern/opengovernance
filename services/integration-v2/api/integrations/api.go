@@ -61,19 +61,19 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
 	}
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	credentials, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
+	integration, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
 
-	if credentials == nil {
+	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	err = credentials.HealthCheck()
+	err = integration.HealthCheck()
 	if err != nil {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
 	}
 
-	integrations, err := credentials.GetIntegrations()
+	integrations, err := integration.GetIntegrations()
 
 	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
 	if err != nil {
@@ -97,11 +97,32 @@ func (h API) Create(c echo.Context) error {
 	}
 
 	for _, i := range integrations {
-		integrationMetadataJsonb := pgtype.JSONB{}
-		err = integrationMetadataJsonb.Set([]byte(""))
-
 		i.CredentialID = credentialID
+
+		metadata, err := integration.GetMetadata()
+		if err != nil {
+			h.logger.Error("failed to get metadata", zap.Error(err))
+		}
+		metadataJsonData, err := json.Marshal(metadata)
+		if err != nil {
+			return err
+		}
+		integrationMetadataJsonb := pgtype.JSONB{}
+		err = integrationMetadataJsonb.Set(metadataJsonData)
 		i.Metadata = integrationMetadataJsonb
+
+		annotations, err := integration.GetAnnotations()
+		if err != nil {
+			h.logger.Error("failed to get annotations", zap.Error(err))
+		}
+		annotationsJsonData, err := json.Marshal(annotations)
+		if err != nil {
+			return err
+		}
+		integrationAnnotationsJsonb := pgtype.JSONB{}
+		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
+		i.Annotations = integrationAnnotationsJsonb
+
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
 			h.logger.Error("failed to create credential", zap.Error(err))

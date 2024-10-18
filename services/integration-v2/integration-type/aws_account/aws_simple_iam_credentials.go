@@ -1,7 +1,12 @@
 package aws_account
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 )
@@ -14,13 +19,13 @@ type AWSSimpleIAMCredentials struct {
 }
 
 func CreateAWSSimpleIAMCredentials(jsonData []byte) (interfaces.CredentialType, map[string]any, error) {
-	var credentials AWSSimpleIAMCredentials
-	err := json.Unmarshal(jsonData, &credentials)
+	var creds AWSSimpleIAMCredentials
+	err := json.Unmarshal(jsonData, &creds)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &credentials, credentials.ConvertToMap(), nil
+	return &creds, creds.ConvertToMap(), nil
 }
 
 func (c *AWSSimpleIAMCredentials) HealthCheck() error {
@@ -51,4 +56,20 @@ func (c *AWSSimpleIAMCredentials) ConvertToMap() map[string]any {
 	}
 
 	return result
+}
+
+func (c *AWSSimpleIAMCredentials) CreateAWSSession() (*aws.Config, error) {
+	// Create custom credentials provider
+	creds := credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.AccessKeySecret, "")
+
+	// Load the AWS configuration with the custom credentials
+	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(),
+		awsConfig.WithCredentialsProvider(creds),
+		awsConfig.WithRegion("us-east-1"),
+	)
+	if err != nil {
+		return &cfg, fmt.Errorf("unable to load SDK config, %v", err)
+	}
+
+	return &cfg, nil
 }
