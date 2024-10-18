@@ -73,7 +73,7 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
 	}
 
-	integrations, err := integration.GetIntegrations()
+	integrations, err := integration.DiscoverIntegrations()
 
 	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
 	if err != nil {

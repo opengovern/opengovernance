@@ -30,7 +30,7 @@ func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() error {
 	return nil
 }
 
-func (c *AWSIAMCredentialsRoleWithRoleJump) GetIntegrations() ([]models.Integration, error) {
+func (c *AWSIAMCredentialsRoleWithRoleJump) DiscoverIntegrations() ([]models.Integration, error) {
 	return nil, nil
 }
 

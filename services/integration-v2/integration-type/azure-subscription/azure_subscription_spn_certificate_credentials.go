@@ -29,7 +29,7 @@ func (c *AzureSPNCertificateCredentials) HealthCheck() error {
 	return nil
 }
 
-func (c *AzureSPNCertificateCredentials) GetIntegrations() ([]models.Integration, error) {
+func (c *AzureSPNCertificateCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	return nil, nil
 }
 

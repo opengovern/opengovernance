@@ -60,7 +60,7 @@ func (c *AzureSPNPasswordCredentials) HealthCheck() error {
 	return nil
 }
 
-func (c *AzureSPNPasswordCredentials) GetIntegrations() ([]models.Integration, error) {
+func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	ctx := context.Background()
 	identity, err := azidentity.NewClientSecretCredential(
 		c.AzureTenantID,

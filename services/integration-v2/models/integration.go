@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+type IntegrationLifecycle string
+
+const (
+	IntegrationLifecycleActive   IntegrationLifecycle = "ACTIVE"
+	IntegrationLifecycleInactive IntegrationLifecycle = "INACTIVE"
+	IntegrationLifecycleDisabled IntegrationLifecycle = "ARCHIVED"
+)
+
 type Integration struct {
 	IntegrationTracker uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
 	IntegrationID      string
@@ -19,12 +27,13 @@ type Integration struct {
 	OnboardDate        time.Time
 	Metadata           pgtype.JSONB
 	Annotations        pgtype.JSONB
+	Labels             pgtype.JSONB
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 
 	Credential Credential `gorm:"constraint:OnDelete:CASCADE;"` // Cascading delete when Integration is deleted
 
-	Lifecycle string
+	Lifecycle IntegrationLifecycle
 	Reason    string
 	LastCheck *time.Time
 
@@ -49,7 +58,7 @@ func (i Integration) ToApi() (*api.IntegrationItem, error) {
 		IntegrationType:    i.Type,
 		Connector:          i.Connector,
 		OnboardDate:        i.OnboardDate,
-		Lifecycle:          i.Lifecycle,
+		Lifecycle:          string(i.Lifecycle),
 		Reason:             i.Reason,
 		LastCheck:          i.LastCheck,
 		CreatedAt:          i.CreatedAt,
