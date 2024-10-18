@@ -3,6 +3,7 @@ package integrations
 import (
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
@@ -56,6 +57,9 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
+	if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+	}
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
 	credentials, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
 
@@ -79,10 +83,13 @@ func (h API) Create(c echo.Context) error {
 
 	credentialID := uuid.New()
 
+	credentialMetadataJsonb := pgtype.JSONB{}
+	err = credentialMetadataJsonb.Set([]byte(""))
 	err = h.database.CreateCredential(&models2.Credential{
 		ID:             credentialID,
 		Secret:         secret,
 		CredentialType: req.CredentialType,
+		Metadata:       credentialMetadataJsonb,
 	})
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
@@ -90,7 +97,11 @@ func (h API) Create(c echo.Context) error {
 	}
 
 	for _, i := range integrations {
+		integrationMetadataJsonb := pgtype.JSONB{}
+		err = integrationMetadataJsonb.Set([]byte(""))
+
 		i.CredentialID = credentialID
+		i.Metadata = integrationMetadataJsonb
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
 			h.logger.Error("failed to create credential", zap.Error(err))
