@@ -14,7 +14,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/opengovern/opengovernance/pkg/auth/db"
+	"github.com/opengovern/opengovernance/pkg/authV2/db"
 
 	"crypto/rand"
 	"github.com/spf13/cobra"

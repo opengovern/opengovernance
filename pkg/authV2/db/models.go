@@ -1,7 +1,6 @@
 package db
 
 import (
-	"github.com/google/uuid"
 	"github.com/opengovern/og-util/pkg/api"
 	"gorm.io/gorm"
 	"time"
@@ -26,7 +25,6 @@ type ApiKey struct {
 
 type User struct {
 	gorm.Model
-	ID            uuid.UUID `gorm:"primaryKey"`
 	Email                 string
 	EmailVerified         bool 
     FullName                  string 

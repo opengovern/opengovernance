@@ -44,7 +44,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/workspace/client"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/pkg/auth/api"
+	"github.com/opengovern/opengovernance/pkg/authV2/api"
 	"go.uber.org/zap"
 )
 

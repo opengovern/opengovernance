@@ -15,41 +15,32 @@ import (
 	"github.com/labstack/echo/v4"
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/auth/api"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
-	"github.com/opengovern/opengovernance/pkg/auth/db"
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
+	"github.com/opengovern/opengovernance/pkg/authV2/api"
+	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/authV2/utils"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	"gorm.io/gorm"
 	"net/http"
 	"strings"
 	"time"
 )
 
 type User struct {
-	UserID   string
+	ID   string
 	Email    string
-	Metadata auth0.Metadata
+	ExternalId            string
+	Role					api3.Role
+	LastLogin             time.Time
+	CreatedAt			time.Time
+	
 }
 
 type Server struct {
 	host string
-
 	kaytuPublicKey          *rsa.PublicKey
-	verifier                *oidc.IDTokenVerifier
-	verifierNative          *oidc.IDTokenVerifier
-	verifierPennywiseNative *oidc.IDTokenVerifier
 	dexVerifier             *oidc.IDTokenVerifier
 	logger                  *zap.Logger
-	workspaceClient         client.WorkspaceServiceClient
-	complianceClient        client2.ComplianceServiceClient
-	integrationClient       client3.IntegrationServiceClient
 	db                      db.Database
-	auth0Service            *auth0.Service
-
 	updateLoginUserList []User
 	updateLogin         chan User
 }
@@ -63,18 +54,7 @@ type DexClaims struct {
 	jwt.StandardClaims
 }
 
-func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
-	workspaceMap, err := s.db.GetWorkspaceMapByName(workspaceName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", fmt.Errorf("workspace does not exists %s", workspaceName)
-		} else {
-			s.logger.Error("failed to get workspace map by name", zap.Error(err))
-			return "", err
-		}
-	}
-	return workspaceMap.ID, nil
-}
+
 
 func (s *Server) UpdateLastLoginLoop() {
 	for {
@@ -84,7 +64,7 @@ func (s *Server) UpdateLastLoginLoop() {
 			case userId := <-s.updateLogin:
 				alreadyExists := false
 				for _, user := range s.updateLoginUserList {
-					if user.UserID == userId.UserID {
+					if user.ExternalId == userId.ExternalId {
 						alreadyExists = true
 					}
 				}
@@ -99,10 +79,10 @@ func (s *Server) UpdateLastLoginLoop() {
 
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
-			if user.UserID != "" {
-				usr, err := s.auth0Service.GetOrCreateUser(user.UserID, user.Email)
+			if user.ExternalId != "" {
+				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email)
 				if err != nil {
-					s.logger.Error("failed to get user metadata", zap.String("userId", user.UserID), zap.Error(err))
+					s.logger.Error("failed to get user metadata", zap.String("userId", user.ID), zap.Error(err))
 					continue
 				}
 				tim := time.Time{}
@@ -110,7 +90,7 @@ func (s *Server) UpdateLastLoginLoop() {
 					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
 				}
 				if time.Now().After(tim.Add(15 * time.Minute)) {
-					s.logger.Info("updating metadata", zap.String("userId", user.UserID))
+					s.logger.Info("updating metadata", zap.String("userId", user.ID))
 					usr.AppMetadata.LastLogin = user.Metadata.LastLogin
 					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
 
@@ -129,7 +109,7 @@ func (s *Server) UpdateLastLoginLoop() {
 }
 
 func (s *Server) UpdateLastLogin(claim *userClaim) {
-	timeNow := time.Now().Format("2006-01-02 15:04:05 MST")
+	timeNow := time.Now()
 	doUpdate := false
 	if claim.MemberSince == nil {
 		claim.MemberSince = &timeNow
@@ -139,8 +119,7 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 		claim.UserLastLogin = &timeNow
 		doUpdate = true
 	} else {
-		tim, _ := time.Parse("2006-01-02 15:04:05 MST", *claim.UserLastLogin)
-		if time.Now().After(tim.Add(15 * time.Minute)) {
+		if time.Now().After(claim.UserLastLogin.Add(15 * time.Minute)) {
 			claim.UserLastLogin = &timeNow
 			doUpdate = true
 		}
@@ -148,16 +127,12 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 
 	if doUpdate {
 		s.updateLogin <- User{
-			UserID: claim.ExternalUserID,
+			ExternalId: claim.ExternalUserID,
+			 LastLogin       :  *claim.UserLastLogin,
+			CreatedAt: *claim.MemberSince,
+
 			Email:  claim.Email,
-			Metadata: auth0.Metadata{
-				WorkspaceAccess: claim.WorkspaceAccess,
-				GlobalAccess:    claim.GlobalAccess,
-				ColorBlindMode:  claim.ColorBlindMode,
-				Theme:           claim.Theme,
-				MemberSince:     claim.MemberSince,
-				LastLogin:       claim.UserLastLogin,
-			},
+			
 		}
 	}
 }
@@ -292,15 +267,13 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	WorkspaceAccess map[string]api3.Role `json:"https://app.kaytu.io/workspaceAccess"`
-	GlobalAccess    *api3.Role           `json:"https://app.kaytu.io/globalAccess"`
-	Email           string               `json:"https://app.kaytu.io/email"`
-	MemberSince     *string              `json:"https://app.kaytu.io/memberSince"`
-	UserLastLogin   *string              `json:"https://app.kaytu.io/userLastLogin"`
-	ColorBlindMode  *bool                `json:"https://app.kaytu.io/colorBlindMode"`
-	Theme           *api.Theme           `json:"https://app.kaytu.io/theme"`
-	ConnectionIDs   map[string][]string  `json:"https://app.kaytu.io/connectionIDs"`
-
+	Role    *api3.Role           
+	Email           string              
+	MemberSince     *time.Time              
+	UserLastLogin   *time.Time              
+	ColorBlindMode  *bool                
+	// Theme           *api.Theme           
+	ConnectionIDs   map[string][]string  
 	ExternalUserID string `json:"sub"`
 }
 
@@ -318,33 +291,9 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	}
 
 	var u userClaim
-	t, err := s.verifierNative.Verify(ctx, token)
-	if err == nil {
-		if err := t.Claims(&u); err != nil {
-			return nil, err
-		}
+	
 
-		return &u, nil
-	}
-
-	t, err = s.verifier.Verify(ctx, token)
-	if err == nil {
-		if err := t.Claims(&u); err != nil {
-			return nil, err
-		}
-
-		return &u, nil
-	}
-
-	tp, err := s.verifierPennywiseNative.Verify(ctx, token)
-	if err == nil {
-		if err := tp.Claims(&u); err != nil {
-			return nil, err
-		}
-
-		return &u, nil
-	}
-
+	
 	s.logger.Info("dex verifier verifying")
 	dv, err := s.dexVerifier.Verify(ctx, token)
 	if err == nil {
@@ -388,70 +337,9 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	return nil, err
 }
 
-func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, error) {
-	var rb api.RoleBinding
 
-	if user.ExternalUserID == api3.GodUserID {
-		return api.RoleBinding{}, errors.New("claiming to be god is banned")
-	}
 
-	rb = api.RoleBinding{
-		UserID:        user.ExternalUserID,
-		WorkspaceID:   "",
-		WorkspaceName: "",
-		RoleName:      api3.EditorRole,
-	}
 
-	if workspaceName != "kaytu" {
-		workspaceID, err := s.GetWorkspaceIDByName(workspaceName)
-		if err != nil {
-			return rb, err
-		}
-
-		rb.UserID = user.ExternalUserID
-		rb.WorkspaceName = workspaceName
-		rb.WorkspaceID = workspaceID
-		rb.ScopedConnectionIDs = user.ConnectionIDs[workspaceID]
-
-		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
-			rb.RoleName = rl
-		} else if user.GlobalAccess != nil {
-			rb.RoleName = *user.GlobalAccess
-		} else {
-			s.logger.Error("access denied",
-				zap.String("user", user.ExternalUserID),
-				zap.String("workspaceID", workspaceID),
-				zap.String("workspaceName", workspaceName),
-				zap.Any("workspaceAccess", user.WorkspaceAccess),
-			)
-			return rb, fmt.Errorf("access denied: %s", workspaceID)
-		}
-	}
-
-	return rb, nil
-}
-
-func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {
-	transport := &http.Transport{
-		MaxIdleConns:        10,
-		IdleConnTimeout:     30 * time.Second,
-		MaxIdleConnsPerHost: 10,
-	}
-
-	httpClient := &http.Client{
-		Transport: transport,
-	}
-
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), auth0Domain)
-	if err != nil {
-		return nil, err
-	}
-
-	return provider.Verifier(&oidc.Config{
-		ClientID:          clientId,
-		SkipClientIDCheck: true,
-	}), nil
-}
 
 func newDexOidcVerifier(ctx context.Context, domain, clientId string) (*oidc.IDTokenVerifier, error) {
 	transport := &http.Transport{

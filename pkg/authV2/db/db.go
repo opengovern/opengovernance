@@ -2,11 +2,11 @@ package db
 
 import (
 	"errors"
+	"time"
+	"github.com/google/uuid"
 	"github.com/opengovern/og-util/pkg/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"time"
-	"github.com/google/uuid"
 )
 
 type Database struct {
@@ -173,6 +173,19 @@ func (db Database) GetUser(id uuid.UUID) (*User, error) {
 	}
 	return &s, nil
 }
+func (db Database) GetUserByExternalID(id string) (*User, error) {
+	var s User
+	tx := db.Orm.Model(&User{}).
+		Where("external_id = ?", id).
+		Find(&s)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &s, nil
+}
 
 func (db Database) GetUsersCount() (int64, error) {
 	var count int64
@@ -283,13 +296,13 @@ func (db Database) ActiveUser(id uuid.UUID) error {
 
 // find id by email
 
-func (db Database) FindIdByEmail(email string) (uuid.UUID, error) {
+func (db Database) FindIdByEmail(email string) (uint, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).
 		Where("email = ? ", email).
 		First(&s)
 	if tx.Error != nil {
-		return uuid.UUID{}, tx.Error
+		return 0, tx.Error
 	}
 	return s.ID, nil
 }
