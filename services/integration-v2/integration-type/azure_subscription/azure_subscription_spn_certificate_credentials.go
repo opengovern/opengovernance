@@ -2,11 +2,11 @@ package azure_subscription
 
 import (
 	"context"
-	"crypto"
-	"crypto/tls"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -24,6 +24,7 @@ type AzureSPNCertificateCredentials struct {
 	AzureClientID                  string  `json:"azure_client_id" binding:"required"`
 	AzureTenantID                  string  `json:"azure_tenant_id" binding:"required"`
 	AzureSPNCertificate            string  `json:"azure_spn_certificate" binding:"required"`
+	AzureSPNPrivateKey             string  `json:"azure_spn_private_key" binding:"required"`
 	AzureClientCertificatePassword *string `json:"azure_client_certificate_password,omitempty"`
 	AzureSPNObjectID               *string `json:"azure_spn_object_id,omitempty"`
 }
@@ -39,39 +40,48 @@ func CreateAzureSPNCertificateCredentials(jsonData []byte) (interfaces.Credentia
 }
 
 func (c *AzureSPNCertificateCredentials) HealthCheck() error {
+	pvkBlock, _ := pem.Decode([]byte(c.AzureSPNPrivateKey))
+	if pvkBlock == nil {
+		return errors.New("failed to decode PEM block containing the private key")
+	}
+	if pvkBlock.Type != "PRIVATE KEY" {
+		return fmt.Errorf("PEM block is not of type 'PRIVATE KEY'")
+	}
+
+	// Parse the EC private key
+	privateKey, err := x509.ParsePKCS8PrivateKey(pvkBlock.Bytes)
+	if err != nil {
+		return err
+	}
+
+	// Check if it's an RSA private key
+	rsaKey, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return err
+	}
+
 	// Decode the PEM-encoded certificate
 	block, _ := pem.Decode([]byte(c.AzureSPNCertificate))
 	if block == nil {
-		return fmt.Errorf("failed to decode certificate PEM")
+		return errors.New("failed to decode PEM block containing the certificate")
 	}
 
 	// Parse the certificate from the PEM block
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate: %v", err)
+		return err
 	}
 
 	// Create the certificate chain
 	certs := []*x509.Certificate{cert}
-
-	// Parse the private key (if provided)
-	var privateKey crypto.PrivateKey
-	if c.AzureClientCertificatePassword != nil {
-		privateKey, err = tls.X509KeyPair([]byte(c.AzureSPNCertificate), []byte(*c.AzureClientCertificatePassword))
-	} else {
-		privateKey, err = tls.X509KeyPair([]byte(c.AzureSPNCertificate), nil)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to parse certificate or key: %v", err)
-	}
 
 	// Create credential with certificate
 	cred, err := azidentity.NewClientCertificateCredential(
 		c.AzureTenantID,
 		c.AzureClientID,
 		certs,
-		privateKey,
-		nil,
+		rsaKey,
+		&azidentity.ClientCertificateCredentialOptions{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create ClientCertificateCredential: %v", err)
@@ -99,39 +109,48 @@ func (c *AzureSPNCertificateCredentials) HealthCheck() error {
 func (c *AzureSPNCertificateCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	ctx := context.Background()
 
+	pvkBlock, _ := pem.Decode([]byte(c.AzureSPNPrivateKey))
+	if pvkBlock == nil {
+		return nil, errors.New("failed to decode PEM block containing the private key")
+	}
+	if pvkBlock.Type != "PRIVATE KEY" {
+		return nil, fmt.Errorf("PEM block is not of type 'PRIVATE KEY'")
+	}
+
+	// Parse the EC private key
+	privateKey, err := x509.ParsePKCS8PrivateKey(pvkBlock.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if it's an RSA private key
+	rsaKey, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, err
+	}
+
 	// Decode the PEM-encoded certificate
 	block, _ := pem.Decode([]byte(c.AzureSPNCertificate))
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode certificate PEM")
+		return nil, errors.New("failed to decode PEM block containing the certificate")
 	}
 
 	// Parse the certificate from the PEM block
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse certificate: %v", err)
+		return nil, err
 	}
 
 	// Create the certificate chain
 	certs := []*x509.Certificate{cert}
-
-	// Parse the private key (if provided)
-	var privateKey crypto.PrivateKey
-	if c.AzureClientCertificatePassword != nil {
-		privateKey, err = tls.X509KeyPair([]byte(c.AzureSPNCertificate), []byte(*c.AzureClientCertificatePassword))
-	} else {
-		privateKey, err = tls.X509KeyPair([]byte(c.AzureSPNCertificate), nil)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse certificate or key: %v", err)
-	}
 
 	// Create credential with certificate
 	identity, err := azidentity.NewClientCertificateCredential(
 		c.AzureTenantID,
 		c.AzureClientID,
 		certs,
-		privateKey,
-		nil,
+		rsaKey,
+		&azidentity.ClientCertificateCredentialOptions{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ClientCertificateCredential: %v", err)

@@ -19,10 +19,10 @@ const (
 
 type Integration struct {
 	IntegrationTracker uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
-	IntegrationID      string
+	IntegrationID      string    `gorm:"index:idx_type_integrationid,unique"`
 	IntegrationName    string
 	Connector          string
-	Type               string
+	Type               string `gorm:"index:idx_type_integrationid,unique"`
 	OnboardDate        time.Time
 	Metadata           pgtype.JSONB
 	Annotations        pgtype.JSONB
