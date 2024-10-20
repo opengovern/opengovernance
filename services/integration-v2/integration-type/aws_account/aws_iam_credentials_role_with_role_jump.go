@@ -30,16 +30,8 @@ func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() error {
 	return nil
 }
 
-func (c *AWSIAMCredentialsRoleWithRoleJump) GetIntegrations() ([]models.Integration, error) {
+func (c *AWSIAMCredentialsRoleWithRoleJump) DiscoverIntegrations() ([]models.Integration, error) {
 	return nil, nil
-}
-
-func (c *AWSIAMCredentialsRoleWithRoleJump) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AWSIAMCredentialsRoleWithRoleJump) ParseJSON([]byte) error {
-	return nil
 }
 
 func (c *AWSIAMCredentialsRoleWithRoleJump) ConvertToMap() map[string]any {

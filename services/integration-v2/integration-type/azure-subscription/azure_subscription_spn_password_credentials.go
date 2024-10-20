@@ -60,7 +60,7 @@ func (c *AzureSPNPasswordCredentials) HealthCheck() error {
 	return nil
 }
 
-func (c *AzureSPNPasswordCredentials) GetIntegrations() ([]models.Integration, error) {
+func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	ctx := context.Background()
 	identity, err := azidentity.NewClientSecretCredential(
 		c.AzureTenantID,
@@ -121,19 +121,11 @@ func (c *AzureSPNPasswordCredentials) GetIntegrations() ([]models.Integration, e
 			IntegrationID:      sub.SubscriptionID,
 			IntegrationName:    name,
 			Connector:          "Azure",
-			Type:               "azure_subscription_spn_password_credentials",
+			Type:               "azure_subscription",
 			OnboardDate:        time.Now(),
 		})
 	}
 	return integrations, nil
-}
-
-func (c *AzureSPNPasswordCredentials) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AzureSPNPasswordCredentials) ParseJSON([]byte) error {
-	return nil
 }
 
 func (c *AzureSPNPasswordCredentials) ConvertToMap() map[string]any {

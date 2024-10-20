@@ -39,10 +39,16 @@ func (i *AzureSubscriptionIntegration) GetMetadata() (map[string]any, error) {
 	return annotations, nil
 }
 
+func (i *AzureSubscriptionIntegration) GetLabels() (map[string]any, error) {
+	annotations := make(map[string]any)
+
+	return annotations, nil
+}
+
 func (i *AzureSubscriptionIntegration) HealthCheck() error {
 	return i.Credential.HealthCheck()
 }
 
-func (i *AzureSubscriptionIntegration) GetIntegrations() ([]models.Integration, error) {
-	return i.Credential.GetIntegrations()
+func (i *AzureSubscriptionIntegration) DiscoverIntegrations() ([]models.Integration, error) {
+	return i.Credential.DiscoverIntegrations()
 }

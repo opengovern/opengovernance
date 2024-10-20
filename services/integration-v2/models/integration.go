@@ -3,11 +3,18 @@ package models
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	api "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"time"
+)
+
+type IntegrationLifecycle string
+
+const (
+	IntegrationLifecycleActive   IntegrationLifecycle = "ACTIVE"
+	IntegrationLifecycleInactive IntegrationLifecycle = "INACTIVE"
+	IntegrationLifecycleDisabled IntegrationLifecycle = "ARCHIVED"
 )
 
 type Integration struct {
@@ -19,12 +26,13 @@ type Integration struct {
 	OnboardDate        time.Time
 	Metadata           pgtype.JSONB
 	Annotations        pgtype.JSONB
+	Labels             pgtype.JSONB
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 
 	Credential Credential `gorm:"constraint:OnDelete:CASCADE;"` // Cascading delete when Integration is deleted
 
-	Lifecycle string
+	Lifecycle IntegrationLifecycle
 	Reason    string
 	LastCheck *time.Time
 
@@ -33,27 +41,42 @@ type Integration struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 }
 
-func (i Integration) ToApi() (*api.IntegrationItem, error) {
-	if i.Metadata.Status != pgtype.Present {
-		return nil, fmt.Errorf("JSONB is not present or invalid")
-	}
-	var metadata map[string]any
-	if err := json.Unmarshal(i.Metadata.Bytes, &metadata); err != nil {
-		return nil, err
+func (i Integration) ToApi() (*api.Integration, error) {
+	var metadata map[string]string
+	if i.Metadata.Status == pgtype.Present {
+		if err := json.Unmarshal(i.Metadata.Bytes, &metadata); err != nil {
+			return nil, err
+		}
 	}
 
-	return &api.IntegrationItem{
+	var labels map[string]string
+	if i.Labels.Status == pgtype.Present {
+		if err := json.Unmarshal(i.Metadata.Bytes, &labels); err != nil {
+			return nil, err
+		}
+	}
+
+	var annotations map[string]string
+	if i.Annotations.Status == pgtype.Present {
+		if err := json.Unmarshal(i.Metadata.Bytes, &annotations); err != nil {
+			return nil, err
+		}
+	}
+
+	return &api.Integration{
 		IntegrationTracker: i.IntegrationTracker.String(),
 		IntegrationName:    i.IntegrationName,
 		IntegrationID:      i.IntegrationID,
 		IntegrationType:    i.Type,
 		Connector:          i.Connector,
 		OnboardDate:        i.OnboardDate,
-		Lifecycle:          i.Lifecycle,
+		Lifecycle:          string(i.Lifecycle),
 		Reason:             i.Reason,
 		LastCheck:          i.LastCheck,
 		CreatedAt:          i.CreatedAt,
 		UpdatedAt:          i.UpdatedAt,
 		Metadata:           metadata,
+		Labels:             labels,
+		Annotations:        annotations,
 	}, nil
 }

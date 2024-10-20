@@ -40,6 +40,18 @@ var CredentialTypes = map[string]interfaces.CredentialCreator{
 func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
 	annotations := make(map[string]any)
 
+	return annotations, nil
+}
+
+func (i *AWSAccountIntegration) GetMetadata() (map[string]any, error) {
+	annotations := make(map[string]any)
+
+	return annotations, nil
+}
+
+func (i *AWSAccountIntegration) GetLabels() (map[string]any, error) {
+	labels := make(map[string]any)
+
 	cfg, err := i.Credential.CreateAWSSession()
 	if err != nil {
 		return nil, err
@@ -51,8 +63,8 @@ func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
 		return nil, err
 	}
 	if isStandalone {
-		annotations["aws/account-type"] = "standalone"
-		return annotations, nil
+		labels["aws/account-type"] = "standalone"
+		return labels, nil
 	}
 
 	// Check if the account is a member of an AWS Organization
@@ -61,8 +73,8 @@ func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
 		return nil, err
 	}
 	if isMember {
-		annotations["aws/account-type"] = "organization-member"
-		return annotations, nil
+		labels["aws/account-type"] = "organization-member"
+		return labels, nil
 	}
 
 	// Check if the account is the master account
@@ -71,23 +83,17 @@ func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
 		return nil, err
 	}
 	if isMaster {
-		annotations["aws/account-type"] = "organization-master"
-		return annotations, nil
+		labels["aws/account-type"] = "organization-master"
+		return labels, nil
 	}
 
-	return annotations, nil
-}
-
-func (i *AWSAccountIntegration) GetMetadata() (map[string]any, error) {
-	annotations := make(map[string]any)
-
-	return annotations, nil
+	return labels, nil
 }
 
 func (i *AWSAccountIntegration) HealthCheck() error {
 	return i.Credential.HealthCheck()
 }
 
-func (i *AWSAccountIntegration) GetIntegrations() ([]models.Integration, error) {
-	return i.Credential.GetIntegrations()
+func (i *AWSAccountIntegration) DiscoverIntegrations() ([]models.Integration, error) {
+	return i.Credential.DiscoverIntegrations()
 }

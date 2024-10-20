@@ -34,18 +34,18 @@ func New(
 	}
 }
 
-// Create godoc
+// DiscoverIntegrations godoc
 //
-//	@Summary		Create credential
-//	@Description	Create credential
+//	@Summary		Discover integrations
+//	@Description	Discover integrations and return back the list of integrations and credential ID
 //	@Security		BearerToken
-//	@Tags			credentials
+//	@Tags			integrations
 //	@Produce		json
 //	@Success		200
 //	@Param			request	body		entity.CreateRequest	true	"Request"
-//	@Router			/integration/api/v1/integrations [post]
-func (h API) Create(c echo.Context) error {
-	var req models.CreateRequest
+//	@Router			/integration/api/v1/integrations/discover [post]
+func (h API) DiscoverIntegrations(c echo.Context) error {
+	var req models.DiscoverIntegrationRequest
 
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -73,7 +73,7 @@ func (h API) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
 	}
 
-	integrations, err := integration.GetIntegrations()
+	integrations, err := integration.DiscoverIntegrations()
 
 	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
 	if err != nil {
@@ -91,6 +91,119 @@ func (h API) Create(c echo.Context) error {
 		CredentialType: req.CredentialType,
 		Metadata:       credentialMetadataJsonb,
 	})
+	if err != nil {
+		h.logger.Error("failed to create credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+	}
+
+	var integrationsAPI []models.Integration
+	for _, i := range integrations {
+		metadata, err := integration.GetMetadata()
+		if err != nil {
+			h.logger.Error("failed to get metadata", zap.Error(err))
+		}
+		metadataJsonData, err := json.Marshal(metadata)
+		if err != nil {
+			return err
+		}
+		integrationMetadataJsonb := pgtype.JSONB{}
+		err = integrationMetadataJsonb.Set(metadataJsonData)
+		i.Metadata = integrationMetadataJsonb
+
+		annotations, err := integration.GetAnnotations()
+		if err != nil {
+			h.logger.Error("failed to get annotations", zap.Error(err))
+		}
+		annotationsJsonData, err := json.Marshal(annotations)
+		if err != nil {
+			return err
+		}
+		integrationAnnotationsJsonb := pgtype.JSONB{}
+		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
+		i.Annotations = integrationAnnotationsJsonb
+
+		labels, err := integration.GetLabels()
+		if err != nil {
+			h.logger.Error("failed to get labels", zap.Error(err))
+		}
+		labelsJsonData, err := json.Marshal(labels)
+		if err != nil {
+			return err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		i.Labels = integrationLabelsJsonb
+
+		integrationAPI, err := i.ToApi()
+		if err != nil {
+			h.logger.Error("failed to create integration api", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
+		}
+		integrationsAPI = append(integrationsAPI, *integrationAPI)
+	}
+
+	return c.JSON(http.StatusOK, models.DiscoverIntegrationResponse{
+		CredentialID: credentialID.String(),
+		Integrations: integrationsAPI,
+	})
+}
+
+// AddIntegrations godoc
+//
+//	@Summary		Add integrations
+//	@Description	Add integrations by given credential ID and integration IDs
+//	@Security		BearerToken
+//	@Tags			integrations
+//	@Produce		json
+//	@Success		200
+//	@Param			request	body		entity.CreateRequest	true	"Request"
+//	@Router			/integration/api/v1/integrations/add [post]
+func (h API) AddIntegrations(c echo.Context) error {
+	var req models.AddIntegrationsRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credentialID, err := uuid.Parse(req.CredentialID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid credential id")
+	}
+	credential, err := h.database.GetCredential(credentialID)
+	if err != nil {
+		h.logger.Error("failed to get credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
+
+	mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
+	if err != nil {
+		h.logger.Error("failed to encrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+	}
+
+	if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+	}
+
+	jsonData, err := json.Marshal(mapData)
+	if err != nil {
+		h.logger.Error("failed to marshal json data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
+	}
+
+	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
+	integration, _, err := createCredentialFunction(req.CredentialType, jsonData)
+	if integration == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+	}
+
+	err = integration.HealthCheck()
+	if err != nil {
+		h.logger.Error("healthcheck failed", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
+	}
+
+	integrations, err := integration.DiscoverIntegrations()
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
@@ -122,6 +235,18 @@ func (h API) Create(c echo.Context) error {
 		integrationAnnotationsJsonb := pgtype.JSONB{}
 		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
 		i.Annotations = integrationAnnotationsJsonb
+
+		labels, err := integration.GetLabels()
+		if err != nil {
+			h.logger.Error("failed to get labels", zap.Error(err))
+		}
+		labelsJsonData, err := json.Marshal(labels)
+		if err != nil {
+			return err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		i.Labels = integrationLabelsJsonb
 
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
@@ -174,7 +299,7 @@ func (h API) List(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
 	}
 
-	var items []models.IntegrationItem
+	var items []models.Integration
 	for _, integration := range integrations {
 		item, err := integration.ToApi()
 		if err != nil {
@@ -237,7 +362,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var req models.CreateRequest
+	var req models.UpdateRequest
 
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
@@ -279,7 +404,8 @@ func (h API) Update(c echo.Context) error {
 
 func (h API) Register(g *echo.Group) {
 	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
-	g.POST("", httpserver.AuthorizeHandler(h.Create, api.EditorRole))
+	g.POST("/discover", httpserver.AuthorizeHandler(h.DiscoverIntegrations, api.EditorRole))
+	g.POST("/add", httpserver.AuthorizeHandler(h.AddIntegrations, api.EditorRole))
 	g.DELETE("/:integrationId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
 	g.GET("/:integrationId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
 	g.POST("/:integrationId", httpserver.AuthorizeHandler(h.Update, api.EditorRole))

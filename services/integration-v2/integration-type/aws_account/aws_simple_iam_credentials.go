@@ -32,16 +32,8 @@ func (c *AWSSimpleIAMCredentials) HealthCheck() error {
 	return nil
 }
 
-func (c *AWSSimpleIAMCredentials) GetIntegrations() ([]models.Integration, error) {
+func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	return nil, nil
-}
-
-func (c *AWSSimpleIAMCredentials) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AWSSimpleIAMCredentials) ParseJSON([]byte) error {
-	return nil
 }
 
 func (c *AWSSimpleIAMCredentials) ConvertToMap() map[string]any {
