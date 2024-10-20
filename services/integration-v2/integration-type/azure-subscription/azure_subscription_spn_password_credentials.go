@@ -121,19 +121,11 @@ func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integrati
 			IntegrationID:      sub.SubscriptionID,
 			IntegrationName:    name,
 			Connector:          "Azure",
-			Type:               "azure_subscription_spn_password_credentials",
+			Type:               "azure_subscription",
 			OnboardDate:        time.Now(),
 		})
 	}
 	return integrations, nil
-}
-
-func (c *AzureSPNPasswordCredentials) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AzureSPNPasswordCredentials) ParseJSON([]byte) error {
-	return nil
 }
 
 func (c *AzureSPNPasswordCredentials) ConvertToMap() map[string]any {

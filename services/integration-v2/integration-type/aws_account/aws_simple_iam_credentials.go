@@ -36,14 +36,6 @@ func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, 
 	return nil, nil
 }
 
-func (c *AWSSimpleIAMCredentials) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AWSSimpleIAMCredentials) ParseJSON([]byte) error {
-	return nil
-}
-
 func (c *AWSSimpleIAMCredentials) ConvertToMap() map[string]any {
 	result := map[string]any{
 		"access_key_id":     c.AccessKeyID,

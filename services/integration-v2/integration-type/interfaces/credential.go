@@ -7,8 +7,6 @@ import (
 type CredentialType interface {
 	HealthCheck() error
 	DiscoverIntegrations() ([]models.Integration, error)
-	ToJSON() ([]byte, error) // Method to store the credentials as JSON in the database
-	ParseJSON([]byte) error
 	ConvertToMap() map[string]any
 }
 

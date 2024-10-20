@@ -34,14 +34,6 @@ func (c *AWSIAMCredentialsRoleWithRoleJump) DiscoverIntegrations() ([]models.Int
 	return nil, nil
 }
 
-func (c *AWSIAMCredentialsRoleWithRoleJump) ToJSON() ([]byte, error) {
-	return nil, nil
-}
-
-func (c *AWSIAMCredentialsRoleWithRoleJump) ParseJSON([]byte) error {
-	return nil
-}
-
 func (c *AWSIAMCredentialsRoleWithRoleJump) ConvertToMap() map[string]any {
 	result := map[string]any{
 		"access_key_id":                c.AccessKeyID,
