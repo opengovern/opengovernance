@@ -209,7 +209,16 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
 	}
 
+	integrationIDs := make(map[string]bool)
+	for _, i := range req.IntegrationIDs {
+		integrationIDs[i] = true
+	}
+
 	for _, i := range integrations {
+		if _, ok := integrationIDs[i.IntegrationID]; !ok {
+			continue
+		}
+
 		i.CredentialID = credentialID
 
 		metadata, err := integration.GetMetadata()
