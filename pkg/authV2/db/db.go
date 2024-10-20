@@ -220,6 +220,19 @@ func (db Database) UpdateUserLastLogin(id uuid.UUID, lastLogin *time.Time) error
 	}
 	return nil
 }
+func (db Database) UpdateUserLastLoginWithExternalID(id string, lastLogin *time.Time) error {
+	tx := db.Orm.Model(&User{}).
+		Where("external_id = ?", id)
+
+	if lastLogin != nil {
+		tx = tx.Update("last_login", lastLogin)
+	}
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
 
 
 func (db Database) GetUserByEmail(email string) (*User, error) {

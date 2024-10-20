@@ -13,9 +13,8 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	api3 "github.com/opengovern/og-util/pkg/api"
+	 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/authV2/api"
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 	"github.com/opengovern/opengovernance/pkg/authV2/utils"
 	"go.uber.org/zap"
@@ -29,7 +28,7 @@ type User struct {
 	ID   string
 	Email    string
 	ExternalId            string
-	Role					api3.Role
+	Role					api.Role
 	LastLogin             time.Time
 	CreatedAt			time.Time
 	
@@ -80,23 +79,23 @@ func (s *Server) UpdateLastLoginLoop() {
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
 			if user.ExternalId != "" {
-				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email)
+				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email,s.db)
 				if err != nil {
-					s.logger.Error("failed to get user metadata", zap.String("userId", user.ID), zap.Error(err))
+					s.logger.Error("failed to get user metadata", zap.String("External Id", user.ID), zap.Error(err))
 					continue
 				}
 				tim := time.Time{}
-				if usr.AppMetadata.LastLogin != nil {
-					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+				if !usr.LastLogin.IsZero() {
+					tim = usr.LastLogin
 				}
 				if time.Now().After(tim.Add(15 * time.Minute)) {
-					s.logger.Info("updating metadata", zap.String("userId", user.ID))
-					usr.AppMetadata.LastLogin = user.Metadata.LastLogin
-					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+					s.logger.Info("updating metadata", zap.String("External Id", user.ExternalId))
+				
+					tim = usr.LastLogin
 
-					err = s.auth0Service.PatchUserAppMetadata(user.UserID, usr.AppMetadata, &tim)
+					err = utils.UpdateUserLastLogin(user.ExternalId, &tim,s.db)
 					if err != nil {
-						s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+						s.logger.Error("failed to update user metadata", zap.String("External Id", user.ExternalId), zap.Error(err))
 					}
 				}
 			}
@@ -178,16 +177,8 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	workspaceName := strings.TrimPrefix(httpRequest.Path, "/")
-	if idx := strings.Index(workspaceName, "/"); idx > 0 {
-		workspaceName = workspaceName[:idx]
-	}
 
-	if headerWorkspace, ok := headers["workspace-name"]; ok {
-		workspaceName = headerWorkspace
-	}
-
-	theUser, err := s.auth0Service.GetOrCreateUser(user.ExternalUserID, user.Email)
+	theUser, err := utils.GetOrCreateUser(user.ExternalUserID, user.Email,s.db)
 	if err != nil {
 		s.logger.Warn("failed to getOrCreate user",
 			zap.String("userId", user.ExternalUserID),
@@ -197,25 +188,22 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			return unAuth, nil
 		}
 	}
-	user.WorkspaceAccess = theUser.AppMetadata.WorkspaceAccess
-	user.GlobalAccess = theUser.AppMetadata.GlobalAccess
-	user.MemberSince = theUser.AppMetadata.MemberSince
-	user.UserLastLogin = theUser.AppMetadata.LastLogin
-	user.ColorBlindMode = theUser.AppMetadata.ColorBlindMode
-	user.Theme = theUser.AppMetadata.Theme
-	user.ConnectionIDs = theUser.AppMetadata.ConnectionIDs
+	user.Role = (*api.Role)(&theUser.Role)
+	
+	user.MemberSince = &theUser.CreatedAt
+	user.UserLastLogin = &theUser.LastLogin
+	
 
-	if user.WorkspaceAccess == nil {
-		user.WorkspaceAccess = map[string]api3.Role{}
-	}
+	// if user.Role == nil {
+	// 	user.Role = *api.ViewerRole{}
+	// }
 
-	rb, err := s.GetWorkspaceByName(workspaceName, user)
+
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
 			zap.String("reqId", httpRequest.Id),
 			zap.String("path", httpRequest.Path),
 			zap.String("method", httpRequest.Method),
-			zap.String("workspace", workspaceName),
 			zap.Error(err))
 		return unAuth, nil
 	}
@@ -230,36 +218,36 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		HttpResponse: &envoyauth.CheckResponse_OkResponse{
 			OkResponse: &envoyauth.OkHttpResponse{
 				Headers: []*envoycore.HeaderValueOption{
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuWorkspaceIDHeader,
-							Value: rb.WorkspaceID,
-						},
-					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuWorkspaceNameHeader,
-							Value: rb.WorkspaceName,
-						},
-					},
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XKaytuWorkspaceIDHeader,
+					// 		Value: rb.WorkspaceID,
+					// 	},
+					// },
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XKaytuWorkspaceNameHeader,
+					// 		Value: rb.WorkspaceName,
+					// 	},
+					// },
 					{
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKaytuUserIDHeader,
-							Value: rb.UserID,
+							Value: user.ExternalUserID,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKaytuUserRoleHeader,
-							Value: string(rb.RoleName),
+							Value: string(*user.Role),
 						},
 					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserConnectionsScope,
-							Value: strings.Join(rb.ScopedConnectionIDs, ","),
-						},
-					},
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XKaytuUserConnectionsScope,
+					// 		Value: strings.Join(rb.ScopedConnectionIDs, ","),
+					// 	},
+					// },
 				},
 			},
 		},
@@ -267,7 +255,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	Role    *api3.Role           
+	Role    *api.Role           
 	Email           string              
 	MemberSince     *time.Time              
 	UserLastLogin   *time.Time              

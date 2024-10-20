@@ -30,6 +30,10 @@ type User struct {
 	FullName    string    `json:"full_name"`
 	LastLogin     time.Time `json:"last_login"`
 	Username      string    `json:"username"`
+	Role			string `json:"role"`
+	IsActive        bool	`json:"is_active"`
+	IsDeleted        bool	`json:"is_deleted"`
+
 	
 }
 func DbUserToApi(u *db.User) (*User, error) {
@@ -44,31 +48,22 @@ func DbUserToApi(u *db.User) (*User, error) {
 		EmailVerified: u.EmailVerified,
 		FullName:    u.FullName,
 		LastLogin:     u.LastLogin,
-		Username:      u.Username,
+		Username:      string(u.Role),
+		IsActive: u.IsActive,
+		IsDeleted: u.IsDeleted,
+
+
 		
 	}, nil
 }
 
-
-func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int, database db.Database) *Service {
-	return &Service{
-		domain:       domain,
-		appClientID:  appClientID,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		Connection:   connection,
-		InviteTTL:    inviteTTL,
-		database:     database,
-	}
-}
-
-func (a *Service) GetOrCreateUser(userID string,string, email string) (*db.User, error) {
+func  GetOrCreateUser(userID string, email string, database db.Database ) (*User, error) {
 	
 	if userID == "" {
 		return nil, errors.New("GetOrCreateUser: empty user id")
 	}
 
-	user, err := a.database.GetUserByExternalID(userID)
+	user, err := database.GetUserByExternalID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +77,7 @@ func (a *Service) GetOrCreateUser(userID string,string, email string) (*db.User,
 			Role:         api.ViewerRole,
 			
 		}
-		err = a.database.CreateUser(user)
+		err = database.CreateUser(user)
 		if err != nil {
 			return nil, err
 		}
@@ -99,6 +94,19 @@ func (a *Service) GetOrCreateUser(userID string,string, email string) (*db.User,
 
 	return resp, nil
 }
+func New(domain, appClientID, clientID, clientSecret, connection string, inviteTTL int, database db.Database) *Service {
+	return &Service{
+		domain:       domain,
+		appClientID:  appClientID,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		Connection:   connection,
+		InviteTTL:    inviteTTL,
+		database:     database,
+	}
+}
+
+
 
 func (a *Service) GetUser(id uuid.UUID) (*db.User, error) {
 	user, err := a.database.GetUser(id)
@@ -210,19 +218,10 @@ func (a *Service) DeleteUser(userId string) error {
 	return nil
 }
 
-func (a *Service) PatchUserAppMetadata(userId string, appMetadata Metadata, lastLogin *time.Time) error {
-	appMetadataJSON, err := json.Marshal(appMetadata)
-	if err != nil {
-		return err
-	}
+func  UpdateUserLastLogin(userId string, lastLogin *time.Time,database db.Database) error {
+	
 
-	jp := pgtype.JSONB{}
-	err = jp.Set(appMetadataJSON)
-	if err != nil {
-		return err
-	}
-
-	err = a.database.UpdateUserAppMetadataAndLastLogin(userId, jp, lastLogin)
+	err := database.UpdateUserLastLoginWithExternalID(userId,  lastLogin)
 
 	if err != nil {
 		return err

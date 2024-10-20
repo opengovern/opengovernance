@@ -8,15 +8,18 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	config2 "github.com/opengovern/og-util/pkg/config"
-	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/og-util/pkg/postgres"
 	"os"
 	"strconv"
 
+	config2 "github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/postgres"
+
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 
 	"crypto/rand"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
@@ -229,9 +232,7 @@ func start(ctx context.Context) error {
 		
 		dexVerifier:             dexVerifier,
 		logger:                  logger,
-		
 		db:                      adb,
-		
 		updateLoginUserList:     nil,
 		updateLogin:             make(chan User, 100000),
 	}
