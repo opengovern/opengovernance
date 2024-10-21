@@ -79,8 +79,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
 	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
 
-	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
-
 	v3 := e.Group("/api/v3")
 	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
 	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
@@ -773,14 +771,6 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
-}
-
-func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
-	err := r.authServer.updateWorkspaceMap()
-	if err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
 }
 
 // CreateUser godoc
