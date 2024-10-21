@@ -19,7 +19,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
 	client3 "github.com/opengovern/opengovernance/services/integration/client"
 
 	"crypto/rand"
@@ -112,7 +111,6 @@ func start(ctx context.Context) error {
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
-	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 	complianceClient := client2.NewComplianceClient(complianceBaseUrl)
 	integrationClient := client3.NewIntegrationServiceClient(integrationBaseUrl)
 	schedulerClient := client4.NewSchedulerServiceClient(describeBaseUrl)
@@ -277,7 +275,6 @@ func start(ctx context.Context) error {
 		verifierPennywiseNative: verifierPennywiseNative,
 		dexVerifier:             dexVerifier,
 		logger:                  logger,
-		workspaceClient:         workspaceClient,
 		complianceClient:        complianceClient,
 		integrationClient:       integrationClient,
 		db:                      adb,
@@ -285,7 +282,6 @@ func start(ctx context.Context) error {
 		updateLoginUserList:     nil,
 		updateLogin:             make(chan User, 100000),
 	}
-	go authServer.WorkspaceMapUpdater()
 	go authServer.UpdateLastLoginLoop()
 
 	errors := make(chan error, 1)
@@ -293,7 +289,6 @@ func start(ctx context.Context) error {
 		routes := httpRoutes{
 			logger: logger,
 			//emailService:    m,
-			workspaceClient:   workspaceClient,
 			complianceClient:  complianceClient,
 			integrationClient: integrationClient,
 			schedulerClient:   schedulerClient,

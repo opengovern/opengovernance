@@ -19,7 +19,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
 	client3 "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -44,7 +43,6 @@ type Server struct {
 	verifierPennywiseNative *oidc.IDTokenVerifier
 	dexVerifier             *oidc.IDTokenVerifier
 	logger                  *zap.Logger
-	workspaceClient         client.WorkspaceServiceClient
 	complianceClient        client2.ComplianceServiceClient
 	integrationClient       client3.IntegrationServiceClient
 	db                      db.Database

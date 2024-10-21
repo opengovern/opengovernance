@@ -47,7 +47,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	workspaceClient "github.com/opengovern/opengovernance/pkg/workspace/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -120,7 +119,6 @@ type Scheduler struct {
 	complianceIntervalHours    time.Duration
 
 	logger           *zap.Logger
-	workspaceClient  workspaceClient.WorkspaceServiceClient
 	metadataClient   metadataClient.MetadataServiceClient
 	complianceClient client.ComplianceServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
@@ -308,7 +306,6 @@ func InitializeScheduler(
 	s.complianceIntervalHours = time.Duration(conf.ComplianceIntervalHours) * time.Hour
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
-	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
@@ -327,15 +324,7 @@ func InitializeScheduler(
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
-	workspace, err := s.workspaceClient.GetByName(&httpclient.Context{
-		UserRole: authAPI.InternalRole,
-	}, CurrentWorkspaceName)
-	if err != nil {
-		s.logger.Error("Failed to get workspace by name", zap.Error(err), zap.String("Workspace Name", CurrentWorkspaceName))
-		s.WorkspaceName = CurrentWorkspaceName
-	} else {
-		s.WorkspaceName = workspace.Name
-	}
+	s.WorkspaceName = CurrentWorkspaceName
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
