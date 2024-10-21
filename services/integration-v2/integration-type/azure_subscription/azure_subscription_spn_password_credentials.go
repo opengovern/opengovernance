@@ -24,14 +24,14 @@ type AzureSPNPasswordCredentials struct {
 	AzureSPNObjectID    *string `json:"azure_spn_object_id,omitempty"`
 }
 
-func CreateAzureSPNPasswordCredentials(jsonData []byte) (interfaces.CredentialType, map[string]any, error) {
+func CreateAzureSPNPasswordCredentials(jsonData []byte) (interfaces.CredentialType, error) {
 	var credentials AzureSPNPasswordCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &credentials, credentials.ConvertToMap(), nil
+	return &credentials, nil
 }
 
 func (c *AzureSPNPasswordCredentials) HealthCheck() error {
@@ -126,21 +126,6 @@ func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integrati
 		})
 	}
 	return integrations, nil
-}
-
-func (c *AzureSPNPasswordCredentials) ConvertToMap() map[string]any {
-	result := map[string]any{
-		"azure_client_id":       c.AzureClientID,
-		"azure_tenant_id":       c.AzureTenantID,
-		"azure_client_password": c.AzureClientPassword,
-	}
-
-	// Add optional field if it is not nil
-	if c.AzureSPNObjectID != nil {
-		result["azure_spn_object_id"] = *c.AzureSPNObjectID
-	}
-
-	return result
 }
 
 // ExtractObjectID parses the token and extracts the object ID (oid claim).

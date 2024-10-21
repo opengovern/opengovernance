@@ -57,11 +57,17 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
+	var mapData map[string]any
+	err = json.Unmarshal(jsonData, &mapData)
+	if err != nil {
+		h.logger.Error("failed to unmarshal json data", zap.Error(err))
+	}
+
 	if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
 	}
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, mapData, err := createCredentialFunction(req.CredentialType, jsonData)
+	integration, err := createCredentialFunction(&req.CredentialType, jsonData)
 
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
@@ -192,7 +198,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 	}
 
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, _, err := createCredentialFunction(req.CredentialType, jsonData)
+	integration, err := createCredentialFunction(&req.CredentialType, jsonData)
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}

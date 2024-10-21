@@ -16,14 +16,14 @@ type AWSIAMCredentialsRoleWithRoleJump struct {
 	ExternalID               *string `json:"external_id,omitempty"`
 }
 
-func CreateAWSIAMCredentialsRoleWithRoleJump(jsonData []byte) (interfaces.CredentialType, map[string]any, error) {
+func CreateAWSIAMCredentialsRoleWithRoleJump(jsonData []byte) (interfaces.CredentialType, error) {
 	var credentials AWSIAMCredentialsRoleWithRoleJump
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &credentials, credentials.ConvertToMap(), nil
+	return &credentials, nil
 }
 
 func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() error {
@@ -32,24 +32,6 @@ func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() error {
 
 func (c *AWSIAMCredentialsRoleWithRoleJump) DiscoverIntegrations() ([]models.Integration, error) {
 	return nil, nil
-}
-
-func (c *AWSIAMCredentialsRoleWithRoleJump) ConvertToMap() map[string]any {
-	result := map[string]any{
-		"access_key_id":                c.AccessKeyID,
-		"access_key_secret":            c.AccessKeySecret,
-		"cross_account_role_to_assume": c.CrossAccountRoleToAssume,
-	}
-
-	if c.RoleToAssume != nil {
-		result["role_to_assume"] = *c.RoleToAssume
-	}
-
-	if c.ExternalID != nil {
-		result["external_id"] = *c.ExternalID
-	}
-
-	return result
 }
 
 func (c *AWSIAMCredentialsRoleWithRoleJump) CreateAWSSession() (*aws.Config, error) {

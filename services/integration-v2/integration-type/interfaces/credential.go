@@ -7,8 +7,7 @@ import (
 type CredentialType interface {
 	HealthCheck() error
 	DiscoverIntegrations() ([]models.Integration, error)
-	ConvertToMap() map[string]any
 }
 
 // IntegrationCreator CredentialType interface, credentials, error
-type CredentialCreator func(jsonData []byte) (CredentialType, map[string]any, error)
+type CredentialCreator func(jsonData []byte) (CredentialType, error)

@@ -29,14 +29,14 @@ type AzureSPNCertificateCredentials struct {
 	AzureSPNObjectID               *string `json:"azure_spn_object_id,omitempty"`
 }
 
-func CreateAzureSPNCertificateCredentials(jsonData []byte) (interfaces.CredentialType, map[string]any, error) {
+func CreateAzureSPNCertificateCredentials(jsonData []byte) (interfaces.CredentialType, error) {
 	var credentials AzureSPNCertificateCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &credentials, credentials.ConvertToMap(), nil
+	return &credentials, nil
 }
 
 func (c *AzureSPNCertificateCredentials) HealthCheck() error {
@@ -212,22 +212,4 @@ func (c *AzureSPNCertificateCredentials) DiscoverIntegrations() ([]models.Integr
 		})
 	}
 	return integrations, nil
-}
-
-func (c *AzureSPNCertificateCredentials) ConvertToMap() map[string]any {
-	result := map[string]any{
-		"azure_client_id":       c.AzureClientID,
-		"azure_tenant_id":       c.AzureTenantID,
-		"azure_spn_certificate": c.AzureSPNCertificate,
-	}
-
-	// Add optional fields if they are not nil
-	if c.AzureClientCertificatePassword != nil {
-		result["azure_client_certificate_password"] = *c.AzureClientCertificatePassword
-	}
-	if c.AzureSPNObjectID != nil {
-		result["azure_spn_object_id"] = *c.AzureSPNObjectID
-	}
-
-	return result
 }

@@ -48,6 +48,7 @@ import (
 	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	workspaceClient "github.com/opengovern/opengovernance/pkg/workspace/client"
+	integrationClient "github.com/opengovern/opengovernance/services/integration-v2/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -119,15 +120,16 @@ type Scheduler struct {
 	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
-	logger           *zap.Logger
-	workspaceClient  workspaceClient.WorkspaceServiceClient
-	metadataClient   metadataClient.MetadataServiceClient
-	complianceClient client.ComplianceServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	inventoryClient  inventoryClient.InventoryServiceClient
-	sinkClient       esSinkClient.EsSinkServiceClient
-	authGrpcClient   envoyAuth.AuthorizationClient
-	es               opengovernance.Client
+	logger            *zap.Logger
+	workspaceClient   workspaceClient.WorkspaceServiceClient
+	metadataClient    metadataClient.MetadataServiceClient
+	complianceClient  client.ComplianceServiceClient
+	integrationClient integrationClient.IntegrationServiceClient
+	onboardClient     onboardClient.OnboardServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	sinkClient        esSinkClient.EsSinkServiceClient
+	authGrpcClient    envoyAuth.AuthorizationClient
+	es                opengovernance.Client
 
 	jq *jq.JobQueue
 
@@ -311,6 +313,7 @@ func InitializeScheduler(
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
+	s.integrationClient = integrationClient.NewIntegrationServiceClient(IntegrationBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	s.sinkClient = esSinkClient.NewEsSinkServiceClient(s.logger, EsSinkBaseURL)
 	authGRPCConn, err := grpc.NewClient(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))

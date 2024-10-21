@@ -10,16 +10,22 @@ type AzureSubscriptionIntegration struct {
 	Credential interfaces.CredentialType
 }
 
-func CreateAzureSubscriptionIntegration(credentialType string, jsonData []byte) (interfaces.IntegrationType, map[string]any, error) {
-	if _, ok := CredentialTypes[credentialType]; !ok {
-		return nil, nil, fmt.Errorf("invalid credential type: %s", credentialType)
+func CreateAzureSubscriptionIntegration(credentialType *string, jsonData []byte) (interfaces.IntegrationType, error) {
+	integration := AzureSubscriptionIntegration{}
+
+	if credentialType != nil {
+		if _, ok := CredentialTypes[*credentialType]; !ok {
+			return nil, fmt.Errorf("invalid credential type: %s", credentialType)
+		}
+		credentialCreator := CredentialTypes[*credentialType]
+		credential, err := credentialCreator(jsonData)
+		if err != nil {
+			return nil, err
+		}
+		integration.Credential = credential
 	}
-	credentialCreator := CredentialTypes[credentialType]
-	credential, mapData, err := credentialCreator(jsonData)
-	integration := AzureSubscriptionIntegration{
-		Credential: credential,
-	}
-	return &integration, mapData, err
+
+	return &integration, nil
 }
 
 var CredentialTypes = map[string]interfaces.CredentialCreator{
@@ -51,4 +57,8 @@ func (i *AzureSubscriptionIntegration) HealthCheck() error {
 
 func (i *AzureSubscriptionIntegration) DiscoverIntegrations() ([]models.Integration, error) {
 	return i.Credential.DiscoverIntegrations()
+}
+
+func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]any) ([]string, error) {
+	return nil, nil
 }

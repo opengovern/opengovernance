@@ -23,14 +23,14 @@ type AWSSimpleIAMCredentials struct {
 	RoleToAssume    *string `json:"role_to_assume,omitempty"`
 }
 
-func CreateAWSSimpleIAMCredentials(jsonData []byte) (interfaces.CredentialType, map[string]any, error) {
+func CreateAWSSimpleIAMCredentials(jsonData []byte) (interfaces.CredentialType, error) {
 	var creds AWSSimpleIAMCredentials
 	err := json.Unmarshal(jsonData, &creds)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &creds, creds.ConvertToMap(), nil
+	return &creds, nil
 }
 
 func (c *AWSSimpleIAMCredentials) HealthCheck() error {
@@ -102,20 +102,6 @@ func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, 
 		})
 	}
 	return integrations, nil
-}
-
-func (c *AWSSimpleIAMCredentials) ConvertToMap() map[string]any {
-	result := map[string]any{
-		"access_key_id":     c.AccessKeyID,
-		"access_key_secret": c.AccessKeySecret,
-	}
-
-	// Add RoleToAssume if it's not nil
-	if c.RoleToAssume != nil {
-		result["role_to_assume"] = *c.RoleToAssume
-	}
-
-	return result
 }
 
 func (c *AWSSimpleIAMCredentials) CreateAWSSession() (*aws.Config, error) {

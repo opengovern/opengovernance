@@ -35,6 +35,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
 	apiOnboard "github.com/opengovern/opengovernance/pkg/onboard/api"
+	apiIntegration "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -48,7 +49,7 @@ var ErrJobInProgress = errors.New("job already in progress")
 
 type CloudNativeCall struct {
 	dc  model.DescribeConnectionJob
-	src *apiOnboard.Connection
+	src *apiIntegration.Integration
 }
 
 func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
@@ -144,19 +145,20 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
 	wp := concurrency.NewWorkPool(len(dcs))
-	srcMap := map[string]*apiOnboard.Connection{}
+	srcMap := map[string]*apiIntegration.Integration{}
 	for _, dc := range dcs {
-		var src *apiOnboard.Connection
+		var src *apiIntegration.Integration
 		if v, ok := srcMap[dc.ConnectionID]; ok {
 			src = v
 		} else {
-			src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.InternalRole}, dc.ConnectionID)
+			src, err = s.integrationClient.GetIntegration(&httpclient.Context{UserRole: apiAuth.InternalRole}, dc.ConnectionID) // TODO: change service
 			if err != nil {
-				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
+				s.logger.Error("failed to get integration", zap.String("spot", "GetIntegrationByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure", "get_integration").Inc()
 				return err
 			}
 
+			// TODO: Check resourceTypes of integration type and labels contains this resource Type.
 			if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 				strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
 				// cost on org
@@ -219,6 +221,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	//}
 	//
 	s.logger.Info("running describe job scheduler")
+	// TODO: use new service
 	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil)
 	if err != nil {
 		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
@@ -236,6 +239,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	for _, connection := range connections {
 		s.logger.Info("running describe job scheduler for connection", zap.String("connection_id", connection.ID.String()))
 		var resourceTypes []string
+		// TODO: get resource types from integration type and annotations
 		switch connection.Connector {
 		case source.CloudAWS:
 			awsRts := aws.GetResourceTypesMap()
@@ -267,6 +271,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 				continue
 			}
 
+			// TODO: make this in interface
 			removeResourcesAzure := azureAdOnlyOnOneConnection(connections, connection, resourceType)
 			removeResourcesAWS := awsOnlyOnOneConnection(connections, connection, resourceType)
 			_, err = s.describe(connection, resourceType, true, false, removeResourcesAzure || removeResourcesAWS, nil, "system")
@@ -413,6 +418,8 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 
 func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool,
 	removeResources bool, parentId *uint, createdBy string) (*model.DescribeConnectionJob, error) {
+
+	// TODO: get this from annotations
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 		// cost on org
@@ -429,6 +436,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return nil, err
 	}
 
+	// TODO: get resource type list from integration type and annotations
 	discoveryType := model.DiscoveryType_Full
 	if connection.Connector == source.CloudAWS {
 		rt, _ := aws.GetResourceType(resourceType)
@@ -450,6 +458,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		}
 	}
 
+	// TODO: get resource type list from integration type and annotations
 	if job != nil {
 		if scheduled {
 			interval := s.fullDiscoveryIntervalHours
@@ -507,6 +516,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return nil, errors.New("asset discovery is not scheduled")
 	}
 
+	// TODO: get this from annotations
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 		// cost on org
@@ -720,6 +730,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			isFailed = true
 			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 		}
+		// TODO: make this general, get nats data with type name or get from interface function
 		switch input.DescribeJob.SourceType {
 		case source.CloudAWS:
 			topic := awsDescriberLocal.JobQueueTopic
