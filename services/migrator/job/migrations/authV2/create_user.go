@@ -2,14 +2,10 @@ package authV2
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	dexApi "github.com/dexidp/dex/api/v2"
-	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
@@ -77,48 +73,20 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	wm, err := dbm.GetWorkspaceMapByName("main")
-	if err != nil {
-		logger.Error("Auth Migrator: failed to get workspace", zap.Error(err))
-		return err
-	}
+	
 
 	role := api.AdminRole
 
-	var appMetadata auth0.Metadata
-	appMetadata.WorkspaceAccess = map[string]api.Role{
-		wm.ID: role,
-	}
-	appMetadataJson, err := json.Marshal(appMetadata)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to marshal app metadata json", zap.Error(err))
-		return err
-	}
-
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJson)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to set app metadata json", zap.Error(err))
-		return err
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set([]byte(""))
-	if err != nil {
-		return err
-	}
+	
 
 	user := &db.User{
-		UserUuid:     uuid.New(),
+		
 		Email:        conf.DefaultDexUserEmail,
 		Username:     conf.DefaultDexUserEmail,
-		Name:         conf.DefaultDexUserEmail,
-		IdLifecycle:  db.UserLifecycleActive,
+		FullName:         conf.DefaultDexUserEmail,
+	
 		Role:         role,
-		UserId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		AppMetadata:  appMetadataJsonb,
-		UserMetadata: userMetadataJsonb,
-		StaticOwner:  true,
+		ExternalId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 		Connector:    "local",
 	}
 	err = dbm.CreateUser(user)
