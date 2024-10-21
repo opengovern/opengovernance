@@ -362,11 +362,11 @@ func (h API) Get(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200
-//	@Param			credentialId	path	string	true	"CredentialID"
-//	@Param			request	body		entity.CreateRequest	true	"Request"
+//	@Param			integrationId	path	string	true	"IntegrationID"
+//	@Param			request	body		models.UpdateRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/{integrationId} [post]
 func (h API) Update(c echo.Context) error {
-	credId, err := uuid.Parse(c.Param("integrationId"))
+	integrationID, err := uuid.Parse(c.Param("integrationId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
@@ -377,7 +377,13 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	credential, err := h.database.GetCredential(credId)
+	integration, err := h.database.GetIntegration(integrationID)
+	if err != nil {
+		h.logger.Error("failed to get credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
+	}
+
+	credential, err := h.database.GetCredential(integration.CredentialID)
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
@@ -399,16 +405,13 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 	}
 
-	err = h.database.UpdateCredential(credId, secret)
+	err = h.database.UpdateCredential(integration.CredentialID, secret)
 	if err != nil {
 		h.logger.Error("failed to update credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update credential")
 	}
 
-	return c.JSON(http.StatusOK, models.CredentialItem{
-		ID:             credential.ID.String(),
-		CredentialType: credential.CredentialType,
-	})
+	return c.NoContent(http.StatusOK)
 }
 
 func (h API) Register(g *echo.Group) {
