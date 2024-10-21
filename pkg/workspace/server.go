@@ -204,10 +204,6 @@ func (s *Server) Register(e *echo.Echo) {
 	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, api2.KaytuAdminRole))
 	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, api2.KaytuAdminRole))
 
-	costEstimatorGroup := v1Group.Group("/costestimator")
-	costEstimatorGroup.GET("/aws", httpserver2.AuthorizeHandler(s.GetAwsCost, api2.ViewerRole))
-	costEstimatorGroup.GET("/azure", httpserver2.AuthorizeHandler(s.GetAzureCost, api2.ViewerRole))
-
 	v3 := e.Group("/api/v3")
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(s.PurgeSampleData, api2.ViewerRole))
 	v3.PUT("/sample/sync", httpserver2.AuthorizeHandler(s.SyncDemo, api2.ViewerRole))

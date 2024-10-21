@@ -115,7 +115,7 @@ jobs:
           set -x
           ./scripts/list_services > ./service-list
           cat ./service-list
-          cat ./service-list | sed 's/\s\+/\n/g' | sed 's/^\<steampipe\>$//g' | sed 's/^\<redoc\>$//g' | sed '/^$/d' > ./build_services
+          cat ./service-list | sed 's/\s\+/\n/g' | sed 's/^\<steampipe\>$//g' | sed '/^$/d' > ./build_services
           cat ./build_services
           mkdir -p ./build
           if [ ! -z "$(cat ./build_services)" ]; then
@@ -600,7 +600,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/OnboardServiceDockerfile
           context: .
-  deploy-swagger-ui-and-redoc:
+  deploy-swagger-ui:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -634,14 +634,6 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
-          context: .
-      - name: Build and push Docker images - redoc
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/redoc:${{ needs.tag.outputs.latest_tag }}
-          file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
     runs-on: ubuntu-latest
