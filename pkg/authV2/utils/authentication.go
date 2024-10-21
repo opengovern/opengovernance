@@ -45,7 +45,10 @@ func DbUserToApi(u *db.User) (*User, error) {
 		EmailVerified: u.EmailVerified,
 		FullName:    u.FullName,
 		LastLogin:     u.LastLogin,
-		Username:      string(u.Role),
+		Username:      string(u.Username),
+		Role: 	   string(u.Role),
+		ExternalId: u.ExternalId,
+		ID: 		  u.ID,
 		IsActive: u.IsActive,
 		IsDeleted: u.IsDeleted,
 

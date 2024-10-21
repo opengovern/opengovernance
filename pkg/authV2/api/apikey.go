@@ -7,7 +7,7 @@ import (
 
 type CreateAPIKeyRequest struct {
 	Name     string   `json:"name"`                                                 // Name of the key
-	RoleName api.Role `json:"roleName" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	Role api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 }
 
 type CreateAPIKeyResponse struct {

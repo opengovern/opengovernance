@@ -8,19 +8,19 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	api2 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/opengovernance/pkg/authV2/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"net/http"
-	"net/url"
-	"strconv"
-	api2 "github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/og-util/pkg/httpserver"
 
-	
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 
 	"github.com/golang-jwt/jwt"
@@ -47,14 +47,15 @@ type httpRoutes struct {
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	v1.GET("/check", r.Check)
-	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))
-	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
-	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))
-	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole)) //checked
+	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole)) //checked
+	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole)) //checked
 	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
-	v1.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
-	v1.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
+	// TODO: API FOR Edit keys
+	v1.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))
+	v1.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
 	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
 	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
@@ -147,10 +148,12 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	for _, u := range users {
 
 		resp = append(resp, api.GetUsersResponse{
-			UserID:        string(u.ID),
+			UserID:        u.ID,
 			UserName:      u.Username,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
+			ExternalId:  u.ExternalId,
+			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
 		})
 	}
@@ -184,7 +187,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetUserResponse{
-		UserID:        string(user.ID),
+		UserID:        user.ID,
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
@@ -194,6 +197,14 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		Blocked:       user.IsActive,
 		RoleName:      user.Role,
 	}
+	// check if LastLogin is Default go time value remove it 
+	if (user.LastLogin.IsZero()) {
+		resp.LastActivity = nil
+	}
+
+
+
+
 
 	return ctx.JSON(http.StatusOK, resp)
 
@@ -221,7 +232,7 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetMeResponse{
-		UserID:          string(user.ID),
+		UserID:          user.ID,
 		UserName:        user.Username,
 		Email:           user.Email,
 		EmailVerified:   user.EmailVerified,
@@ -229,10 +240,17 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		LastActivity:    user.LastLogin,
 		CreatedAt:       user.CreatedAt,
 		Blocked:         user.IsActive,
-		WorkspaceAccess: user.Role,
+		Role: user.Role,
 		MemberSince:     user.CreatedAt,
 		LastLogin:       user.LastLogin,
 	}
+	if (user.LastLogin.IsZero()) {
+		resp.LastLogin = nil
+		resp.LastActivity = nil
+
+	}
+
+
 
 	return ctx.JSON(http.StatusOK, resp)
 
@@ -285,7 +303,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 
-	masked := fmt.Sprintf("%s...%s", token[:3], token[len(token)-2:])
+	masked := fmt.Sprintf("%s...%s", token[:10], token[len(token)-10:])
 
 	hash := sha512.New()
 	_, err = hash.Write([]byte(token))
@@ -307,7 +325,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	r.logger.Info("creating API Key")
 	apikey := db.ApiKey{
 		Name:          req.Name,
-		Role:          req.RoleName,
+		Role:          req.Role,
 		CreatorUserID: userID,
 		
 		IsActive:        true,
@@ -417,6 +435,7 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/create [post]
 func (r *httpRoutes) CreateUser(ctx echo.Context) error {
+
 	var req api.CreateUserRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -431,6 +450,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 }
 
 func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
+
 	if req.EmailAddress == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
@@ -447,6 +467,8 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 	adminAccount := false
 	var firstUser *db.User
+
+
 	if count == 1 {
 		firstUser, err = r.db.GetFirstUser()
 		if err != nil {
