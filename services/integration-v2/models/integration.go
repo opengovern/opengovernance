@@ -30,8 +30,6 @@ type Integration struct {
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 
-	Credential Credential `gorm:"constraint:OnDelete:CASCADE;"` // Cascading delete when Integration is deleted
-
 	Lifecycle IntegrationLifecycle
 	Reason    string
 	LastCheck *time.Time
