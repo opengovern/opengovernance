@@ -14,8 +14,6 @@ import (
 	config2 "github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
-
-	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 
 	"crypto/rand"
@@ -26,9 +24,6 @@ import (
 )
 
 var (
-	mailApiKey     = os.Getenv("EMAIL_API_KEY")
-	mailSender     = os.Getenv("EMAIL_SENDER")
-	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
 
 	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")

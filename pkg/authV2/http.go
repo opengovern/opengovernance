@@ -6,46 +6,29 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/pkg/auth/utils"
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	api3 "github.com/opengovern/opengovernance/pkg/describe/api"
-	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
-	"github.com/opengovern/opengovernance/services/integration/api/entity"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
+	"github.com/opengovern/opengovernance/pkg/authV2/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strconv"
-	"strings"
-	"time"
-
 	api2 "github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 
-	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
-
-	"github.com/opengovern/opengovernance/pkg/auth/db"
+	
+	"github.com/opengovern/opengovernance/pkg/authV2/db"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
-
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
 
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opengovernance/pkg/authV2/api"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 // var (
@@ -55,13 +38,7 @@ import (
 
 type httpRoutes struct {
 	logger *zap.Logger
-	//emailService    email.Service
-	workspaceClient   client.WorkspaceServiceClient
-	complianceClient  client2.ComplianceServiceClient
-	integrationClient client3.IntegrationServiceClient
-	schedulerClient   client4.SchedulerServiceClient
-	auth0Service      *auth0.Service
-	metadataBaseUrl   string
+	
 	kaytuPrivateKey   *rsa.PrivateKey
 	db                db.Database
 	authServer        *Server
@@ -71,16 +48,16 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	v1.GET("/check", r.Check)
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))
-	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
+	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
 	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))
-	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
-	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
+	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
 	v1.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
 	v1.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
 	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
-	v1.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
+	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
 
 }
 
@@ -156,13 +133,13 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 //	@Success		200		{array}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
+	
 	var req api.GetUsersRequest
 	if err := ctx.Bind(&req); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	users, err := r.auth0Service.SearchUsers(workspaceID, req.Email, req.EmailVerified, req.RoleName)
+	users, err := r.db.GetUsers()
 	if err != nil {
 		return err
 	}
@@ -170,11 +147,11 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	for _, u := range users {
 
 		resp = append(resp, api.GetUsersResponse{
-			UserID:        u.UserId,
-			UserName:      u.Name,
+			UserID:        string(u.ID),
+			UserName:      u.Username,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
-			RoleName:      u.AppMetadata.WorkspaceAccess[workspaceID],
+			RoleName:      u.Role,
 		})
 	}
 	return ctx.JSON(http.StatusOK, resp)
@@ -191,40 +168,31 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Success		200		{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/user/{userId} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	userID := ctx.Param("user_id")
+	
+	userID := ctx.Param("id")
 	userID, err := url.QueryUnescape(userID)
 	if err != nil {
 		return err
 	}
-	user, err := r.auth0Service.GetUser(userID)
+	user, err := r.db.GetUser(userID)
 	if err != nil {
 		return err
 	}
-	hasARole := false
-	for ws, _ := range user.AppMetadata.WorkspaceAccess {
-		if ws == workspaceID {
-			hasARole = true
-			break
-		}
-	}
-	if hasARole == false {
-		return echo.NewHTTPError(http.StatusBadRequest, "The user is not in the specified workspace.")
-	}
+	
 	status := api.InviteStatus_PENDING
 	if user.EmailVerified {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetUserResponse{
-		UserID:        user.UserId,
-		UserName:      user.Name,
+		UserID:        string(user.ID),
+		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
 		Status:        status,
 		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
-		Blocked:       user.Blocked,
-		RoleName:      user.AppMetadata.WorkspaceAccess[workspaceID],
+		Blocked:       user.IsActive,
+		RoleName:      user.Role,
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -243,7 +211,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 func (r *httpRoutes) GetMe(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
-	user, err := r.auth0Service.GetUser(userID)
+	user, err := utils.GetUser(userID,r.db)
 	if err != nil {
 		return err
 	}
@@ -253,19 +221,17 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetMeResponse{
-		UserID:          user.UserId,
-		UserName:        user.Name,
+		UserID:          string(user.ID),
+		UserName:        user.Username,
 		Email:           user.Email,
 		EmailVerified:   user.EmailVerified,
 		Status:          status,
 		LastActivity:    user.LastLogin,
 		CreatedAt:       user.CreatedAt,
-		Blocked:         user.Blocked,
-		Theme:           user.AppMetadata.Theme,
-		ColorBlindMode:  user.AppMetadata.ColorBlindMode,
-		WorkspaceAccess: user.AppMetadata.WorkspaceAccess,
-		MemberSince:     user.AppMetadata.MemberSince,
-		LastLogin:       user.AppMetadata.LastLogin,
+		Blocked:         user.IsActive,
+		WorkspaceAccess: user.Role,
+		MemberSince:     user.CreatedAt,
+		LastLogin:       user.LastLogin,
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -293,7 +259,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	usr, err := r.auth0Service.GetUser(userID)
+	usr, err := utils.GetUser(userID,r.db)
 	if err != nil {
 		r.logger.Error("failed to get user", zap.Error(err))
 		return err
@@ -304,12 +270,10 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	u := userClaim{
-		WorkspaceAccess: map[string]api2.Role{
-			"kaytu": api2.EditorRole,
-		},
-		GlobalAccess:   nil,
+		Role: api2.EditorRole,
+		
 		Email:          usr.Email,
-		ExternalUserID: usr.UserId,
+		ExternalUserID: usr.ExternalId,
 	}
 
 	if r.kaytuPrivateKey == nil {
@@ -343,11 +307,11 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	r.logger.Info("creating API Key")
 	apikey := db.ApiKey{
 		Name:          req.Name,
-		Role:          api2.EditorRole,
+		Role:          req.RoleName,
 		CreatorUserID: userID,
-		WorkspaceID:   "kaytu",
-		Active:        true,
-		Revoked:       false,
+		
+		IsActive:        true,
+		IsDeleted:       false,
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
@@ -362,7 +326,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
 		ID:        apikey.ID,
 		Name:      apikey.Name,
-		Active:    apikey.Active,
+		Active:    apikey.IsActive,
 		CreatedAt: apikey.CreatedAt,
 		RoleName:  apikey.Role,
 		Token:     token,
@@ -380,28 +344,28 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	nil
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
-	userId := httpserver.GetUserID(ctx)
-	name := ctx.Param("name")
+	// userId := httpserver.GetUserID(ctx)
+	id := ctx.Param("id")
 
-	keys, err := r.db.ListApiKeysForUser(userId)
-	if err != nil {
-		return err
-	}
+	// keys, err := r.db.ListApiKeysForUser(userId)
+	// if err != nil {
+	// 	return err
+	// }
 
-	var keyId uint
+	
 	exists := false
-	for _, key := range keys {
-		if key.Name == name {
-			keyId = key.ID
-			exists = true
-		}
-	}
+	// for _, key := range keys {
+	// 	if key.Name == name {
+	// 		keyId = key.ID
+	// 		exists = true
+	// 	}
+	// }
 
 	if !exists {
 		return echo.NewHTTPError(http.StatusBadRequest, "key not found")
 	}
-
-	err = r.db.RevokeUserAPIKey(userId, keyId)
+	integer_id, err :=(strconv.ParseUint(id, 10, 32))
+	err = r.db.DeleteAPIKey(integer_id)
 	if err != nil {
 		return err
 	}
@@ -433,7 +397,7 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 			Name:          key.Name,
 			RoleName:      key.Role,
 			CreatorUserID: key.CreatorUserID,
-			Active:        key.Active,
+			Active:        key.IsActive,
 			MaskedKey:     key.MaskedKey,
 		})
 	}
@@ -489,9 +453,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 			r.logger.Error("failed to get first user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get first user")
 		}
-		if firstUser.StaticOwner {
-			adminAccount = true
-		}
+		
 	} else if count == 0 {
 		adminAccount = true
 	}
@@ -549,40 +511,17 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		}
 	}
 
-	wm, err := r.db.GetWorkspaceMapByName("main")
-	if err != nil {
-		r.logger.Error("failed to get main workspace", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
-	}
+	
 
 	role := api2.ViewerRole
 	if req.Role != nil {
 		role = *req.Role
 	}
 
-	var appMetadata auth0.Metadata
-	appMetadata.WorkspaceAccess = map[string]api2.Role{
-		wm.ID: role,
-	}
+	
 
-	timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
-	appMetadata.MemberSince = &timeNow
-	appMetadataJson, err := json.Marshal(appMetadata)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
-	}
+	
 
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJson)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set([]byte(""))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal user metadata")
-	}
 
 	requirePasswordChange := true
 	if adminAccount {
@@ -590,16 +529,12 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	newUser := &db.User{
-		UserUuid:              uuid.New(),
 		Email:                 req.EmailAddress,
 		Username:              req.EmailAddress,
-		Name:                  req.EmailAddress,
-		IdLifecycle:           db.UserLifecycleActive,
 		Role:                  role,
-		UserId:                userId,
-		AppMetadata:           appMetadataJsonb,
-		UserMetadata:          userMetadataJsonb,
+		EmailVerified:         false,
 		Connector:             connector,
+		ExternalId: userId,
 		RequirePasswordChange: requirePasswordChange,
 	}
 	err = r.db.CreateUser(newUser)
@@ -676,32 +611,28 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			}
 		}
 
-		err = r.db.UserPasswordUpdatedByEmail(req.EmailAddress)
+		err = r.db.UserPasswordUpdate(user.ID)
 		if err != nil {
 			r.logger.Error("failed to update user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 		}
 	}
 
-	wm, err := r.db.GetWorkspaceMapByName("main")
-	if err != nil {
-		r.logger.Error("failed to get main workspace", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
-	}
+	
 
 	if req.Role != nil {
-		auth0User, err := r.auth0Service.GetUser(user.UserId)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
-		}
-		auth0User.AppMetadata.WorkspaceAccess[wm.ID] = *req.Role
+		 update_user :=&db.User{
+			Model: gorm.Model{
+				ID: user.ID,
+			},
+			Role: *req.Role,
+			IsActive: req.IsActive,
 
-		if auth0User.AppMetadata.ConnectionIDs == nil {
-			auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
 		}
-		err = r.auth0Service.PatchUserAppMetadata(user.UserId, auth0User.AppMetadata, nil)
+		err = r.db.UpdateUser(update_user)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user role")
+			r.logger.Error("failed to update user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 		}
 	}
 
@@ -757,12 +688,8 @@ func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
 
-	err = r.db.DeleteUserWithEmail(emailAddress)
-	if err != nil {
-		r.logger.Error("failed to delete user", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
-	}
-	err = r.db.DeleteUser(user.UserId)
+	
+	err = r.db.DeleteUser(user.ID)
 	if err != nil {
 		r.logger.Error("failed to delete user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
@@ -889,7 +816,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		}
 	}
 
-	err = r.db.UserPasswordUpdatedByEmail(user.Email)
+	err = r.db.UserPasswordUpdate(user.ID)
 	if err != nil {
 		r.logger.Error("failed to update user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")

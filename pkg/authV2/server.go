@@ -188,7 +188,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			return unAuth, nil
 		}
 	}
-	user.Role = (*api.Role)(&theUser.Role)
+	user.Role = (api.Role)(theUser.Role)
 	
 	user.MemberSince = &theUser.CreatedAt
 	user.UserLastLogin = &theUser.LastLogin
@@ -239,7 +239,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 					{
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKaytuUserRoleHeader,
-							Value: string(*user.Role),
+							Value: string(user.Role),
 						},
 					},
 					// {
@@ -255,7 +255,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	Role    *api.Role           
+	Role    api.Role           
 	Email           string              
 	MemberSince     *time.Time              
 	UserLastLogin   *time.Time              

@@ -21,6 +21,7 @@ type ApiKey struct {
 	IsActive        bool
 	IsDeleted    bool 
 	KeyHash       string
+	MaskedKey     string
 }
 
 type User struct {

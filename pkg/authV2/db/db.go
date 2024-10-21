@@ -83,7 +83,7 @@ func (db Database) AddApiKey(key *ApiKey) error {
 func (db Database) UpdateActiveAPIKey( id uint, value bool) error {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("id", id).
-		Update("active", value)
+		Update("is_active", value)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -100,10 +100,10 @@ func (db Database) UpdateAPIKeyRole(id uint, role api.Role) error {
 	return nil
 }
 
-func (db Database) DeleteAPIKeyRole(id uint, role api.Role) error {
+func (db Database) DeleteAPIKey(id uint64) error {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("id", id).
-		Delete(&ApiKey{})
+		Update("is_deleted","true")
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -135,7 +135,7 @@ func (db Database) UpdateUser(user *User) error {
 	return nil
 }
 
-func (db Database) DeleteUser(id uuid.UUID) error {
+func (db Database) DeleteUser(id uint) error {
 	tx := db.Orm.
 		Where("id = ?", id).
 		Delete(&User{})
@@ -160,7 +160,7 @@ func (db Database) GetUsers() ([]User, error) {
 
 
 
-func (db Database) GetUser(id uuid.UUID) (*User, error) {
+func (db Database) GetUser(id string) (*User, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).
 		Where("id = ?", id).
@@ -249,7 +249,7 @@ func (db Database) GetUserByEmail(email string) (*User, error) {
 
 
 
-func (db Database) UserPasswordUpdated(id uuid.UUID) error {
+func (db Database) UserPasswordUpdate(id uint) error {
 	tx := db.Orm.Model(&User{}).
 		Where("id = ? ", id).
 		Update("require_password_change", false)
@@ -318,4 +318,17 @@ func (db Database) FindIdByEmail(email string) (uint, error) {
 		return 0, tx.Error
 	}
 	return s.ID, nil
+}
+
+func (db Database) CountApiKeysForUser(userID string) (int64, error) {
+	var s int64
+	tx := db.Orm.Model(&ApiKey{}).
+		Where("creator_user_id", userID).
+		Where("is_active", "true").
+		Where("is_deleted","false").
+		Count(&s)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return s, nil
 }

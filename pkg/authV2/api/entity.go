@@ -148,7 +148,7 @@ type GetMeResponse struct {
 	Blocked         bool                `json:"blocked" example:"false"`                            // Is the user blocked or not
 	Theme           *Theme              `json:"theme"`
 	ColorBlindMode  *bool               `json:"colorBlindMode"`
-	WorkspaceAccess map[string]api.Role `json:"workspaceAccess"`
-	MemberSince     *string             `json:"memberSince"`
-	LastLogin       *string             `json:"lastLogin"`
+	WorkspaceAccess string `json:"workspaceAccess"`
+	MemberSince         time.Time         `json:"memberSince"`
+	LastLogin       time.Time           `json:"lastLogin"`
 }
