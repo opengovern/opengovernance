@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/pkg/metadata/config"
+	vault2 "github.com/opengovern/opengovernance/pkg/metadata/vault"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -24,6 +26,15 @@ func start(ctx context.Context) error {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)
+	}
+
+	if cfg.Vault.Provider == vault.HashiCorpVault {
+		sealHandler, err := vault2.NewSealHandler(ctx, logger, cfg)
+		if err != nil {
+			return fmt.Errorf("new seal handler: %w", err)
+		}
+		// This blocks until vault is inited and unsealed
+		sealHandler.Start(ctx)
 	}
 
 	handler, err := InitializeHttpHandler(
