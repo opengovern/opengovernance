@@ -1,4 +1,4 @@
-package kaytu_client
+package opengovernance_client
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"time"
 
 	essdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

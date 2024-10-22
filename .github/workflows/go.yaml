@@ -61,7 +61,7 @@ jobs:
       swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
       workspace-service: ${{ steps.build_services.outputs.workspace-service }}
       analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
-      steampipe-plugin-kaytu: ${{ steps.build_services.outputs.steampipe-plugin-kaytu }}
+      steampipe-plugin-kaytu: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
       wastage-service: ${{ steps.build_services.outputs.wastage-service }}

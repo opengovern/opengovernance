@@ -70,7 +70,7 @@ type ChangeWorkspaceOrganizationRequest struct {
 
 type Workspace struct {
 	ID                       string        `json:"id" example:"ws-698542025141040315"`
-	Name                     string        `json:"name" example:"kaytu"`
+	Name                     string        `json:"name" example:"opengovernance"`
 	OwnerId                  *string       `json:"ownerId" example:"google-oauth2|204590896945502695694"`
 	Status                   StateID       `json:"status" example:"PROVISIONED"`
 	Tier                     Tier          `json:"tier" example:"ENTERPRISE"`
@@ -107,7 +107,7 @@ type WorkspaceLimits struct {
 
 type WorkspaceLimitsUsage struct {
 	ID   string `json:"id" example:"ws-698542025141040315"`
-	Name string `json:"name" example:"kaytu"`
+	Name string `json:"name" example:"opengovernance"`
 
 	CurrentUsers       int64 `json:"currentUsers" example:"10"`
 	CurrentConnections int64 `json:"currentConnections" example:"100"`

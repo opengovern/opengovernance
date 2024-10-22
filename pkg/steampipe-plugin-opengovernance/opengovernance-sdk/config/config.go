@@ -87,7 +87,7 @@ func GetConfig(connection *plugin.Connection) ClientConfig {
 }
 
 func NewClientCached(c ClientConfig, cache *connection.ConnectionCache, ctx context.Context) (essdk.Client, error) {
-	value, ok := cache.Get(ctx, "kaytu-es-client")
+	value, ok := cache.Get(ctx, "opengovernance-es-client")
 	if ok {
 		return value.(essdk.Client), nil
 	}
@@ -99,7 +99,7 @@ func NewClientCached(c ClientConfig, cache *connection.ConnectionCache, ctx cont
 		return essdk.Client{}, err
 	}
 
-	cache.Set(ctx, "kaytu-es-client", client)
+	cache.Set(ctx, "opengovernance-es-client", client)
 
 	return client, nil
 }

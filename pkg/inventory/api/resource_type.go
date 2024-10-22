@@ -12,7 +12,7 @@ type ResourceType struct {
 	ResourceLabel string              `json:"resource_name" example:"VM"`                                                                                                           // Resource Name
 	ServiceName   string              `json:"service_name" example:"compute"`                                                                                                       // Service Name
 	Tags          map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"` // Tags
-	LogoURI       *string             `json:"logo_uri,omitempty" example:"https://kaytu.io/logo.png"`                                                                               // Logo URI
+	LogoURI       *string             `json:"logo_uri,omitempty" example:"https://opengovernance.io/logo.png"`                                                                      // Logo URI
 
 	Count    *int `json:"count" example:"100" minimum:"0"`    // Number of Resources of this Resource Type - Metric
 	OldCount *int `json:"old_count" example:"90" minimum:"0"` // Number of Resources of this Resource Type in the past - Metric

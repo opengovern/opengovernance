@@ -1,17 +1,17 @@
-package kaytu
+package opengovernance
 
 import (
 	"context"
 	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
@@ -56,7 +56,7 @@ initLoop:
 func newZapLogger() (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
 	cfg.OutputPaths = []string{
-		"/home/steampipe/.steampipe/logs/kaytu.log",
+		"/home/steampipe/.steampipe/logs/opengovernance.log",
 	}
 	return cfg.Build()
 }
@@ -159,7 +159,7 @@ $$ LANGUAGE plpgsql;`
 
 func Plugin(ctx context.Context) *plugin.Plugin {
 	p := &plugin.Plugin{
-		Name:             "steampipe-plugin-kaytu",
+		Name:             "steampipe-plugin-opengovernance",
 		DefaultTransform: transform.FromGo().NullIfZero(),
 		ConnectionConfigSchema: &plugin.ConnectionConfigSchema{
 			NewInstance: config.Instance,

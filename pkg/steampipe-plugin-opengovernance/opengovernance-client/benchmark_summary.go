@@ -1,12 +1,12 @@
-package kaytu_client
+package opengovernance_client
 
 import (
 	"context"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/services"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/services"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"runtime"

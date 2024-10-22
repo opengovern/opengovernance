@@ -78,7 +78,7 @@ func (s *Service) CreateWorkspace(ctx context.Context) error {
 		return err
 	}
 
-	ownerAll := "kaytu|owner|all"
+	ownerAll := "opengovernance|owner|all"
 	workspace := &db.Workspace{
 		ID:                       fmt.Sprintf("ws-%d", id),
 		Name:                     "main",

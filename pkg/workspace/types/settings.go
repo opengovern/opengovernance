@@ -7,7 +7,7 @@ import (
 )
 
 type KaytuWorkspaceSettings struct {
-	Kaytu KaytuConfig `json:"kaytu"`
+	Kaytu KaytuConfig `json:"opengovernance"`
 	Vault VaultConfig `json:"vault"`
 }
 

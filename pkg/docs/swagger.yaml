@@ -5102,7 +5102,7 @@ definitions:
         example: 100
         type: integer
       name:
-        example: kaytu
+        example: opengovernance
         type: string
     type: object
   github_com_kaytu-io_open-governance_pkg_workspace_api.WorkspaceResponse:
@@ -5118,7 +5118,7 @@ definitions:
       is_created:
         type: boolean
       name:
-        example: kaytu
+        example: opengovernance
         type: string
       organization:
         $ref: '#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.Organization'
@@ -8122,7 +8122,7 @@ paths:
     get:
       description: Get all the RoleBindings of the workspace. RoleBinding defines
         the roles and actions a user can perform. There are currently three roles
-        (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)
+        (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.opengovernance.io)
       produces:
       - application/json
       responses:

@@ -362,7 +362,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: s.cfg.KaytuOctopusNamespace,
-		Name:      "kaytu-version",
+		Name:      "opengovernance-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]
@@ -399,7 +399,7 @@ func (s *Server) GetWorkspaceByName(c echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
-		Name:      "kaytu-version",
+		Name:      "opengovernance-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]
@@ -458,7 +458,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			hasRoleInWorkspace = true
 		}
 
-		if workspace.OwnerId != nil && *workspace.OwnerId == "kaytu|owner|all" {
+		if workspace.OwnerId != nil && *workspace.OwnerId == "opengovernance|owner|all" {
 			hasRoleInWorkspace = true
 		}
 
@@ -472,7 +472,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			var kaytuVersionConfig corev1.ConfigMap
 			err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 				Namespace: s.cfg.KaytuOctopusNamespace,
-				Name:      "kaytu-version",
+				Name:      "opengovernance-version",
 			}, &kaytuVersionConfig)
 			if err == nil {
 				version = kaytuVersionConfig.Data["version"]
@@ -511,7 +511,7 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(c.Request().Context(), k8sclient.ObjectKey{
 		Namespace: s.cfg.KaytuOctopusNamespace,
-		Name:      "kaytu-version",
+		Name:      "opengovernance-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]
@@ -1191,7 +1191,7 @@ func (s *Server) GetAbout(echoCtx echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(echoCtx.Request().Context(), k8sclient.ObjectKey{
 		Namespace: s.cfg.KaytuOctopusNamespace,
-		Name:      "kaytu-version",
+		Name:      "opengovernance-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]

@@ -1,10 +1,10 @@
-package kaytu_client
+package opengovernance_client
 
 import (
 	"context"
 	metric "github.com/opengovern/opengovernance/pkg/analytics/db"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"gorm.io/gorm/clause"
 	"runtime"

@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func NewComplianceClientCached(c config.ClientConfig, cache *connection.ConnectionCache, ctx context.Context) (complianceClient.ComplianceServiceClient, error) {
-	value, ok := cache.Get(ctx, "kaytu-compliance-service-client")
+	value, ok := cache.Get(ctx, "opengovernance-compliance-service-client")
 	if ok {
 		return value.(complianceClient.ComplianceServiceClient), nil
 	}
@@ -23,7 +23,7 @@ func NewComplianceClientCached(c config.ClientConfig, cache *connection.Connecti
 	}
 	client := complianceClient.NewComplianceClient(*c.ComplianceServiceBaseURL)
 
-	cache.Set(ctx, "kaytu-compliance-service-client", client)
+	cache.Set(ctx, "opengovernance-compliance-service-client", client)
 
 	return client, nil
 }

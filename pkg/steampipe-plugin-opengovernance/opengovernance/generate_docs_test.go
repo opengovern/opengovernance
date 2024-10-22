@@ -1,4 +1,4 @@
-package kaytu
+package opengovernance
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func TestGenerateDocs(t *testing.T) {
 	}
 
 	pathPrefix := "./docs/table_def"
-	if strings.HasSuffix(currentDir, "kaytu") {
+	if strings.HasSuffix(currentDir, "opengovernance") {
 		pathPrefix = "." + pathPrefix
 	}
 

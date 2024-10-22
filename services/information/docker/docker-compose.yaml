@@ -1,6 +1,6 @@
 services:
     information:
-        image: ghcr.io/kaytu-io/information-service:v0.420.0-dev
+        image: ghcr.io/opengovernance-io/information-service:v0.420.0-dev
         container_name: information
         ports:
         - "8080:8080"
