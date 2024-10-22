@@ -18,7 +18,7 @@ type Client struct {
 }
 
 func NewClientCached(c config.ClientConfig, cache *connection.ConnectionCache, ctx context.Context) (Client, error) {
-	value, ok := cache.Get(ctx, "kaytu-pg-client")
+	value, ok := cache.Get(ctx, "opengovernance-pg-client")
 	if ok {
 		return value.(Client), nil
 	}
@@ -30,13 +30,13 @@ func NewClientCached(c config.ClientConfig, cache *connection.ConnectionCache, c
 		return Client{}, err
 	}
 
-	cache.Set(ctx, "kaytu-pg-client", client)
+	cache.Set(ctx, "opengovernance-pg-client", client)
 
 	return client, nil
 }
 
 func NewInventoryClientCached(c config.ClientConfig, cache *connection.ConnectionCache, ctx context.Context) (Client, error) {
-	value, ok := cache.Get(ctx, "kaytu-inventory-pg-client")
+	value, ok := cache.Get(ctx, "opengovernance-inventory-pg-client")
 	if ok {
 		return value.(Client), nil
 	}
@@ -49,7 +49,7 @@ func NewInventoryClientCached(c config.ClientConfig, cache *connection.Connectio
 		return Client{}, err
 	}
 
-	cache.Set(ctx, "kaytu-inventory-pg-client", client)
+	cache.Set(ctx, "opengovernance-inventory-pg-client", client)
 
 	return client, nil
 }

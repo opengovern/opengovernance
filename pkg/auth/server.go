@@ -290,14 +290,14 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	WorkspaceAccess map[string]api3.Role `json:"https://app.kaytu.io/workspaceAccess"`
-	GlobalAccess    *api3.Role           `json:"https://app.kaytu.io/globalAccess"`
-	Email           string               `json:"https://app.kaytu.io/email"`
-	MemberSince     *string              `json:"https://app.kaytu.io/memberSince"`
-	UserLastLogin   *string              `json:"https://app.kaytu.io/userLastLogin"`
-	ColorBlindMode  *bool                `json:"https://app.kaytu.io/colorBlindMode"`
-	Theme           *api.Theme           `json:"https://app.kaytu.io/theme"`
-	ConnectionIDs   map[string][]string  `json:"https://app.kaytu.io/connectionIDs"`
+	WorkspaceAccess map[string]api3.Role `json:"https://app.opengovernance.io/workspaceAccess"`
+	GlobalAccess    *api3.Role           `json:"https://app.opengovernance.io/globalAccess"`
+	Email           string               `json:"https://app.opengovernance.io/email"`
+	MemberSince     *string              `json:"https://app.opengovernance.io/memberSince"`
+	UserLastLogin   *string              `json:"https://app.opengovernance.io/userLastLogin"`
+	ColorBlindMode  *bool                `json:"https://app.opengovernance.io/colorBlindMode"`
+	Theme           *api.Theme           `json:"https://app.opengovernance.io/theme"`
+	ConnectionIDs   map[string][]string  `json:"https://app.opengovernance.io/connectionIDs"`
 
 	ExternalUserID string `json:"sub"`
 }
@@ -380,7 +380,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		if errk == nil {
 			return &u, nil
 		} else {
-			fmt.Println("failed to auth with kaytu cred due to", errk)
+			fmt.Println("failed to auth with opengovernance cred due to", errk)
 		}
 	}
 	return nil, err
@@ -400,7 +400,7 @@ func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.
 		RoleName:      api3.EditorRole,
 	}
 
-	if workspaceName != "kaytu" {
+	if workspaceName != "opengovernance" {
 		workspaceID, err := s.GetWorkspaceIDByName(workspaceName)
 		if err != nil {
 			return rb, err

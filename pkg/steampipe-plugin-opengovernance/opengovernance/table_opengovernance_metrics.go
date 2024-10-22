@@ -1,9 +1,9 @@
-package kaytu
+package opengovernance
 
 import (
 	"context"
 	metric "github.com/opengovern/opengovernance/pkg/analytics/db"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-client"
+	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
@@ -12,7 +12,7 @@ import (
 func tableKaytuMetrics(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_metrics",
-		Description: "kaytu Metrics",
+		Description: "opengovernance Metrics",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},

@@ -1,9 +1,9 @@
-package kaytu
+package opengovernance
 
 import (
 	"context"
 	compliance "github.com/opengovern/opengovernance/pkg/compliance/api"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-client"
+	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"

@@ -298,7 +298,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 // GetWorkspaceRoleBindings godoc
 //
 //	@Summary		Workspace user roleBindings.
-//	@Description	Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)
+//	@Description	Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.opengovernance.io)
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
@@ -637,7 +637,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 	u := userClaim{
 		WorkspaceAccess: map[string]api2.Role{
-			"kaytu": api2.EditorRole,
+			"opengovernance": api2.EditorRole,
 		},
 		GlobalAccess:   nil,
 		Email:          usr.Email,
@@ -645,7 +645,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	if r.kaytuPrivateKey == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "kaytu api key is disabled")
+		return echo.NewHTTPError(http.StatusBadRequest, "opengovernance api key is disabled")
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
 	if err != nil {
@@ -677,7 +677,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		Name:          req.Name,
 		Role:          api2.EditorRole,
 		CreatorUserID: userID,
-		WorkspaceID:   "kaytu",
+		WorkspaceID:   "opengovernance",
 		Active:        true,
 		Revoked:       false,
 		MaskedKey:     masked,

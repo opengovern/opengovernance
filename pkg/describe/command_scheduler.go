@@ -13,7 +13,7 @@ const (
 	CheckupJobsQueueName    = "checkup-jobs-queue"
 	CheckupResultsQueueName = "checkup-results-queue"
 
-	DescribeResultsQueueName = "kaytu-describe-results-queue"
+	DescribeResultsQueueName = "opengovernance-describe-results-queue"
 	DescribeStreamName       = "describe"
 )
 

@@ -1,4 +1,4 @@
-package kaytu_client
+package opengovernance_client
 
 import (
 	"context"
