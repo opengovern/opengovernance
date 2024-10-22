@@ -224,7 +224,6 @@ func start(ctx context.Context) error {
 	authServer := &Server{
 		host:                    kaytuHost,
 		kaytuPublicKey:          kaytuPublicKey,
-		
 		dexVerifier:             dexVerifier,
 		logger:                  logger,
 		db:                      adb,

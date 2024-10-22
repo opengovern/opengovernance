@@ -50,15 +50,15 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole)) //checked
 	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole)) //checked
 	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
-	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole)) //checked
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole)) //checked
-	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
+	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	// TODO: API FOR Edit keys (Ask ANil)
 	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
 	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
 	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
-	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
+	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
 
 }
 
@@ -680,12 +680,12 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/{email_address}/delete [delete]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
-	emailAddress := ctx.Param("email_address")
-	if emailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "emailAddress is required")
+	id := ctx.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
 
-	err := r.DoDeleteUser(emailAddress)
+	err := r.DoDeleteUser(id)
 	if err != nil {
 		return err
 	}
@@ -693,29 +693,32 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusAccepted)
 }
 
-func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
+func (r *httpRoutes) DoDeleteUser(id string) error {
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
 
-	dexReq := &dexApi.DeletePasswordReq{
-		Email: emailAddress,
+	user, err2 := r.db.GetUser(id)
+
+
+
+
+	if err2 != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+		dexReq := &dexApi.DeletePasswordReq{
+		Email: user.Email,
 	}
 
 	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
 	if err != nil {
 		r.logger.Error("failed to remove dex password", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to remove dex password")
-	}
-
-	user, err := r.db.GetUserByEmail(emailAddress)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
-	}
-	if user == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
 
 	
