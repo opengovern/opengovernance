@@ -52,8 +52,9 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
 	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
-	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
-	// TODO: API FOR Edit keys (Ask ANil)
+	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
+	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
+	
 	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
 	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
@@ -368,25 +369,28 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	// userId := httpserver.GetUserID(ctx)
 	id := ctx.Param("id")
 
-	// keys, err := r.db.ListApiKeysForUser(userId)
-	// if err != nil {
-	// 	return err
-	// }
-
 	
-	// exists := false
-	// for _, key := range keys {
-	// 	if key.Name == name {
-	// 		keyId = key.ID
-	// 		exists = true
-	// 	}
-	// }
-
-	// if !exists {
-	// 	return echo.NewHTTPError(http.StatusBadRequest, "key not found")
-	// }
 	integer_id, err :=(strconv.ParseUint(id, 10, 32))
 	err = r.db.DeleteAPIKey(integer_id)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusAccepted)
+}
+func (r *httpRoutes) EditAPIKey(ctx echo.Context) error {
+	// TODO: Ask from ANIL what should i do 
+	// userId := httpserver.GetUserID(ctx)
+	var req api.EditAPIKeyRequest
+
+	
+	id := ctx.Param("id")
+	if id == ""  {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
+	}
+	
+
+	err := r.db.UpdateAPIKey(id, req.IsActive,req.Role)
 	if err != nil {
 		return err
 	}
