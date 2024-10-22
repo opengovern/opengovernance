@@ -69,11 +69,6 @@ if [[ $SERVICES == *"steampipe"* ]]; then
     docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/steampipe-service:"$TAG"
 fi
 
-if [[ $SERVICES == *"alerting-service"* ]]; then
-    docker build -f  docker/AlertingServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
-    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
-fi
-
 if [[ $SERVICES == *"wastage-service"* ]]; then
     docker build -f  docker/WastageServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/wastage-service:"$TAG"
     docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/wastage-service:"$TAG"
