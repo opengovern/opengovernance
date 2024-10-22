@@ -62,7 +62,7 @@ func (s *gcpPluginServer) GCPComputeOptimization(ctx context.Context, req *gcp.G
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) == 0 {
 		return nil, fmt.Errorf("user not found")

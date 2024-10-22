@@ -75,7 +75,7 @@ func (s *awsPluginServer) EC2InstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) == 0 {
 		return nil, fmt.Errorf("user not found")
@@ -261,7 +261,7 @@ func (s *awsPluginServer) RDSInstanceOptimization(ctx context.Context, req *aws.
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) == 0 {
 		return nil, fmt.Errorf("user not found")
@@ -416,7 +416,7 @@ func (s *awsPluginServer) RDSClusterOptimization(ctx context.Context, req *aws.R
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) == 0 {
 		return nil, fmt.Errorf("user not found")

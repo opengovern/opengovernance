@@ -64,7 +64,7 @@ func (s *kubernetesPluginServer) KubernetesPodOptimization(ctx context.Context, 
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) == 0 {
 		return nil, fmt.Errorf("user not found")
@@ -208,7 +208,7 @@ func (s *kubernetesPluginServer) KubernetesDeploymentOptimization(ctx context.Co
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
 		userId = userIds[0]
@@ -351,7 +351,7 @@ func (s *kubernetesPluginServer) KubernetesStatefulsetOptimization(ctx context.C
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
 		userId = userIds[0]
@@ -494,7 +494,7 @@ func (s *kubernetesPluginServer) KubernetesDaemonsetOptimization(ctx context.Con
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
 		userId = userIds[0]
@@ -637,7 +637,7 @@ func (s *kubernetesPluginServer) KubernetesJobOptimization(ctx context.Context, 
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
 		userId = userIds[0]
@@ -780,7 +780,7 @@ func (s *kubernetesPluginServer) KubernetesNodeGetCost(ctx context.Context, req 
 		return nil, fmt.Errorf("failed to get incoming context")
 	}
 
-	userIds := md.Get(httpserver.XKaytuUserIDHeader)
+	userIds := md.Get(httpserver.XPlatformUserIDHeader)
 	userId := ""
 	if len(userIds) > 0 {
 		userId = userIds[0]

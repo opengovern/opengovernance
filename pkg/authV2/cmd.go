@@ -24,18 +24,16 @@ import (
 )
 
 var (
+	dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
+	dexAuthPublicClientID = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
+	dexGrpcAddress        = os.Getenv("DEX_GRPC_ADDR")
 
-	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
-	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
-	dexGrpcAddress               = os.Getenv("DEX_GRPC_ADDR")
-	
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	kaytuHost          = os.Getenv("KAYTU_HOST")
-	kaytuKeyEnabledStr = os.Getenv("KAYTU_KEY_ENABLED")
-	kaytuPublicKeyStr  = os.Getenv("KAYTU_PUBLIC_KEY")
-	kaytuPrivateKeyStr = os.Getenv("KAYTU_PRIVATE_KEY")
-
+	platformHost          = os.Getenv("PLATFORM_HOST")
+	platformKeyEnabledStr = os.Getenv("PLATFORM_KEY_ENABLED")
+	platformPublicKeyStr  = os.Getenv("PLATFORM_PUBLIC_KEY")
+	platformPrivateKeyStr = os.Getenv("PLATFORM_PRIVATE_KEY")
 )
 
 func Command() *cobra.Command {
@@ -65,8 +63,6 @@ func start(ctx context.Context) error {
 	}
 
 	logger = logger.Named("authV2")
-
-
 
 	dexVerifier, err := newDexOidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {
@@ -98,18 +94,18 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	if kaytuKeyEnabledStr == "" {
-		kaytuKeyEnabledStr = "false"
+	if platformKeyEnabledStr == "" {
+		platformKeyEnabledStr = "false"
 	}
-	kaytuKeyEnabled, err := strconv.ParseBool(kaytuKeyEnabledStr)
+	platformKeyEnabled, err := strconv.ParseBool(platformKeyEnabledStr)
 	if err != nil {
-		return fmt.Errorf("kaytuKeyEnabled [%s]: %w", kaytuKeyEnabledStr, err)
+		return fmt.Errorf("platformKeyEnabled [%s]: %w", platformKeyEnabledStr, err)
 	}
 
-	var kaytuPublicKey *rsa.PublicKey
-	var kaytuPrivateKey *rsa.PrivateKey
-	if kaytuKeyEnabled {
-		b, err := base64.StdEncoding.DecodeString(kaytuPublicKeyStr)
+	var platformPublicKey *rsa.PublicKey
+	var platformPrivateKey *rsa.PrivateKey
+	if platformKeyEnabled {
+		b, err := base64.StdEncoding.DecodeString(platformPublicKeyStr)
 		if err != nil {
 			return fmt.Errorf("public key decode: %w", err)
 		}
@@ -121,9 +117,9 @@ func start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		kaytuPublicKey = pub.(*rsa.PublicKey)
+		platformPublicKey = pub.(*rsa.PublicKey)
 
-		b, err = base64.StdEncoding.DecodeString(kaytuPrivateKeyStr)
+		b, err = base64.StdEncoding.DecodeString(platformPrivateKeyStr)
 		if err != nil {
 			return fmt.Errorf("private key decode: %w", err)
 		}
@@ -135,7 +131,7 @@ func start(ctx context.Context) error {
 		if err != nil {
 			panic(err)
 		}
-		kaytuPrivateKey = pri.(*rsa.PrivateKey)
+		platformPrivateKey = pri.(*rsa.PrivateKey)
 	} else {
 		keyPair, err := adb.GetKeyPair()
 		if err != nil {
@@ -143,13 +139,13 @@ func start(ctx context.Context) error {
 		}
 
 		if len(keyPair) == 0 {
-			kaytuPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+			platformPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 			if err != nil {
 				panic(fmt.Sprintf("Error generating RSA key: %v", err))
 			}
-			kaytuPublicKey = &kaytuPrivateKey.PublicKey
+			platformPublicKey = &platformPrivateKey.PublicKey
 
-			b, err := x509.MarshalPKIXPublicKey(kaytuPublicKey)
+			b, err := x509.MarshalPKIXPublicKey(platformPublicKey)
 			if err != nil {
 				panic(err)
 			}
@@ -167,7 +163,7 @@ func start(ctx context.Context) error {
 				panic(err)
 			}
 
-			b, err = x509.MarshalPKCS8PrivateKey(kaytuPrivateKey)
+			b, err = x509.MarshalPKCS8PrivateKey(platformPrivateKey)
 			if err != nil {
 				panic(err)
 			}
@@ -200,7 +196,7 @@ func start(ctx context.Context) error {
 					if err != nil {
 						return err
 					}
-					kaytuPublicKey = pub.(*rsa.PublicKey)
+					platformPublicKey = pub.(*rsa.PublicKey)
 				} else if k.Key == "private_key" {
 					b, err := base64.StdEncoding.DecodeString(k.Value)
 					if err != nil {
@@ -214,22 +210,21 @@ func start(ctx context.Context) error {
 					if err != nil {
 						panic(err)
 					}
-					kaytuPrivateKey = pri.(*rsa.PrivateKey)
+					platformPrivateKey = pri.(*rsa.PrivateKey)
 				}
 			}
 		}
 	}
 
-
 	authServer := &Server{
-		host:                    kaytuHost,
-		kaytuPublicKey:          kaytuPublicKey,
-		
-		dexVerifier:             dexVerifier,
-		logger:                  logger,
-		db:                      adb,
-		updateLoginUserList:     nil,
-		updateLogin:             make(chan User, 100000),
+		host:              platformHost,
+		platformPublicKey: platformPublicKey,
+
+		dexVerifier:         dexVerifier,
+		logger:              logger,
+		db:                  adb,
+		updateLoginUserList: nil,
+		updateLogin:         make(chan User, 100000),
 	}
 
 	go authServer.UpdateLastLoginLoop()
@@ -237,10 +232,10 @@ func start(ctx context.Context) error {
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
-			logger: logger,
-			kaytuPrivateKey:   kaytuPrivateKey,
-			db:                adb,
-			authServer:        authServer,
+			logger:             logger,
+			platformPrivateKey: platformPrivateKey,
+			db:                 adb,
+			authServer:         authServer,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()
