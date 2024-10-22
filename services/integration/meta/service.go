@@ -22,7 +22,7 @@ func New(config koanf.KaytuService) (*Meta, error) {
 	client := metadata.NewMetadataServiceClient(config.BaseURL)
 
 	ctx := &httpclient.Context{
-		UserRole: api.InternalRole,
+		UserRole: api.AdminRole,
 	}
 
 	azureAssetDiscovery, err := client.GetConfigMetadata(ctx, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
