@@ -8860,7 +8860,7 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "AdminRole",
-                "KaytuAdminRole",
+                "AdminRole",
                 "AdminRole",
                 "EditorRole",
                 "ViewerRole"
