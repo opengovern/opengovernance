@@ -54,12 +54,12 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
 	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
-	
 	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
 	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
 	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
 	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
+	
 
 }
 
@@ -186,17 +186,12 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
+
 	resp := api.GetUserResponse{
 		ID:        user.ID,
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		Status:        status,
 		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.IsActive,
@@ -232,16 +227,12 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		return err
 	}
 
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
+	
 	resp := api.GetMeResponse{
 		ID:          user.ID,
 		UserName:        user.Username,
 		Email:           user.Email,
 		EmailVerified:   user.EmailVerified,
-		Status:          status,
 		LastActivity:    user.LastLogin,
 		CreatedAt:       user.CreatedAt,
 		Blocked:         user.IsActive,
