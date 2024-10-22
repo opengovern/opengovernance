@@ -1,7 +1,7 @@
 package api
 
 import (
-	authApi "github.com/opengovern/opengovernance/pkg/auth/api"
+	authApi "github.com/opengovern/opengovernance/pkg/authV2/api"
 	"github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"time"
@@ -19,15 +19,15 @@ type DexConnectorInfo struct {
 }
 
 type About struct {
-	DexConnectors         []DexConnectorInfo             `json:"dex_connectors"`
-	AppVersion            string                         `json:"app_version"`
-	WorkspaceCreationTime time.Time                      `json:"workspace_creation_time"`
-	Users                 []authApi.WorkspaceRoleBinding `json:"users"`
-	PrimaryDomainURL      string                         `json:"primary_domain_url"`
-	APIKeys               []authApi.WorkspaceApiKey      `json:"api_keys"`
-	Integrations          map[string][]api.Connection    `json:"integrations"`
-	SampleData            bool                           `json:"sample_data"`
-	TotalSpendGoverned    float64                        `json:"total_spend_governed"`
+	DexConnectors         []DexConnectorInfo          `json:"dex_connectors"`
+	AppVersion            string                      `json:"app_version"`
+	WorkspaceCreationTime time.Time                   `json:"workspace_creation_time"`
+	Users                 []authApi.GetUsersResponse  `json:"users"`
+	PrimaryDomainURL      string                      `json:"primary_domain_url"`
+	APIKeys               []authApi.APIKeyResponse    `json:"api_keys"`
+	Integrations          map[string][]api.Connection `json:"integrations"`
+	SampleData            bool                        `json:"sample_data"`
+	TotalSpendGoverned    float64                     `json:"total_spend_governed"`
 }
 
 type GetMigrationStatusResponse struct {

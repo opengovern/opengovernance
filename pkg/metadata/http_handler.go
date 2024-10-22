@@ -4,7 +4,6 @@ import (
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	"github.com/opengovern/og-util/pkg/postgres"
-	authclient "github.com/opengovern/opengovernance/pkg/auth/client"
 	"github.com/opengovern/opengovernance/pkg/metadata/config"
 	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
 	db2 "github.com/opengovern/opengovernance/services/migrator/db"
@@ -22,7 +21,6 @@ type HttpHandler struct {
 	db         database.Database
 	migratorDb *db2.Database
 	kubeClient client.Client
-	authClient authclient.AuthServiceClient
 	logger     *zap.Logger
 }
 
