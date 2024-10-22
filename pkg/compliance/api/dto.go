@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	QueryEngine_Odysseues    = "odysseus-v0.0.1"
-	QueryEngine_OdysseusSQL  = "odysseus-sql"
-	QueryEngine_OdysseusRego = "odysseus-rego"
+	QueryengineCloudQL      = "cloudql-v0.0.1"
+	QueryEngine_cloudql     = "cloudql"
+	QueryEngine_cloudqlRego = "cloudql-rego"
 )
 
 type BenchmarkAssignment struct {

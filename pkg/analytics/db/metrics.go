@@ -22,9 +22,9 @@ type MetricTag struct {
 type QueryEngine string
 
 const (
-	QueryEngine_OdysseusSQL  QueryEngine = "odysseus-sql"
-	QueryEngine_OdysseusRego QueryEngine = "odysseus-rego"
-	QueryEngine_NotDefined   QueryEngine = ""
+	QueryEngine_cloudql     QueryEngine = "cloudql"
+	QueryEngine_cloudqlRego QueryEngine = "cloudql-rego"
+	QueryEngine_NotDefined  QueryEngine = ""
 )
 
 type AnalyticMetricStatus string

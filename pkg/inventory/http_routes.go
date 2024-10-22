@@ -2285,14 +2285,14 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	}
 
 	var resp *inventoryApi.RunQueryResponse
-	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngine_OdysseusSQL {
+	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngine_cloudql {
 		resp, err = h.RunSQLNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
-	} else if *req.Engine == inventoryApi.QueryEngine_OdysseusRego {
+	} else if *req.Engine == inventoryApi.QueryEngine_cloudqlRego {
 		resp, err = h.RunRegoNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
@@ -2458,8 +2458,8 @@ func (h *HttpHandler) RunRegoNamedQuery(ctx context.Context, title, query string
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	reqoQuery, err := rego.New(
-		rego.Query("x = data.odysseus.query.allow; resource_type = data.odysseus.query.resource_type"),
-		rego.Module("odysseus.query", query),
+		rego.Query("x = data.cloudql.query.allow; resource_type = data.cloudql.query.resource_type"),
+		rego.Module("cloudql.query", query),
 	).PrepareForEval(ctx)
 	if err != nil {
 		return nil, err
@@ -3246,7 +3246,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	}
 	var engine inventoryApi.QueryEngine
 	if engineStr == "" {
-		engine = inventoryApi.QueryEngine_OdysseusSQL
+		engine = inventoryApi.QueryEngine_cloudql
 	} else {
 		engine = inventoryApi.QueryEngine(engineStr)
 	}
@@ -3263,7 +3263,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	}
 
 	var resp *inventoryApi.RunQueryResponse
-	if engine == inventoryApi.QueryEngine_OdysseusSQL {
+	if engine == inventoryApi.QueryEngine_cloudql {
 		resp, err = h.RunSQLNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
@@ -3275,7 +3275,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
-	} else if engine == inventoryApi.QueryEngine_OdysseusRego {
+	} else if engine == inventoryApi.QueryEngine_cloudqlRego {
 		resp, err = h.RunRegoNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,

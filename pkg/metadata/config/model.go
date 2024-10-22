@@ -8,7 +8,6 @@ import (
 type Config struct {
 	Postgres   koanf.Postgres     `yaml:"postgres" koanf:"postgres"`
 	Http       koanf.HttpServer   `yaml:"http" koanf:"http"`
-	Auth       koanf.KaytuService `yaml:"auth" koanf:"auth"`
 	Onboard    koanf.KaytuService `yaml:"onboard" koanf:"onboard"`
 	Scheduler  koanf.KaytuService `yaml:"scheduler" koanf:"scheduler"`
 	Compliance koanf.KaytuService `yaml:"compliance" koanf:"compliance"`

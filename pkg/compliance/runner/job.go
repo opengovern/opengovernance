@@ -130,9 +130,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 	var res *steampipe.Result
 
-	if j.ExecutionPlan.Query.Engine == api.QueryEngine_Odysseues || j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusSQL {
+	if j.ExecutionPlan.Query.Engine == api.QueryengineCloudQL || j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudql {
 		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
-	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusRego {
+	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudqlRego {
 		res, err = w.runRegoWorkerJob(ctx, j, queryParamMap)
 	} else {
 		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
@@ -419,7 +419,7 @@ func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[
 	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
 	ctx2.Ctx = ctx
 	var engine inventoryApi.QueryEngine
-	engine = inventoryApi.QueryEngine_OdysseusRego
+	engine = inventoryApi.QueryEngine_cloudqlRego
 	queryResponse, err := w.inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
 		Page: inventoryApi.Page{
 			No:   1,

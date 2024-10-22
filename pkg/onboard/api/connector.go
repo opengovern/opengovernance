@@ -13,7 +13,7 @@ type Connector struct {
 	Direction           source.ConnectorDirectionType `json:"direction"`
 	Status              source.ConnectorStatus        `json:"status" example:"enabled"`
 	Tier                string                        `gorm:"default:'Community'" json:"tier"`
-	Logo                string                        `json:"logo" example:"https://kaytu.io/logo.png"`
+	Logo                string                        `json:"logo" example:"https://opengovernance.io/logo.png"`
 	AutoOnboardSupport  bool                          `json:"autoOnboardSupport" example:"false"`
 	AllowNewConnections bool                          `json:"allowNewConnections" example:"true"`
 	MaxConnectionLimit  int                           `json:"maxConnectionLimit" example:"10000" minimum:"0"`
