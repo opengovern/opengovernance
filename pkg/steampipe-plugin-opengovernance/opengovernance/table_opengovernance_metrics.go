@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
-func tableKaytuMetrics(_ context.Context) *plugin.Table {
+func tablePlatformMetrics(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_metrics",
 		Description: "opengovernance Metrics",

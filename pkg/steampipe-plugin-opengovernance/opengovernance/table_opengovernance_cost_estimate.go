@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
-func tableKaytuCostEstimate(_ context.Context) *plugin.Table {
+func tablePlatformCostEstimate(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "pennywise_cost_estimate",
 		Description: "Pennywise Resource Cost Estimate",
