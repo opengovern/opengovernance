@@ -1,1 +1,1 @@
-# steampipe-plugin-kaytu
+# steampipe-plugin-opengovernance
