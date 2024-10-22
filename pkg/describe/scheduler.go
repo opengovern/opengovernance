@@ -135,8 +135,6 @@ type Scheduler struct {
 	keyARN                       string
 	keyRegion                    string
 
-	WorkspaceName string
-
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
@@ -323,8 +321,6 @@ func InitializeScheduler(
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
-
-	s.WorkspaceName = CurrentWorkspaceName
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
