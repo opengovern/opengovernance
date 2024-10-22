@@ -10,7 +10,7 @@ import (
 	essdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/source"
 	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"

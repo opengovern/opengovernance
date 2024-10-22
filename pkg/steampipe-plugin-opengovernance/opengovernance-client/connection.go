@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/opengovern/og-util/pkg/source"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
 	onboard "github.com/opengovern/opengovernance/services/integration/model"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
