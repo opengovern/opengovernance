@@ -53,10 +53,8 @@ func (s *schedulerClient) RunDiscovery(ctx *httpclient.Context, userId string, r
 	}
 
 	headers := map[string]string{
-		httpserver.XKaytuUserIDHeader:        userId,
-		httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
-		httpserver.XKaytuWorkspaceNameHeader: ctx.WorkspaceName,
-		httpserver.XKaytuWorkspaceIDHeader:   ctx.WorkspaceID,
+		httpserver.XKaytuUserIDHeader:   userId,
+		httpserver.XKaytuUserRoleHeader: string(ctx.UserRole),
 	}
 
 	var response api.RunDiscoveryResponse

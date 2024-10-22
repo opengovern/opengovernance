@@ -35,8 +35,6 @@ var (
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
 	AnalyticsIntervalHours     = os.Getenv("ANALYTICS_INTERVAL_HOURS")
-	CurrentWorkspaceName       = os.Getenv("WORKSPACE_NAME")
-	WorkspaceBaseURL           = os.Getenv("WORKSPACE_BASE_URL")
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")

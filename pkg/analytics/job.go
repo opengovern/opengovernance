@@ -119,7 +119,6 @@ func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfi
 	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
 
 	req := shared_entities.CspmUsageRequest{
-		WorkspaceId:            workerConfig.TelemetryWorkspaceID,
 		GatherTimestamp:        now,
 		Hostname:               workerConfig.TelemetryHostname,
 		AwsAccountCount:        0,
