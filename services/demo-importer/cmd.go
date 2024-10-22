@@ -10,7 +10,6 @@ import (
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/pkg/workspace/db"
 	db2 "github.com/opengovern/opengovernance/services/demo-importer/db"
 	"github.com/opengovern/opengovernance/services/demo-importer/fetch"
 	"github.com/opengovern/opengovernance/services/demo-importer/types"
@@ -42,18 +41,6 @@ func Command() *cobra.Command {
 			err = os.MkdirAll(types.DemoDataPath, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("failure creating path: %w", err)
-			}
-			psqlCfg := postgres.Config{
-				Host:    cnf.PostgreSQL.Host,
-				Port:    cnf.PostgreSQL.Port,
-				User:    cnf.PostgreSQL.Username,
-				Passwd:  cnf.PostgreSQL.Password,
-				DB:      "workspace",
-				SSLMode: cnf.PostgreSQL.SSLMode,
-			}
-			orm, err := postgres.NewClient(&psqlCfg, logger)
-			if err != nil {
-				return fmt.Errorf("new postgres client: %w", err)
 			}
 
 			cfg := opensearchapi.Config{
@@ -142,18 +129,6 @@ func Command() *cobra.Command {
 			err = worker.ImportJob(ctx, logger, migratorDb, es, "/demo-data/es-demo")
 			if err != nil {
 				return fmt.Errorf("failure while importing es indices: %w", err)
-			}
-
-			var workspaces []db.Workspace
-			err = orm.Model(&db.Workspace{}).Find(&workspaces).Error
-			if err != nil {
-				return fmt.Errorf("failure while getting workspaces: %w", err)
-			}
-			fmt.Println("Workspaces: ", workspaces)
-
-			err = orm.Model(&db.Workspace{}).Where("name = 'main'").Update("contain_sample_data", true).Error
-			if err != nil {
-				return fmt.Errorf("failure while updating main workspace: %w", err)
 			}
 
 			return nil
