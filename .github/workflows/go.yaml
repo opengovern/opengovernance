@@ -728,7 +728,6 @@ jobs:
     if: (needs.build.outputs.steampipe-plugin-kaytu == 'true' ||
       needs.build.outputs.steampipe == 'true' ||
       needs.build.outputs.compliance-report-worker == 'true' ||
-      needs.build.outputs.insight-worker == 'true' ||
       needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Check if we need to actually push
