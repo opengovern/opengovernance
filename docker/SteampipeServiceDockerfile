@@ -2,7 +2,7 @@ ARG PLUGIN_REGISTRY
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-aws:0.0.1 as aws
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
-FROM ${PLUGIN_REGISTRY}/steampipe-plugin-opengovernance:0.0.1 as kaytu
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-opengovernance:0.0.1 as opengovernance
 
 FROM ubuntu:20.04 AS base
 RUN apt-get update && apt-get install -y \
