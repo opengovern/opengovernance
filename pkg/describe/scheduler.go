@@ -64,28 +64,28 @@ const (
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "queue_job_publishing_blocked",
 	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
 }, []string{"queue_name"})
 
 var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_checkup_jobs_total",
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_jobs_total",
 	Help:      "Count of analytics jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_job_results_total",
 	Help:      "Count of analytics job results in scheduler service",

@@ -1,1 +1,0 @@
-# steampipe-plugin-kaytu

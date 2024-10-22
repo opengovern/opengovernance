@@ -87,7 +87,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	}
 	for _, c := range connections {
 		c := c
-		// use provider id instead of kaytu id because we need that to check resource collections
+		// use provider id instead of opengovernance id because we need that to check resource collections
 		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
 	}
 

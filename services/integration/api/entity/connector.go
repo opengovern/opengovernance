@@ -18,7 +18,7 @@ type Connector struct {
 	Description         string                        `json:"description" example:"This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"`
 	Direction           source.ConnectorDirectionType `json:"direction"`
 	Status              source.ConnectorStatus        `json:"status" example:"enabled"`
-	Logo                string                        `json:"logo" example:"https://kaytu.io/logo.png"`
+	Logo                string                        `json:"logo" example:"https://opengovernance.io/logo.png"`
 	AutoOnboardSupport  bool                          `json:"autoOnboardSupport" example:"false"`
 	AllowNewConnections bool                          `json:"allowNewConnections" example:"true"`
 	MaxConnectionLimit  int                           `json:"maxConnectionLimit" example:"10000" minimum:"0"`

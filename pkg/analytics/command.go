@@ -159,7 +159,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 
 	if err := steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe, w.config.PennywiseBaseURL); err != nil {
-		w.logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
+		w.logger.Error("failed to populate steampipe config for opengovernance plugin", zap.Error(err))
 		return err
 	}
 
