@@ -13,11 +13,8 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	api3 "github.com/opengovern/opengovernance/pkg/describe/api"
 	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
-	"github.com/opengovern/opengovernance/services/integration/api/entity"
 	client3 "github.com/opengovern/opengovernance/services/integration/client"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -25,7 +22,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -41,8 +37,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
-
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"go.uber.org/zap"
@@ -56,7 +50,6 @@ var (
 type httpRoutes struct {
 	logger *zap.Logger
 	//emailService    email.Service
-	workspaceClient   client.WorkspaceServiceClient
 	complianceClient  client2.ComplianceServiceClient
 	integrationClient client3.IntegrationServiceClient
 	schedulerClient   client4.SchedulerServiceClient
@@ -86,16 +79,12 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
 	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
 
-	v1.POST("/workspace-map/update", httpserver.AuthorizeHandler(r.UpdateWorkspaceMap, api2.InternalRole))
-
 	v3 := e.Group("/api/v3")
 	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
 	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
 	v3.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
 	v3.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
 	v3.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
-	v3.POST("/setup", r.Setup)
-	v3.POST("/setup/check", r.SetupCheck)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -156,196 +145,6 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
-}
-
-func (r *httpRoutes) Setup(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
-
-	//status, err := r.workspaceClient.GetConfiguredStatus(clientCtx)
-	//if err != nil {
-	//	r.logger.Error("failed to get configured status", zap.Error(err))
-	//	fmt.Println("failed to get configured status", err.Error())
-	//	return echo.NewHTTPError(http.StatusInternalServerError, "failed to get configured status")
-	//}
-	//if status == "True" {
-	//	return echo.NewHTTPError(http.StatusBadRequest, "Configuration has been done")
-	//}
-	var req api.SetupRequest
-	if err := ctx.Bind(&req); err != nil {
-		return err
-	}
-
-	if req.CreateUser.EmailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing email address for Admin User")
-	}
-	if req.CreateUser.Password == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing password for Admin User")
-	}
-
-	response := api.SetupResponse{}
-
-	adminRole := api2.AdminRole
-	userId := fmt.Sprintf("dex|%s", req.CreateUser.EmailAddress)
-	err := r.DoCreateUser(api.CreateUserRequest{
-		EmailAddress: req.CreateUser.EmailAddress,
-		Password:     &req.CreateUser.Password,
-		Role:         &adminRole,
-	})
-	if err != nil {
-		return err
-	}
-
-	response.CreatedUser = true
-
-	err = r.complianceClient.SyncQueries(clientCtx)
-	if err != nil {
-		r.logger.Error("failed to load meta data", zap.Error(err))
-		fmt.Println("failed to load meta data", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load meta data")
-	}
-	response.Metadata = "STARTED"
-
-	if req.IncludeSampleData {
-		err = r.workspaceClient.SyncDemo(clientCtx)
-		if err != nil {
-			r.logger.Error("failed to load sample data", zap.Error(err))
-			fmt.Println("failed to load sample data", err.Error())
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to load sample data")
-		}
-		started := "STARTED"
-		response.SampleDataImport = &started
-	} else {
-		if req.AwsCredentials == nil && req.AzureCredentials == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "You need to provide at least one integration credentials")
-		}
-		if req.AwsCredentials != nil {
-			awsResp, err := r.integrationClient.CreateAws(clientCtx, entity.CreateAWSCredentialRequest{
-				Config: *req.AwsCredentials,
-			})
-			if err != nil {
-				r.logger.Error("failed to create aws credentials", zap.Error(err))
-				fmt.Println("failed to create aws credentials", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create aws credential", err.Error()))
-			}
-			var integrations []struct {
-				Integration        *string `json:"integration"`
-				Type               *string `json:"type"`
-				ID                 *string `json:"id"`
-				IDName             *string `json:"id_name"`
-				IntegrationTracker *string `json:"integration_tracker"`
-			}
-			for _, c := range awsResp.Connections {
-				cid := c.ID.String()
-				integrations = append(integrations, struct {
-					Integration        *string `json:"integration"`
-					Type               *string `json:"type"`
-					ID                 *string `json:"id"`
-					IDName             *string `json:"id_name"`
-					IntegrationTracker *string `json:"integration_tracker"`
-				}{
-					IntegrationTracker: &cid,
-				})
-			}
-			if len(integrations) > 0 {
-				resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
-					ForceFull:       true,
-					IntegrationInfo: integrations,
-				})
-				if err != nil || resp == nil {
-					r.logger.Error("failed to run aws discovery", zap.Error(err))
-					fmt.Println("failed to run aws discovery", err.Error())
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run aws discovery: ", err.Error()))
-				}
-				triggerId := strconv.Itoa(int(resp.TriggerID))
-				response.AwsTriggerID = &triggerId
-			}
-		}
-		if req.AzureCredentials != nil {
-			azureResp, err := r.integrationClient.CreateAzure(clientCtx, entity.CreateAzureCredentialRequest{
-				Config: *req.AzureCredentials,
-			})
-			if err != nil {
-				r.logger.Error("failed to create azure credential", zap.Error(err))
-				fmt.Println("failed to create azure credential", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create azure credential", err.Error()))
-			}
-			var integrations []struct {
-				Integration        *string `json:"integration"`
-				Type               *string `json:"type"`
-				ID                 *string `json:"id"`
-				IDName             *string `json:"id_name"`
-				IntegrationTracker *string `json:"integration_tracker"`
-			}
-			for _, c := range azureResp.Connections {
-				cid := c.ID.String()
-				integrations = append(integrations, struct {
-					Integration        *string `json:"integration"`
-					Type               *string `json:"type"`
-					ID                 *string `json:"id"`
-					IDName             *string `json:"id_name"`
-					IntegrationTracker *string `json:"integration_tracker"`
-				}{
-					IntegrationTracker: &cid,
-				})
-			}
-			if len(integrations) > 0 {
-				resp, err := r.schedulerClient.RunDiscovery(clientCtx, userId, api3.RunDiscoveryRequest{
-					ForceFull:       true,
-					IntegrationInfo: integrations,
-				})
-				if err != nil || resp == nil {
-					r.logger.Error("failed to run azure discovery", zap.Error(err))
-					fmt.Println("failed to run azure discovery", err.Error())
-					return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to run azure discovery: ", err.Error()))
-				}
-				triggerId := strconv.Itoa(int(resp.TriggerID))
-				response.AzureTriggerID = &triggerId
-			}
-		}
-	}
-
-	err = r.workspaceClient.SetConfiguredStatus(clientCtx)
-	if err != nil {
-		r.logger.Error("failed to set configured status", zap.Error(err))
-		fmt.Println("failed to set configured status", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set configured status")
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
-
-func (r *httpRoutes) SetupCheck(ctx echo.Context) error {
-	var req api.CheckRequest
-	if err := ctx.Bind(&req); err != nil {
-		return err
-	}
-
-	aws := utils.AWSInput{}
-	azure := utils.AzureInput{}
-	if req.AwsCredentials != nil {
-		if req.AwsCredentials.SecretKey != nil {
-			aws.AccessKeyID = *req.AwsCredentials.AccessKey
-		}
-		if req.AwsCredentials.SecretKey != nil {
-			aws.SecretAccessKey = *req.AwsCredentials.SecretKey
-		}
-		aws.RoleName = req.AwsCredentials.AssumeRoleName
-	}
-	if req.AzureCredentials != nil {
-		azure.TenantID = req.AzureCredentials.TenantId
-		azure.ClientID = req.AzureCredentials.ClientId
-		azure.ClientSecret = req.AzureCredentials.ClientSecret
-	}
-	resp, err := utils.ProcessChecksHandler(utils.Input{
-		AWS:   aws,
-		Azure: azure,
-	})
-	if err != nil {
-		r.logger.Error("failed to process checks", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to process checks")
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
 }
 
 // PutRoleBinding godoc
@@ -972,14 +771,6 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
-}
-
-func (r *httpRoutes) UpdateWorkspaceMap(ctx echo.Context) error {
-	err := r.authServer.updateWorkspaceMap()
-	if err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
 }
 
 // CreateUser godoc
