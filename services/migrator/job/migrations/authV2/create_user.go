@@ -29,7 +29,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,
-		DB:      "authV2",
+		DB:      "auth",
 		SSLMode: conf.PostgreSQL.SSLMode,
 	}, logger)
 	if err != nil {
@@ -73,21 +73,17 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	
-
 	role := api.AdminRole
 
-	
-
 	user := &db.User{
-		
-		Email:        conf.DefaultDexUserEmail,
-		Username:     conf.DefaultDexUserEmail,
-		FullName:         conf.DefaultDexUserEmail,
-	
-		Role:         role,
-		ExternalId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		Connector:    "local",
+
+		Email:    conf.DefaultDexUserEmail,
+		Username: conf.DefaultDexUserEmail,
+		FullName: conf.DefaultDexUserEmail,
+
+		Role:       role,
+		ExternalId: fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+		Connector:  "local",
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {
