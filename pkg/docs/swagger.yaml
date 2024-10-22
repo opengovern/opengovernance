@@ -8,7 +8,6 @@ definitions:
     type: string
     x-enum-varnames:
     - AdminRole
-    - AdminRole
     - EditorRole
     - ViewerRole
   echo.HTTPError:
