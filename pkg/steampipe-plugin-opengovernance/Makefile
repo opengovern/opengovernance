@@ -23,4 +23,4 @@ clean:
 	rm -r ./build
 
 install:
-	go build -v -o ~/.steampipe/plugins/local/kaytu/kaytu.plugin *.go
+	go build -v -o ~/.steampipe/plugins/local/opengovernance/opengovernance.plugin *.go

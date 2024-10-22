@@ -15,7 +15,7 @@ RUN sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
-COPY --from=opengovernance /steampipe-plugin-opengovernance.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
+COPY --from=opengovernance /steampipe-plugin-opengovernance.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
 
 USER root
 RUN useradd -ms /bin/bash steampipe
