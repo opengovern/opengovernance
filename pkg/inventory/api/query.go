@@ -7,8 +7,8 @@ import (
 type QueryEngine string
 
 const (
-	QueryEngine_OdysseusSQL  = "odysseus-sql"
-	QueryEngine_OdysseusRego = "odysseus-rego"
+	QueryEngine_cloudql     = "cloudql"
+	QueryEngine_cloudqlRego = "cloudql-rego"
 )
 
 type RunQueryRequest struct {

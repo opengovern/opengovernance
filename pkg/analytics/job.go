@@ -291,11 +291,11 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	var err error
 
 	logger.Info("assets ==== ", zap.String("query", metric.Query))
-	if metric.Engine == db.QueryEngine_OdysseusRego {
+	if metric.Engine == db.QueryEngine_cloudqlRego {
 		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
 		ctx2.Ctx = ctx
 		var engine inventoryApi.QueryEngine
-		engine = inventoryApi.QueryEngine_OdysseusRego
+		engine = inventoryApi.QueryEngine_cloudqlRego
 		results, err := inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
 			Page: inventoryApi.Page{
 				No:   1,
@@ -512,11 +512,11 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	var res *steampipe.Result
 	var err error
 
-	if metric.Engine == db.QueryEngine_OdysseusRego {
+	if metric.Engine == db.QueryEngine_cloudqlRego {
 		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
 		ctx2.Ctx = ctx
 		var engine inventoryApi.QueryEngine
-		engine = inventoryApi.QueryEngine_OdysseusRego
+		engine = inventoryApi.QueryEngine_cloudqlRego
 		results, err := inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
 			Page: inventoryApi.Page{
 				No:   1,
