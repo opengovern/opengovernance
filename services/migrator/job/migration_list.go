@@ -3,6 +3,7 @@ package job
 import (
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/analytics"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/auth"
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/authV2"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/compliance"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/elasticsearch"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/inventory"
@@ -23,4 +24,6 @@ var migrations = map[string]types.Migration{
 	"analytics":           analytics.Migration{},
 	"resource_info":       resource_info.Migration{},
 	"auth":                auth.Migration{},
+	"authV2":                authV2.Migration{},
+
 }

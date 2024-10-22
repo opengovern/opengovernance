@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/opengovernance/pkg/metadata/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"os"
@@ -29,18 +31,15 @@ func Command() *cobra.Command {
 }
 
 func start(ctx context.Context) error {
+	cfg := koanf.Provide("metadata", config.Config{})
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
 	handler, err := InitializeHttpHandler(
-		PostgreSQLUser,
-		PostgreSQLPassword,
-		PostgreSQLHost,
-		PostgreSQLPort,
-		PostgreSQLDb,
-		PostgreSQLSSLMode,
+		cfg,
 		logger,
 	)
 	if err != nil {

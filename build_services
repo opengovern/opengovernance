@@ -1,4 +1,5 @@
 auth-service
+authV2-service
 checkup-worker
 cli
 cloud-inventory
@@ -13,7 +14,6 @@ onboard-service
 reporter
 summarizer-worker
 swagger-ui
-workspace-service
 gpt-service
 analytics-worker
 alerting-service
