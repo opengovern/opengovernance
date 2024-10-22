@@ -396,12 +396,12 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 
 // ListAPIKeys godoc
 //
-//	@Summary		Get Workspace Keys
-//	@Description	Gets list of all keys in the workspace.
+//	@Summary		Get API keys List
+//	@Description	Gets list of all keys.
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Success		200	{object}	[]api.WorkspaceApiKey
+//	@Success		200	{object}	[]api.APIKeyResponse
 //	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)

@@ -46,15 +46,6 @@ type GetUsersRequest struct {
 
 
 
-type DeleteRoleBindingRequest struct {
-	UserID string `json:"userId" validate:"required" example:"auth|123456789"` // Unique identifier for the user
-}
-
-type InviteRequest struct {
-	Email    string   `json:"email" validate:"required,email" example:"johndoe@example.com"` // User email address
-	RoleName api.Role `json:"roleName" enums:"admin,editor,viewer" example:"admin"`          // Name of the role
-}
-
 
 
 type GetMeResponse struct {
