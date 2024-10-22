@@ -1,9 +1,13 @@
 package metadata
 
 import (
+	"context"
+	"crypto/rand"
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	api6 "github.com/hashicorp/vault/api"
 	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/pkg/metadata/config"
 	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
 	db2 "github.com/opengovern/opengovernance/services/migrator/db"
@@ -14,20 +18,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 type HttpHandler struct {
-	cfg        config.Config
-	db         database.Database
-	migratorDb *db2.Database
-	kubeClient client.Client
-	logger     *zap.Logger
+	cfg                config.Config
+	db                 database.Database
+	migratorDb         *db2.Database
+	kubeClient         client.Client
+	vault              vault.VaultSourceConfig
+	vaultSecretHandler vault.VaultSecretHandler
+	logger             *zap.Logger
 }
 
 func InitializeHttpHandler(
 	cfg config.Config,
 	logger *zap.Logger,
 ) (*HttpHandler, error) {
+	ctx := context.Background()
 
 	fmt.Println("Initializing http handler")
 
@@ -78,13 +86,87 @@ func InitializeHttpHandler(
 		return nil, fmt.Errorf("add v1 to scheme: %w", err)
 	}
 
-	return &HttpHandler{
+	h := &HttpHandler{
 		cfg:        cfg,
 		db:         db,
 		migratorDb: migratorDb,
 		kubeClient: kubeClient,
 		logger:     logger,
-	}, nil
+	}
+
+	switch cfg.Vault.Provider {
+	case vault.AwsKMS:
+		h.vault, err = vault.NewKMSVaultSourceConfig(ctx, cfg.Vault.Aws, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("new kms vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new kms vaultClient source config: %w", err)
+		}
+	case vault.AzureKeyVault:
+		h.vault, err = vault.NewAzureVaultClient(ctx, logger, cfg.Vault.Azure, cfg.Vault.KeyId)
+		if err != nil {
+			logger.Error("new azure vaultClient source config", zap.Error(err))
+			return nil, fmt.Errorf("new azure vaultClient source config: %w", err)
+		}
+		h.vaultSecretHandler, err = vault.NewAzureVaultSecretHandler(logger, cfg.Vault.Azure)
+		if err != nil {
+			logger.Error("new azure vaultClient secret handler", zap.Error(err))
+			return nil, fmt.Errorf("new azure vaultClient secret handler: %w", err)
+		}
+	case vault.HashiCorpVault:
+		h.vaultSecretHandler, err = vault.NewHashiCorpVaultSecretHandler(ctx, logger, cfg.Vault.HashiCorp)
+		if err != nil {
+			logger.Error("new hashicorp vaultClient secret handler", zap.Error(err))
+			return nil, fmt.Errorf("new hashicorp vaultClient secret handler: %w", err)
+		}
+
+		h.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+		if err != nil {
+			if strings.Contains(err.Error(), api6.ErrSecretNotFound.Error()) {
+				b := make([]byte, 32)
+				_, err := rand.Read(b)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = h.vaultSecretHandler.SetSecret(ctx, cfg.Vault.KeyId, b)
+				if err != nil {
+					return nil, err
+				}
+
+				h.vault, err = vault.NewHashiCorpVaultClient(ctx, logger, cfg.Vault.HashiCorp, cfg.Vault.KeyId)
+				if err != nil {
+					logger.Error("new hashicorp vaultClient source config after setSecret", zap.Error(err))
+					return nil, fmt.Errorf("new hashicorp vaultClient source config after setSecret: %w", err)
+				}
+			} else {
+				logger.Error("new hashicorp vaultClient source config", zap.Error(err))
+				return nil, fmt.Errorf("new hashicorp vaultClient source config: %w", err)
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unsupported vault provider: %s", cfg.Vault.Provider)
+	}
+
+	switch cfg.Vault.Provider {
+	case vault.AzureKeyVault, vault.HashiCorpVault:
+		_, err = h.vaultSecretHandler.GetSecret(ctx, h.cfg.Vault.KeyId)
+		if err != nil {
+			// create new aes key
+			b := make([]byte, 32)
+			_, err := rand.Read(b)
+			if err != nil {
+				h.logger.Error("failed to generate random bytes", zap.Error(err))
+			}
+			_, err = h.vaultSecretHandler.SetSecret(ctx, h.cfg.Vault.KeyId, b)
+			if err != nil {
+				h.logger.Error("failed to set secret", zap.Error(err))
+			}
+		}
+	default:
+		h.logger.Error("unsupported vault provider", zap.Any("provider", h.cfg.Vault.Provider))
+	}
+
+	return h, nil
 }
 
 func NewKubeClient() (client.Client, error) {
