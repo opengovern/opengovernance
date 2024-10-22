@@ -55,7 +55,7 @@ jobs:
     environment: golang
     outputs:
       steampipe: ${{ steps.build_services.outputs.steampipe }}
-      auth-v2-service: ${{ steps.build_services.outputs.auth-service }}
+      auth-v2-service: ${{ steps.build_services.outputs.auth-v2-service }}
       checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
       compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
       compliance-service: ${{ steps.build_services.outputs.compliance-service }}
