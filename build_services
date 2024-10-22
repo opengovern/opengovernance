@@ -15,7 +15,6 @@ summarizer-worker
 swagger-ui
 gpt-service
 analytics-worker
-alerting-service
 cost-estimator-service
 wastage-service
 query-runner-worker

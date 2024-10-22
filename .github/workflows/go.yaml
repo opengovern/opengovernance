@@ -765,7 +765,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:0.0.1
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
-          file: docker/SteampipePluginKaytuDockerfile
+          file: docker/SteampipePluginOpengovernanceDockerfile
           context: .
   deploy-wastage-service:
     runs-on: ubuntu-latest
