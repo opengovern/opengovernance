@@ -19,7 +19,6 @@ type ApiKey struct {
 	Role          api.Role
 	CreatorUserID string
 	IsActive        bool
-	IsDeleted    bool 
 	KeyHash       string
 	MaskedKey     string
 }
@@ -37,6 +36,6 @@ type User struct {
 	RequirePasswordChange bool `gorm:"default:true"`
 	Connector             string
 	IsActive              bool
-	IsDeleted           bool
+	
 }
 

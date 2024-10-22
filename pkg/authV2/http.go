@@ -53,12 +53,12 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole)) //checked
 	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole)) //checked
 	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
-	// TODO: API FOR Edit keys
-	v1.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))
-	v1.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))
-	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
-	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
-	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
+	// TODO: API FOR Edit keys (Ask ANil)
+	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
+	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
+	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
+	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
+	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
 
 }
 
@@ -146,16 +146,20 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	}
 	var resp []api.GetUsersResponse
 	for _, u := range users {
-
-		resp = append(resp, api.GetUsersResponse{
-			UserID:        u.ID,
+		temp_resp := api.GetUsersResponse{
+			ID:        u.ID,
 			UserName:      u.Username,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
 			ExternalId:  u.ExternalId,
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
-		})
+		}
+		if(u.LastLogin.IsZero()){
+			temp_resp.LastActivity = nil
+		}
+		resp = append(resp, temp_resp)
+		
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -187,7 +191,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetUserResponse{
-		UserID:        user.ID,
+		ID:        user.ID,
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
@@ -232,7 +236,7 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		status = api.InviteStatus_ACCEPTED
 	}
 	resp := api.GetMeResponse{
-		UserID:          user.ID,
+		ID:          user.ID,
 		UserName:        user.Username,
 		Email:           user.Email,
 		EmailVerified:   user.EmailVerified,
@@ -327,9 +331,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		Name:          req.Name,
 		Role:          req.Role,
 		CreatorUserID: userID,
-		
 		IsActive:        true,
-		IsDeleted:       false,
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
@@ -341,7 +343,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
+	return ctx.JSON(http.StatusCreated, api.CreateAPIKeyResponse{
 		ID:        apikey.ID,
 		Name:      apikey.Name,
 		Active:    apikey.IsActive,
@@ -362,6 +364,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	nil
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
+	// TODO: Ask from ANIL what should i do 
 	// userId := httpserver.GetUserID(ctx)
 	id := ctx.Param("id")
 
@@ -371,7 +374,7 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	// }
 
 	
-	exists := false
+	// exists := false
 	// for _, key := range keys {
 	// 	if key.Name == name {
 	// 		keyId = key.ID
@@ -379,16 +382,16 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	// 	}
 	// }
 
-	if !exists {
-		return echo.NewHTTPError(http.StatusBadRequest, "key not found")
-	}
+	// if !exists {
+	// 	return echo.NewHTTPError(http.StatusBadRequest, "key not found")
+	// }
 	integer_id, err :=(strconv.ParseUint(id, 10, 32))
 	err = r.db.DeleteAPIKey(integer_id)
 	if err != nil {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
 }
 
 // ListAPIKeys godoc
@@ -407,9 +410,9 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 		return err
 	}
 
-	var resp []api.WorkspaceApiKey
+	var resp []api.APIKeyResponse
 	for _, key := range keys {
-		resp = append(resp, api.WorkspaceApiKey{
+		resp = append(resp, api.APIKeyResponse{
 			ID:            key.ID,
 			CreatedAt:     key.CreatedAt,
 			Name:          key.Name,
@@ -446,7 +449,7 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
@@ -553,11 +556,13 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	newUser := &db.User{
 		Email:                 req.EmailAddress,
 		Username:              req.EmailAddress,
+		FullName: 			req.EmailAddress,
 		Role:                  role,
 		EmailVerified:         false,
 		Connector:             connector,
 		ExternalId: userId,
 		RequirePasswordChange: requirePasswordChange,
+		IsActive:              true,
 	}
 	err = r.db.CreateUser(newUser)
 	if err != nil {
@@ -649,6 +654,9 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			},
 			Role: *req.Role,
 			IsActive: req.IsActive,
+			Username: req.UserName,
+			FullName: req.FullName,
+
 
 		}
 		err = r.db.UpdateUser(update_user)
@@ -674,7 +682,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	emailAddress := ctx.Param("email_address")
 	if emailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+		return echo.NewHTTPError(http.StatusBadRequest, "emailAddress is required")
 	}
 
 	err := r.DoDeleteUser(emailAddress)
@@ -682,7 +690,7 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
 }
 
 func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
@@ -698,8 +706,8 @@ func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
 
 	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
 	if err != nil {
-		r.logger.Error("failed to create dex password", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
+		r.logger.Error("failed to remove dex password", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to remove dex password")
 	}
 
 	user, err := r.db.GetUserByEmail(emailAddress)
@@ -739,7 +747,7 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 	userId := httpserver.GetUserID(ctx)
 
-	user, err := r.db.GetUser(userId)
+	user, err := r.db.GetUserByExternalID(userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
@@ -764,9 +772,10 @@ func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/password/reset [post]
 func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
+
 	userId := httpserver.GetUserID(ctx)
 
-	user, err := r.db.GetUser(userId)
+	user, err := r.db.GetUserByExternalID(userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
@@ -803,7 +812,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 	if !resp.Verified {
-		return echo.NewHTTPError(http.StatusUnauthorized, "current password is not correct")
+		return echo.NewHTTPError(http.StatusUnauthorized, "current password is incorrect")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -844,5 +853,5 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
 }

@@ -103,7 +103,7 @@ func (db Database) UpdateAPIKeyRole(id uint, role api.Role) error {
 func (db Database) DeleteAPIKey(id uint64) error {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("id", id).
-		Update("is_deleted","true")
+		Delete(&ApiKey{})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -115,7 +115,7 @@ func (db Database) CreateUser(user *User) error {
 		Columns: []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"id", "created_at", "updated_at", "email", "email_verified",
 			 "role", "connector_id", "external_id",
-			"full_name", "last_login", "username", "is_active","is_deleted"}),
+			"full_name", "last_login", "username", "is_active"}),
 	}).Create(user)
 
 	if tx.Error != nil {
@@ -325,7 +325,6 @@ func (db Database) CountApiKeysForUser(userID string) (int64, error) {
 	tx := db.Orm.Model(&ApiKey{}).
 		Where("creator_user_id", userID).
 		Where("is_active", "true").
-		Where("is_deleted","false").
 		Count(&s)
 	if tx.Error != nil {
 		return 0, tx.Error
