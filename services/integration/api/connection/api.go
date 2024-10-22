@@ -983,7 +983,7 @@ func (h API) AWSCreate(c echo.Context) error {
 
 func (s API) Register(g *echo.Group) {
 	g.GET("", httpserver2.AuthorizeHandler(s.List, api.ViewerRole))
-	g.POST("", httpserver2.AuthorizeHandler(s.Get, api.KaytuAdminRole))
+	g.POST("", httpserver2.AuthorizeHandler(s.Get, api.AdminRole))
 	g.GET("/count", httpserver2.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver2.AuthorizeHandler(s.Summaries, api.ViewerRole))
 	g.POST("/aws", httpserver2.AuthorizeHandler(s.AWSCreate, api.EditorRole))
