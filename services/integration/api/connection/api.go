@@ -117,7 +117,7 @@ func (h API) List(c echo.Context) error {
 	var resp entity.ListConnectionsResponse
 	for _, s := range sources {
 		apiRes := entity.NewConnection(s)
-		if httpserver2.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.AdminRole {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 		}
@@ -153,7 +153,7 @@ func (h API) Get(c echo.Context) error {
 	var res []entity.Connection
 	for _, conn := range conns {
 		apiRes := entity.NewConnection(conn)
-		if httpserver2.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.AdminRole {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
 		}
@@ -358,7 +358,7 @@ func (h API) Summaries(c echo.Context) error {
 		}
 	}
 
-	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.InternalRole})
+	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.AdminRole})
 	if err != nil {
 		return err
 	}

@@ -8859,7 +8859,7 @@ const docTemplate = `{
                 "viewer"
             ],
             "x-enum-varnames": [
-                "InternalRole",
+                "AdminRole",
                 "KaytuAdminRole",
                 "AdminRole",
                 "EditorRole",

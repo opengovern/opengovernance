@@ -98,7 +98,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	v3 := r.Group("/api/v3")
 	v3.GET("/connector", httpserver.AuthorizeHandler(h.ListConnectorsV2, api3.ViewerRole))
-	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.InternalRole))
+	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.AdminRole))
 	v3.GET("/integrations", httpserver.AuthorizeHandler(h.ListIntegrations, api3.ViewerRole))
 }
 
@@ -188,7 +188,7 @@ func (h HttpHandler) CheckMaxConnections(additionCount int64) error {
 	if err != nil {
 		return err
 	}
-	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.InternalRole}, models.MetadataKeyConnectionLimit)
+	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.AdminRole}, models.MetadataKeyConnectionLimit)
 	if err != nil {
 		return err
 	}
@@ -1282,7 +1282,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	))
 	span.End()
 
-	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.InternalRole}, models.MetadataKeyConnectionLimit)
+	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.AdminRole}, models.MetadataKeyConnectionLimit)
 	if err != nil {
 		return err
 	}
@@ -1922,7 +1922,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	apiRes := entities.NewConnection(src)
-	if httpserver.GetUserRole(ctx) == api3.InternalRole {
+	if httpserver.GetUserRole(ctx) == api3.AdminRole {
 		apiRes.Credential = entities.NewCredential(src.Credential)
 		apiRes.Credential.Config = src.Credential.Secret
 		if apiRes.Credential.Version == 2 {
@@ -2156,7 +2156,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Connection
 	for _, src := range srcs {
 		apiRes := entities.NewConnection(src)
-		if httpserver.GetUserRole(ctx) == api3.InternalRole {
+		if httpserver.GetUserRole(ctx) == api3.AdminRole {
 			apiRes.Credential = entities.NewCredential(src.Credential)
 			apiRes.Credential.Config = src.Credential.Secret
 			if apiRes.Credential.Version == 2 {
@@ -2437,7 +2437,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		}
 	}
 
-	pendingDescribeConnections, err := h.describeClient.ListPendingConnections(&httpclient.Context{UserRole: api3.InternalRole})
+	pendingDescribeConnections, err := h.describeClient.ListPendingConnections(&httpclient.Context{UserRole: api3.AdminRole})
 	if err != nil {
 		return err
 	}
@@ -3001,7 +3001,7 @@ func (h HttpHandler) GetSourceBySourceId(ctx echo.Context) error {
 	}
 
 	apiRes := entities.NewConnection(src)
-	if httpserver.GetUserRole(ctx) == api3.InternalRole {
+	if httpserver.GetUserRole(ctx) == api3.AdminRole {
 		apiRes.Credential = entities.NewCredential(src.Credential)
 		apiRes.Credential.Config = src.Credential.Secret
 		if apiRes.Credential.Version == 2 {
@@ -3044,7 +3044,7 @@ func (h HttpHandler) ListSourcesByFilters(ctx echo.Context) error {
 			}
 		}
 		apiRes := entities.NewConnection(src)
-		if httpserver.GetUserRole(ctx) == api3.InternalRole {
+		if httpserver.GetUserRole(ctx) == api3.AdminRole {
 			apiRes.Credential = entities.NewCredential(src.Credential)
 			apiRes.Credential.Config = src.Credential.Secret
 			if apiRes.Credential.Version == 2 {
@@ -3088,7 +3088,7 @@ func (h HttpHandler) GetSourceByFilters(ctx echo.Context) error {
 		}
 	}
 	apiRes := entities.NewConnection(src)
-	if httpserver.GetUserRole(ctx) == api3.InternalRole {
+	if httpserver.GetUserRole(ctx) == api3.AdminRole {
 		apiRes.Credential = entities.NewCredential(src.Credential)
 		apiRes.Credential.Config = src.Credential.Secret
 		if apiRes.Credential.Version == 2 {
@@ -3250,7 +3250,7 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v3/integrations [get]
 func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: api3.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
 	healthStateStr := ctx.QueryParam("health_state")
 	connectors := httpserver.QueryArrayParam(ctx, "connectors")
 	integrationTracker := httpserver.QueryArrayParam(ctx, "integration_tracker")

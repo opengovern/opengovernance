@@ -65,7 +65,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v3.GET("/sample/sync/status", httpserver.AuthorizeHandler(h.GetSampleSyncStatus, api3.ViewerRole))
 	v3.GET("/migration/status", httpserver.AuthorizeHandler(h.GetMigrationStatus, api3.ViewerRole))
 	v3.GET("/configured/status", httpserver.AuthorizeHandler(h.GetConfiguredStatus, api3.ViewerRole))
-	v3.PUT("/configured/set", httpserver.AuthorizeHandler(h.SetConfiguredStatus, api3.InternalRole))
+	v3.PUT("/configured/set", httpserver.AuthorizeHandler(h.SetConfiguredStatus, api3.AdminRole))
 	v3.PUT("/configured/unset", httpserver.AuthorizeHandler(h.UnsetConfiguredStatus, api3.ViewerRole))
 	v3.GET("/about", httpserver.AuthorizeHandler(h.GetAbout, api3.ViewerRole))
 }
@@ -301,7 +301,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v3/sample/purge [put]
 func (h HttpHandler) PurgeSampleData(c echo.Context) error {
-	ctx := &httpclient.Context{UserRole: api3.InternalRole}
+	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
 	loaded, err := h.SampleDataLoaded(c)
 	if err != nil {

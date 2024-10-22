@@ -71,7 +71,7 @@ func (j *Job) Do(
 
 	encodedResourceCollectionFilters := make(map[string]string)
 	if len(j.ResourceCollectionIDs) > 0 {
-		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2 := &httpclient.Context{UserRole: authApi.AdminRole}
 		ctx2.Ctx = ctx
 		rcs, err := inventoryClient.ListResourceCollectionsMetadata(ctx2,
 			j.ResourceCollectionIDs)
@@ -116,7 +116,7 @@ func (j *Job) Do(
 func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig, onboardClient onboardClient.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient) {
 	now := time.Now()
 
-	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
+	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
 
 	req := shared_entities.CspmUsageRequest{
 		GatherTimestamp:        now,
@@ -184,7 +184,7 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 		case db.MetricTypeAssets:
 			s := map[string]describeApi.DescribeStatus{}
 			for _, resourceType := range metric.Tables {
-				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, resourceType)
+				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.AdminRole}, resourceType)
 				if err != nil {
 					return err
 				}
@@ -229,12 +229,12 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 			if len(encodedResourceCollectionFilters) > 0 {
 				continue
 			}
-			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
+			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.AdminRole}, "AWS::CostExplorer::ByServiceDaily")
 			if err != nil {
 				return err
 			}
 
-			azureStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "Microsoft.CostManagement/CostByResourceType")
+			azureStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.AdminRole}, "Microsoft.CostManagement/CostByResourceType")
 			if err != nil {
 				return err
 			}
@@ -291,7 +291,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 
 	logger.Info("assets ==== ", zap.String("query", metric.Query))
 	if metric.Engine == db.QueryEngine_cloudqlRego {
-		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2 := &httpclient.Context{UserRole: authApi.AdminRole}
 		ctx2.Ctx = ctx
 		var engine inventoryApi.QueryEngine
 		engine = inventoryApi.QueryEngine_cloudqlRego
@@ -491,7 +491,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		connectorMetricTrendSummary,
 	}
 
-	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.AdminRole}, msgs); err != nil {
 		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
@@ -512,7 +512,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	var err error
 
 	if metric.Engine == db.QueryEngine_cloudqlRego {
-		ctx2 := &httpclient.Context{UserRole: authApi.InternalRole}
+		ctx2 := &httpclient.Context{UserRole: authApi.AdminRole}
 		ctx2.Ctx = ctx
 		var engine inventoryApi.QueryEngine
 		engine = inventoryApi.QueryEngine_cloudqlRego
@@ -715,7 +715,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		msgs = append(msgs, item)
 	}
 
-	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.InternalRole}, msgs); err != nil {
+	if _, err := sinkClient.Ingest(&httpclient.Context{UserRole: authApi.AdminRole}, msgs); err != nil {
 		logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}

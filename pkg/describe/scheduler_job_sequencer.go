@@ -89,7 +89,7 @@ func getControlPaths(benchmarkID, controlID string, currentPath []string, allBen
 
 func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([][]string, error) {
 	benchmarks, err := s.complianceClient.ListAllBenchmarks(&httpclient.Context{
-		UserRole: authApi.InternalRole,
+		UserRole: authApi.AdminRole,
 	}, false)
 	if err != nil {
 		return nil, err
@@ -124,9 +124,9 @@ func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) erro
 			s.logger.Error("failed to unmarshal benchmark runner parameters", zap.Error(err))
 			return err
 		}
-		controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.ControlIDs, nil)
+		controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: authApi.AdminRole}, parameters.ControlIDs, nil)
 
-		rootBenchmark, err := s.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.InternalRole}, parameters.BenchmarkID)
+		rootBenchmark, err := s.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, parameters.BenchmarkID)
 		if err != nil {
 			s.logger.Error("failed to get benchmark", zap.Error(err))
 			return err

@@ -573,7 +573,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue
