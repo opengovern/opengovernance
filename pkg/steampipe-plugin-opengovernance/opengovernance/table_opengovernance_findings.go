@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
-func tableKaytuFindings(_ context.Context) *plugin.Table {
+func tablePlatformFindings(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_findings",
 		Description: "Kaytu Compliance Findings",

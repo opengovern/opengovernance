@@ -32,8 +32,8 @@ func (c *integrationClient) CreateAzure(ctx *httpclient.Context, request entity.
 	}
 
 	//headers := map[string]string{
-	//	httpserver.XKaytuUserIDHeader:        ctx.UserID,
-	//	httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+	//	httpserver.XPlatformUserIDHeader:        ctx.UserID,
+	//	httpserver.XPlatformUserRoleHeader:      string(ctx.UserRole),
 	//}
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
@@ -54,8 +54,8 @@ func (c *integrationClient) CreateAws(ctx *httpclient.Context, request entity.Cr
 	}
 
 	//headers := map[string]string{
-	//	httpserver.XKaytuUserIDHeader:        ctx.UserID,
-	//	httpserver.XKaytuUserRoleHeader:      string(ctx.UserRole),
+	//	httpserver.XPlatformUserIDHeader:        ctx.UserID,
+	//	httpserver.XPlatformUserRoleHeader:      string(ctx.UserRole),
 	//}
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {

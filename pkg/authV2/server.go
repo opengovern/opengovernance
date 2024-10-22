@@ -35,7 +35,7 @@ type User struct {
 
 type Server struct {
 	host                string
-	kaytuPublicKey      *rsa.PublicKey
+	platformPublicKey   *rsa.PublicKey
 	dexVerifier         *oidc.IDTokenVerifier
 	logger              *zap.Logger
 	db                  db.Database
@@ -213,31 +213,31 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 				Headers: []*envoycore.HeaderValueOption{
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuWorkspaceIDHeader,
+					// 		Key:   httpserver.XplatformWorkspaceIDHeader,
 					// 		Value: rb.WorkspaceID,
 					// 	},
 					// },
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuWorkspaceNameHeader,
+					// 		Key:   httpserver.XplatformWorkspaceNameHeader,
 					// 		Value: rb.WorkspaceName,
 					// 	},
 					// },
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserIDHeader,
+							Key:   httpserver.XPlatformUserIDHeader,
 							Value: user.ExternalUserID,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserRoleHeader,
+							Key:   httpserver.XPlatformUserRoleHeader,
 							Value: string(user.Role),
 						},
 					},
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuUserConnectionsScope,
+					// 		Key:   httpserver.XPlatformUserConnectionsScope,
 					// 		Value: strings.Join(rb.ScopedConnectionIDs, ","),
 					// 	},
 					// },
@@ -302,14 +302,14 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Error("dex verifier verify error", zap.Error(err))
 	}
 
-	if s.kaytuPublicKey != nil {
+	if s.platformPublicKey != nil {
 		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-			return s.kaytuPublicKey, nil
+			return s.platformPublicKey, nil
 		})
 		if errk == nil {
 			return &u, nil
 		} else {
-			fmt.Println("failed to auth with kaytu cred due to", errk)
+			fmt.Println("failed to auth with platform cred due to", errk)
 		}
 	}
 	return nil, err
