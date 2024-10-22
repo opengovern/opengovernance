@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
 
-func tableKaytuLookup(_ context.Context) *plugin.Table {
+func tablePlatformLookup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_lookup",
 		Description: "Kaytu Resource Lookup",

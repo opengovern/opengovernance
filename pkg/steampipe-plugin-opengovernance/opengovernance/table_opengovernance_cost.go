@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
-func tableKaytuCost(_ context.Context) *plugin.Table {
+func tablePlatformCost(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_cost",
 		Description: "Account-level cost of connections onboarded into Kaytu platform",

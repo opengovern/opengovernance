@@ -11,10 +11,10 @@ import (
 	"time"
 )
 
-func tableKaytuApiBenchmarkSummary(_ context.Context) *plugin.Table {
+func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_api_benchmark_summary",
-		Description: "Wrapper for Kaytu benchmark summary api",
+		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},
