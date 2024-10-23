@@ -139,7 +139,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := manualRemediationMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-manual-remediation",
+						Key:   "x-opengovernance-manual-remediation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -148,7 +148,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := cliRemediationMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-cli-remediation",
+						Key:   "x-opengovernance-cli-remediation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -157,7 +157,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := guardrailRemediationMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-guardrail-remediation",
+						Key:   "x-opengovernance-guardrail-remediation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -166,7 +166,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := programmaticRemediationMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-programmatic-remediation",
+						Key:   "x-opengovernance-programmatic-remediation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -175,7 +175,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := noncomplianceCostMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-noncompliance-cost",
+						Key:   "x-opengovernance-noncompliance-cost",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -184,7 +184,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := explanationMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-explanation",
+						Key:   "x-opengovernance-explanation",
 						Value: []string{v},
 					},
 					ControlID: control.ID,
@@ -193,7 +193,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			if v, ok := usefulnessExampleMap[strings.ToLower(control.ID)]; ok {
 				tags = append(tags, db.ControlTag{
 					Tag: model.Tag{
-						Key:   "x-kaytu-usefulness-example",
+						Key:   "x-opengovernance-usefulness-example",
 						Value: []string{v},
 					},
 					ControlID: control.ID,

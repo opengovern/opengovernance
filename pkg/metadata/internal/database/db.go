@@ -18,6 +18,7 @@ func (db Database) Initialize() error {
 		&models.ConfigMetadata{},
 		&models.QueryParameter{},
 		&models.QueryView{},
+		&models.AppConfiguration{},
 	)
 	if err != nil {
 		return err

@@ -14,7 +14,7 @@ import (
 )
 
 func (s *JobScheduler) runPublisher(ctx context.Context) error {
-	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
+	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
 	ctx2.Ctx = ctx
 
 	s.logger.Info("Query Runner publisher started")
@@ -63,7 +63,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 		}
 		s.logger.Info("Query Runner publisher", zap.String("query", query))
 
-		queryParams, err := s.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.InternalRole})
+		queryParams, err := s.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.AdminRole})
 		if err != nil {
 			_ = s.db.UpdateQueryRunnerJobStatus(job.ID, queryrunner.QueryRunnerFailed, fmt.Sprintf("failed to list parameters: %s", err.Error()))
 			return err

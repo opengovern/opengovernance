@@ -70,7 +70,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ConnectionCache:         map[string]onboardApi.Connection{},
 	}
 
-	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole})
+	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
 	if err != nil {
 		w.logger.Error("failed to list resource collections", zap.Error(err))
 		return err
@@ -80,14 +80,14 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, nil)
+	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
 	if err != nil {
 		w.logger.Error("failed to list connections", zap.Error(err))
 		return err
 	}
 	for _, c := range connections {
 		c := c
-		// use provider id instead of kaytu id because we need that to check resource collections
+		// use provider id instead of opengovernance id because we need that to check resource collections
 		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
 	}
 
@@ -140,7 +140,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 		w.logger.Info("Sending resource finding docs", zap.Int("docCount", len(docs)))
 
-		if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, docs); err != nil {
+		if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, docs); err != nil {
 			w.logger.Error("failed to send to ingest", zap.Error(err))
 			return err
 		}
@@ -174,7 +174,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		rf.EsIndex = idx
 		docs = append(docs, rf)
 	}
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, docs); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, docs); err != nil {
 		w.logger.Error("failed to send to ingest", zap.Error(err))
 		return err
 	}
@@ -227,7 +227,7 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 	keys, idx := task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}, []es2.Doc{task}); err != nil {
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {
 		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
 		return err
 	}

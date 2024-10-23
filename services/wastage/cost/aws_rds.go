@@ -8,7 +8,7 @@ import (
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-kaytu/kaytu-client"
+	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/opengovern/opengovernance/services/wastage/api/entity"
 	"net/http"
 	"time"

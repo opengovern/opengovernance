@@ -38,10 +38,10 @@ import (
 
 type httpRoutes struct {
 	logger *zap.Logger
-	
-	kaytuPrivateKey   *rsa.PrivateKey
-	db                db.Database
-	authServer        *Server
+
+	platformPrivateKey *rsa.PrivateKey
+	db                 db.Database
+	authServer         *Server
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -64,9 +64,6 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	// connectors
 	// v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
-
-
-	
 
 }
 
@@ -130,7 +127,6 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-
 // GetUsers godoc
 //
 //	@Summary		List Users
@@ -142,7 +138,7 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 //	@Success		200		{array}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
-	
+
 	var req api.GetUsersRequest
 	if err := ctx.Bind(&req); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
@@ -155,19 +151,19 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	var resp []api.GetUsersResponse
 	for _, u := range users {
 		temp_resp := api.GetUsersResponse{
-			ID:        u.ID,
+			ID:            u.ID,
 			UserName:      u.Username,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
-			ExternalId:  u.ExternalId,
+			ExternalId:    u.ExternalId,
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
 		}
-		if(u.LastLogin.IsZero()){
+		if u.LastLogin.IsZero() {
 			temp_resp.LastActivity = nil
 		}
 		resp = append(resp, temp_resp)
-		
+
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -183,7 +179,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Success		200		{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/user/{userId} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
-	
+
 	userID := ctx.Param("id")
 	userID, err := url.QueryUnescape(userID)
 	if err != nil {
@@ -195,7 +191,7 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	}
 
 	resp := api.GetUserResponse{
-		ID:        user.ID,
+		ID:            user.ID,
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
@@ -204,14 +200,10 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		Blocked:       user.IsActive,
 		RoleName:      user.Role,
 	}
-	// check if LastLogin is Default go time value remove it 
-	if (user.LastLogin.IsZero()) {
+	// check if LastLogin is Default go time value remove it
+	if user.LastLogin.IsZero() {
 		resp.LastActivity = nil
 	}
-
-
-
-
 
 	return ctx.JSON(http.StatusOK, resp)
 
@@ -229,13 +221,14 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 func (r *httpRoutes) GetMe(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
-	user, err := utils.GetUser(userID,r.db)
+	user, err := utils.GetUser(userID, r.db)
 	if err != nil {
 		return err
 	}
 
 	
 	resp := api.GetMeResponse{
+
 		ID:          user.ID,
 		UserName:        user.Username,
 		Email:           user.Email,
@@ -253,14 +246,9 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 
 	}
 
-
-
 	return ctx.JSON(http.StatusOK, resp)
 
 }
-
-
-
 
 // CreateAPIKey godoc
 //
@@ -280,7 +268,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	usr, err := utils.GetUser(userID,r.db)
+	usr, err := utils.GetUser(userID, r.db)
 	if err != nil {
 		r.logger.Error("failed to get user", zap.Error(err))
 		return err
@@ -292,15 +280,15 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 
 	u := userClaim{
 		Role: api2.EditorRole,
-		
+
 		Email:          usr.Email,
 		ExternalUserID: usr.ExternalId,
 	}
 
-	if r.kaytuPrivateKey == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "kaytu api key is disabled")
+	if r.platformPrivateKey == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "platform api key is disabled")
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.platformPrivateKey)
 	if err != nil {
 		r.logger.Error("failed to create token", zap.Error(err))
 		return err
@@ -330,7 +318,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		Name:          req.Name,
 		Role:          req.Role,
 		CreatorUserID: userID,
-		IsActive:        true,
+		IsActive:      true,
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
@@ -363,12 +351,12 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	nil
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
-	// TODO: Ask from ANIL what should i do 
+	// TODO: Ask from ANIL what should i do
 	// userId := httpserver.GetUserID(ctx)
 	id := ctx.Param("id")
-
 	
 	integer_id, err :=(strconv.ParseUint(id, 10, 32))
+
 	err = r.db.DeleteAPIKey(integer_id)
 	if err != nil {
 		return err
@@ -430,7 +418,6 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-
 // CreateUser godoc
 //
 //	@Summary		Create User
@@ -475,14 +462,13 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	adminAccount := false
 	var firstUser *db.User
 
-
 	if count == 1 {
 		firstUser, err = r.db.GetFirstUser()
 		if err != nil {
 			r.logger.Error("failed to get first user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get first user")
 		}
-		
+
 	} else if count == 0 {
 		adminAccount = true
 	}
@@ -540,17 +526,10 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		}
 	}
 
-	
-
 	role := api2.ViewerRole
 	if req.Role != nil {
 		role = *req.Role
 	}
-
-	
-
-	
-
 
 	requirePasswordChange := true
 	if adminAccount {
@@ -560,11 +539,11 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	newUser := &db.User{
 		Email:                 req.EmailAddress,
 		Username:              req.EmailAddress,
-		FullName: 			req.EmailAddress,
+		FullName:              req.EmailAddress,
 		Role:                  role,
 		EmailVerified:         false,
 		Connector:             connector,
-		ExternalId: userId,
+		ExternalId:            userId,
 		RequirePasswordChange: requirePasswordChange,
 		IsActive:              true,
 	}
@@ -649,19 +628,15 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		}
 	}
 
-	
-
 	if req.Role != nil {
-		 update_user :=&db.User{
+		update_user := &db.User{
 			Model: gorm.Model{
 				ID: user.ID,
 			},
-			Role: *req.Role,
+			Role:     *req.Role,
 			IsActive: req.IsActive,
 			Username: req.UserName,
 			FullName: req.FullName,
-
-
 		}
 		err = r.db.UpdateUser(update_user)
 		if err != nil {
@@ -725,7 +700,6 @@ func (r *httpRoutes) DoDeleteUser(id string) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to remove dex password")
 	}
 
-	
 	err = r.db.DeleteUser(user.ID)
 	if err != nil {
 		r.logger.Error("failed to delete user", zap.Error(err))

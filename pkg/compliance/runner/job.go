@@ -98,7 +98,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
 
-	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole})
+	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole})
 	if err != nil {
 		w.logger.Error("failed to get query parameters", zap.Error(err))
 		return 0, err
@@ -130,9 +130,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 	var res *steampipe.Result
 
-	if j.ExecutionPlan.Query.Engine == api.QueryEngine_Odysseues || j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusSQL {
+	if j.ExecutionPlan.Query.Engine == api.QueryengineCloudQL || j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudql {
 		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
-	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_OdysseusRego {
+	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudqlRego {
 		res, err = w.runRegoWorkerJob(ctx, j, queryParamMap)
 	} else {
 		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
@@ -370,7 +370,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		totalFindingCountMap[mapKey.String()] = len(newFindings)
 	}
 
-	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, docs); err != nil {
+	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, docs); err != nil {
 		w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", j.ExecutionPlan.Callers[0].RootBenchmark),
 			zap.String("control_id", j.ExecutionPlan.Callers[0].ControlID))
 		return 0, err
@@ -416,10 +416,10 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 }
 
 func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
-	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}
+	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
 	ctx2.Ctx = ctx
 	var engine inventoryApi.QueryEngine
-	engine = inventoryApi.QueryEngine_OdysseusRego
+	engine = inventoryApi.QueryEngine_cloudqlRego
 	queryResponse, err := w.inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
 		Page: inventoryApi.Page{
 			No:   1,

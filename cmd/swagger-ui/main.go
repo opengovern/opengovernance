@@ -25,7 +25,7 @@ var (
 
 //	@title						Kaytu Service API
 //	@version					1.0
-//	@host						api.kaytu.io
+//	@host						api.opengovernance.io
 //	@schemes					https
 //	@securityDefinitions.apikey	BearerToken
 //	@tokenUrl					https://example.com/oauth/token

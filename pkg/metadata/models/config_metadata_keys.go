@@ -192,15 +192,15 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 func (k MetadataKey) GetMinAuthRole() api.Role {
 	switch k {
 	case MetadataKeyWorkspaceOwnership:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceID:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceName:
 		return api.AdminRole
 	case MetadataKeyWorkspacePlan:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceCreationTime:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceDateTimeFormat:
 		return api.AdminRole
 	case MetadataKeyWorkspaceDebugMode:
@@ -208,29 +208,29 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyWorkspaceTimeWindow:
 		return api.AdminRole
 	case MetadataKeyAssetManagementEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyComplianceEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyProductManagementEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyCustomIDP:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyResourceLimit:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyConnectionLimit:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyUserLimit:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAllowInvite:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceKeySupport:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyWorkspaceMaxKeys:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAllowedEmailDomains:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAutoDiscoveryMethod:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyDescribeJobInterval:
 		return api.AdminRole
 	case MetadataKeyFullDiscoveryJobInterval:
@@ -238,33 +238,33 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyCostDiscoveryJobInterval:
 		return api.AdminRole
 	case MetadataKeyHealthCheckJobInterval:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyMetricsJobInterval:
 		return api.AdminRole
 	case MetadataKeyComplianceJobInterval:
 		return api.AdminRole
 	case MetadataKeyDataRetention:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAnalyticsGitURL:
 		return api.AdminRole
 	case MetadataKeyAssetDiscoveryAWSPolicyARNs:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeySpendDiscoveryAWSPolicyARNs:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAssetDiscoveryAzureRoleIDs:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeySpendDiscoveryAzureRoleIDs:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyCustomizationEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeyAWSDiscoveryRequiredOnly:
 		return api.AdminRole
 	case MetadataKeyAzureDiscoveryRequiredOnly:
 		return api.AdminRole
 	case MetadataKeyAssetDiscoveryEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	case MetadataKeySpendDiscoveryEnabled:
-		return api.KaytuAdminRole
+		return api.AdminRole
 	}
 	return ""
 }

@@ -23,7 +23,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler(ctx context.Context) {
 
 	t := ticker.NewTicker(JobSchedulingInterval, time.Second*10)
 	defer t.Stop()
-	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
+	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
 	ctx2.Ctx = ctx
 	for ; ; <-t.C {
 		connections, err := s.onboardClient.ListSources(ctx2, nil)
@@ -124,7 +124,7 @@ func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob, ctx context.Con
 	var resourceCollectionIds []string
 
 	if job.Type == model.AnalyticsJobTypeResourceCollection {
-		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api.InternalRole})
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api.AdminRole})
 		if err != nil {
 			s.logger.Error("Failed to list resource collections", zap.Error(err))
 			return err

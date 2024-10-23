@@ -13,7 +13,7 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/opengovernance/pkg/authV2/db"
 	"github.com/opengovern/opengovernance/pkg/authV2/utils"
@@ -25,21 +25,20 @@ import (
 )
 
 type User struct {
-	ID   string
-	Email    string
-	ExternalId            string
-	Role					api.Role
-	LastLogin             time.Time
-	CreatedAt			time.Time
-	
+	ID         string
+	Email      string
+	ExternalId string
+	Role       api.Role
+	LastLogin  time.Time
+	CreatedAt  time.Time
 }
 
 type Server struct {
-	host string
-	kaytuPublicKey          *rsa.PublicKey
-	dexVerifier             *oidc.IDTokenVerifier
-	logger                  *zap.Logger
-	db                      db.Database
+	host                string
+	platformPublicKey   *rsa.PublicKey
+	dexVerifier         *oidc.IDTokenVerifier
+	logger              *zap.Logger
+	db                  db.Database
 	updateLoginUserList []User
 	updateLogin         chan User
 }
@@ -52,8 +51,6 @@ type DexClaims struct {
 	FederatedClaims map[string]interface{} `json:"federated_claims"`
 	jwt.StandardClaims
 }
-
-
 
 func (s *Server) UpdateLastLoginLoop() {
 	for {
@@ -79,7 +76,7 @@ func (s *Server) UpdateLastLoginLoop() {
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
 			if user.ExternalId != "" {
-				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email,s.db)
+				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email, s.db)
 				if err != nil {
 					s.logger.Error("failed to get user metadata", zap.String("External Id", user.ID), zap.Error(err))
 					continue
@@ -90,10 +87,10 @@ func (s *Server) UpdateLastLoginLoop() {
 				}
 				if time.Now().After(tim.Add(15 * time.Minute)) {
 					s.logger.Info("updating metadata", zap.String("External Id", user.ExternalId))
-				
+
 					tim = usr.LastLogin
 
-					err = utils.UpdateUserLastLogin(user.ExternalId, &tim,s.db)
+					err = utils.UpdateUserLastLogin(user.ExternalId, &tim, s.db)
 					if err != nil {
 						s.logger.Error("failed to update user metadata", zap.String("External Id", user.ExternalId), zap.Error(err))
 					}
@@ -127,11 +124,10 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 	if doUpdate {
 		s.updateLogin <- User{
 			ExternalId: claim.ExternalUserID,
-			 LastLogin       :  *claim.UserLastLogin,
-			CreatedAt: *claim.MemberSince,
+			LastLogin:  *claim.UserLastLogin,
+			CreatedAt:  *claim.MemberSince,
 
-			Email:  claim.Email,
-			
+			Email: claim.Email,
 		}
 	}
 }
@@ -177,8 +173,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-
-	theUser, err := utils.GetOrCreateUser(user.ExternalUserID, user.Email,s.db)
+	theUser, err := utils.GetOrCreateUser(user.ExternalUserID, user.Email, s.db)
 	if err != nil {
 		s.logger.Warn("failed to getOrCreate user",
 			zap.String("userId", user.ExternalUserID),
@@ -189,15 +184,13 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		}
 	}
 	user.Role = (api.Role)(theUser.Role)
-	
+
 	user.MemberSince = &theUser.CreatedAt
 	user.UserLastLogin = &theUser.LastLogin
-	
 
 	// if user.Role == nil {
 	// 	user.Role = *api.ViewerRole{}
 	// }
-
 
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
@@ -220,13 +213,13 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 				Headers: []*envoycore.HeaderValueOption{
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuWorkspaceIDHeader,
+					// 		Key:   httpserver.XplatformWorkspaceIDHeader,
 					// 		Value: rb.WorkspaceID,
 					// 	},
 					// },
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuWorkspaceNameHeader,
+					// 		Key:   httpserver.XplatformWorkspaceNameHeader,
 					// 		Value: rb.WorkspaceName,
 					// 	},
 					// },
@@ -244,7 +237,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 					},
 					// {
 					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XKaytuUserConnectionsScope,
+					// 		Key:   httpserver.XPlatformUserConnectionsScope,
 					// 		Value: strings.Join(rb.ScopedConnectionIDs, ","),
 					// 	},
 					// },
@@ -255,13 +248,12 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	Role    api.Role           
-	Email           string              
-	MemberSince     *time.Time              
-	UserLastLogin   *time.Time              
-	ColorBlindMode  *bool                
-	// Theme           *api.Theme           
-	ConnectionIDs   map[string][]string  
+	Role           api.Role
+	Email          string
+	MemberSince    *time.Time
+	UserLastLogin  *time.Time
+	ColorBlindMode *bool
+	ConnectionIDs  map[string][]string
 	ExternalUserID string `json:"sub"`
 }
 
@@ -279,9 +271,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	}
 
 	var u userClaim
-	
 
-	
 	s.logger.Info("dex verifier verifying")
 	dv, err := s.dexVerifier.Verify(ctx, token)
 	if err == nil {
@@ -312,22 +302,18 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Error("dex verifier verify error", zap.Error(err))
 	}
 
-	if s.kaytuPublicKey != nil {
+	if s.platformPublicKey != nil {
 		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-			return s.kaytuPublicKey, nil
+			return s.platformPublicKey, nil
 		})
 		if errk == nil {
 			return &u, nil
 		} else {
-			fmt.Println("failed to auth with kaytu cred due to", errk)
+			fmt.Println("failed to auth with platform cred due to", errk)
 		}
 	}
 	return nil, err
 }
-
-
-
-
 
 func newDexOidcVerifier(ctx context.Context, domain, clientId string) (*oidc.IDTokenVerifier, error) {
 	transport := &http.Transport{

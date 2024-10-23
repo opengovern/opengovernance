@@ -373,7 +373,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)",
+                "description": "Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.opengovernance.io)",
                 "produces": [
                     "application/json"
                 ],
@@ -8853,14 +8853,14 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "internal",
-                "kaytu-admin",
+                "opengovernance-admin",
                 "admin",
                 "editor",
                 "viewer"
             ],
             "x-enum-varnames": [
-                "InternalRole",
-                "KaytuAdminRole",
+                "AdminRole",
+                "AdminRole",
                 "AdminRole",
                 "EditorRole",
                 "ViewerRole"
@@ -14844,7 +14844,7 @@ const docTemplate = `{
                 "filters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/kaytu.ResourceCollectionFilter"
+                        "$ref": "#/definitions/opengovernance.ResourceCollectionFilter"
                     }
                 },
                 "id": {
@@ -15017,7 +15017,7 @@ const docTemplate = `{
                 "logo_uri": {
                     "description": "Logo URI",
                     "type": "string",
-                    "example": "https://kaytu.io/logo.png"
+                    "example": "https://opengovernance.io/logo.png"
                 },
                 "old_count": {
                     "description": "Number of Resources of this Resource Type in the past - Metric",
@@ -15703,7 +15703,7 @@ const docTemplate = `{
                 },
                 "logo": {
                     "type": "string",
-                    "example": "https://kaytu.io/logo.png"
+                    "example": "https://opengovernance.io/logo.png"
                 },
                 "maxConnectionLimit": {
                     "type": "integer",
@@ -16322,7 +16322,7 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "kaytu"
+                    "example": "opengovernance"
                 }
             }
         },
@@ -16345,7 +16345,7 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "kaytu"
+                    "example": "opengovernance"
                 },
                 "organization": {
                     "$ref": "#/definitions/github_com_kaytu-io_open-governance_pkg_workspace_api.Organization"
@@ -16651,7 +16651,7 @@ const docTemplate = `{
                 },
                 "logo": {
                     "type": "string",
-                    "example": "https://kaytu.io/logo.png"
+                    "example": "https://opengovernance.io/logo.png"
                 },
                 "maxConnectionLimit": {
                     "type": "integer",
@@ -17602,7 +17602,7 @@ const docTemplate = `{
                 }
             }
         },
-        "kaytu.ResourceCollectionFilter": {
+        "opengovernance.ResourceCollectionFilter": {
             "type": "object",
             "properties": {
                 "account_ids": {
@@ -19610,7 +19610,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "api.kaytu.io",
+	Host:             "api.opengovernance.io",
 	BasePath:         "",
 	Schemes:          []string{"https"},
 	Title:            "Kaytu Service API",

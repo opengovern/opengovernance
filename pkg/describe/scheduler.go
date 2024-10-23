@@ -64,28 +64,28 @@ const (
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "queue_job_publishing_blocked",
 	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
 }, []string{"queue_name"})
 
 var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_checkup_jobs_total",
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_jobs_total",
 	Help:      "Count of analytics jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_job_results_total",
 	Help:      "Count of analytics job results in scheduler service",
@@ -134,8 +134,6 @@ type Scheduler struct {
 	describeExternalEndpoint     string
 	keyARN                       string
 	keyRegion                    string
-
-	WorkspaceName string
 
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
@@ -323,8 +321,6 @@ func InitializeScheduler(
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
-
-	s.WorkspaceName = CurrentWorkspaceName
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
@@ -577,7 +573,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue

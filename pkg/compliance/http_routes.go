@@ -63,12 +63,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks := v1.Group("/benchmarks")
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
-	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
+	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.AdminRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
 	benchmarks.POST("/:benchmark_id/settings", httpserver2.AuthorizeHandler(h.ChangeBenchmarkSettings, authApi.AdminRole))
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
-	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
-	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
+	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.AdminRole))
+	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.AdminRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -179,7 +179,7 @@ func (h *HttpHandler) getConnectionIdFilterFromInputs(ctx context.Context, conne
 	var connectionIDSChecked []string
 
 	for i := 0; i < len(connectionGroup); i++ {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, connectionGroup[i])
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, connectionGroup[i])
 		if err != nil {
 			return nil, err
 		}
@@ -2267,7 +2267,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.ListResourceFindingsResponse
 //	@Router			/compliance/api/v1/resource_findings [post]
 func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var err error
 	ctx := echoCtx.Request().Context()
@@ -3382,7 +3382,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Router		/compliance/api/v3/controls [post]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.ListControlsFilterRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -4138,7 +4138,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		apiControl.Connector = source.ParseTypes(benchmark.Connector)
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole},
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -4885,7 +4885,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 //	@Router		/compliance/api/v3/benchmarks [post]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.GetBenchmarkListRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -5615,7 +5615,7 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Success	200				{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v3/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 
@@ -5765,7 +5765,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.GetFindingsResponse
 //	@Router			/compliance/api/v3/findings [post]
 func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 
@@ -5995,7 +5995,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/compliance/api/v3/benchmark/{benchmark_id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 	ctx := echoCtx.Request().Context()
 
 	var req api.IntegrationFilterRequest
@@ -6119,7 +6119,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Success		200				{object}	api.ComplianceSummaryOfIntegrationResponse
 //	@Router			/compliance/api/v3/compliance/summary/integration [post]
 func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 	ctx := echoCtx.Request().Context()
 	var req api.ComplianceSummaryOfIntegrationRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -6659,7 +6659,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 //	@Success		200				{object}	api.ComplianceSummaryOfBenchmarkResponse
 //	@Router			/compliance/api/v3/compliance/summary/{job_id} [get]
 func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 	jobId := echoCtx.Param("job_id")
@@ -7134,7 +7134,7 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 	controlIds := httpserver2.QueryArrayParam(ctx, "controls")
 	benchmarks := httpserver2.QueryArrayParam(ctx, "benchmarks")
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), controlIds, nil, nil, benchmarks, nil,
 		nil, nil, nil, nil)
@@ -7175,7 +7175,7 @@ func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 //	@Router			/compliance/api/v3/categories/controls [get]
 func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 	categoriesFilter := httpserver2.QueryArrayParam(ctx, "categories")
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	categories, err := h.inventoryClient.GetResourceCategories(clientCtx, nil, categoriesFilter)
 	if err != nil || categories == nil || len(categories.Categories) == 0 {
@@ -7294,7 +7294,7 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 //	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/compliance/api/v3/jobs/history [get]
 func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	interval := ctx.QueryParam("interval")
 	triggerType := ctx.QueryParam("trigger_type")
@@ -7424,7 +7424,7 @@ func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) err
 //	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [post]
 func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.GetBenchmarkTrendV3Request
 	if err := bindValidate(echoCtx, &req); err != nil {

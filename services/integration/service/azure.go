@@ -562,7 +562,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 		Password:            subscriptionConfig.Password,
 	}
 
-	azureAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
+	azureAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
 	if err != nil {
 		return connection, err
 	}
@@ -580,7 +580,7 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 		}
 	}
 
-	azureSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
+	azureSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
 	if err != nil {
 		return connection, err
 	}

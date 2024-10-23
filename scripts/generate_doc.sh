@@ -10,5 +10,5 @@ directories="$(find {pkg,cmd,services} -type d | paste -d',' -s -)"
 
 swag fmt -g ../cmd/swagger-ui/main.go --dir "$directories"
 swag init --parseDependency -g ../cmd/swagger-ui/main.go --dir "$directories" --output pkg/docs
-sed -i '/kaytu-admin/d' pkg/docs/swagger.yaml
-sed -i '/KaytuAdminRole/d' pkg/docs/swagger.yaml
+sed -i '/opengovernance-admin/d' pkg/docs/swagger.yaml
+sed -i '/AdminRole/d' pkg/docs/swagger.yaml
