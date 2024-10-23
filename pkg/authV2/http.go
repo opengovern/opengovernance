@@ -46,19 +46,24 @@ type httpRoutes struct {
 
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	// VAlidate token
 	v1.GET("/check", r.Check)
-	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))          //checked
+	// USERS
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole)) //checked
 	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole)) //checked
-	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))                //checked
-	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))      //checked
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))        //checked
-	v1.DELETE("/keys/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
-	// TODO: API FOR Edit keys (Ask ANil)
-	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))                                    //checked
-	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))                                     //checked
-	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole)) //checked
-	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))              //checked
-	v1.DELETE("/user/:email_address", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))                    //checked
+	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
+	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
+	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
+	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
+	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
+	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
+	// API KEYS
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
+	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
+	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
+	// connectors
+	// v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 
 }
 
@@ -151,8 +156,10 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
 			ExternalId:    u.ExternalId,
+			CreatedAt: u.CreatedAt,
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
+			IsActive:      u.IsActive,
 		}
 		if u.LastLogin.IsZero() {
 			temp_resp.LastActivity = nil
@@ -185,16 +192,11 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		return err
 	}
 
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
 	resp := api.GetUserResponse{
 		ID:            user.ID,
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		Status:        status,
 		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.IsActive,
@@ -226,24 +228,21 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		return err
 	}
 
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
+	
 	resp := api.GetMeResponse{
-		ID:            user.ID,
-		UserName:      user.Username,
-		Email:         user.Email,
-		EmailVerified: user.EmailVerified,
-		Status:        status,
-		LastActivity:  user.LastLogin,
-		CreatedAt:     user.CreatedAt,
-		Blocked:       user.IsActive,
-		Role:          user.Role,
-		MemberSince:   user.CreatedAt,
-		LastLogin:     user.LastLogin,
+
+		ID:          user.ID,
+		UserName:        user.Username,
+		Email:           user.Email,
+		EmailVerified:   user.EmailVerified,
+		LastActivity:    user.LastLogin,
+		CreatedAt:       user.CreatedAt,
+		Blocked:         user.IsActive,
+		Role: user.Role,
+		MemberSince:     user.CreatedAt,
+		LastLogin:       user.LastLogin,
 	}
-	if user.LastLogin.IsZero() {
+	if (user.LastLogin.IsZero()) {
 		resp.LastLogin = nil
 		resp.LastActivity = nil
 
@@ -357,25 +356,31 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	// TODO: Ask from ANIL what should i do
 	// userId := httpserver.GetUserID(ctx)
 	id := ctx.Param("id")
+	
+	integer_id, err :=(strconv.ParseUint(id, 10, 32))
 
-	// keys, err := r.db.ListApiKeysForUser(userId)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// exists := false
-	// for _, key := range keys {
-	// 	if key.Name == name {
-	// 		keyId = key.ID
-	// 		exists = true
-	// 	}
-	// }
-
-	// if !exists {
-	// 	return echo.NewHTTPError(http.StatusBadRequest, "key not found")
-	// }
-	integer_id, err := (strconv.ParseUint(id, 10, 32))
 	err = r.db.DeleteAPIKey(integer_id)
+	if err != nil {
+		return err
+	}
+
+	return ctx.NoContent(http.StatusAccepted)
+}
+func (r *httpRoutes) EditAPIKey(ctx echo.Context) error {
+	// TODO: Ask from ANIL what should i do 
+	// userId := httpserver.GetUserID(ctx)
+	var req api.EditAPIKeyRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	
+	id := ctx.Param("id")
+	if id == ""  {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
+	}
+	
+
+	err := r.db.UpdateAPIKey(id, req.IsActive,req.Role)
 	if err != nil {
 		return err
 	}
@@ -656,12 +661,12 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/{email_address}/delete [delete]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
-	emailAddress := ctx.Param("email_address")
-	if emailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "emailAddress is required")
+	id := ctx.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
 
-	err := r.DoDeleteUser(emailAddress)
+	err := r.DoDeleteUser(id)
 	if err != nil {
 		return err
 	}
@@ -669,29 +674,32 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusAccepted)
 }
 
-func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
+func (r *httpRoutes) DoDeleteUser(id string) error {
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
 
-	dexReq := &dexApi.DeletePasswordReq{
-		Email: emailAddress,
+	user, err2 := r.db.GetUser(id)
+
+
+
+
+	if err2 != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if user == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+		dexReq := &dexApi.DeletePasswordReq{
+		Email: user.Email,
 	}
 
 	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
 	if err != nil {
 		r.logger.Error("failed to remove dex password", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to remove dex password")
-	}
-
-	user, err := r.db.GetUserByEmail(emailAddress)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
-	}
-	if user == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
 
 	err = r.db.DeleteUser(user.ID)
@@ -742,7 +750,7 @@ func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 //	@Summary		Reset current user password
 //	@Description	Reset current user password
 //	@Security		BearerToken
-//	@Tags			keys
+//	@Tags			user
 //	@Produce		json
 //	@Success		200
 //	@Router			/auth/api/v3/user/password/reset [post]
@@ -830,3 +838,27 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusAccepted)
 }
+
+// CreateConnector godoc
+//
+//	@Summary		Create Connector
+//	@Description	Creates new OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector [post]
+
+// func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
+// 	var req api.CreateConnectorRequest
+// 	if err := bindValidate(ctx, &req); err != nil {
+// 		return echo.NewHTTPError(http.StatusBadRequest, err)
+// 	}
+
+// 	if (req.ConnectorType =="" ){
+// 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
+// 	}
+// 	connectorTypeLower := strings.ToLower(req.ConnectorType)
+// 	creator, supported := connectorCreators[connectorTypeLower]
+
+// }

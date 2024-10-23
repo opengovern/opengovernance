@@ -9,12 +9,6 @@ import (
 
 
 
-type InviteStatus string
-
-const (
-	InviteStatus_ACCEPTED InviteStatus = "accepted"
-	InviteStatus_PENDING  InviteStatus = "pending"
-)
 
 
 type GetUserResponse struct {
@@ -23,7 +17,6 @@ type GetUserResponse struct {
 	Email         string       `json:"email" example:"johndoe@example.com"`                  // Email address of the user
 	EmailVerified bool         `json:"email_verified" example:"true"`                         // Is email verified or not
 	RoleName      api.Role     `json:"role_name" enums:"admin,editor,viewer" example:"admin"` // Name of the role
-	Status        InviteStatus `json:"status" enums:"accepted,pending" example:"accepted"`   // Invite status
 	LastActivity  any   `json:"last_activity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
 	CreatedAt     time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 	Blocked       bool         `json:"blocked" example:"false"`                              // Is the user blocked or not
@@ -36,6 +29,10 @@ type GetUsersResponse struct {
 	ExternalId	string   `json:"external_id"`
 	LastActivity  any   `json:"last_activity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
 	RoleName      api.Role `json:"role_name" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	CreatedAt     time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
+	IsActive     bool       `json:"is_active"`
+	FullName 	string `json:"full_name"`
+
 }
 
 type GetUsersRequest struct {
@@ -53,7 +50,7 @@ type GetMeResponse struct {
 	UserName        string              `json:"username" example:"John Doe"`                        // Username
 	Email           string              `json:"email" example:"johndoe@example.com"`                // Email address of the user
 	EmailVerified   bool                `json:"email_verified" example:"true"`                       // Is email verified or not
-	Status          InviteStatus        `json:"status" enums:"accepted,pending" example:"accepted"` // Invite status
+
 	LastActivity    any         `json:"last_activity" example:"2023-04-21T08:53:09.928Z"`    // Last activity timestamp in UTC
 	CreatedAt       time.Time           `json:"created_at" example:"2023-03-31T09:36:09.855Z"`       // Creation timestamp in UTC
 	Blocked         bool                `json:"blocked" example:"false"`                            // Is the user blocked or not
