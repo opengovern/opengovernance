@@ -23,16 +23,15 @@ type User struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 	Email         string    `json:"email"`
 	EmailVerified bool      `json:"email_verified"`
-	FullName    string    `json:"full_name"`
+	FullName      string    `json:"full_name"`
 	LastLogin     time.Time `json:"last_login"`
 	Username      string    `json:"username"`
-	Role			string `json:"role"`
-	IsActive        bool	`json:"is_active"`
-	
-	ExternalId  		string `json:"external_id"`
+	Role          string    `json:"role"`
+	IsActive      bool      `json:"is_active"`
 
-	
+	ExternalId string `json:"external_id"`
 }
+
 func DbUserToApi(u *db.User) (*User, error) {
 	if u == nil {
 		return nil, nil
@@ -43,22 +42,18 @@ func DbUserToApi(u *db.User) (*User, error) {
 		UpdatedAt:     u.UpdatedAt,
 		Email:         u.Email,
 		EmailVerified: u.EmailVerified,
-		FullName:    u.FullName,
+		FullName:      u.FullName,
 		LastLogin:     u.LastLogin,
 		Username:      string(u.Username),
-		Role: 	   string(u.Role),
-		ExternalId: u.ExternalId,
-		ID: 		  u.ID,
-		IsActive: u.IsActive,
-		
-
-
-		
+		Role:          string(u.Role),
+		ExternalId:    u.ExternalId,
+		ID:            u.ID,
+		IsActive:      u.IsActive,
 	}, nil
 }
 
-func  GetOrCreateUser(userID string, email string, database db.Database ) (*User, error) {
-	
+func GetOrCreateUser(userID string, email string, database db.Database) (*User, error) {
+
 	if userID == "" {
 		return nil, errors.New("GetOrCreateUser: empty user id")
 	}
@@ -68,14 +63,13 @@ func  GetOrCreateUser(userID string, email string, database db.Database ) (*User
 		return nil, err
 	}
 
-	if user == nil  {
+	if user == nil {
 		user = &db.User{
-			Email:        email,
-			Username:     email,
-			FullName:         email,
+			Email:      email,
+			Username:   email,
+			FullName:   email,
 			ExternalId: userID,
-			Role:         api.ViewerRole,
-			
+			Role:       api.ViewerRole,
 		}
 		err = database.CreateUser(user)
 		if err != nil {
@@ -83,7 +77,7 @@ func  GetOrCreateUser(userID string, email string, database db.Database ) (*User
 		}
 	}
 
-	if user.IsActive {
+	if !user.IsActive {
 		return nil, errors.New("user disabled")
 	}
 
@@ -106,9 +100,7 @@ func New(domain, appClientID, clientID, clientSecret, connection string, inviteT
 	}
 }
 
-
-
-func  GetUser(id string,database db.Database) (*User, error) {
+func GetUser(id string, database db.Database) (*User, error) {
 	user, err := database.GetUserByExternalID(id)
 	if err != nil {
 		return nil, err
@@ -122,13 +114,9 @@ func  GetUser(id string,database db.Database) (*User, error) {
 	return resp, nil
 }
 
+func UpdateUserLastLogin(userId string, lastLogin *time.Time, database db.Database) error {
 
-
-
-func  UpdateUserLastLogin(userId string, lastLogin *time.Time,database db.Database) error {
-	
-
-	err := database.UpdateUserLastLoginWithExternalID(userId,  lastLogin)
+	err := database.UpdateUserLastLoginWithExternalID(userId, lastLogin)
 
 	if err != nil {
 		return err
@@ -136,7 +124,3 @@ func  UpdateUserLastLogin(userId string, lastLogin *time.Time,database db.Databa
 
 	return nil
 }
-
-
-
-

@@ -1,9 +1,7 @@
 package onboard
 
 import (
-	"context"
 	"fmt"
-	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
@@ -30,8 +28,7 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	ctx context.Context,
-	postgresUsername string, postgresPassword string, postgresHost string, postgresPort string, postgresDb string, postgresSSLMode string,
+	onboardDB db.Database,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	logger *zap.Logger,
 	vaultSc vault.VaultSourceConfig,
@@ -44,20 +41,6 @@ func InitializeHttpHandler(
 
 	logger.Info("Initializing http handler")
 
-	cfg := postgres.Config{
-		Host:    postgresHost,
-		Port:    postgresPort,
-		User:    postgresUsername,
-		Passwd:  postgresPassword,
-		DB:      postgresDb,
-		SSLMode: postgresSSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new postgres client: %w", err)
-	}
-	logger.Info("Connected to the postgres database", zap.String("database", postgresDb))
-
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: steampipeHost,
 		Port: steampipePort,
@@ -69,13 +52,6 @@ func InitializeHttpHandler(
 		return nil, fmt.Errorf("new steampipe client: %w", err)
 	}
 	logger.Info("Connected to the steampipe database", zap.String("database", steampipeDb))
-
-	onboardDB := db.NewDatabase(orm)
-	err = onboardDB.Initialize()
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("Initialized postgres database: ", zap.String("database", postgresDb))
 
 	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
 	describeCli := describeClient.NewSchedulerServiceClient(describeBaseURL)

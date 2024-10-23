@@ -1,5 +1,5 @@
 package models
 
-type AppConfiguration struct {
+type PlatformConfiguration struct {
 	Configured bool `json:"configured"`
 }

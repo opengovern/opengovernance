@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-
 type Configuration struct {
 	gorm.Model
 	Key   string
@@ -18,7 +17,7 @@ type ApiKey struct {
 	Name          string
 	Role          api.Role
 	CreatorUserID string
-	IsActive        bool
+	IsActive      bool
 	KeyHash       string
 	MaskedKey     string
 }
@@ -26,8 +25,8 @@ type ApiKey struct {
 type User struct {
 	gorm.Model
 	Email                 string
-	EmailVerified         bool 
-    FullName                  string 
+	EmailVerified         bool
+	FullName              string
 	Role                  api.Role
 	ConnectorId           string
 	ExternalId            string
@@ -35,7 +34,5 @@ type User struct {
 	Username              string
 	RequirePasswordChange bool `gorm:"default:true"`
 	Connector             string
-	IsActive              bool
-	
+	IsActive              bool `gorm:"default:true"`
 }
-
