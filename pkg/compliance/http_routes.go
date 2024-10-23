@@ -21,7 +21,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	"github.com/opengovern/opengovernance/pkg/compliance/runner"
 	"github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
-	"github.com/opengovern/opengovernance/pkg/demo"
+
 	model3 "github.com/opengovern/opengovernance/pkg/describe/db/model"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
@@ -345,11 +345,6 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 			}
 		}
 
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
-		}
-
 		if control, ok := controlsMap[finding.ControlID]; ok {
 			finding.ControlTitle = control.Title
 		}
@@ -552,11 +547,6 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
-		}
-
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
 		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
@@ -1612,12 +1602,6 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 		}
 
 		response.Accounts = append(response.Accounts, account)
-	}
-
-	for idx, conn := range response.Accounts {
-		conn.AccountId = demo.EncodeResponseData(echoCtx, conn.AccountId)
-		conn.AccountName = demo.EncodeResponseData(echoCtx, conn.AccountName)
-		response.Accounts[idx] = conn
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -4720,12 +4704,6 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 		resp.Connections = append(resp.Connections, item)
 	}
 
-	for idx, conn := range resp.Connections {
-		conn.ProviderConnectionID = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionID)
-		conn.ProviderConnectionName = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionName)
-		resp.Connections[idx] = conn
-	}
-
 	return echoCtx.JSON(http.StatusOK, resp)
 }
 
@@ -5925,11 +5903,6 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
-		}
-
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
 		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
