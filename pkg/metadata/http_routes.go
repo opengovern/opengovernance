@@ -68,6 +68,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v3.PUT("/configured/set", httpserver.AuthorizeHandler(h.SetConfiguredStatus, api3.AdminRole))
 	v3.PUT("/configured/unset", httpserver.AuthorizeHandler(h.UnsetConfiguredStatus, api3.ViewerRole))
 	v3.GET("/about", httpserver.AuthorizeHandler(h.GetAbout, api3.ViewerRole))
+	v3.GET("/vault/configured", httpserver.AuthorizeHandler(h.VaultConfigured, api3.ViewerRole))
 }
 
 var tracer = otel.Tracer("metadata")
@@ -885,4 +886,21 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+// VaultConfigured godoc
+//
+//	@Summary		Get About info
+//
+//	@Description	Syncs demo with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.About
+//	@Router			/workspace/api/v3/vault/configured [get]
+func (h HttpHandler) VaultConfigured(echoCtx echo.Context) error {
+
+	return echoCtx.String(http.StatusOK, "True")
 }
