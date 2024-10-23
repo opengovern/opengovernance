@@ -20,6 +20,7 @@ type MetadataServiceClient interface {
 	SetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey, value any) error
 	ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error)
 	SetQueryParameter(ctx *httpclient.Context, request api.SetQueryParameterRequest) error
+	VaultConfigured(ctx *httpclient.Context) (*string, error)
 }
 
 type metadataClient struct {
@@ -128,4 +129,20 @@ func (s *metadataClient) SetQueryParameter(ctx *httpclient.Context, request api.
 	}
 
 	return nil
+}
+
+func (s *metadataClient) VaultConfigured(ctx *httpclient.Context) (*string, error) {
+	url := fmt.Sprintf("%s/api/v3/vault/configured", s.baseURL)
+	var status string
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &status); err != nil {
+		if statusCode == 404 {
+			return nil, ErrConfigNotFound
+		}
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return &status, nil
 }
