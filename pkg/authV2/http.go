@@ -156,8 +156,10 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
 			ExternalId:    u.ExternalId,
+			CreatedAt: u.CreatedAt,
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
+			IsActive:      u.IsActive,
 		}
 		if u.LastLogin.IsZero() {
 			temp_resp.LastActivity = nil
