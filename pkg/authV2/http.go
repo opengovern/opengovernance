@@ -46,19 +46,26 @@ type httpRoutes struct {
 
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	// VAlidate token
 	v1.GET("/check", r.Check)
+	// USERS
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole)) //checked
 	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole)) //checked
 	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
-	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
-	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
-	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
 	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
 	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
 	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
 	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
+	// API KEYS
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
+	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
+	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
+	// connectors
+	// v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+
+
 	
 
 }
@@ -373,7 +380,9 @@ func (r *httpRoutes) EditAPIKey(ctx echo.Context) error {
 	// TODO: Ask from ANIL what should i do 
 	// userId := httpserver.GetUserID(ctx)
 	var req api.EditAPIKeyRequest
-
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
 	
 	id := ctx.Param("id")
 	if id == ""  {
@@ -765,7 +774,7 @@ func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 //	@Summary		Reset current user password
 //	@Description	Reset current user password
 //	@Security		BearerToken
-//	@Tags			keys
+//	@Tags			user
 //	@Produce		json
 //	@Success		200
 //	@Router			/auth/api/v3/user/password/reset [post]
@@ -853,3 +862,27 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusAccepted)
 }
+
+// CreateConnector godoc
+//
+//	@Summary		Create Connector
+//	@Description	Creates new OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector [post]
+
+// func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
+// 	var req api.CreateConnectorRequest
+// 	if err := bindValidate(ctx, &req); err != nil {
+// 		return echo.NewHTTPError(http.StatusBadRequest, err)
+// 	}
+
+// 	if (req.ConnectorType =="" ){
+// 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
+// 	}
+// 	connectorTypeLower := strings.ToLower(req.ConnectorType)
+// 	creator, supported := connectorCreators[connectorTypeLower]
+
+// }
