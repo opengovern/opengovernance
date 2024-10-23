@@ -1,10 +1,14 @@
 package integration_v2
 
 import (
+	"fmt"
+	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/vault"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration-v2/api"
 	"github.com/opengovern/opengovernance/services/integration-v2/config"
 	"github.com/opengovern/opengovernance/services/integration-v2/db"
@@ -42,6 +46,16 @@ func Command() *cobra.Command {
 			err = db.Initialize()
 			if err != nil {
 				return err
+			}
+
+			mClient := metadata.NewMetadataServiceClient(cnf.Metadata.BaseURL)
+
+			configured, err := mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
+			if err != nil {
+				return err
+			}
+			if *configured != "True" {
+				return fmt.Errorf("vault not configured")
 			}
 
 			var vaultSc vault.VaultSourceConfig

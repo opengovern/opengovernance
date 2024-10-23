@@ -3,22 +3,15 @@ package onboard
 import (
 	"context"
 	"fmt"
+	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/og-util/pkg/vault"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/onboard/config"
-	"os"
-
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-)
-
-var (
-	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
-	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
-	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
-	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
-	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 )
 
 func Command() *cobra.Command {
@@ -36,6 +29,16 @@ func start(ctx context.Context) error {
 	}
 
 	cfg := koanf.Provide("onboard", config.OnboardConfig{})
+
+	mClient := metadata.NewMetadataServiceClient(cfg.Metadata.BaseURL)
+
+	configured, err := mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
+	if err != nil {
+		return err
+	}
+	if *configured != "True" {
+		return fmt.Errorf("vault not configured")
+	}
 
 	var vaultSc vault.VaultSourceConfig
 	switch cfg.Vault.Provider {
