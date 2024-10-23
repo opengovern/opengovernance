@@ -1,10 +1,6 @@
 package api
 
-import(
-	"github.com/opengovern/opengovernance/pkg/authV2/utils"
-	dexapi "github.com/dexidp/dex/api/v2"
-	
-)
+
 // CreateConnectorRequest represents the expected payload for creating or updating a connector.
 type CreateConnectorRequest struct {
 
@@ -25,13 +21,4 @@ type OIDCConfig struct {
 	ClientSecret string `json:"clientSecret"`
 }
 
-type ConnectorCreator func( params utils.CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
 
-var connectorCreators = map[string]ConnectorCreator{
-	"oidc": utils.CreateOIDCConnector,
-	// Future connector types can be added here, e.g., "saml": (*DexClient).CreateSAMLConnector
-}
-var SupportedConnectors = map[string][]string{
-	"oidc": {"general", "google-workspace", "entraid"},
-	// Add more connector types and their sub-types here as needed.
-}

@@ -1,11 +1,11 @@
 package utils
 
 import (
-
-	"fmt"
-	dexapi "github.com/dexidp/dex/api/v2"
 	"encoding/json"
+	"fmt"
+	"strings"
 
+	dexapi "github.com/dexidp/dex/api/v2"
 )
 type CreateConnectorRequest struct {
 
@@ -24,6 +24,16 @@ type OIDCConfig struct {
 	TenantID     string `json:"tenantID,omitempty"` // Added TenantID for entraid sub-type
 	ClientID     string `json:"clientID"`
 	ClientSecret string `json:"clientSecret"`
+}
+type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
+
+var  connectorCreators = map[string]ConnectorCreator{
+	"oidc": CreateOIDCConnector,
+	// Future connector types can be added here, e.g., "saml": (*DexClient).CreateSAMLConnector
+}
+var SupportedConnectors = map[string][]string{
+	"oidc": {"general", "google-workspace", "entraid"},
+	// Add more connector types and their sub-types here as needed.
 }
 
 func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error) {
@@ -111,3 +121,23 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 
 	return req, nil
 }
+func IsSupportedSubType(connectorType, subType string) bool {
+	subTypes, exists := SupportedConnectors[connectorType]
+	if !exists {
+		return false
+	}
+	for _, st := range subTypes {
+		if strings.ToLower(st) == subType {
+			return true
+		}
+	}
+	return false
+}
+
+func GetConnectorCreator(connectorType string) ConnectorCreator {
+	return connectorCreators[connectorType]
+}
+func GetSupportedConnectors(connectorType string) []string {
+	return SupportedConnectors[connectorType]
+}
+

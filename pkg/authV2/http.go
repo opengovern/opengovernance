@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -63,7 +64,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	// connectors
-	// v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 
 }
 
@@ -639,6 +640,10 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			IsActive: req.IsActive,
 			Username: req.UserName,
 			FullName: req.FullName,
+			Email:   user.Email,
+			
+
+
 		}
 		err = r.db.UpdateUser(update_user)
 		if err != nil {
@@ -849,16 +854,144 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v1/connector [post]
 
-// func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
-// 	var req api.CreateConnectorRequest
-// 	if err := bindValidate(ctx, &req); err != nil {
-// 		return echo.NewHTTPError(http.StatusBadRequest, err)
-// 	}
+func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
+	var req api.CreateConnectorRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
 
-// 	if (req.ConnectorType =="" ){
-// 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
-// 	}
-// 	connectorTypeLower := strings.ToLower(req.ConnectorType)
-// 	creator, supported := connectorCreators[connectorTypeLower]
+	if (req.ConnectorType =="" ){
+		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
+	}
+	connectorTypeLower := strings.ToLower(req.ConnectorType)
+	creator := utils.GetConnectorCreator(connectorTypeLower)
+	if creator == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector type is not supported")
+	}
+	
+	 // default
+	connectorSubTypeLower := "general" // default
+	if req.ConnectorSubType != "" {
+		connectorSubTypeLower = strings.ToLower(req.ConnectorSubType)
+	} else {
+		r.logger.Info("No connector_sub_type specified. Defaulting to 'general'")
+	}
+	if utils.IsSupportedSubType(connectorTypeLower, connectorSubTypeLower) {
+		err := fmt.Sprintf("unsupported connector_sub_type '%s' for connector_type '%s'", connectorSubTypeLower, connectorTypeLower)
+		r.logger.Info(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 
-// }
+	}
+	switch connectorSubTypeLower {
+	case "general":
+		// Required: issuer, client_id, client_secret
+		if strings.TrimSpace(req.Issuer) == "" {
+			r.logger.Warn("Missing 'issuer' for 'general' OIDC connector")
+			return ctx.JSON(http.StatusBadRequest, map[string]string{
+				"error": "issuer is required for 'general' OIDC connector",
+			})
+			
+
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "default-oidc"
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "OIDC SSO"
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+				r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+
+	case "entraid":
+		// Required: tenant_id, client_id, client_secret
+		if strings.TrimSpace(req.TenantID) == "" {
+			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
+				r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "entraid-oidc"
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "Microsoft AzureAD SSO"
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+
+	case "google-workspace":
+		// Required: client_id, client_secret
+		// No additional fields needed
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "google-workspace-oidc"
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "Google Workspace SSO"
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+	}
+		dexRequest := utils.CreateConnectorRequest{
+			ConnectorType :  req.ConnectorType,
+			ConnectorSubType : req.ConnectorSubType,
+			Issuer : req.Issuer,
+			TenantID : req.TenantID,
+			ClientID : req.ClientID,
+			ClientSecret : req.ClientSecret,
+			ID : req.ID,
+			Name : req.Name,
+		}
+		dexreq,err := creator(dexRequest)
+		if err != nil {
+			r.logger.Error("Error on Creating dex request",zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+		dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+		res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+		if err != nil {
+			r.logger.Error("failed to create dex connector", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+		}
+		if res.AlreadyExists {
+			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+		}
+		return ctx.NoContent(http.StatusCreated)
+
+
+
+
+
+
+
+
+
+}
