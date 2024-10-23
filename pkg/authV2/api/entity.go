@@ -30,6 +30,8 @@ type GetUsersResponse struct {
 	LastActivity  any   `json:"last_activity" example:"2023-04-21T08:53:09.928Z"`      // Last activity timestamp in UTC
 	RoleName      api.Role `json:"role_name" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 	CreatedAt     time.Time    `json:"createdAt" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
+	IsActive     bool       `json:"is_active"`
+	FullName 	string `json:"full_name"`
 
 }
 
