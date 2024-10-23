@@ -755,6 +755,10 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	onboardClient := client.NewOnboardServiceClient(onboardURL)
 	connections, err := onboardClient.ListSources(ctx, nil)
+	if err != nil {
+		h.logger.Error("failed to list integrations", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
+	}
 
 	integrations := make(map[string][]onboardApi.Connection)
 	for _, c := range connections {
@@ -822,13 +826,18 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to load data", zap.Error(err))
 	}
+
+	appConfiguration, err := h.db.GetAppConfiguration()
+	if err != nil {
+		h.logger.Error("failed to get workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
+
 	response := api.About{
 		DexConnectors:         dexConnectors,
 		AppVersion:            version,
-		WorkspaceCreationTime: time.Time{}, // TODO
-		Users:                 nil,         // TODO
+		WorkspaceCreationTime: appConfiguration.CreatedAt,
 		PrimaryDomainURL:      h.cfg.PrimaryDomainURL,
-		APIKeys:               nil, // TODO
 		Integrations:          integrations,
 		SampleData:            loaded,
 		TotalSpendGoverned:    floatValue,

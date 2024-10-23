@@ -4,6 +4,10 @@ import (
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 )
 
+func (db Database) CreateApp(app *models.PlatformConfiguration) error {
+	return db.orm.Model(&models.PlatformConfiguration{}).Create(app).Error
+}
+
 func (db Database) AppConfigured(configured bool) error {
 	return db.orm.Model(&models.PlatformConfiguration{}).Update("configured", configured).Error
 }

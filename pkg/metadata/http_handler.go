@@ -10,6 +10,7 @@ import (
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/pkg/metadata/config"
 	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	db2 "github.com/opengovern/opengovernance/services/migrator/db"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"time"
 )
 
 type HttpHandler struct {
@@ -59,6 +61,14 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	logger.Info("Initialized database", zap.String("database", cfg.Postgres.DB))
+
+	err = db.CreateApp(&models.PlatformConfiguration{
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	migratorDbCfg := postgres.Config{
 		Host:    cfg.Postgres.Host,
