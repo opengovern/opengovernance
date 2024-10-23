@@ -184,7 +184,7 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	if len(connectorTypes) != 0 {
 		return connectorTypes, nil
 	}
-	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: api.AdminRole}, connectionIDs)
 	if err != nil {
 		return nil, err
 	}
