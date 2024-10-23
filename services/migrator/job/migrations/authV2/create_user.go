@@ -58,6 +58,43 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
+	publicClientReq := dexApi.CreateClientReq{
+		Client: &dexApi.Client{
+			Id:   "public-client",
+			Name: "Public Client",
+			RedirectUris: []string{
+				"https://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
+				"http://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
+				"http://localhost:3000/callback",
+				"http://localhost:8080/callback",
+			},
+			Public: true,
+		},
+	}
+
+	_, err = dexClient.CreateClient(ctx, &publicClientReq)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
+		return err
+	}
+
+	privateClientReq := dexApi.CreateClientReq{
+		Client: &dexApi.Client{
+			Id:   "private-client",
+			Name: "Private Client",
+			RedirectUris: []string{
+				"https://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
+			},
+			Secret: "secret",
+		},
+	}
+
+	_, err = dexClient.CreateClient(ctx, &privateClientReq)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
+		return err
+	}
+
 	req := dexApi.CreatePasswordReq{
 		Password: &dexApi.Password{
 			Email:    conf.DefaultDexUserEmail,
