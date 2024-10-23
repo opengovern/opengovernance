@@ -49,17 +49,17 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	// VAlidate token
 	v1.GET("/check", r.Check)
 	// USERS
-	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole)) //checked
-	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole)) //checked
-	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole)) //checked
-	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))//checked
-	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))//checked
-	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))//checked
-	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))//checked
-	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))//checked
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))                                      //checked
+	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))                             //checked
+	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))                                            //checked
+	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))                                    //checked
+	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))                                     //checked
+	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole)) //checked
+	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))              //checked
+	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))                               //checked
 	// API KEYS
 	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole))   //checked
 	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	// connectors
@@ -156,7 +156,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
 			ExternalId:    u.ExternalId,
-			CreatedAt: u.CreatedAt,
+			CreatedAt:     u.CreatedAt,
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
 			IsActive:      u.IsActive,
@@ -228,21 +228,20 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		return err
 	}
 
-	
 	resp := api.GetMeResponse{
 
-		ID:          user.ID,
-		UserName:        user.Username,
-		Email:           user.Email,
-		EmailVerified:   user.EmailVerified,
-		LastActivity:    user.LastLogin,
-		CreatedAt:       user.CreatedAt,
-		Blocked:         user.IsActive,
-		Role: user.Role,
-		MemberSince:     user.CreatedAt,
-		LastLogin:       user.LastLogin,
+		ID:            user.ID,
+		UserName:      user.Username,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		LastActivity:  user.LastLogin,
+		CreatedAt:     user.CreatedAt,
+		Blocked:       user.IsActive,
+		Role:          user.Role,
+		MemberSince:   user.CreatedAt,
+		LastLogin:     user.LastLogin,
 	}
-	if (user.LastLogin.IsZero()) {
+	if user.LastLogin.IsZero() {
 		resp.LastLogin = nil
 		resp.LastActivity = nil
 
@@ -356,8 +355,8 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	// TODO: Ask from ANIL what should i do
 	// userId := httpserver.GetUserID(ctx)
 	id := ctx.Param("id")
-	
-	integer_id, err :=(strconv.ParseUint(id, 10, 32))
+
+	integer_id, err := (strconv.ParseUint(id, 10, 32))
 
 	err = r.db.DeleteAPIKey(integer_id)
 	if err != nil {
@@ -367,20 +366,19 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusAccepted)
 }
 func (r *httpRoutes) EditAPIKey(ctx echo.Context) error {
-	// TODO: Ask from ANIL what should i do 
+	// TODO: Ask from ANIL what should i do
 	// userId := httpserver.GetUserID(ctx)
 	var req api.EditAPIKeyRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
-	
+
 	id := ctx.Param("id")
-	if id == ""  {
+	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
-	
 
-	err := r.db.UpdateAPIKey(id, req.IsActive,req.Role)
+	err := r.db.UpdateAPIKey(id, req.IsActive, req.Role)
 	if err != nil {
 		return err
 	}
@@ -429,7 +427,7 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body	api.CreateUserRequest	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/create [post]
+//	@Router			/auth/api/v1/user [post]
 func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 
 	var req api.CreateUserRequest
@@ -566,7 +564,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 //	@Produce		json
 //	@Param			request	body	api.UpdateUserRequest	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/update [post]
+//	@Router			/auth/api/v1/user [put]
 func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 	var req api.UpdateUserRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -683,16 +681,13 @@ func (r *httpRoutes) DoDeleteUser(id string) error {
 
 	user, err2 := r.db.GetUser(id)
 
-
-
-
 	if err2 != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
 	if user == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
-		dexReq := &dexApi.DeletePasswordReq{
+	dexReq := &dexApi.DeletePasswordReq{
 		Email: user.Email,
 	}
 
