@@ -738,8 +738,7 @@ func (h HttpHandler) UnsetConfiguredStatus(echoCtx echo.Context) error {
 //	@Success		200	{object}	api.About
 //	@Router			/workspace/api/v3/configured/status [put]
 func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
-	ctx := httpclient.FromEchoContext(echoCtx)
-	ctx.UserRole = api3.AdminRole
+	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
 	version := ""
 	var kaytuVersionConfig corev1.ConfigMap
@@ -847,8 +846,7 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 }
 
 func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
-	ctx := httpclient.FromEchoContext(echoCtx)
-	ctx.UserRole = api3.AdminRole
+	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
 	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	onboardClient := client.NewOnboardServiceClient(onboardURL)

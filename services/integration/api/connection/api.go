@@ -352,7 +352,7 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.connSvc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.connSvc.Data(&httpclient.Context{UserRole: api.AdminRole}, nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}

@@ -135,12 +135,12 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	var jobs []api.Job
 
-	srcs, err := h.Scheduler.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	srcs, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		return err
 	}
 
-	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx), nil)
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		return err
 	}
