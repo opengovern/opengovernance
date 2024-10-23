@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"fmt"
+	"errors"
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
@@ -41,12 +41,9 @@ func Command() *cobra.Command {
 			d := describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
 			mClient := metadata.NewMetadataServiceClient(cnf.Metadata.BaseURL)
 
-			configured, err := mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
-			if err != nil {
+			_, err = mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
+			if err != nil && errors.Is(err, metadata.ErrConfigNotFound) {
 				return err
-			}
-			if *configured != "True" {
-				return fmt.Errorf("vault not configured")
 			}
 
 			m, err := meta.New(cnf.Metadata)
