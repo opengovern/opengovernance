@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 type Migration struct{}
@@ -58,17 +59,14 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
+	publicUris := strings.Split(conf.DexPublicClientRedirectUris, ",")
+
 	publicClientReq := dexApi.CreateClientReq{
 		Client: &dexApi.Client{
-			Id:   "public-client",
-			Name: "Public Client",
-			RedirectUris: []string{
-				"https://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
-				"http://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
-				"http://localhost:3000/callback",
-				"http://localhost:8080/callback",
-			},
-			Public: true,
+			Id:           "public-client",
+			Name:         "Public Client",
+			RedirectUris: publicUris,
+			Public:       true,
 		},
 	}
 
@@ -78,14 +76,14 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
+	privateUris := strings.Split(conf.DexPrivateClientRedirectUris, ",")
+
 	privateClientReq := dexApi.CreateClientReq{
 		Client: &dexApi.Client{
-			Id:   "private-client",
-			Name: "Private Client",
-			RedirectUris: []string{
-				"https://DOMAIN_NAME_PLACEHOLDER_DO_NOT_CHANGE/callback",
-			},
-			Secret: "secret",
+			Id:           "private-client",
+			Name:         "Private Client",
+			RedirectUris: privateUris,
+			Secret:       "secret",
 		},
 	}
 
