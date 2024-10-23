@@ -291,7 +291,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
 		if claimsMap.Email == "" {
-			claimsMap.Email = "admin@example.com"
+			claimsMap.Email = "admin@opengovernance.io"
 		}
 
 		return &userClaim{

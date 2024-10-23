@@ -115,7 +115,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Email:    conf.DefaultDexUserEmail,
 		Username: conf.DefaultDexUserEmail,
 		FullName: conf.DefaultDexUserEmail,
-
 		Role:                  role,
 		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 		Connector:             "local",

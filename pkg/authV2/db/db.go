@@ -2,7 +2,9 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"time"
+
 	"github.com/google/uuid"
 	"github.com/opengovern/og-util/pkg/api"
 	"gorm.io/gorm"
@@ -119,9 +121,11 @@ func (db Database) CreateUser(user *User) error {
 }
 
 func (db Database) UpdateUser(user *User) error {
+	fmt.Println("User", user)
 	tx := db.Orm.Model(&User{}).
 		Where("id = ?", user.ID).
-		Updates(user)
+		Updates(user).
+		Update("is_active", user.IsActive)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -144,7 +148,9 @@ func (db Database) DeleteUser(id uint) error {
 func (db Database) GetUsers() ([]User, error) {
 	var s []User
 	tx := db.Orm.Model(&User{}).
+		Order("updated_at desc").
 		Find(&s)
+		
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
