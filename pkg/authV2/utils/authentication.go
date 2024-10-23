@@ -124,13 +124,6 @@ func  GetUser(id string,database db.Database) (*User, error) {
 
 
 
-func (a *Service) DeleteUser(userId string) error {
-	err := a.DeleteUser(userId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func  UpdateUserLastLogin(userId string, lastLogin *time.Time,database db.Database) error {
 	

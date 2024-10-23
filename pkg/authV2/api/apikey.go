@@ -9,6 +9,11 @@ type CreateAPIKeyRequest struct {
 	Name     string   `json:"name"`                                                 // Name of the key
 	Role api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"` // Name of the role
 }
+type EditAPIKeyRequest struct {                                     
+	Role api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"` // Name of the role
+	IsActive bool      `json:"is_active" example:"true"`                                // Activity state of the key
+
+}
 
 type CreateAPIKeyResponse struct {
 	ID        uint      `json:"id" example:"1"`                                       // Unique identifier for the key

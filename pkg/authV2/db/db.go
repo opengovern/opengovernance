@@ -80,29 +80,22 @@ func (db Database) AddApiKey(key *ApiKey) error {
 	return nil
 }
 
-func (db Database) UpdateActiveAPIKey( id uint, value bool) error {
+func (db Database) UpdateAPIKey( id string, is_active bool,role api.Role) error {
 	tx := db.Orm.Model(&ApiKey{}).
-		Where("id", id).
-		Update("is_active", value)
+		Where("id = ?", id).
+		Update("is_active", is_active).
+		Update("role", role)
+
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) UpdateAPIKeyRole(id uint, role api.Role) error {
-	tx := db.Orm.Model(&ApiKey{}).
-		Where("id", id).
-		Update("role", role)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
 
 func (db Database) DeleteAPIKey(id uint64) error {
 	tx := db.Orm.Model(&ApiKey{}).
-		Where("id", id).
+		Where("id = ?", id).
 		Delete(&ApiKey{})
 	if tx.Error != nil {
 		return tx.Error
@@ -275,7 +268,7 @@ func (db Database) DisableUser(id uuid.UUID) error {
 func (db Database) EnableUser(id uuid.UUID) error {
 	tx := db.Orm.Model(&User{}).
 		Where("id = ? ", id).
-		Update("disabled", false)
+		Update("is_active", false)
 
 	if tx.Error != nil {
 		return tx.Error
