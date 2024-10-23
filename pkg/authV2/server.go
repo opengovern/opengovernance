@@ -232,7 +232,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 					// },
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XPlatformUserRoleHeader,
+							Key:   httpserver.XPlatformUserIDHeader,
 							Value: user.ExternalUserID,
 						},
 					},
