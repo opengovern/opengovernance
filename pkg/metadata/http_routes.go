@@ -833,10 +833,15 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
 	}
 
+	creationTime := time.Time{}
+	if appConfiguration != nil {
+		creationTime = appConfiguration.CreatedAt
+	}
+
 	response := api.About{
 		DexConnectors:         dexConnectors,
 		AppVersion:            version,
-		WorkspaceCreationTime: appConfiguration.CreatedAt,
+		WorkspaceCreationTime: creationTime,
 		PrimaryDomainURL:      h.cfg.PrimaryDomainURL,
 		Integrations:          integrations,
 		SampleData:            loaded,

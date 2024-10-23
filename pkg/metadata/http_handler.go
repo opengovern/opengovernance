@@ -62,12 +62,18 @@ func InitializeHttpHandler(
 	}
 	logger.Info("Initialized database", zap.String("database", cfg.Postgres.DB))
 
-	err = db.CreateApp(&models.PlatformConfiguration{
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
+	apps, err := db.ListApp()
 	if err != nil {
 		return nil, err
+	}
+	if len(apps) == 0 {
+		err = db.CreateApp(&models.PlatformConfiguration{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	migratorDbCfg := postgres.Config{
