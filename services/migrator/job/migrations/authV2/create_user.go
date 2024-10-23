@@ -81,9 +81,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Username: conf.DefaultDexUserEmail,
 		FullName: conf.DefaultDexUserEmail,
 
-		Role:       role,
-		ExternalId: fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		Connector:  "local",
+		Role:                  role,
+		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+		Connector:             "local",
+		IsActive:              true,
+		RequirePasswordChange: true,
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {
