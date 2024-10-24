@@ -223,7 +223,7 @@ func (db Database) UpdateUserLastLoginWithExternalID(id string, lastLogin time.T
 	tx := db.Orm.Model(&User{}).
 		Where("external_id = ?", id)
 
-	if lastLogin.IsZero(){
+	if !lastLogin.IsZero(){
 		tx = tx.Update("last_login", lastLogin)
 	}
 
