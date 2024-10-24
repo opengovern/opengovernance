@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 type Migration struct{}
@@ -42,75 +41,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	if err != nil {
 		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
 		return err
-	}
-
-	publicUris := strings.Split(conf.DexPublicClientRedirectUris, ",")
-
-	publicClientResp, _ := dexClient.GetClient(ctx, &dexApi.GetClientReq{
-		Id: "public-client",
-	})
-
-	if publicClientResp != nil && publicClientResp.Client != nil {
-		publicClientReq := dexApi.UpdateClientReq{
-			Id:           "public-client",
-			Name:         "Public Client",
-			RedirectUris: publicUris,
-		}
-
-		_, err = dexClient.UpdateClient(ctx, &publicClientReq)
-		if err != nil {
-			logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
-			return err
-		}
-	} else {
-		publicClientReq := dexApi.CreateClientReq{
-			Client: &dexApi.Client{
-				Id:           "public-client",
-				Name:         "Public Client",
-				RedirectUris: publicUris,
-				Public:       true,
-			},
-		}
-
-		_, err = dexClient.CreateClient(ctx, &publicClientReq)
-		if err != nil {
-			logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
-			return err
-		}
-	}
-
-	privateUris := strings.Split(conf.DexPrivateClientRedirectUris, ",")
-
-	privateClientResp, _ := dexClient.GetClient(ctx, &dexApi.GetClientReq{
-		Id: "private-client",
-	})
-	if privateClientResp != nil && privateClientResp.Client != nil {
-		privateClientReq := dexApi.UpdateClientReq{
-			Id:           "private-client",
-			Name:         "Private Client",
-			RedirectUris: privateUris,
-		}
-
-		_, err = dexClient.UpdateClient(ctx, &privateClientReq)
-		if err != nil {
-			logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
-			return err
-		}
-	} else {
-		privateClientReq := dexApi.CreateClientReq{
-			Client: &dexApi.Client{
-				Id:           "private-client",
-				Name:         "Private Client",
-				RedirectUris: privateUris,
-				Secret:       "secret",
-			},
-		}
-
-		_, err = dexClient.CreateClient(ctx, &privateClientReq)
-		if err != nil {
-			logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
-			return err
-		}
 	}
 
 	count, err := dbm.GetUsersCount()

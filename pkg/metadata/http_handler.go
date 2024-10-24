@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	dexApi "github.com/dexidp/dex/api/v2"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	api6 "github.com/hashicorp/vault/api"
 	"github.com/opengovern/og-util/pkg/postgres"
@@ -30,12 +31,14 @@ type HttpHandler struct {
 	kubeClient         client.Client
 	vault              vault.VaultSourceConfig
 	vaultSecretHandler vault.VaultSecretHandler
+	dexClient          dexApi.DexClient
 	logger             *zap.Logger
 }
 
 func InitializeHttpHandler(
 	cfg config.Config,
 	logger *zap.Logger,
+	dexClient dexApi.DexClient,
 ) (*HttpHandler, error) {
 	ctx := context.Background()
 
@@ -108,6 +111,7 @@ func InitializeHttpHandler(
 		migratorDb: migratorDb,
 		kubeClient: kubeClient,
 		logger:     logger,
+		dexClient:  dexClient,
 	}
 
 	switch cfg.Vault.Provider {

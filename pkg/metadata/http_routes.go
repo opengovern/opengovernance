@@ -799,14 +799,9 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	}
 
 	var dexConnectors []api.DexConnectorInfo
-	dexClient, err := newDexClient(h.cfg.DexGrpcAddr)
-	if err != nil {
-		h.logger.Error("failed to create dex client", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-	}
 
-	if dexClient != nil {
-		dexRes, err := dexClient.ListConnectors(context.Background(), &dexApi.ListConnectorReq{})
+	if h.dexClient != nil {
+		dexRes, err := h.dexClient.ListConnectors(context.Background(), &dexApi.ListConnectorReq{})
 		if err != nil {
 			h.logger.Error("failed to list dex connectors", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to list dex connectors")
