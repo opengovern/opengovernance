@@ -21,4 +21,12 @@ type OIDCConfig struct {
 	ClientSecret string `json:"clientSecret"`
 }
 
+type GetConnectorsResponse struct {
+		ID       string `json:"id"`
+		Type     string `json:"type"`
+		Name     string `json:"name"`
+		Issuer   string `json:"issuer,omitempty"`
+		ClientID string `json:"client_id,omitempty"`
+	}
+
 

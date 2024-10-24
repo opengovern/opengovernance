@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -64,7 +65,14 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	// connectors
+	v1.GET("/connectors", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
+	v1.GET("/connectors/supported-connector-types", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+	v1.GET("/connector/:id", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+	v1.PUT("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+
+
 
 }
 
@@ -980,13 +988,60 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
 		}
 		return ctx.NoContent(http.StatusCreated)
-
-
-
-
-
-
-
-
-
 }
+
+func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
+	req := &dexApi.ListConnectorReq{}
+	connectorType := ctx.Param("connector_type")
+	// Create a context with timeout for the gRPC call.
+	dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+	// Execute the ListConnectors RPC.
+	respDex, err := dexClient.ListConnectors(context.TODO(), req)
+	if err != nil {
+		r.logger.Error("failed to list connectors", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to list connectors")
+	
+	}
+
+	connectors := respDex.Connectors
+
+	var resp []api.GetConnectorsResponse
+	for _, connector := range connectors {
+		
+		
+		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
+			continue
+		}
+
+		info := api.GetConnectorsResponse{
+			ID:   connector.Id,
+			Type: connector.Type,
+			Name: connector.Name,
+		}
+
+		// If the connector is of type "oidc", attempt to extract Issuer and ClientID
+		if strings.ToLower(connector.Type) == "oidc" {
+			var config api.OIDCConfig
+			err := json.Unmarshal(connector.Config, &config)
+			if  err != nil {
+				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
+			} else {
+				info.Issuer = config.Issuer
+				info.ClientID = config.ClientID
+				// Note: Omitting ClientSecret for security reasons
+			}
+		}
+
+		resp = append(resp, info)
+	}
+
+	// If a specific connector_type was requested but no connectors found, return 404
+	
+
+	return ctx.JSON(http.StatusOK, resp)
+}
+
