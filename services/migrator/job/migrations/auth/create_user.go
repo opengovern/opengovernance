@@ -1,12 +1,13 @@
-package authV2
+package auth
 
 import (
 	"context"
 	"fmt"
+
 	dexApi "github.com/dexidp/dex/api/v2"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"

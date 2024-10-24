@@ -1,4 +1,4 @@
-package authV2
+package auth
 
 import (
 	"context"
@@ -18,17 +18,17 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/authV2/utils"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/pkg/authV2/api"
+	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -1164,13 +1164,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
 	}
 	return ctx.JSON(http.StatusOK, res)
-	
 
-
-
-
-	
-	return nil
 }
 
 

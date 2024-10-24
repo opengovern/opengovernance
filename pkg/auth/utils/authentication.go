@@ -2,9 +2,10 @@ package utils
 
 import (
 	"errors"
-	"github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
 	"time"
+
+	"github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 )
 
 type Service struct {

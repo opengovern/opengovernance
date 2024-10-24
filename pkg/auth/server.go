@@ -1,4 +1,4 @@
-package authV2
+package auth
 
 import (
 	"context"
@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -15,13 +19,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
-	"github.com/opengovern/opengovernance/pkg/authV2/utils"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type User struct {
