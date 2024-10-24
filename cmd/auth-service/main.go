@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/opengovern/opengovernance/pkg/auth"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/opengovern/opengovernance/pkg/authV2"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 		}
 	}()
 
-	if err := authV2.Command().ExecuteContext(ctx); err != nil {
+	if err := auth.Command().ExecuteContext(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

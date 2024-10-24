@@ -1,4 +1,4 @@
-package authV2
+package auth
 
 import (
 	"context"
@@ -15,8 +15,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
-	"github.com/opengovern/opengovernance/pkg/authV2/utils"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"net/http"
@@ -91,7 +91,6 @@ func (s *Server) UpdateLastLoginLoop() {
 
 					tim = time.Now()
 					s.logger.Info("time is", zap.Time("time", tim))
-
 
 					err = utils.UpdateUserLastLogin(user.ExternalId, tim, s.db)
 					if err != nil {

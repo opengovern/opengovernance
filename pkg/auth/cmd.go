@@ -1,4 +1,4 @@
-package authV2
+package auth
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	config2 "github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	"crypto/rand"
 
@@ -62,7 +62,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	logger = logger.Named("authV2")
+	logger = logger.Named("auth")
 
 	dexVerifier, err := newDexOidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {

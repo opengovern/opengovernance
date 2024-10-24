@@ -1,4 +1,4 @@
-package authV2
+package auth
 
 import (
 	"context"
@@ -17,17 +17,17 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/authV2/utils"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/pkg/authV2/api"
+	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -638,10 +638,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			IsActive: req.IsActive,
 			Username: req.UserName,
 			FullName: req.FullName,
-			Email:   user.Email,
-			
-
-
+			Email:    user.Email,
 		}
 		err = r.db.UpdateUser(update_user)
 		if err != nil {
@@ -855,7 +852,7 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if (req.ConnectorType =="" ){
+	if req.ConnectorType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
 	}
 	connectorTypeLower := strings.ToLower(req.ConnectorType)
@@ -863,8 +860,8 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 	if creator == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is not supported")
 	}
-	
-	 // default
+
+	// default
 	connectorSubTypeLower := "general" // default
 	if req.ConnectorSubType != "" {
 		connectorSubTypeLower = strings.ToLower(req.ConnectorSubType)
@@ -885,7 +882,6 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, map[string]string{
 				"error": "issuer is required for 'general' OIDC connector",
 			})
-			
 
 		}
 		// client_id and client_secret are already validated as required in the struct
@@ -893,41 +889,41 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "default-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "OIDC SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
-				r.logger.Info(err)
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
-				r.logger.Info(err)
+			err := fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
+			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-		
+
 		}
 		// client_id and client_secret are already validated as required in the struct
 
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "entraid-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Microsoft AzureAD SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 
 	case "google-workspace":
@@ -938,55 +934,47 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "google-workspace-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Google Workspace SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 	}
-		dexRequest := utils.CreateConnectorRequest{
-			ConnectorType :  req.ConnectorType,
-			ConnectorSubType : req.ConnectorSubType,
-			Issuer : req.Issuer,
-			TenantID : req.TenantID,
-			ClientID : req.ClientID,
-			ClientSecret : req.ClientSecret,
-			ID : req.ID,
-			Name : req.Name,
-		}
-		dexreq,err := creator(dexRequest)
-		if err != nil {
-			r.logger.Error("Error on Creating dex request",zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, err)
-		}
-		dexClient, err := newDexClient(dexGrpcAddress)
-		if err != nil {
+	dexRequest := utils.CreateConnectorRequest{
+		ConnectorType:    req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+		Issuer:           req.Issuer,
+		TenantID:         req.TenantID,
+		ClientID:         req.ClientID,
+		ClientSecret:     req.ClientSecret,
+		ID:               req.ID,
+		Name:             req.Name,
+	}
+	dexreq, err := creator(dexRequest)
+	if err != nil {
+		r.logger.Error("Error on Creating dex request", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	dexClient, err := newDexClient(dexGrpcAddress)
+	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-		}
-		res, err := dexClient.CreateConnector(context.TODO(), dexreq)
-		if err != nil {
-			r.logger.Error("failed to create dex connector", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
-		}
-		if res.AlreadyExists {
-			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
-		}
-		return ctx.NoContent(http.StatusCreated)
-
-
-
-
-
-
-
-
+	}
+	res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+	if err != nil {
+		r.logger.Error("failed to create dex connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+	}
+	if res.AlreadyExists {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+	}
+	return ctx.NoContent(http.StatusCreated)
 
 }

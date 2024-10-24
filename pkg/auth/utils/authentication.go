@@ -3,7 +3,7 @@ package utils
 import (
 	"errors"
 	"github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/opengovernance/pkg/authV2/db"
+	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"time"
 )
 
