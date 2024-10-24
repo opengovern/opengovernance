@@ -51,6 +51,8 @@ func start(ctx context.Context) error {
 		Id: "public-client",
 	})
 
+	logger.Info("public URIS", zap.Any("uris", publicUris))
+
 	if publicClientResp != nil && publicClientResp.Client != nil {
 		publicClientReq := dexApi.UpdateClientReq{
 			Id:           "public-client",
@@ -81,6 +83,8 @@ func start(ctx context.Context) error {
 	}
 
 	privateUris := strings.Split(cfg.DexPrivateClientRedirectUris, ",")
+
+	logger.Info("private URIS", zap.Any("uris", privateUris))
 
 	privateClientResp, _ := dexClient.GetClient(ctx, &dexApi.GetClientReq{
 		Id: "private-client",
