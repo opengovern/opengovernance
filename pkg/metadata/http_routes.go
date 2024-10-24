@@ -744,7 +744,7 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err := h.kubeClient.Get(echoCtx.Request().Context(), k8sclient.ObjectKey{
 		Namespace: h.cfg.OpengovernanceNamespace,
-		Name:      "kaytu-version",
+		Name:      "platform-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]
