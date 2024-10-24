@@ -37,6 +37,7 @@ type OIDCConfig struct {
 	TenantID     string `json:"tenantID,omitempty"` // Added TenantID for entraid sub-type
 	ClientID     string `json:"clientID"`
 	ClientSecret string `json:"clientSecret"`
+	Name 			string `json:"name,omitempty"`
 }
 type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
 
@@ -75,7 +76,15 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 
 	case "entraid":
 		// Required: tenantID, clientID, clientSecret
+		if   params.TenantID != "" && params.Issuer == "" {
+				issuer, err := fetchEntraIDIssuer(params.TenantID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch issuer for entraid: %w", err)
+				}
+				params.Issuer = issuer
+			}
 		oidcConfig = OIDCConfig{
+			Issuer:       params.Issuer,
 			TenantID:     params.TenantID,
 			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
@@ -183,12 +192,16 @@ func UpdateOIDCConnector(params UpdateConnectorRequest) (*dexapi.UpdateConnector
 				}
 				params.Issuer = issuer
 			}
-			newOIDCConfig = OIDCConfig{
+			
+				newOIDCConfig = OIDCConfig{
 				Issuer:       params.Issuer,
 				TenantID:     params.TenantID, // Ensure TenantID is set for entraid
 				ClientID:     params.ClientID,
 				ClientSecret: params.ClientSecret,
-			}
+				}
+			
+			
+			
 		default:
 			return nil, fmt.Errorf("unsupported connector_sub_type: %s", params.ConnectorSubType)
 		}
@@ -200,10 +213,22 @@ func UpdateOIDCConnector(params UpdateConnectorRequest) (*dexapi.UpdateConnector
 	
 		return nil, fmt.Errorf("failed to marshal new OIDC config: %w", err)
 	}
-	req := &dexapi.UpdateConnectorReq{
+	var req *dexapi.UpdateConnectorReq
+
+	if(params.Name == ""){
+		req = &dexapi.UpdateConnectorReq{
 		Id:        params.ID,
 		NewConfig: configBytes,
 	}
+	}else{
+		req = &dexapi.UpdateConnectorReq{
+		Id:        params.ID,
+		NewConfig: configBytes,
+		NewName: params.Name,
+	}
+}
+
+	
 	return req, nil
 
 	
