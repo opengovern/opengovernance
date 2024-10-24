@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+
 	dexApi "github.com/dexidp/dex/api/v2"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"

@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
+dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
 	dexGrpcAddress        = os.Getenv("DEX_GRPC_ADDR")
 
@@ -74,7 +74,7 @@ func start(ctx context.Context) error {
 
 	// setup postgres connection
 	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
+Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,

@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -64,7 +65,14 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
 	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
 	// connectors
+	v1.GET("/connectors", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
+	v1.GET("/connectors/supported-connector-types", httpserver.AuthorizeHandler(r.GetSupportedType, api2.AdminRole))
+	v1.GET("/connector/:id", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
+	v1.PUT("/connector", httpserver.AuthorizeHandler(r.UpdateConnector, api2.AdminRole))
+	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.DeleteConnector, api2.AdminRole))
+
+
 
 }
 
@@ -638,7 +646,10 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			IsActive: req.IsActive,
 			Username: req.UserName,
 			FullName: req.FullName,
-			Email:    user.Email,
+			Email:   user.Email,
+			
+
+
 		}
 		err = r.db.UpdateUser(update_user)
 		if err != nil {
@@ -835,7 +846,88 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusAccepted)
 }
+// GetConnector godoc
+//
+//	@Summary		Get  Connectors list
+//	@Description	Returns a list  connectors. can have connector type param
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connectors [GET]
 
+func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
+	req := &dexApi.ListConnectorReq{}
+	connectorType := ctx.Param("connector_type")
+	// Create a context with timeout for the gRPC call.
+	dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+	// Execute the ListConnectors RPC.
+	respDex, err := dexClient.ListConnectors(context.TODO(), req)
+	if err != nil {
+		r.logger.Error("failed to list connectors", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to list connectors")
+	
+	}
+
+	connectors := respDex.Connectors
+
+	var resp []api.GetConnectorsResponse
+	for _, connector := range connectors {
+		
+		
+		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
+			continue
+		}
+
+		info := api.GetConnectorsResponse{
+			ID:   connector.Id,
+			Type: connector.Type,
+			Name: connector.Name,
+		}
+
+		// If the connector is of type "oidc", attempt to extract Issuer and ClientID
+		if strings.ToLower(connector.Type) == "oidc" {
+			var config api.OIDCConfig
+			err := json.Unmarshal(connector.Config, &config)
+			if  err != nil {
+				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
+			} else {
+				info.Issuer = config.Issuer
+				info.ClientID = config.ClientID
+				// Note: Omitting ClientSecret for security reasons
+			}
+		}
+
+		resp = append(resp, info)
+	}
+	return ctx.JSON(http.StatusOK, resp)
+}
+
+// GetSupportedConnectors godoc
+//
+//	@Summary		Get Supported Connectors
+//	@Description	Returns a list of supported connectors. 
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connectors/ [GET]
+
+func (r *httpRoutes) GetSupportedType(ctx echo.Context) error {
+	var connectors []api.GetSupportedConnectorTypeResponse
+	for ct, subTypes := range utils.SupportedConnectors {
+		connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
+			ConnectorType: ct,
+			SubTypes:      subTypes,
+		})
+	}
+	return ctx.JSON(http.StatusOK, connectors)
+
+}
 // CreateConnector godoc
 //
 //	@Summary		Create Connector
@@ -844,15 +936,14 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 //	@Tags			connectors
 //	@Produce		json
 //	@Success		200
-//	@Router			/auth/api/v1/connector [post]
-
+//	@Router			/auth/api/v1/connector/supported-connector-types [post]
 func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 	var req api.CreateConnectorRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if req.ConnectorType == "" {
+	if (req.ConnectorType =="" ){
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
 	}
 	connectorTypeLower := strings.ToLower(req.ConnectorType)
@@ -860,15 +951,15 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 	if creator == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is not supported")
 	}
-
-	// default
+	
+	 // default
 	connectorSubTypeLower := "general" // default
 	if req.ConnectorSubType != "" {
 		connectorSubTypeLower = strings.ToLower(req.ConnectorSubType)
 	} else {
 		r.logger.Info("No connector_sub_type specified. Defaulting to 'general'")
 	}
-	if utils.IsSupportedSubType(connectorTypeLower, connectorSubTypeLower) {
+	if !utils.IsSupportedSubType(connectorTypeLower, connectorSubTypeLower) {
 		err := fmt.Sprintf("unsupported connector_sub_type '%s' for connector_type '%s'", connectorSubTypeLower, connectorTypeLower)
 		r.logger.Info(err)
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -882,6 +973,7 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, map[string]string{
 				"error": "issuer is required for 'general' OIDC connector",
 			})
+			
 
 		}
 		// client_id and client_secret are already validated as required in the struct
@@ -889,41 +981,41 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "default-oidc"
-			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "OIDC SSO"
-			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
-			r.logger.Info(err)
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+				r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err := fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
-			r.logger.Info(err)
+			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
+				r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-
+		
 		}
 		// client_id and client_secret are already validated as required in the struct
 
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "entraid-oidc"
-			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-
+			
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Microsoft AzureAD SSO"
-			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-
+			
 		}
 
 	case "google-workspace":
@@ -934,47 +1026,182 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "google-workspace-oidc"
-			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-
+			
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Google Workspace SSO"
-			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-
+			
 		}
 	}
-	dexRequest := utils.CreateConnectorRequest{
-		ConnectorType:    req.ConnectorType,
-		ConnectorSubType: req.ConnectorSubType,
-		Issuer:           req.Issuer,
-		TenantID:         req.TenantID,
-		ClientID:         req.ClientID,
-		ClientSecret:     req.ClientSecret,
-		ID:               req.ID,
-		Name:             req.Name,
-	}
-	dexreq, err := creator(dexRequest)
-	if err != nil {
-		r.logger.Error("Error on Creating dex request", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-	dexClient, err := newDexClient(dexGrpcAddress)
-	if err != nil {
+		dexRequest := utils.CreateConnectorRequest{
+			ConnectorType :  req.ConnectorType,
+			ConnectorSubType : req.ConnectorSubType,
+			Issuer : req.Issuer,
+			TenantID : req.TenantID,
+			ClientID : req.ClientID,
+			ClientSecret : req.ClientSecret,
+			ID : req.ID,
+			Name : req.Name,
+		}
+		dexreq,err := creator(dexRequest)
+		if err != nil {
+			r.logger.Error("Error on Creating dex request",zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+		dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+		res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+		if err != nil {
+			r.logger.Error("failed to create dex connector", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+		}
+		if res.AlreadyExists {
+			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+		}
+		return ctx.NoContent(http.StatusCreated)
+}
+
+// UpdateConnector godoc
+//
+//	@Summary		Update Connector
+//	@Description	Update new OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector [put]
+
+func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
+	var req api.UpdateConnectorRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
-	res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+
+	if (req.ID =="" ){
+		return echo.NewHTTPError(http.StatusBadRequest, "ID required")
+	}
+	// set Connector type to default if not provided
+	if(req.ConnectorType ==""){
+		req.ConnectorType ="oidc"
+	}
+	// set Connector sub type to default if not provided
+	if(req.ConnectorSubType ==""){
+		req.ConnectorSubType ="general"
+	}
+	if !utils.IsSupportedSubType(req.ConnectorType, req.ConnectorSubType) {
+		err := fmt.Sprintf("unsupported connector_sub_type '%s' for connector_type '%s'", req.ConnectorType, req.ConnectorSubType)
+		r.logger.Info(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+
+	}
+	switch req.ConnectorSubType {
+	case "general":
+		// Required: issuer, client_id, client_secret
+		if strings.TrimSpace(req.Issuer) == "" {
+			err:= fmt.Sprintf("Missing 'issuer' for 'general' OIDC connector update")
+			r.logger.Error(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+	case "entraid":
+		// Required: tenant_id, client_id, client_secret
+		if strings.TrimSpace(req.TenantID) == "" {
+			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector update")
+			r.logger.Error(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+			
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+	case "google-workspace":
+		// Required: client_id, client_secret
+		// No additional fields needed
+		// client_id and client_secret are already validated as required in the struct
+
+	default:
+		err:= fmt.Sprintf("unsupported connector_sub_type: %s", req.ConnectorSubType)
+		r.logger.Error(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+		
+	}
+	dexRequest := utils.UpdateConnectorRequest{
+			ConnectorType :  req.ConnectorType,
+			ConnectorSubType : req.ConnectorSubType,
+			Issuer : req.Issuer,
+			TenantID : req.TenantID,
+			ClientID : req.ClientID,
+			ClientSecret : req.ClientSecret,
+			ID : req.ID,
+			Name : req.Name,
+		}
+
+	dexreq,err := utils.UpdateOIDCConnector(dexRequest)	
+	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
-		r.logger.Error("failed to create dex connector", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+	r.logger.Error("failed to create dex client", zap.Error(err))
+	return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
-	if res.AlreadyExists {
-		return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+	
+	res, err := dexClient.UpdateConnector(context.TODO(), dexreq)
+	if err != nil {
+		r.logger.Error("failed to update dex connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to update dex connector")
+
 	}
-	return ctx.NoContent(http.StatusCreated)
+
+	if res.NotFound {
+		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
+	}
+	return ctx.JSON(http.StatusOK, res)
 
 }
+
+// DeleteConnector godoc
+//
+//	@Summary		Delete Connector
+//	@Description	Delete  OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector/:id [Delete]
+
+func (r *httpRoutes) DeleteConnector(ctx echo.Context) error {
+	connectorID := ctx.Param("id")
+	if connectorID == "" {
+		r.logger.Error("Missing connector_id in DeleteConnectorByIDHandler request")
+		return ctx.JSON(http.StatusBadRequest, map[string]string{
+			"error": "connector_id is required in the URL path",
+		})
+	}
+	req := &dexApi.DeleteConnectorReq{
+		Id: connectorID,
+	}
+	dexClient, err := newDexClient(dexGrpcAddress)
+		if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		}
+	resp,err := dexClient.DeleteConnector(context.TODO(), req)
+	if err != nil {
+		r.logger.Error("failed to delete connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to delete connector")
+	}
+	if resp.NotFound {
+		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
+	}
+	return ctx.NoContent(http.StatusAccepted)
+}
+
+

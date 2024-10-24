@@ -4,7 +4,6 @@ import (
 	authApi "github.com/opengovern/opengovernance/pkg/auth/api"
 	"github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
-	"time"
 )
 
 type SetConfigMetadataRequest struct {
