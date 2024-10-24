@@ -744,7 +744,7 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	var kaytuVersionConfig corev1.ConfigMap
 	err := h.kubeClient.Get(echoCtx.Request().Context(), k8sclient.ObjectKey{
 		Namespace: h.cfg.OpengovernanceNamespace,
-		Name:      "kaytu-version",
+		Name:      "platform-version",
 	}, &kaytuVersionConfig)
 	if err == nil {
 		version = kaytuVersionConfig.Data["version"]
@@ -755,6 +755,10 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	onboardClient := client.NewOnboardServiceClient(onboardURL)
 	connections, err := onboardClient.ListSources(ctx, nil)
+	if err != nil {
+		h.logger.Error("failed to list integrations", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
+	}
 
 	integrations := make(map[string][]onboardApi.Connection)
 	for _, c := range connections {
@@ -795,14 +799,9 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	}
 
 	var dexConnectors []api.DexConnectorInfo
-	dexClient, err := newDexClient(h.cfg.DexGrpcAddr)
-	if err != nil {
-		h.logger.Error("failed to create dex client", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-	}
 
-	if dexClient != nil {
-		dexRes, err := dexClient.ListConnectors(context.Background(), &dexApi.ListConnectorReq{})
+	if h.dexClient != nil {
+		dexRes, err := h.dexClient.ListConnectors(context.Background(), &dexApi.ListConnectorReq{})
 		if err != nil {
 			h.logger.Error("failed to list dex connectors", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to list dex connectors")
@@ -822,13 +821,23 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to load data", zap.Error(err))
 	}
+
+	appConfiguration, err := h.db.GetAppConfiguration()
+	if err != nil {
+		h.logger.Error("failed to get workspace", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
+	}
+
+	creationTime := time.Time{}
+	if appConfiguration != nil {
+		creationTime = appConfiguration.CreatedAt
+	}
+
 	response := api.About{
 		DexConnectors:         dexConnectors,
 		AppVersion:            version,
-		WorkspaceCreationTime: time.Time{}, // TODO
-		Users:                 nil,         // TODO
+		WorkspaceCreationTime: creationTime,
 		PrimaryDomainURL:      h.cfg.PrimaryDomainURL,
-		APIKeys:               nil, // TODO
 		Integrations:          integrations,
 		SampleData:            loaded,
 		TotalSpendGoverned:    floatValue,

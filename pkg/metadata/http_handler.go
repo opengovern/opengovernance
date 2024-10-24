@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	dexApi "github.com/dexidp/dex/api/v2"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	api6 "github.com/hashicorp/vault/api"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/pkg/metadata/config"
 	"github.com/opengovern/opengovernance/pkg/metadata/internal/database"
+	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	db2 "github.com/opengovern/opengovernance/services/migrator/db"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"go.uber.org/zap"
@@ -19,6 +21,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"time"
 )
 
 type HttpHandler struct {
@@ -28,12 +31,14 @@ type HttpHandler struct {
 	kubeClient         client.Client
 	vault              vault.VaultSourceConfig
 	vaultSecretHandler vault.VaultSecretHandler
+	dexClient          dexApi.DexClient
 	logger             *zap.Logger
 }
 
 func InitializeHttpHandler(
 	cfg config.Config,
 	logger *zap.Logger,
+	dexClient dexApi.DexClient,
 ) (*HttpHandler, error) {
 	ctx := context.Background()
 
@@ -59,6 +64,20 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	logger.Info("Initialized database", zap.String("database", cfg.Postgres.DB))
+
+	apps, err := db.ListApp()
+	if err != nil {
+		return nil, err
+	}
+	if len(apps) == 0 {
+		err = db.CreateApp(&models.PlatformConfiguration{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	migratorDbCfg := postgres.Config{
 		Host:    cfg.Postgres.Host,
@@ -92,6 +111,7 @@ func InitializeHttpHandler(
 		migratorDb: migratorDb,
 		kubeClient: kubeClient,
 		logger:     logger,
+		dexClient:  dexClient,
 	}
 
 	switch cfg.Vault.Provider {

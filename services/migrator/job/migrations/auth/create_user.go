@@ -38,19 +38,19 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	dbm := db.Database{Orm: orm}
 
+	dexClient, err := newDexClient(conf.DexGrpcAddress)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
+		return err
+	}
+
 	count, err := dbm.GetUsersCount()
 	if err != nil {
 		return err
 	}
 	if count > 0 {
-		logger.Warn("users already exist")
+		logger.Info("users already exist")
 		return nil
-	}
-
-	dexClient, err := newDexClient(conf.DexGrpcAddress)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
-		return err
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(conf.DefaultDexUserPassword), bcrypt.DefaultCost)
@@ -78,9 +78,9 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	user := &db.User{
 
-		Email:    conf.DefaultDexUserEmail,
-		Username: conf.DefaultDexUserEmail,
-		FullName: conf.DefaultDexUserEmail,
+		Email:                 conf.DefaultDexUserEmail,
+		Username:              conf.DefaultDexUserEmail,
+		FullName:              conf.DefaultDexUserEmail,
 		Role:                  role,
 		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 		Connector:             "local",
