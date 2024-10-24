@@ -2,23 +2,19 @@ package onboard
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/vault"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/onboard/config"
-	"os"
-
+	"github.com/opengovern/opengovernance/pkg/onboard/db"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-)
-
-var (
-	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
-	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
-	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
-	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
-	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 )
 
 func Command() *cobra.Command {
@@ -36,6 +32,34 @@ func start(ctx context.Context) error {
 	}
 
 	cfg := koanf.Provide("onboard", config.OnboardConfig{})
+
+	psqlCfg := postgres.Config{
+		Host:    cfg.Postgres.Host,
+		Port:    cfg.Postgres.Port,
+		User:    cfg.Postgres.Username,
+		Passwd:  cfg.Postgres.Password,
+		DB:      cfg.Postgres.DB,
+		SSLMode: cfg.Postgres.SSLMode,
+	}
+	orm, err := postgres.NewClient(&psqlCfg, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+	logger.Info("Connected to the postgres database", zap.String("database", cfg.Postgres.DB))
+
+	onboardDB := db.NewDatabase(orm)
+	err = onboardDB.Initialize()
+	if err != nil {
+		return err
+	}
+	logger.Info("Initialized postgres database: ", zap.String("database", cfg.Postgres.DB))
+
+	mClient := metadata.NewMetadataServiceClient(cfg.Metadata.BaseURL)
+
+	_, err = mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
+	if err != nil && errors.Is(err, metadata.ErrConfigNotFound) {
+		return err
+	}
 
 	var vaultSc vault.VaultSourceConfig
 	switch cfg.Vault.Provider {
@@ -60,8 +84,7 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		ctx,
-		cfg.Postgres.Username, cfg.Postgres.Password, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.DB, cfg.Postgres.SSLMode,
+		onboardDB,
 		cfg.Steampipe.Host, cfg.Steampipe.Port, cfg.Steampipe.DB, cfg.Steampipe.Username, cfg.Steampipe.Password,
 		logger,
 		vaultSc,

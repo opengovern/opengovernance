@@ -27,7 +27,6 @@ func NewInformationService(cfg config.InformationConfig, logger *zap.Logger, csp
 func (s *InformationService) RecordUsage(ctx context.Context, req shared_entities.CspmUsageRequest) error {
 
 	m := model.CspmUsage{
-		WorkspaceId:            req.WorkspaceId,
 		GatherTimestamp:        req.GatherTimestamp,
 		Hostname:               req.Hostname,
 		AwsAccountCount:        req.AwsAccountCount,

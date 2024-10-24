@@ -40,7 +40,7 @@ func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		}
 	}
 
-	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: api.InternalRole}, benchmarkId, connectionIds, timeAt)
+	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, connectionIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err
@@ -85,7 +85,7 @@ func ListBenchmarkControls(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 		}
 	}
 
-	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: api.InternalRole}, benchmarkId, connectionIds, timeAt)
+	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, connectionIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err

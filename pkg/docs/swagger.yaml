@@ -7,7 +7,6 @@ definitions:
     - viewer
     type: string
     x-enum-varnames:
-    - InternalRole
     - AdminRole
     - EditorRole
     - ViewerRole

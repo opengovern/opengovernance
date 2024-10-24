@@ -129,7 +129,7 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 
 	req := httptest.NewRequest(method, path, r)
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
+	req.Header.Add(httpserver.XPlatformUserRoleHeader, string(api2.AdminRole))
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

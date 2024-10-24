@@ -112,7 +112,7 @@ func NewWorker(
 		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 		benchmarkCache:   make(map[string]complianceApi.Benchmark),
 	}
-	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: api.InternalRole}
+	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}
 	benchmarks, err := w.complianceClient.ListAllBenchmarks(ctx2, true)
 	if err != nil {
 		logger.Error("failed to get benchmarks", zap.Error(err))

@@ -117,7 +117,7 @@ func (h API) List(c echo.Context) error {
 	var resp entity.ListConnectionsResponse
 	for _, s := range sources {
 		apiRes := entity.NewConnection(s)
-		if httpserver2.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.AdminRole {
 			apiRes.Credential = entity.NewCredential(s.Credential)
 			apiRes.Credential.Config = s.Credential.Secret
 		}
@@ -153,7 +153,7 @@ func (h API) Get(c echo.Context) error {
 	var res []entity.Connection
 	for _, conn := range conns {
 		apiRes := entity.NewConnection(conn)
-		if httpserver2.GetUserRole(c) == api.InternalRole {
+		if httpserver2.GetUserRole(c) == api.AdminRole {
 			apiRes.Credential = entity.NewCredential(conn.Credential)
 			apiRes.Credential.Config = conn.Credential.Secret
 		}
@@ -352,13 +352,13 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectionData := map[string]inventoryAPI.ConnectionData{}
 	if needResourceCount || needCost {
-		connectionData, err = h.connSvc.Data(httpclient.FromEchoContext(c), nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
+		connectionData, err = h.connSvc.Data(&httpclient.Context{UserRole: api.AdminRole}, nil, resourceCollections, &startTime, &endTime, needCost, needResourceCount)
 		if err != nil {
 			return err
 		}
 	}
 
-	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.InternalRole})
+	pendingDescribeConnections, err := h.connSvc.Pending(&httpclient.Context{UserRole: api.AdminRole})
 	if err != nil {
 		return err
 	}
@@ -983,7 +983,7 @@ func (h API) AWSCreate(c echo.Context) error {
 
 func (s API) Register(g *echo.Group) {
 	g.GET("", httpserver2.AuthorizeHandler(s.List, api.ViewerRole))
-	g.POST("", httpserver2.AuthorizeHandler(s.Get, api.KaytuAdminRole))
+	g.POST("", httpserver2.AuthorizeHandler(s.Get, api.AdminRole))
 	g.GET("/count", httpserver2.AuthorizeHandler(s.Count, api.ViewerRole))
 	g.GET("/summaries", httpserver2.AuthorizeHandler(s.Summaries, api.ViewerRole))
 	g.POST("/aws", httpserver2.AuthorizeHandler(s.AWSCreate, api.EditorRole))

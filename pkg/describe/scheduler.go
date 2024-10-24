@@ -135,8 +135,6 @@ type Scheduler struct {
 	keyARN                       string
 	keyRegion                    string
 
-	WorkspaceName string
-
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
@@ -323,8 +321,6 @@ func InitializeScheduler(
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
-
-	s.WorkspaceName = CurrentWorkspaceName
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
@@ -577,7 +573,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue

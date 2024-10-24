@@ -2,19 +2,16 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	dexApi "github.com/dexidp/dex/api/v2"
-	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 type Migration struct{}
@@ -46,7 +43,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 	if count > 0 {
-		logger.Warn("users already exist")
+		logger.Info("users already exist")
 		return nil
 	}
 
@@ -59,6 +56,40 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(conf.DefaultDexUserPassword), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Error("Auth Migrator: failed to generate password", zap.Error(err))
+		return err
+	}
+
+	publicUris := strings.Split(conf.DexPublicClientRedirectUris, ",")
+
+	publicClientReq := dexApi.CreateClientReq{
+		Client: &dexApi.Client{
+			Id:           "public-client",
+			Name:         "Public Client",
+			RedirectUris: publicUris,
+			Public:       true,
+		},
+	}
+
+	_, err = dexClient.CreateClient(ctx, &publicClientReq)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
+		return err
+	}
+
+	privateUris := strings.Split(conf.DexPrivateClientRedirectUris, ",")
+
+	privateClientReq := dexApi.CreateClientReq{
+		Client: &dexApi.Client{
+			Id:           "private-client",
+			Name:         "Private Client",
+			RedirectUris: privateUris,
+			Secret:       "secret",
+		},
+	}
+
+	_, err = dexClient.CreateClient(ctx, &privateClientReq)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
 		return err
 	}
 
@@ -77,49 +108,18 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	wm, err := dbm.GetWorkspaceMapByName("main")
-	if err != nil {
-		logger.Error("Auth Migrator: failed to get workspace", zap.Error(err))
-		return err
-	}
-
 	role := api.AdminRole
 
-	var appMetadata auth0.Metadata
-	appMetadata.WorkspaceAccess = map[string]api.Role{
-		wm.ID: role,
-	}
-	appMetadataJson, err := json.Marshal(appMetadata)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to marshal app metadata json", zap.Error(err))
-		return err
-	}
-
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJson)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to set app metadata json", zap.Error(err))
-		return err
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set([]byte(""))
-	if err != nil {
-		return err
-	}
-
 	user := &db.User{
-		UserUuid:     uuid.New(),
-		Email:        conf.DefaultDexUserEmail,
-		Username:     conf.DefaultDexUserEmail,
-		Name:         conf.DefaultDexUserEmail,
-		IdLifecycle:  db.UserLifecycleActive,
-		Role:         role,
-		UserId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		AppMetadata:  appMetadataJsonb,
-		UserMetadata: userMetadataJsonb,
-		StaticOwner:  true,
-		Connector:    "local",
+
+		Email:                 conf.DefaultDexUserEmail,
+		Username:              conf.DefaultDexUserEmail,
+		FullName:              conf.DefaultDexUserEmail,
+		Role:                  role,
+		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+		Connector:             "local",
+		IsActive:              true,
+		RequirePasswordChange: true,
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {

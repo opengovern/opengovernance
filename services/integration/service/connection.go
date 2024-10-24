@@ -216,7 +216,7 @@ func (h Connection) MaxConnections(ctx context.Context) (int64, error) {
 	ctx, span := h.tracer.Start(ctx, "count-by-credential")
 	defer span.End()
 
-	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyConnectionLimit)
+	cnf, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeyConnectionLimit)
 	if err != nil {
 		return 0, err
 	}

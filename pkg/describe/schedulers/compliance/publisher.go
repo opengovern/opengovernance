@@ -16,7 +16,7 @@ import (
 
 func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 	s.logger.Info("runPublisher")
-	ctx2 := &httpclient.Context{UserRole: api.InternalRole}
+	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
 	ctx2.Ctx = ctx
 	connectionsMap := make(map[string]*onboardApi.Connection)
 	connections, err := s.onboardClient.ListSources(ctx2, nil)

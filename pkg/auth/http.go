@@ -6,85 +6,66 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
+	api2 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"net/http"
-	"net/url"
-	"reflect"
-	"strings"
-	"time"
-
-	api2 "github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/og-util/pkg/httpserver"
-
-	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
 
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opengovernance/pkg/auth/api"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-var (
-	//go:embed email/invite.html
-	inviteEmailTemplate string
-)
+// var (
+// 	//go:embed email/invite.html
+// 	inviteEmailTemplate string
+// )
 
 type httpRoutes struct {
 	logger *zap.Logger
-	//emailService    email.Service
-	complianceClient  client2.ComplianceServiceClient
-	integrationClient client3.IntegrationServiceClient
-	schedulerClient   client4.SchedulerServiceClient
-	auth0Service      *auth0.Service
-	metadataBaseUrl   string
-	kaytuPrivateKey   *rsa.PrivateKey
-	db                db.Database
-	authServer        *Server
+
+	platformPrivateKey *rsa.PrivateKey
+	db                 db.Database
+	authServer         *Server
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-
+	// VAlidate token
 	v1.GET("/check", r.Check)
+	// USERS
+	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))                                      //checked
+	v1.GET("/user/:id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))                             //checked
+	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))                                            //checked
+	v1.POST("/user", httpserver.AuthorizeHandler(r.CreateUser, api2.EditorRole))                                    //checked
+	v1.PUT("/user", httpserver.AuthorizeHandler(r.UpdateUser, api2.EditorRole))                                     //checked
+	v1.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole)) //checked
+	v1.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))              //checked
+	v1.DELETE("/user/:id", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))                               //checked
+	// API KEYS
+	v1.POST("/keys", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.AdminRole)) //checked
+	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.AdminRole))   //checked
+	v1.DELETE("/key/:id", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.AdminRole))
+	v1.PUT("/key/:id", httpserver.AuthorizeHandler(r.EditAPIKey, api2.AdminRole))
+	// connectors
+	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 
-	v1.PUT("/user/role/binding", httpserver.AuthorizeHandler(r.PutRoleBinding, api2.AdminRole))
-	v1.DELETE("/user/role/binding", httpserver.AuthorizeHandler(r.DeleteRoleBinding, api2.AdminRole))
-	v1.GET("/user/role/bindings", httpserver.AuthorizeHandler(r.GetRoleBindings, api2.EditorRole))
-	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api2.AdminRole))
-	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api2.EditorRole))
-	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api2.EditorRole))
-	v1.GET("/me", httpserver.AuthorizeHandler(r.GetMe, api2.EditorRole))
-	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api2.AdminRole))
-	v1.PUT("/user/preferences", httpserver.AuthorizeHandler(r.ChangeUserPreferences, api2.ViewerRole))
-
-	v1.POST("/key/create", httpserver.AuthorizeHandler(r.CreateAPIKey, api2.EditorRole))
-	v1.GET("/keys", httpserver.AuthorizeHandler(r.ListAPIKeys, api2.EditorRole))
-	v1.DELETE("/key/:name/delete", httpserver.AuthorizeHandler(r.DeleteAPIKey, api2.EditorRole))
-
-	v3 := e.Group("/api/v3")
-	v3.POST("/user/create", httpserver.AuthorizeHandler(r.CreateUser, api2.ViewerRole))
-	v3.POST("/user/update", httpserver.AuthorizeHandler(r.UpdateUser, api2.ViewerRole))
-	v3.GET("/user/password/check", httpserver.AuthorizeHandler(r.CheckUserPasswordChangeRequired, api2.ViewerRole))
-	v3.POST("/user/password/reset", httpserver.AuthorizeHandler(r.ResetUserPassword, api2.ViewerRole))
-	v3.DELETE("/user/:email_address/delete", httpserver.AuthorizeHandler(r.DeleteUser, api2.AdminRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -147,201 +128,6 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// PutRoleBinding godoc
-//
-//	@Summary		Update User Role
-//	@Description	Updates the role of a user in the workspace.
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Param			request	body		api.PutRoleBindingRequest	true	"Request Body"
-//	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/user/role/binding [put]
-func (r *httpRoutes) PutRoleBinding(ctx echo.Context) error {
-	var req api.PutRoleBindingRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-
-	if httpserver.GetUserID(ctx) == req.UserID {
-		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
-	}
-
-	// The WorkspaceManager service will call this API to set the AdminRole
-	// for the admin user on behalf of him. Allow for the Admin to only set its
-	// role to admin for that user case
-	auth0User, err := r.auth0Service.GetUser(req.UserID)
-	if err != nil {
-		return err
-	}
-
-	if _, ok := auth0User.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
-		hctx := httpclient.FromEchoContext(ctx)
-		metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
-		cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
-		if err != nil {
-			return err
-		}
-		maxUsers := cnf.GetValue().(int)
-
-		users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
-		if err != nil {
-			return err
-		}
-
-		if len(users)+1 > maxUsers {
-			return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
-		}
-	}
-
-	auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
-
-	if auth0User.AppMetadata.ConnectionIDs == nil {
-		auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
-	}
-	auth0User.AppMetadata.ConnectionIDs[workspaceID] = req.ConnectionIDs
-	err = r.auth0Service.PatchUserAppMetadata(req.UserID, auth0User.AppMetadata, nil)
-	if err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
-}
-
-// DeleteRoleBinding godoc
-//
-//	@Summary		Revoke User Access
-//	@Description	Revokes a user's access to the workspace
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Param			userId	query		string	true	"User ID"
-//	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/user/role/binding [delete]
-func (r *httpRoutes) DeleteRoleBinding(ctx echo.Context) error {
-	userId := ctx.QueryParam("userId")
-	if httpserver.GetUserID(ctx) == userId {
-		return echo.NewHTTPError(http.StatusBadRequest, "admin user permission can't be modified by self")
-	}
-
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	auth0User, err := r.auth0Service.GetUser(userId)
-	if err != nil {
-		return err
-	}
-
-	delete(auth0User.AppMetadata.WorkspaceAccess, workspaceID)
-	if len(auth0User.AppMetadata.WorkspaceAccess) == 0 {
-		auth0User.AppMetadata.WorkspaceAccess = nil
-	}
-
-	err = r.auth0Service.PatchUserAppMetadata(userId, auth0User.AppMetadata, nil)
-	if err != nil {
-		return err
-	}
-	return ctx.NoContent(http.StatusOK)
-}
-
-// GetRoleBindings godoc
-//
-//	@Summary		Get User Roles
-//	@Description	Retrieves the roles that the user who sent the request has in all workspaces they are a member of.
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Success		200	{object}	api.GetRoleBindingsResponse
-//	@Router			/auth/api/v1/user/role/bindings [get]
-func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
-	userID := httpserver.GetUserID(ctx)
-
-	var resp api.GetRoleBindingsResponse
-	usr, err := r.auth0Service.GetUser(userID)
-	if err != nil {
-		r.logger.Warn("failed to get user from auth0 due to", zap.Error(err))
-		return err
-	}
-
-	if usr != nil {
-		for wsID, role := range usr.AppMetadata.WorkspaceAccess {
-			resp.RoleBindings = append(resp.RoleBindings, api.UserRoleBinding{
-				WorkspaceID: wsID,
-				RoleName:    role,
-			})
-		}
-		resp.GlobalRoles = usr.AppMetadata.GlobalAccess
-
-		timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
-		doUpdate := false
-		if usr.AppMetadata.MemberSince == nil {
-			usr.AppMetadata.MemberSince = &timeNow
-			doUpdate = true
-		}
-		if usr.AppMetadata.LastLogin == nil || *usr.AppMetadata.LastLogin != timeNow {
-			usr.AppMetadata.LastLogin = &timeNow
-			usr.LastLogin = time.Now()
-			doUpdate = true
-		}
-
-		if doUpdate {
-			err = r.auth0Service.PatchUserAppMetadata(usr.UserId, usr.AppMetadata, &usr.LastLogin)
-			if err != nil {
-				r.logger.Error("failed to update user metadata", zap.String("userId", userID), zap.Error(err))
-			}
-		}
-	} else {
-		r.logger.Warn("user not found in auth0", zap.String("externalID", userID))
-	}
-	return ctx.JSON(http.StatusOK, resp)
-}
-
-// GetWorkspaceRoleBindings godoc
-//
-//	@Summary		Workspace user roleBindings.
-//	@Description	Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.opengovernance.io)
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Success		200	{object}	api.GetWorkspaceRoleBindingResponse
-//	@Router			/auth/api/v1/workspace/role/bindings [get]
-func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
-	userID := httpserver.GetUserID(ctx)
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	users, err := r.auth0Service.SearchUsersByWorkspace(workspaceID)
-	if err != nil {
-		return err
-	}
-
-	var resp api.GetWorkspaceRoleBindingResponse
-	userHasAccess := false
-	for _, u := range users {
-		status := api.InviteStatus_PENDING
-		if u.EmailVerified {
-			status = api.InviteStatus_ACCEPTED
-		}
-		if u.UserId == userID {
-			userHasAccess = true
-		}
-
-		resp = append(resp, api.WorkspaceRoleBinding{
-			UserID:              u.UserId,
-			UserName:            u.Name,
-			Email:               u.Email,
-			RoleName:            u.AppMetadata.WorkspaceAccess[workspaceID],
-			Status:              status,
-			LastActivity:        u.AppMetadata.LastLogin,
-			CreatedAt:           u.AppMetadata.MemberSince,
-			ScopedConnectionIDs: u.AppMetadata.ConnectionIDs[workspaceID],
-		})
-	}
-
-	if !userHasAccess && userID != api2.GodUserID {
-		//TODO-Saleh
-		r.logger.Error("access denied!!!", zap.String("userID", userID), zap.String("workspaceID", workspaceID))
-	}
-	return ctx.JSON(http.StatusOK, resp)
-}
-
 // GetUsers godoc
 //
 //	@Summary		List Users
@@ -353,26 +139,34 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Success		200		{array}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
+
 	var req api.GetUsersRequest
 	if err := ctx.Bind(&req); err != nil {
 		ctx.Logger().Errorf("bind the request: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
-	users, err := r.auth0Service.SearchUsers(workspaceID, req.Email, req.EmailVerified, req.RoleName)
+	users, err := r.db.GetUsers()
 	if err != nil {
 		return err
 	}
 	var resp []api.GetUsersResponse
 	for _, u := range users {
-
-		resp = append(resp, api.GetUsersResponse{
-			UserID:        u.UserId,
-			UserName:      u.Name,
+		temp_resp := api.GetUsersResponse{
+			ID:            u.ID,
+			UserName:      u.Username,
 			Email:         u.Email,
 			EmailVerified: u.EmailVerified,
-			RoleName:      u.AppMetadata.WorkspaceAccess[workspaceID],
-		})
+			ExternalId:    u.ExternalId,
+			CreatedAt:     u.CreatedAt,
+			LastActivity:  u.LastLogin,
+			RoleName:      u.Role,
+			IsActive:      u.IsActive,
+		}
+		if u.LastLogin.IsZero() {
+			temp_resp.LastActivity = nil
+		}
+		resp = append(resp, temp_resp)
+
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }
@@ -388,40 +182,30 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Success		200		{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/user/{userId} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-	userID := ctx.Param("user_id")
+
+	userID := ctx.Param("id")
 	userID, err := url.QueryUnescape(userID)
 	if err != nil {
 		return err
 	}
-	user, err := r.auth0Service.GetUser(userID)
+	user, err := r.db.GetUser(userID)
 	if err != nil {
 		return err
 	}
-	hasARole := false
-	for ws, _ := range user.AppMetadata.WorkspaceAccess {
-		if ws == workspaceID {
-			hasARole = true
-			break
-		}
-	}
-	if hasARole == false {
-		return echo.NewHTTPError(http.StatusBadRequest, "The user is not in the specified workspace.")
-	}
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
+
 	resp := api.GetUserResponse{
-		UserID:        user.UserId,
-		UserName:      user.Name,
+		ID:            user.ID,
+		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		Status:        status,
 		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
-		Blocked:       user.Blocked,
-		RoleName:      user.AppMetadata.WorkspaceAccess[workspaceID],
+		Blocked:       user.IsActive,
+		RoleName:      user.Role,
+	}
+	// check if LastLogin is Default go time value remove it
+	if user.LastLogin.IsZero() {
+		resp.LastActivity = nil
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -440,171 +224,32 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 func (r *httpRoutes) GetMe(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 
-	user, err := r.auth0Service.GetUser(userID)
+	user, err := utils.GetUser(userID, r.db)
 	if err != nil {
 		return err
 	}
 
-	status := api.InviteStatus_PENDING
-	if user.EmailVerified {
-		status = api.InviteStatus_ACCEPTED
-	}
 	resp := api.GetMeResponse{
-		UserID:          user.UserId,
-		UserName:        user.Name,
-		Email:           user.Email,
-		EmailVerified:   user.EmailVerified,
-		Status:          status,
-		LastActivity:    user.LastLogin,
-		CreatedAt:       user.CreatedAt,
-		Blocked:         user.Blocked,
-		Theme:           user.AppMetadata.Theme,
-		ColorBlindMode:  user.AppMetadata.ColorBlindMode,
-		WorkspaceAccess: user.AppMetadata.WorkspaceAccess,
-		MemberSince:     user.AppMetadata.MemberSince,
-		LastLogin:       user.AppMetadata.LastLogin,
+
+		ID:            user.ID,
+		UserName:      user.Username,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		LastActivity:  user.LastLogin,
+		CreatedAt:     user.CreatedAt,
+		Blocked:       user.IsActive,
+		Role:          user.Role,
+		MemberSince:   user.CreatedAt,
+		LastLogin:     user.LastLogin,
+	}
+	if user.LastLogin.IsZero() {
+		resp.LastLogin = nil
+		resp.LastActivity = nil
+
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
 
-}
-
-// Invite godoc
-//
-//	@Summary		Invite User
-//	@Description	Sends an invitation to a user to join the workspace with a designated role.
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Param			request	body		api.InviteRequest	true	"Request Body"
-//	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/user/invite [post]
-func (r *httpRoutes) Invite(ctx echo.Context) error {
-	var req api.InviteRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-	workspaceID := httpserver.GetWorkspaceID(ctx)
-
-	hctx := httpclient.FromEchoContext(ctx)
-
-	metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
-	cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
-	if err != nil {
-		return err
-	}
-
-	allowInvite := cnf.GetValue().(bool)
-	if !allowInvite {
-		return echo.NewHTTPError(http.StatusNotAcceptable, "invite not allowed")
-	}
-
-	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
-	if err != nil {
-		return err
-	}
-	maxUsers := cnf.GetValue().(int)
-
-	users, err := r.auth0Service.SearchUsers(workspaceID, nil, nil, nil)
-	if err != nil {
-		return err
-	}
-	if len(users)+1 > maxUsers {
-		return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
-	}
-
-	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowedEmailDomains)
-	if err != nil {
-		return err
-	}
-
-	if allowedEmailDomains, ok := cnf.GetValue().([]string); ok {
-		passed := false
-		if len(allowedEmailDomains) > 0 {
-			for _, domain := range allowedEmailDomains {
-				if strings.HasSuffix(req.Email, domain) {
-					passed = true
-				}
-			}
-		} else {
-			passed = true
-		}
-
-		if !passed {
-			return echo.NewHTTPError(http.StatusNotAcceptable, "email domain not allowed")
-		}
-	} else {
-		fmt.Printf("failed to parse allowed domains, type: %s, value: %v", reflect.TypeOf(cnf.GetValue()).Name(), cnf.GetValue())
-	}
-
-	us, err := r.auth0Service.SearchByEmail(req.Email)
-	if err != nil {
-		return err
-	}
-
-	if len(us) > 0 {
-		auth0User := us[0]
-		if auth0User.AppMetadata.WorkspaceAccess == nil {
-			auth0User.AppMetadata.WorkspaceAccess = map[string]api2.Role{}
-		}
-		auth0User.AppMetadata.WorkspaceAccess[workspaceID] = req.RoleName
-		err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata, nil)
-		if err != nil {
-			return err
-		}
-
-		//emailContent := inviteEmailTemplate
-		//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
-		//if err != nil {
-		//	return err
-		//}
-	} else {
-		_, err := r.auth0Service.CreateUser(req.Email, workspaceID, req.RoleName)
-		if err != nil {
-			return err
-		}
-
-		//emailContent := inviteEmailTemplate
-		//err = r.emailService.SendEmail(ctx.Request().Context(), req.Email, emailContent)
-		//if err != nil {
-		//	return err
-		//}
-	}
-
-	return ctx.NoContent(http.StatusOK)
-}
-
-// ChangeUserPreferences godoc
-//
-//	@Summary		Change User Preferences
-//	@Description	Changes user color blind mode and color mode
-//	@Security		BearerToken
-//	@Tags			users
-//	@Produce		json
-//	@Param			request	body		api.ChangeUserPreferencesRequest	true	"Request Body"
-//	@Success		200		{object}	nil
-//	@Router			/auth/api/v1/user/preferences [put]
-func (r *httpRoutes) ChangeUserPreferences(ctx echo.Context) error {
-	var req api.ChangeUserPreferencesRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	userId := httpserver.GetUserID(ctx)
-	auth0User, err := r.auth0Service.GetUser(userId)
-	if err != nil {
-		return err
-	}
-
-	auth0User.AppMetadata.ColorBlindMode = &req.EnableColorBlindMode
-	auth0User.AppMetadata.Theme = &req.Theme
-
-	err = r.auth0Service.PatchUserAppMetadata(auth0User.UserId, auth0User.AppMetadata, nil)
-	if err != nil {
-		return err
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 // CreateAPIKey godoc
@@ -625,7 +270,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	usr, err := r.auth0Service.GetUser(userID)
+	usr, err := utils.GetUser(userID, r.db)
 	if err != nil {
 		r.logger.Error("failed to get user", zap.Error(err))
 		return err
@@ -636,24 +281,22 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	u := userClaim{
-		WorkspaceAccess: map[string]api2.Role{
-			"opengovernance": api2.EditorRole,
-		},
-		GlobalAccess:   nil,
+		Role: api2.EditorRole,
+
 		Email:          usr.Email,
-		ExternalUserID: usr.UserId,
+		ExternalUserID: usr.ExternalId,
 	}
 
-	if r.kaytuPrivateKey == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "opengovernance api key is disabled")
+	if r.platformPrivateKey == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "platform api key is disabled")
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.platformPrivateKey)
 	if err != nil {
 		r.logger.Error("failed to create token", zap.Error(err))
 		return err
 	}
 
-	masked := fmt.Sprintf("%s...%s", token[:3], token[len(token)-2:])
+	masked := fmt.Sprintf("%s...%s", token[:10], token[len(token)-10:])
 
 	hash := sha512.New()
 	_, err = hash.Write([]byte(token))
@@ -675,11 +318,9 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	r.logger.Info("creating API Key")
 	apikey := db.ApiKey{
 		Name:          req.Name,
-		Role:          api2.EditorRole,
+		Role:          req.Role,
 		CreatorUserID: userID,
-		WorkspaceID:   "opengovernance",
-		Active:        true,
-		Revoked:       false,
+		IsActive:      true,
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
@@ -691,10 +332,10 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
+	return ctx.JSON(http.StatusCreated, api.CreateAPIKeyResponse{
 		ID:        apikey.ID,
 		Name:      apikey.Name,
-		Active:    apikey.Active,
+		Active:    apikey.IsActive,
 		CreatedAt: apikey.CreatedAt,
 		RoleName:  apikey.Role,
 		Token:     token,
@@ -712,43 +353,48 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 //	@Success		200	{object}	nil
 //	@Router			/auth/api/v1/key/{id}/delete [delete]
 func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
-	userId := httpserver.GetUserID(ctx)
-	name := ctx.Param("name")
+	// TODO: Ask from ANIL what should i do
+	// userId := httpserver.GetUserID(ctx)
+	id := ctx.Param("id")
 
-	keys, err := r.db.ListApiKeysForUser(userId)
+	integer_id, err := (strconv.ParseUint(id, 10, 32))
+
+	err = r.db.DeleteAPIKey(integer_id)
 	if err != nil {
 		return err
 	}
 
-	var keyId uint
-	exists := false
-	for _, key := range keys {
-		if key.Name == name {
-			keyId = key.ID
-			exists = true
-		}
+	return ctx.NoContent(http.StatusAccepted)
+}
+func (r *httpRoutes) EditAPIKey(ctx echo.Context) error {
+	// TODO: Ask from ANIL what should i do
+	// userId := httpserver.GetUserID(ctx)
+	var req api.EditAPIKeyRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if !exists {
-		return echo.NewHTTPError(http.StatusBadRequest, "key not found")
+	id := ctx.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
 
-	err = r.db.RevokeUserAPIKey(userId, keyId)
+	err := r.db.UpdateAPIKey(id, req.IsActive, req.Role)
 	if err != nil {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
 }
 
 // ListAPIKeys godoc
 //
-//	@Summary		Get Workspace Keys
-//	@Description	Gets list of all keys in the workspace.
+//	@Summary		Get API keys List
+//	@Description	Gets list of all keys.
 //	@Security		BearerToken
 //	@Tags			keys
 //	@Produce		json
-//	@Success		200	{object}	[]api.WorkspaceApiKey
+//	@Success		200	{object}	[]api.APIKeyResponse
 //	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
@@ -757,15 +403,15 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 		return err
 	}
 
-	var resp []api.WorkspaceApiKey
+	var resp []api.APIKeyResponse
 	for _, key := range keys {
-		resp = append(resp, api.WorkspaceApiKey{
+		resp = append(resp, api.APIKeyResponse{
 			ID:            key.ID,
 			CreatedAt:     key.CreatedAt,
 			Name:          key.Name,
 			RoleName:      key.Role,
 			CreatorUserID: key.CreatorUserID,
-			Active:        key.Active,
+			Active:        key.IsActive,
 			MaskedKey:     key.MaskedKey,
 		})
 	}
@@ -782,8 +428,9 @@ func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body	api.CreateUserRequest	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/create [post]
+//	@Router			/auth/api/v1/user [post]
 func (r *httpRoutes) CreateUser(ctx echo.Context) error {
+
 	var req api.CreateUserRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
@@ -794,10 +441,11 @@ func (r *httpRoutes) CreateUser(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
+
 	if req.EmailAddress == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
 	}
@@ -814,15 +462,14 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 	adminAccount := false
 	var firstUser *db.User
+
 	if count == 1 {
 		firstUser, err = r.db.GetFirstUser()
 		if err != nil {
 			r.logger.Error("failed to get first user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get first user")
 		}
-		if firstUser.StaticOwner {
-			adminAccount = true
-		}
+
 	} else if count == 0 {
 		adminAccount = true
 	}
@@ -880,39 +527,9 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		}
 	}
 
-	wm, err := r.db.GetWorkspaceMapByName("main")
-	if err != nil {
-		r.logger.Error("failed to get main workspace", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
-	}
-
 	role := api2.ViewerRole
 	if req.Role != nil {
 		role = *req.Role
-	}
-
-	var appMetadata auth0.Metadata
-	appMetadata.WorkspaceAccess = map[string]api2.Role{
-		wm.ID: role,
-	}
-
-	timeNow := time.Now().Format("2006-01-02 15:00:00 MST")
-	appMetadata.MemberSince = &timeNow
-	appMetadataJson, err := json.Marshal(appMetadata)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
-	}
-
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJson)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal app metadata")
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set([]byte(""))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal user metadata")
 	}
 
 	requirePasswordChange := true
@@ -921,17 +538,15 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	newUser := &db.User{
-		UserUuid:              uuid.New(),
 		Email:                 req.EmailAddress,
 		Username:              req.EmailAddress,
-		Name:                  req.EmailAddress,
-		IdLifecycle:           db.UserLifecycleActive,
+		FullName:              req.EmailAddress,
 		Role:                  role,
-		UserId:                userId,
-		AppMetadata:           appMetadataJsonb,
-		UserMetadata:          userMetadataJsonb,
+		EmailVerified:         false,
 		Connector:             connector,
+		ExternalId:            userId,
 		RequirePasswordChange: requirePasswordChange,
+		IsActive:              true,
 	}
 	err = r.db.CreateUser(newUser)
 	if err != nil {
@@ -950,7 +565,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 //	@Produce		json
 //	@Param			request	body	api.UpdateUserRequest	true	"Request Body"
 //	@Success		200
-//	@Router			/auth/api/v3/user/update [post]
+//	@Router			/auth/api/v1/user [put]
 func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 	var req api.UpdateUserRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1007,32 +622,28 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			}
 		}
 
-		err = r.db.UserPasswordUpdatedByEmail(req.EmailAddress)
+		err = r.db.UserPasswordUpdate(user.ID)
 		if err != nil {
 			r.logger.Error("failed to update user", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 		}
 	}
 
-	wm, err := r.db.GetWorkspaceMapByName("main")
-	if err != nil {
-		r.logger.Error("failed to get main workspace", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get workspace")
-	}
-
 	if req.Role != nil {
-		auth0User, err := r.auth0Service.GetUser(user.UserId)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+		update_user := &db.User{
+			Model: gorm.Model{
+				ID: user.ID,
+			},
+			Role:     *req.Role,
+			IsActive: req.IsActive,
+			Username: req.UserName,
+			FullName: req.FullName,
+			Email:    user.Email,
 		}
-		auth0User.AppMetadata.WorkspaceAccess[wm.ID] = *req.Role
-
-		if auth0User.AppMetadata.ConnectionIDs == nil {
-			auth0User.AppMetadata.ConnectionIDs = map[string][]string{}
-		}
-		err = r.auth0Service.PatchUserAppMetadata(user.UserId, auth0User.AppMetadata, nil)
+		err = r.db.UpdateUser(update_user)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user role")
+			r.logger.Error("failed to update user", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 		}
 	}
 
@@ -1050,50 +661,45 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/auth/api/v3/user/{email_address}/delete [delete]
 func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
-	emailAddress := ctx.Param("email_address")
-	if emailAddress == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "email address is required")
+	id := ctx.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
 
-	err := r.DoDeleteUser(emailAddress)
+	err := r.DoDeleteUser(id)
 	if err != nil {
 		return err
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
 }
 
-func (r *httpRoutes) DoDeleteUser(emailAddress string) error {
+func (r *httpRoutes) DoDeleteUser(id string) error {
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
 
-	dexReq := &dexApi.DeletePasswordReq{
-		Email: emailAddress,
-	}
+	user, err2 := r.db.GetUser(id)
 
-	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
-	if err != nil {
-		r.logger.Error("failed to create dex password", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex password")
-	}
-
-	user, err := r.db.GetUserByEmail(emailAddress)
-	if err != nil {
+	if err2 != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
 	if user == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
-
-	err = r.db.DeleteUserWithEmail(emailAddress)
-	if err != nil {
-		r.logger.Error("failed to delete user", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
+	dexReq := &dexApi.DeletePasswordReq{
+		Email: user.Email,
 	}
-	err = r.db.DeleteUser(user.UserId)
+
+	_, err = dexClient.DeletePassword(context.TODO(), dexReq)
+	if err != nil {
+		r.logger.Error("failed to remove dex password", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to remove dex password")
+	}
+
+	err = r.db.DeleteUser(user.ID)
 	if err != nil {
 		r.logger.Error("failed to delete user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create user")
@@ -1121,7 +727,7 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 	userId := httpserver.GetUserID(ctx)
 
-	user, err := r.db.GetUser(userId)
+	user, err := r.db.GetUserByExternalID(userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
@@ -1141,14 +747,15 @@ func (r *httpRoutes) CheckUserPasswordChangeRequired(ctx echo.Context) error {
 //	@Summary		Reset current user password
 //	@Description	Reset current user password
 //	@Security		BearerToken
-//	@Tags			keys
+//	@Tags			user
 //	@Produce		json
 //	@Success		200
 //	@Router			/auth/api/v3/user/password/reset [post]
 func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
+
 	userId := httpserver.GetUserID(ctx)
 
-	user, err := r.db.GetUser(userId)
+	user, err := r.db.GetUserByExternalID(userId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
@@ -1185,7 +792,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
 	if !resp.Verified {
-		return echo.NewHTTPError(http.StatusUnauthorized, "current password is not correct")
+		return echo.NewHTTPError(http.StatusUnauthorized, "current password is incorrect")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -1220,11 +827,154 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		}
 	}
 
-	err = r.db.UserPasswordUpdatedByEmail(user.Email)
+	err = r.db.UserPasswordUpdate(user.ID)
 	if err != nil {
 		r.logger.Error("failed to update user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to update user")
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusAccepted)
+}
+
+// CreateConnector godoc
+//
+//	@Summary		Create Connector
+//	@Description	Creates new OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector [post]
+
+func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
+	var req api.CreateConnectorRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	if req.ConnectorType == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
+	}
+	connectorTypeLower := strings.ToLower(req.ConnectorType)
+	creator := utils.GetConnectorCreator(connectorTypeLower)
+	if creator == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector type is not supported")
+	}
+
+	// default
+	connectorSubTypeLower := "general" // default
+	if req.ConnectorSubType != "" {
+		connectorSubTypeLower = strings.ToLower(req.ConnectorSubType)
+	} else {
+		r.logger.Info("No connector_sub_type specified. Defaulting to 'general'")
+	}
+	if utils.IsSupportedSubType(connectorTypeLower, connectorSubTypeLower) {
+		err := fmt.Sprintf("unsupported connector_sub_type '%s' for connector_type '%s'", connectorSubTypeLower, connectorTypeLower)
+		r.logger.Info(err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+
+	}
+	switch connectorSubTypeLower {
+	case "general":
+		// Required: issuer, client_id, client_secret
+		if strings.TrimSpace(req.Issuer) == "" {
+			r.logger.Warn("Missing 'issuer' for 'general' OIDC connector")
+			return ctx.JSON(http.StatusBadRequest, map[string]string{
+				"error": "issuer is required for 'general' OIDC connector",
+			})
+
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "default-oidc"
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "OIDC SSO"
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+
+	case "entraid":
+		// Required: tenant_id, client_id, client_secret
+		if strings.TrimSpace(req.TenantID) == "" {
+			err := fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+
+		}
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "entraid-oidc"
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "Microsoft AzureAD SSO"
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+
+		}
+
+	case "google-workspace":
+		// Required: client_id, client_secret
+		// No additional fields needed
+		// client_id and client_secret are already validated as required in the struct
+
+		// Set default id and name if not provided
+		if strings.TrimSpace(req.ID) == "" {
+			req.ID = "google-workspace-oidc"
+			err := fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+
+		}
+		if strings.TrimSpace(req.Name) == "" {
+			req.Name = "Google Workspace SSO"
+			err := fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
+			r.logger.Info(err)
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+
+		}
+	}
+	dexRequest := utils.CreateConnectorRequest{
+		ConnectorType:    req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+		Issuer:           req.Issuer,
+		TenantID:         req.TenantID,
+		ClientID:         req.ClientID,
+		ClientSecret:     req.ClientSecret,
+		ID:               req.ID,
+		Name:             req.Name,
+	}
+	dexreq, err := creator(dexRequest)
+	if err != nil {
+		r.logger.Error("Error on Creating dex request", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	dexClient, err := newDexClient(dexGrpcAddress)
+	if err != nil {
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+	}
+	res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+	if err != nil {
+		r.logger.Error("failed to create dex connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+	}
+	if res.AlreadyExists {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+	}
+	return ctx.NoContent(http.StatusCreated)
+
 }

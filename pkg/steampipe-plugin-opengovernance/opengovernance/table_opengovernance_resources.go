@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func tableKaytuResources(_ context.Context) *plugin.Table {
+func tablePlatformResources(_ context.Context) *plugin.Table {
 	return &plugin.Table{
 		Name:        "kaytu_resources",
 		Description: "Kaytu Resources",

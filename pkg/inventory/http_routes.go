@@ -146,7 +146,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 
 	connectionMap := map[string]bool{}
 	for _, connectionGroupID := range connectionGroup {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: api.InternalRole}, connectionGroupID)
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: api.AdminRole}, connectionGroupID)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	if len(connectorTypes) != 0 {
 		return connectorTypes, nil
 	}
-	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: api.AdminRole}, connectionIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1877,7 +1877,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
 				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
-				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, m.DimensionID)
+				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: api.AdminRole}, m.DimensionID)
 				if err != nil {
 					if !strings.Contains(err.Error(), "source not found") {
 						return err
@@ -2266,7 +2266,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_RunQuery")
 
-	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.InternalRole})
+	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.AdminRole})
 	if err != nil {
 		return err
 	}
@@ -2386,7 +2386,7 @@ func (h *HttpHandler) RunSQLNamedQuery(ctx context.Context, title, query string,
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// tracer :
-	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, nil)
+	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.AdminRole}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3003,7 +3003,7 @@ func (h *HttpHandler) GetResourceCollectionMetadata(ctx echo.Context) error {
 
 func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
 	var connections []string
-	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.InternalRole}, []source.Type{source.CloudAWS, source.CloudAzure})
+	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: api.AdminRole}, []source.Type{source.CloudAWS, source.CloudAzure})
 	if err != nil {
 		return nil, err
 	}
@@ -3033,7 +3033,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 						}
 					}
 				} else if dimKey == "ConnectionGroup" {
-					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: api.InternalRole})
+					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: api.AdminRole})
 					if err != nil {
 						return nil, err
 					}
@@ -3231,7 +3231,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		query = namedQuery.Query.QueryToExecute
 		engineStr = namedQuery.Query.Engine
 	} else if strings.ToLower(req.Type) == "control" {
-		control, err := h.complianceClient.GetControl(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
+		control, err := h.complianceClient.GetControl(&httpclient.Context{UserRole: api.AdminRole}, req.ID)
 		if err != nil || control == nil {
 			h.logger.Error("failed to get compliance", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "Could not find named query")
@@ -3307,7 +3307,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	span.End()
 	select {
 	case <-newCtx.Done():
-		job, err := h.schedulerClient.RunQuery(&httpclient.Context{UserRole: api.InternalRole}, req.ID)
+		job, err := h.schedulerClient.RunQuery(&httpclient.Context{UserRole: api.AdminRole}, req.ID)
 		if err != nil {
 			h.logger.Error("failed to run async query run", zap.Error(err))
 			return echo.NewHTTPError(http.StatusRequestTimeout, "Query execution timed out and failed to create async query run")
@@ -3371,7 +3371,7 @@ func (h *HttpHandler) GetAsyncQueryRunResult(ctx echo.Context) error {
 	newCtx, span := tracer.Start(ctx.Request().Context(), "new_GetAsyncQueryRunResult", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetAsyncQueryRunResult")
 
-	job, err := h.schedulerClient.GetAsyncQueryRunJobStatus(&httpclient.Context{UserRole: api.InternalRole}, runId)
+	job, err := h.schedulerClient.GetAsyncQueryRunJobStatus(&httpclient.Context{UserRole: api.AdminRole}, runId)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to find async query run job status")
 	}
