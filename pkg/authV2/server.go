@@ -89,7 +89,7 @@ func (s *Server) UpdateLastLoginLoop() {
 				if time.Now().After(tim.Add(15 * time.Minute)) {
 					s.logger.Info("updating metadata", zap.String("External Id", user.ExternalId))
 
-					tim = usr.LastLogin
+					tim = time.Now()
 					s.logger.Info("time is", zap.Time("time", tim))
 
 
