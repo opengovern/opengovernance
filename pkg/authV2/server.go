@@ -85,12 +85,15 @@ func (s *Server) UpdateLastLoginLoop() {
 				if !usr.LastLogin.IsZero() {
 					tim = usr.LastLogin
 				}
+
 				if time.Now().After(tim.Add(15 * time.Minute)) {
 					s.logger.Info("updating metadata", zap.String("External Id", user.ExternalId))
 
 					tim = usr.LastLogin
+					s.logger.Info("time is", zap.Time("time", tim))
 
-					err = utils.UpdateUserLastLogin(user.ExternalId, &tim, s.db)
+
+					err = utils.UpdateUserLastLogin(user.ExternalId, tim, s.db)
 					if err != nil {
 						s.logger.Error("failed to update user metadata", zap.String("External Id", user.ExternalId), zap.Error(err))
 					}

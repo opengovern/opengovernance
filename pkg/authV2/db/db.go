@@ -219,11 +219,11 @@ func (db Database) UpdateUserLastLogin(id uuid.UUID, lastLogin *time.Time) error
 	}
 	return nil
 }
-func (db Database) UpdateUserLastLoginWithExternalID(id string, lastLogin *time.Time) error {
+func (db Database) UpdateUserLastLoginWithExternalID(id string, lastLogin time.Time) error {
 	tx := db.Orm.Model(&User{}).
 		Where("external_id = ?", id)
 
-	if lastLogin != nil {
+	if lastLogin.IsZero(){
 		tx = tx.Update("last_login", lastLogin)
 	}
 
