@@ -1167,6 +1167,15 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 
 }
 
+// DeleteConnector godoc
+//
+//	@Summary		Delete Connector
+//	@Description	Delete  OIDC connector.
+//	@Security		BearerToken
+//	@Tags			connectors
+//	@Produce		json
+//	@Success		200
+//	@Router			/auth/api/v1/connector/:id [Delete]
 
 func (r *httpRoutes) DeleteConnector(ctx echo.Context) error {
 	connectorID := ctx.Param("id")
