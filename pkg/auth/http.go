@@ -67,7 +67,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	// connectors
 	v1.GET("/connectors", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
 	v1.GET("/connectors/supported-connector-types", httpserver.AuthorizeHandler(r.GetSupportedType, api2.AdminRole))
-	v1.GET("/connector/:id", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
+	v1.GET("/connector/:type", httpserver.AuthorizeHandler(r.GetConnectors, api2.AdminRole))
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 	v1.PUT("/connector", httpserver.AuthorizeHandler(r.UpdateConnector, api2.AdminRole))
 	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.DeleteConnector, api2.AdminRole))
@@ -858,7 +858,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 
 func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 	req := &dexApi.ListConnectorReq{}
-	connectorType := ctx.Param("connector_type")
+	connectorType := ctx.Param("type")
 	// Create a context with timeout for the gRPC call.
 	dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
@@ -983,13 +983,13 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			req.ID = "default-oidc"
 			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "OIDC SSO"
 			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 				r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 
 	case "entraid":
@@ -1007,14 +1007,14 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			req.ID = "entraid-oidc"
 			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 			
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Microsoft AzureAD SSO"
 			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 			
 		}
 
@@ -1028,14 +1028,14 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			req.ID = "google-workspace-oidc"
 			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
 			r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 			
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Google Workspace SSO"
 			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
 			r.logger.Info(err)
-			return echo.NewHTTPError(http.StatusBadRequest, err)
+			// return echo.NewHTTPError(http.StatusBadRequest, err)
 			
 		}
 	}
@@ -1067,7 +1067,7 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		if res.AlreadyExists {
 			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
 		}
-		return ctx.NoContent(http.StatusCreated)
+		return ctx.JSON(http.StatusCreated, res)
 }
 
 // UpdateConnector godoc
@@ -1163,7 +1163,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	if res.NotFound {
 		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
 	}
-	return ctx.JSON(http.StatusOK, res)
+	return ctx.JSON(http.StatusAccepted, res)
 
 }
 
