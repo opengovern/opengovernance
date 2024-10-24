@@ -13,6 +13,17 @@ type CreateConnectorRequest struct {
 	ID               string `json:"id,omitempty"`   // Optional
 	Name             string `json:"name,omitempty"` // Optional
 }
+type UpdateConnectorRequest struct {
+
+	ConnectorType    string `json:"connector_type" validate:"required,oneof=oidc"`                                  // 'oidc' is supported for now
+	ConnectorSubType string `json:"connector_sub_type" validate:"omitempty,oneof=general google-workspace entraid"` // Optional sub-type
+	Issuer           string `json:"issuer,omitempty" validate:"omitempty,url"`
+	TenantID         string `json:"tenant_id,omitempty" validate:"omitempty,uuid"`
+	ClientID         string `json:"client_id" validate:"required"`
+	ClientSecret     string `json:"client_secret" validate:"required"`
+	ID               string `json:"id,omitempty"`   // Optional
+	Name             string `json:"name,omitempty"` // Optional
+}
 
 type OIDCConfig struct {
 	Issuer       string `json:"issuer,omitempty"`
@@ -30,3 +41,7 @@ type GetConnectorsResponse struct {
 	}
 
 
+type GetSupportedConnectorTypeResponse struct {
+		ConnectorType string   `json:"connector_type"`
+		SubTypes      []string `json:"sub_types"`
+	}
