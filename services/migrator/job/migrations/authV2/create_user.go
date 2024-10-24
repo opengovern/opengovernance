@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 type Migration struct{}
@@ -59,39 +58,39 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	publicUris := strings.Split(conf.DexPublicClientRedirectUris, ",")
-
-	publicClientReq := dexApi.CreateClientReq{
-		Client: &dexApi.Client{
-			Id:           "public-client",
-			Name:         "Public Client",
-			RedirectUris: publicUris,
-			Public:       true,
-		},
-	}
-
-	_, err = dexClient.CreateClient(ctx, &publicClientReq)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
-		return err
-	}
-
-	privateUris := strings.Split(conf.DexPrivateClientRedirectUris, ",")
-
-	privateClientReq := dexApi.CreateClientReq{
-		Client: &dexApi.Client{
-			Id:           "private-client",
-			Name:         "Private Client",
-			RedirectUris: privateUris,
-			Secret:       "secret",
-		},
-	}
-
-	_, err = dexClient.CreateClient(ctx, &privateClientReq)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
-		return err
-	}
+	//publicUris := strings.Split(conf.DexPublicClientRedirectUris, ",")
+	//
+	//publicClientReq := dexApi.CreateClientReq{
+	//	Client: &dexApi.Client{
+	//		Id:           "public-client",
+	//		Name:         "Public Client",
+	//		RedirectUris: publicUris,
+	//		Public:       true,
+	//	},
+	//}
+	//
+	//_, err = dexClient.CreateClient(ctx, &publicClientReq)
+	//if err != nil {
+	//	logger.Error("Auth Migrator: failed to create dex public client", zap.Error(err))
+	//	return err
+	//}
+	//
+	//privateUris := strings.Split(conf.DexPrivateClientRedirectUris, ",")
+	//
+	//privateClientReq := dexApi.CreateClientReq{
+	//	Client: &dexApi.Client{
+	//		Id:           "private-client",
+	//		Name:         "Private Client",
+	//		RedirectUris: privateUris,
+	//		Secret:       "secret",
+	//	},
+	//}
+	//
+	//_, err = dexClient.CreateClient(ctx, &privateClientReq)
+	//if err != nil {
+	//	logger.Error("Auth Migrator: failed to create dex private client", zap.Error(err))
+	//	return err
+	//}
 
 	req := dexApi.CreatePasswordReq{
 		Password: &dexApi.Password{
@@ -112,9 +111,9 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	user := &db.User{
 
-		Email:    conf.DefaultDexUserEmail,
-		Username: conf.DefaultDexUserEmail,
-		FullName: conf.DefaultDexUserEmail,
+		Email:                 conf.DefaultDexUserEmail,
+		Username:              conf.DefaultDexUserEmail,
+		FullName:              conf.DefaultDexUserEmail,
 		Role:                  role,
 		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
 		Connector:             "local",
