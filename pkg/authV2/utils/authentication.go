@@ -114,7 +114,7 @@ func GetUser(id string, database db.Database) (*User, error) {
 	return resp, nil
 }
 
-func UpdateUserLastLogin(userId string, lastLogin *time.Time, database db.Database) error {
+func UpdateUserLastLogin(userId string, lastLogin time.Time, database db.Database) error {
 
 	err := database.UpdateUserLastLoginWithExternalID(userId, lastLogin)
 

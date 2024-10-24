@@ -90,7 +90,7 @@ func (s *Server) UpdateLastLoginLoop() {
 
 					tim = usr.LastLogin
 
-					err = utils.UpdateUserLastLogin(user.ExternalId, &tim, s.db)
+					err = utils.UpdateUserLastLogin(user.ExternalId, tim, s.db)
 					if err != nil {
 						s.logger.Error("failed to update user metadata", zap.String("External Id", user.ExternalId), zap.Error(err))
 					}
