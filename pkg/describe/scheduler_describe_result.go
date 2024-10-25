@@ -411,14 +411,14 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 	return
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connectionId, resourceType string) error {
+func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(integrationTracker, resourceType string) error {
 	root := make(map[string]any)
 	root["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": []any{
 				map[string]any{
 					"term": map[string]any{
-						"source_id": connectionId,
+						"source_id": integrationTracker,
 					},
 				},
 				map[string]any{

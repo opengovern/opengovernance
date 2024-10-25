@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	api "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"time"
 )
 
@@ -22,7 +23,7 @@ type Integration struct {
 	IntegrationID      string    `gorm:"index:idx_type_integrationid,unique"`
 	IntegrationName    string
 	Connector          string
-	Type               string `gorm:"index:idx_type_integrationid,unique"`
+	Type               integration_type.IntegrationType `gorm:"index:idx_type_integrationid,unique"`
 	OnboardDate        time.Time
 	Metadata           pgtype.JSONB
 	Annotations        pgtype.JSONB
@@ -49,14 +50,14 @@ func (i Integration) ToApi() (*api.Integration, error) {
 
 	var labels map[string]string
 	if i.Labels.Status == pgtype.Present {
-		if err := json.Unmarshal(i.Metadata.Bytes, &labels); err != nil {
+		if err := json.Unmarshal(i.Labels.Bytes, &labels); err != nil {
 			return nil, err
 		}
 	}
 
 	var annotations map[string]string
 	if i.Annotations.Status == pgtype.Present {
-		if err := json.Unmarshal(i.Metadata.Bytes, &annotations); err != nil {
+		if err := json.Unmarshal(i.Annotations.Bytes, &annotations); err != nil {
 			return nil, err
 		}
 	}
@@ -68,7 +69,8 @@ func (i Integration) ToApi() (*api.Integration, error) {
 		IntegrationType:    i.Type,
 		Connector:          i.Connector,
 		OnboardDate:        i.OnboardDate,
-		Lifecycle:          string(i.Lifecycle),
+		CredentialID:       i.CredentialID.String(),
+		Lifecycle:          i.Lifecycle,
 		Reason:             i.Reason,
 		LastCheck:          i.LastCheck,
 		CreatedAt:          i.CreatedAt,

@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/google/uuid"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"gorm.io/gorm/clause"
 )
@@ -24,9 +25,9 @@ func (db Database) CreateIntegration(s *models.Integration) error {
 }
 
 // DeleteIntegration deletes a integration
-func (db Database) DeleteIntegration(id uuid.UUID) error {
+func (db Database) DeleteIntegration(integrationTracker uuid.UUID) error {
 	tx := db.Orm.
-		Where("id = ?", id.String()).
+		Where("integration_tracker = ?", integrationTracker.String()).
 		Unscoped().
 		Delete(&models.Integration{})
 	if tx.Error != nil {
@@ -37,11 +38,16 @@ func (db Database) DeleteIntegration(id uuid.UUID) error {
 }
 
 // ListIntegration list Integration
-func (db Database) ListIntegration() ([]models.Integration, error) {
+func (db Database) ListIntegration(types []integration_type.IntegrationType) ([]models.Integration, error) {
 	var integrations []models.Integration
 	tx := db.Orm.
-		Model(&models.Integration{}).
-		Find(&integrations)
+		Model(&models.Integration{})
+
+	if len(types) > 0 {
+		tx = tx.Where("type IN ?", types)
+	}
+
+	tx = tx.Find(&integrations)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -50,27 +56,15 @@ func (db Database) ListIntegration() ([]models.Integration, error) {
 }
 
 // GetIntegration get a Integration
-func (db Database) GetIntegration(id uuid.UUID) (*models.Integration, error) {
+func (db Database) GetIntegration(tracker uuid.UUID) (*models.Integration, error) {
 	var integration models.Integration
 	tx := db.Orm.
 		Model(&models.Integration{}).
-		Where("id = ?", id.String()).
+		Where("integration_tracker = ?", tracker.String()).
 		First(&integration)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return &integration, nil
-}
-
-func (db Database) UpdateIntegration(id uuid.UUID, secret string) error {
-	tx := db.Orm.
-		Model(&models.Integration{}).
-		Where("id = ?", id.String()).Update("secret", secret)
-
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
 }

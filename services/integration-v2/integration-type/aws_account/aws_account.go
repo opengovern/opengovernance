@@ -3,6 +3,7 @@ package aws_account
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 )
@@ -40,6 +41,13 @@ func CreateAWSAccountIntegration(credentialType *string, jsonData []byte) (inter
 var CredentialTypes = map[string]interfaces.CredentialCreator{
 	"aws_simple_iam_credentials":              CreateAWSSimpleIAMCredentials,
 	"aws_iam_credentials_role_with_role_jump": CreateAWSIAMCredentialsRoleWithRoleJump,
+}
+
+func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
+	return interfaces.DescriberConfiguration{
+		NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
+	}
 }
 
 func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
@@ -103,6 +111,6 @@ func (i *AWSAccountIntegration) DiscoverIntegrations() ([]models.Integration, er
 	return i.Credential.DiscoverIntegrations()
 }
 
-func (i *AWSAccountIntegration) GetResourceTypesByLabels(map[string]any) ([]string, error) {
+func (i *AWSAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return nil, nil
 }

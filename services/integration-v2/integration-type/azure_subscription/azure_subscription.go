@@ -2,6 +2,7 @@ package azure_subscription
 
 import (
 	"fmt"
+	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 )
@@ -33,6 +34,13 @@ var CredentialTypes = map[string]interfaces.CredentialCreator{
 	"azure_spn_certificate": CreateAzureSPNCertificateCredentials,
 }
 
+func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
+	return interfaces.DescriberConfiguration{
+		NatsScheduledJobsTopic: azureDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:    azureDescriberLocal.JobQueueTopicManuals,
+	}
+}
+
 func (i *AzureSubscriptionIntegration) GetAnnotations() (map[string]any, error) {
 	annotations := make(map[string]any)
 
@@ -59,6 +67,6 @@ func (i *AzureSubscriptionIntegration) DiscoverIntegrations() ([]models.Integrat
 	return i.Credential.DiscoverIntegrations()
 }
 
-func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]any) ([]string, error) {
+func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return nil, nil
 }

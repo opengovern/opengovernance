@@ -6,7 +6,14 @@ import (
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 )
 
-var IntegrationTypes = map[string]interfaces.IntegrationCreator{
-	"aws_account":        aws_account.CreateAWSAccountIntegration,
-	"azure_subscription": azure_subscription.CreateAzureSubscriptionIntegration,
+type IntegrationType string
+
+var (
+	IntegrationTypeAWSAccount        IntegrationType = "AWS_ACCOUNT"
+	IntegrationTypeAzureSubscription IntegrationType = "AZURE_SUBSCRIPTION"
+)
+
+var IntegrationTypes = map[IntegrationType]interfaces.IntegrationCreator{
+	IntegrationTypeAWSAccount:        aws_account.CreateAWSAccountIntegration,
+	IntegrationTypeAzureSubscription: azure_subscription.CreateAzureSubscriptionIntegration,
 }

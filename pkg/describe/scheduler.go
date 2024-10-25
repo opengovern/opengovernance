@@ -119,15 +119,15 @@ type Scheduler struct {
 	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
-	logger           *zap.Logger
-	metadataClient   metadataClient.MetadataServiceClient
-	complianceClient client.ComplianceServiceClient
+	logger            *zap.Logger
+	metadataClient    metadataClient.MetadataServiceClient
+	complianceClient  client.ComplianceServiceClient
 	integrationClient integrationClient.IntegrationServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	inventoryClient  inventoryClient.InventoryServiceClient
-	sinkClient       esSinkClient.EsSinkServiceClient
-	authGrpcClient   envoyAuth.AuthorizationClient
-	es               opengovernance.Client
+	onboardClient     onboardClient.OnboardServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	sinkClient        esSinkClient.EsSinkServiceClient
+	authGrpcClient    envoyAuth.AuthorizationClient
+	es                opengovernance.Client
 
 	jq *jq.JobQueue
 
@@ -608,7 +608,7 @@ func (s *Scheduler) RunRemoveResourcesConnectionJobsCleanup() {
 		}
 
 		for _, j := range jobs {
-			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.ConnectionID, j.ResourceType)
+			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.IntegrationTracker, j.ResourceType)
 			if err != nil {
 				s.logger.Error("Failed to remove old resources", zap.Error(err))
 				continue
