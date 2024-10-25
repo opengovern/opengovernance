@@ -23,7 +23,7 @@ func (s *JobScheduler) buildRunners(
 	currentRunnerExistMap map[string]bool,
 	triggerType model.ComplianceTriggerType,
 ) ([]*model.ComplianceRunner, []*model.ComplianceRunner, error) {
-	ctx := &httpclient.Context{UserRole: api.InternalRole}
+	ctx := &httpclient.Context{UserRole: api.AdminRole}
 	var runners []*model.ComplianceRunner
 	var globalRunners []*model.ComplianceRunner
 
@@ -246,7 +246,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		s.logger.Info("processing job with unqueued runners", zap.Uint("jobID", job.ID))
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
-		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.InternalRole}, []string{job.ConnectionID})
+		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.AdminRole}, []string{job.ConnectionID})
 		if err != nil {
 			s.logger.Error("error while getting sources", zap.Error(err))
 			continue

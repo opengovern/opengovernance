@@ -63,12 +63,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks := v1.Group("/benchmarks")
 
 	benchmarks.GET("", httpserver2.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
-	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.InternalRole))
+	benchmarks.GET("/all", httpserver2.AuthorizeHandler(h.ListAllBenchmarks, authApi.AdminRole))
 	benchmarks.GET("/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
 	benchmarks.POST("/:benchmark_id/settings", httpserver2.AuthorizeHandler(h.ChangeBenchmarkSettings, authApi.AdminRole))
 	benchmarks.GET("/controls/:control_id", httpserver2.AuthorizeHandler(h.GetControl, authApi.ViewerRole))
-	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.InternalRole))
-	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.InternalRole))
+	benchmarks.GET("/controls", httpserver2.AuthorizeHandler(h.ListControls, authApi.AdminRole))
+	benchmarks.GET("/queries", httpserver2.AuthorizeHandler(h.ListQueries, authApi.AdminRole))
 
 	benchmarks.GET("/summary", httpserver2.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver2.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -179,7 +179,7 @@ func (h *HttpHandler) getConnectionIdFilterFromInputs(ctx context.Context, conne
 	var connectionIDSChecked []string
 
 	for i := 0; i < len(connectionGroup); i++ {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole}, connectionGroup[i])
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, connectionGroup[i])
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +282,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		evaluatedAtFrom, evaluatedAtTo, err = parseTimeInterval(*req.Filters.Interval)
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	allSources, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -324,7 +324,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		benchmarksMap[benchmark.ID] = &benchmark
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -495,7 +495,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	allSources, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -528,7 +528,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		benchmarksMap[benchmark.ID] = &benchmark
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -611,7 +611,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
 
 	apiFinding := api.GetAPIFindingFromESFinding(*finding)
 
-	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), finding.ConnectionID)
+	connection, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, finding.ConnectionID)
 	if err != nil {
 		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", finding.ConnectionID))
 		return err
@@ -620,7 +620,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
 	apiFinding.ProviderConnectionName = connection.ConnectionName
 
 	if len(finding.ResourceType) > 0 {
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 			nil, nil,
 			[]string{finding.ResourceType}, false, nil, 10000, 1)
 		if err != nil {
@@ -746,7 +746,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -758,7 +758,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(echoCtx))
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.AdminRole})
 	if err != nil {
 		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
 		return err
@@ -769,7 +769,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		resourceCollectionMetadataMap[item.ID] = &item
 	}
 
-	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	connectionMetadata, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -1113,7 +1113,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			}
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 			nil, nil, resourceTypeList, false, nil, 10000, 1)
 		if err != nil {
 			return err
@@ -1166,7 +1166,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
 			resourceTypeList = append(resourceTypeList, item.Key)
 		}
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 			nil, nil, resourceTypeList, false, nil, 10000, 1)
 		if err != nil {
 			return err
@@ -1210,7 +1210,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
-		connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+		connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, resConnectionIDs)
 		if err != nil {
 			h.logger.Error("failed to get connections", zap.Error(err))
 			return err
@@ -1566,7 +1566,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 		}
 	}
 
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), connectionIDs)
+	srcs, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, connectionIDs)
 	if err != nil {
 		return err
 	}
@@ -1651,7 +1651,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -1793,7 +1793,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	allSources, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -1804,7 +1804,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		allConnectionsMap[src.ID.String()] = &src
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -2007,7 +2007,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -2019,7 +2019,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(httpclient.FromEchoContext(echoCtx))
+	resourceCollectionMetadata, err := h.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.AdminRole})
 	if err != nil {
 		h.logger.Error("failed to get resource collection metadata", zap.Error(err))
 		return err
@@ -2030,7 +2030,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		resourceCollectionMetadataMap[item.ID] = &item
 	}
 
-	connectionMetadata, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	connectionMetadata, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -2231,7 +2231,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 
 	apiFindingEvent := api.GetAPIFindingEventFromESFindingEvent(*findingEvent)
 
-	connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), findingEvent.ConnectionID)
+	connection, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, findingEvent.ConnectionID)
 	if err != nil {
 		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", findingEvent.ConnectionID))
 		return err
@@ -2240,7 +2240,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 	apiFindingEvent.ProviderConnectionName = connection.ConnectionName
 
 	if len(findingEvent.ResourceType) > 0 {
-		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 			nil, nil,
 			[]string{findingEvent.ResourceType}, false, nil, 10000, 1)
 		if err != nil {
@@ -2267,7 +2267,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.ListResourceFindingsResponse
 //	@Router			/compliance/api/v1/resource_findings [post]
 func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var err error
 	ctx := echoCtx.Request().Context()
@@ -2311,7 +2311,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		}
 	}
 
-	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get connections", zap.Error(err))
 		return err
@@ -2322,7 +2322,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		connectionMap[connection.ID.String()] = &connection
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx), nil, nil, nil, false, nil, 10000, 1)
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole}, nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
 		return err
@@ -2694,7 +2694,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 				resConnectionIDs = append(resConnectionIDs, item.Key)
 			}
 			if len(resConnectionIDs) > 0 {
-				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+				connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, resConnectionIDs)
 				if err != nil {
 					h.logger.Error("failed to get connections", zap.Error(err))
 					return err
@@ -2903,7 +2903,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		}
 	}
 
-	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmarkID)
+	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return err
@@ -2941,7 +2941,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
 		if len(resConnectionIDs) > 0 {
-			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+			connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, resConnectionIDs)
 			if err != nil {
 				h.logger.Error("failed to get connections", zap.Error(err))
 				return err
@@ -3382,7 +3382,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 //	@Router		/compliance/api/v3/controls [post]
 func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.ListControlsFilterRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -4020,7 +4020,7 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -4138,7 +4138,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		apiControl.Connector = source.ParseTypes(benchmark.Connector)
 	}
 
-	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{Ctx: ctx, UserRole: authApi.InternalRole},
+	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource types metadata", zap.Error(err))
@@ -4382,7 +4382,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
-			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), ca.Connectors)
+			srcs, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, ca.Connectors)
 			if err != nil {
 				return err
 			}
@@ -4392,7 +4392,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 				}
 			}
 		} else {
-			connections, err = h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), connectionIDs)
+			connections, err = h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, connectionIDs)
 			if err != nil {
 				return err
 			}
@@ -4521,7 +4521,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(echoCtx echo.Context) error {
 		return err
 	}
 
-	src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(echoCtx), connectionId)
+	src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionId)
 	if err != nil {
 		return err
 	}
@@ -4648,7 +4648,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 	))
 	span1.End()
 
-	hctx := httpclient.FromEchoContext(echoCtx)
+	hctx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var assignedConnections []api.BenchmarkAssignedConnection
 
@@ -4885,7 +4885,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 //	@Router		/compliance/api/v3/benchmarks [post]
 func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.GetBenchmarkListRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -5477,7 +5477,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 		}
 	}
 
-	enabled, err := h.metadataClient.GetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyCustomizationEnabled)
+	enabled, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: authApi.AdminRole}, models.MetadataKeyCustomizationEnabled)
 	if err != nil {
 		h.logger.Error("get config metadata", zap.Error(err))
 		return err
@@ -5495,7 +5495,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid url")
 		}
 
-		err = h.metadataClient.SetConfigMetadata(httpclient.FromEchoContext(echoCtx), models.MetadataKeyAnalyticsGitURL, configzGitURL)
+		err = h.metadataClient.SetConfigMetadata(&httpclient.Context{UserRole: authApi.AdminRole}, models.MetadataKeyAnalyticsGitURL, configzGitURL)
 		if err != nil {
 			h.logger.Error("set config metadata", zap.Error(err))
 			return err
@@ -5615,7 +5615,7 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Success	200				{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v3/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 
@@ -5765,7 +5765,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 //	@Success		200		{object}	api.GetFindingsResponse
 //	@Router			/compliance/api/v3/findings [post]
 func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 
@@ -5873,7 +5873,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		return err
 	}
 
-	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(echoCtx), nil)
+	allSources, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
@@ -5906,7 +5906,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		benchmarksMap[benchmark.ID] = &benchmark
 	}
 
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(echoCtx),
+	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
 		nil, nil, nil, false, nil, 10000, 1)
 	if err != nil {
 		h.logger.Error("failed to get resource type metadata", zap.Error(err))
@@ -5995,7 +5995,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 //	@Success		200
 //	@Router			/compliance/api/v3/benchmark/{benchmark_id}/assign [post]
 func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 	ctx := echoCtx.Request().Context()
 
 	var req api.IntegrationFilterRequest
@@ -6119,7 +6119,7 @@ func (h *HttpHandler) AssignBenchmarkToIntegration(echoCtx echo.Context) error {
 //	@Success		200				{object}	api.ComplianceSummaryOfIntegrationResponse
 //	@Router			/compliance/api/v3/compliance/summary/integration [post]
 func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 	ctx := echoCtx.Request().Context()
 	var req api.ComplianceSummaryOfIntegrationRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
@@ -6234,7 +6234,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		addToResults(summaryAtTime.Connections.Connections[connectionID])
 	}
 
-	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmarkID)
+	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, benchmarkID)
 	if err != nil {
 		h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkID))
 		return err
@@ -6452,7 +6452,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		addToResults(summaryAtTime.Connections.BenchmarkResult)
 
-		lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(httpclient.FromEchoContext(echoCtx), benchmark.ID)
+		lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, benchmark.ID)
 		if err != nil {
 			h.logger.Error("failed to get latest compliance job for benchmark", zap.Error(err), zap.String("benchmarkID", benchmark.ID))
 			return err
@@ -6491,7 +6491,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 				resConnectionIDs = append(resConnectionIDs, item.Key)
 			}
 			if len(resConnectionIDs) > 0 {
-				connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+				connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, resConnectionIDs)
 				if err != nil {
 					h.logger.Error("failed to get connections", zap.Error(err))
 					return err
@@ -6659,7 +6659,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 //	@Success		200				{object}	api.ComplianceSummaryOfBenchmarkResponse
 //	@Router			/compliance/api/v3/compliance/summary/{job_id} [get]
 func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 	jobId := echoCtx.Param("job_id")
@@ -6768,7 +6768,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 			resConnectionIDs = append(resConnectionIDs, item.Key)
 		}
 		if len(resConnectionIDs) > 0 {
-			connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(echoCtx), resConnectionIDs)
+			connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: authApi.AdminRole}, resConnectionIDs)
 			if err != nil {
 				h.logger.Error("failed to get connections", zap.Error(err))
 				return err
@@ -7134,7 +7134,7 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 	controlIds := httpserver2.QueryArrayParam(ctx, "controls")
 	benchmarks := httpserver2.QueryArrayParam(ctx, "benchmarks")
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	controls, err := h.db.ListControlsByFilter(ctx.Request().Context(), controlIds, nil, nil, benchmarks, nil,
 		nil, nil, nil, nil)
@@ -7175,7 +7175,7 @@ func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 //	@Router			/compliance/api/v3/categories/controls [get]
 func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 	categoriesFilter := httpserver2.QueryArrayParam(ctx, "categories")
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	categories, err := h.inventoryClient.GetResourceCategories(clientCtx, nil, categoriesFilter)
 	if err != nil || categories == nil || len(categories.Categories) == 0 {
@@ -7294,7 +7294,7 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 //	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/compliance/api/v3/jobs/history [get]
 func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	interval := ctx.QueryParam("interval")
 	triggerType := ctx.QueryParam("trigger_type")
@@ -7424,7 +7424,7 @@ func (h *HttpHandler) ListBenchmarksNestedForBenchmark(echoCtx echo.Context) err
 //	@Router			/compliance/api/v3/benchmarks/{benchmark_id}/trend [post]
 func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
-	clientCtx := &httpclient.Context{UserRole: authApi.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	var req api.GetBenchmarkTrendV3Request
 	if err := bindValidate(echoCtx, &req); err != nil {

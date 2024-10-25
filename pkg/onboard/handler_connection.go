@@ -132,7 +132,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			Password:            azureCnf.Password,
 		}
 
-		azureAssetDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
+		azureAssetDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
 		if err != nil {
 			return connection, err
 		}
@@ -151,7 +151,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			}
 		}
 
-		azureSpendDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.InternalRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
+		azureSpendDiscovery, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
 		if err != nil {
 			return connection, err
 		}

@@ -2,14 +2,11 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+
 	dexApi "github.com/dexidp/dex/api/v2"
-	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
@@ -41,19 +38,19 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	dbm := db.Database{Orm: orm}
 
+	dexClient, err := newDexClient(conf.DexGrpcAddress)
+	if err != nil {
+		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
+		return err
+	}
+
 	count, err := dbm.GetUsersCount()
 	if err != nil {
 		return err
 	}
 	if count > 0 {
-		logger.Warn("users already exist")
+		logger.Info("users already exist")
 		return nil
-	}
-
-	dexClient, err := newDexClient(conf.DexGrpcAddress)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to create dex client", zap.Error(err))
-		return err
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(conf.DefaultDexUserPassword), bcrypt.DefaultCost)
@@ -77,49 +74,18 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	wm, err := dbm.GetWorkspaceMapByName("main")
-	if err != nil {
-		logger.Error("Auth Migrator: failed to get workspace", zap.Error(err))
-		return err
-	}
-
 	role := api.AdminRole
 
-	var appMetadata auth0.Metadata
-	appMetadata.WorkspaceAccess = map[string]api.Role{
-		wm.ID: role,
-	}
-	appMetadataJson, err := json.Marshal(appMetadata)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to marshal app metadata json", zap.Error(err))
-		return err
-	}
-
-	appMetadataJsonb := pgtype.JSONB{}
-	err = appMetadataJsonb.Set(appMetadataJson)
-	if err != nil {
-		logger.Error("Auth Migrator: failed to set app metadata json", zap.Error(err))
-		return err
-	}
-
-	userMetadataJsonb := pgtype.JSONB{}
-	err = userMetadataJsonb.Set([]byte(""))
-	if err != nil {
-		return err
-	}
-
 	user := &db.User{
-		UserUuid:     uuid.New(),
-		Email:        conf.DefaultDexUserEmail,
-		Username:     conf.DefaultDexUserEmail,
-		Name:         conf.DefaultDexUserEmail,
-		IdLifecycle:  db.UserLifecycleActive,
-		Role:         role,
-		UserId:       fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		AppMetadata:  appMetadataJsonb,
-		UserMetadata: userMetadataJsonb,
-		StaticOwner:  true,
-		Connector:    "local",
+
+		Email:                 conf.DefaultDexUserEmail,
+		Username:              conf.DefaultDexUserEmail,
+		FullName:              conf.DefaultDexUserEmail,
+		Role:                  role,
+		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+		Connector:             "local",
+		IsActive:              true,
+		RequirePasswordChange: true,
 	}
 	err = dbm.CreateUser(user)
 	if err != nil {

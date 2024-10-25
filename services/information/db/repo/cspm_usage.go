@@ -13,7 +13,7 @@ type CspmUsageRepo interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]model.CspmUsage, error)
 	Get(ctx context.Context, id string) (*model.CspmUsage, error)
-	GetLatestByWorkspaceIdAndHostname(ctx context.Context, workspaceId, hostname string) (*model.CspmUsage, error)
+	GetLatestByHostname(ctx context.Context, hostname string) (*model.CspmUsage, error)
 }
 
 type CspmUsageRepoImpl struct {
@@ -59,9 +59,9 @@ func (r *CspmUsageRepoImpl) Get(ctx context.Context, id string) (*model.CspmUsag
 	return &m, nil
 }
 
-func (r *CspmUsageRepoImpl) GetLatestByWorkspaceIdAndHostname(ctx context.Context, workspaceId, hostname string) (*model.CspmUsage, error) {
+func (r *CspmUsageRepoImpl) GetLatestByHostname(ctx context.Context, hostname string) (*model.CspmUsage, error) {
 	var m model.CspmUsage
-	tx := r.db.WithContext(ctx).Model(&model.CspmUsage{}).Where("workspace_id=? AND hostname=?", workspaceId, hostname).Order("gather_timestamp DESC").First(&m)
+	tx := r.db.WithContext(ctx).Model(&model.CspmUsage{}).Where("hostname=?", hostname).Order("gather_timestamp DESC").First(&m)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

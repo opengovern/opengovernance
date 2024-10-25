@@ -66,23 +66,23 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
-	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
+	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobs, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id/summary", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJobSummary, apiAuth.AdminRole))
 	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
-	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.AdminRole))
+	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.ViewerRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.AdminRole))
-	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.InternalRole))
-	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
-	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
-	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.InternalRole))
+	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.ViewerRole))
+	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.ViewerRole))
+	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.ViewerRole))
+	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.ViewerRole))
+	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.ViewerRole))
 
 	v1.GET("/discovery/resourcetypes/list", httpserver.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
 	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
-	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.InternalRole))
+	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.ViewerRole))
 
 	v3 := e.Group("/api/v3")
 	v3.POST("/jobs/discovery/connections/:connection_id", httpserver.AuthorizeHandler(h.GetDescribeJobsHistory, apiAuth.ViewerRole))
@@ -135,12 +135,12 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	var jobs []api.Job
 
-	srcs, err := h.Scheduler.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	srcs, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		return err
 	}
 
-	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(httpclient.FromEchoContext(ctx), nil)
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		return err
 	}
@@ -485,7 +485,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		userID = "system"
 	}
 
-	ctx2 := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	ctx2 := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	ctx2.Ctx = ctx.Request().Context()
 
 	var srcs []onboardapi.Connection
@@ -594,7 +594,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	//	return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 	//}
 	//
-	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectors)
+	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, connectors)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
@@ -663,7 +663,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		userID = "system"
 	}
 
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	benchmarkID := ctx.Param("benchmark_id")
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
 	if err != nil {
@@ -712,7 +712,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 		userID = "system"
 	}
 
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	benchmarkIDs := httpserver.QueryArrayParam(ctx, "benchmark_id")
 
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
@@ -769,7 +769,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 //	@Param			benchmark_id	path	string	true	"Benchmark ID use 'all' for everything"
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id}/summary [put]
 func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	benchmarkID := ctx.Param("benchmark_id")
 
 	var benchmarks []complianceapi.Benchmark
@@ -813,7 +813,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 			return nil, nil, err
 		}
 	}
-	controls, err = h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, controlIDs, nil)
+	controls, err = h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.AdminRole}, controlIDs, nil)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
 		return nil, nil, err
@@ -842,7 +842,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 		return nil, nil, echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
 	}
 
-	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.InternalRole}, connectionIDs)
+	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, connectionIDs)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
 		return nil, nil, err
@@ -868,7 +868,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 }
 
 func (h HttpServer) getBenchmarkChildrenControls(benchmarkID string) ([]string, error) {
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.AdminRole}, benchmarkID)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get benchmark", zap.Error(err))
 		return nil, err
@@ -1426,7 +1426,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 //	@Success		200				{object}	api.RunBenchmarkResponse
 //	@Router			/schedule/api/v3/compliance/benchmark/{benchmark_id}/run [post]
 func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	userID := httpserver.GetUserID(ctx)
 	if userID == "" {
 		userID = "system"
@@ -1475,7 +1475,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		connectionIDs = append(connectionIDs, c.ID.String())
 	}
 
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.InternalRole}, benchmarkID)
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.AdminRole}, benchmarkID)
 	if err != nil {
 		return fmt.Errorf("error while getting benchmarks: %v", err)
 	}
@@ -1518,7 +1518,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 //	@Param			request	body		api.RunBenchmarkRequest	true	"Requst Body"
 //	@Router			/schedule/api/v3/compliance/run [post]
 func (h HttpServer) RunBenchmark(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	userID := httpserver.GetUserID(ctx)
 	if userID == "" {
@@ -1627,7 +1627,7 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 //	@Param			request	body		api.RunDiscoveryRequest	true	"Request Body"
 //	@Router			/schedule/api/v3/discovery/run [post]
 func (h HttpServer) RunDiscovery(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	userID := httpserver.GetUserID(ctx)
 	if userID == "" {
 		userID = "system"
@@ -1787,7 +1787,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 //	@Success	200	{object}	api.GetDescribeJobStatusResponse
 //	@Router		/schedule/api/v3/jobs/discovery/{job_id} [get]
 func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	jobId := ctx.Param("job_id")
 
@@ -1828,7 +1828,7 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 //	@Success	200	{object}	api.GetComplianceJobStatusResponse
 //	@Router		/schedule/api/v3/job/compliance/{job_id} [get]
 func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	jobIdString := ctx.Param("job_id")
 	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
@@ -1942,7 +1942,7 @@ func (h HttpServer) GetAsyncQueryRunJobStatus(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/discovery [post]
 func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.ListDescribeJobsRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2059,7 +2059,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/compliance [post]
 func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.ListComplianceJobsRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2172,7 +2172,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 //	@Success	200	{object}	api.BenchmarkAuditHistoryResponse
 //	@Router		/schedule/api/v3/benchmark/:benchmark_id/run-history [post]
 func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	benchmarkID := ctx.Param("benchmark_id")
 
@@ -2311,7 +2311,7 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.IntegrationInfo
 //	@Router		/schedule/api/v3/benchmark/run-history/integrations [get]
 func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	connectionIDs, err := h.DB.GetComplianceJobsIntegrations()
 	if err != nil {
@@ -2348,7 +2348,7 @@ func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 //	@Success	200	{object}	model2.DescribeConnectionJob
 //	@Router		/schedule/api/v3/integration/discovery/last-job [post]
 func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.GetIntegrationLastDiscoveryJobRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2507,7 +2507,7 @@ func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.GetDescribeJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/discovery/connections [post]
 func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.GetDescribeJobsHistoryByIntegrationRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2622,7 +2622,7 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 //	@Success	200	{object}	[]api.GetComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/compliance/connections [post]
 func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.GetComplianceJobsHistoryByIntegrationRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2886,7 +2886,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.CancelJobResponse
 //	@Router		/schedule/api/v3/jobs/cancel [post]
 func (h HttpServer) CancelJob(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.CancelJobRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -3228,7 +3228,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 //	@Success	200	{object}	[]api.ListJobsByTypeResponse
 //	@Router		/schedule/api/v3/jobs [post]
 func (h HttpServer) ListJobsByType(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.ListJobsByTypeRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -3787,7 +3787,7 @@ func (s *HttpServer) PurgeSampleData(c echo.Context) error {
 //	@Success	200	{object}	api.GetIntegrationDiscoveryProgressResponse
 //	@Router		/schedule/api/v3/discovery/status [post]
 func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	var request api.GetIntegrationDiscoveryProgressRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -3953,7 +3953,7 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 //	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
 //	@Router		/schedule/api/v3/jobs/history/compliance [get]
 func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
 
 	interval := ctx.QueryParam("interval")
 	triggerType := ctx.QueryParam("trigger_type")

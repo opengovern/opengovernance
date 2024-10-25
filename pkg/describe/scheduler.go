@@ -47,7 +47,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	workspaceClient "github.com/opengovern/opengovernance/pkg/workspace/client"
 	integrationClient "github.com/opengovern/opengovernance/services/integration-v2/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -66,28 +65,28 @@ const (
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "queue_job_publishing_blocked",
 	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
 }, []string{"queue_name"})
 
 var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_checkup_jobs_total",
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_jobs_total",
 	Help:      "Count of analytics jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
+	Namespace: "opengovernance",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_job_results_total",
 	Help:      "Count of analytics job results in scheduler service",
@@ -120,16 +119,15 @@ type Scheduler struct {
 	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
-	logger            *zap.Logger
-	workspaceClient   workspaceClient.WorkspaceServiceClient
-	metadataClient    metadataClient.MetadataServiceClient
-	complianceClient  client.ComplianceServiceClient
+	logger           *zap.Logger
+	metadataClient   metadataClient.MetadataServiceClient
+	complianceClient client.ComplianceServiceClient
 	integrationClient integrationClient.IntegrationServiceClient
-	onboardClient     onboardClient.OnboardServiceClient
-	inventoryClient   inventoryClient.InventoryServiceClient
-	sinkClient        esSinkClient.EsSinkServiceClient
-	authGrpcClient    envoyAuth.AuthorizationClient
-	es                opengovernance.Client
+	onboardClient    onboardClient.OnboardServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
+	sinkClient       esSinkClient.EsSinkServiceClient
+	authGrpcClient   envoyAuth.AuthorizationClient
+	es               opengovernance.Client
 
 	jq *jq.JobQueue
 
@@ -138,8 +136,6 @@ type Scheduler struct {
 	describeExternalEndpoint     string
 	keyARN                       string
 	keyRegion                    string
-
-	WorkspaceName string
 
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
@@ -310,7 +306,6 @@ func InitializeScheduler(
 	s.complianceIntervalHours = time.Duration(conf.ComplianceIntervalHours) * time.Hour
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
-	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.integrationClient = integrationClient.NewIntegrationServiceClient(IntegrationBaseURL)
@@ -329,16 +324,6 @@ func InitializeScheduler(
 	)
 
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
-
-	workspace, err := s.workspaceClient.GetByName(&httpclient.Context{
-		UserRole: authAPI.InternalRole,
-	}, CurrentWorkspaceName)
-	if err != nil {
-		s.logger.Error("Failed to get workspace by name", zap.Error(err), zap.String("Workspace Name", CurrentWorkspaceName))
-		s.WorkspaceName = CurrentWorkspaceName
-	} else {
-		s.WorkspaceName = workspace.Name
-	}
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
@@ -591,7 +576,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.InternalRole}, nil)
+		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue

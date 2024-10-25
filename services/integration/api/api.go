@@ -5,6 +5,7 @@ import (
 	"github.com/opengovern/og-util/pkg/vault"
 	describe "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventory "github.com/opengovern/opengovernance/pkg/inventory/client"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration/api/connection"
 	"github.com/opengovern/opengovernance/services/integration/api/connector"
 	"github.com/opengovern/opengovernance/services/integration/api/credential"
@@ -20,6 +21,7 @@ type API struct {
 	logger          *zap.Logger
 	describe        describe.SchedulerServiceClient
 	inventory       inventory.InventoryServiceClient
+	metadata        metadata.MetadataServiceClient
 	meta            *meta.Meta
 	database        db.Database
 	vault           vault.VaultSourceConfig
@@ -32,6 +34,7 @@ func New(
 	logger *zap.Logger,
 	d describe.SchedulerServiceClient,
 	i inventory.InventoryServiceClient,
+	mClient metadata.MetadataServiceClient,
 	m *meta.Meta,
 	db db.Database,
 	vault vault.VaultSourceConfig,
@@ -43,6 +46,7 @@ func New(
 		logger:          logger.Named("api"),
 		describe:        d,
 		inventory:       i,
+		metadata:        mClient,
 		meta:            m,
 		database:        db,
 		vault:           vault,

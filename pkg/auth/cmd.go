@@ -8,57 +8,32 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	config2 "github.com/opengovern/og-util/pkg/config"
-	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/og-util/pkg/postgres"
-	client4 "github.com/opengovern/opengovernance/pkg/describe/client"
 	"os"
 	"strconv"
 
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
+	config2 "github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
-
 	"crypto/rand"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 )
 
 var (
-	mailApiKey     = os.Getenv("EMAIL_API_KEY")
-	mailSender     = os.Getenv("EMAIL_SENDER")
-	mailSenderName = os.Getenv("EMAIL_SENDER_NAME")
-
-	dexAuthDomain                = os.Getenv("DEX_AUTH_DOMAIN")
-	dexAuthPublicClientID        = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
-	dexGrpcAddress               = os.Getenv("DEX_GRPC_ADDR")
-	auth0Domain                  = os.Getenv("AUTH0_DOMAIN")
-	auth0ClientID                = os.Getenv("AUTH0_CLIENT_ID")
-	auth0ClientIDNative          = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
-	auth0ClientIDPennywiseNative = os.Getenv("AUTH0_CLIENT_ID_PENNYWISE_NATIVE")
-
-	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
-	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
-	auth0ManageClientSecret = os.Getenv("AUTH0_MANAGE_CLIENT_SECRET")
-	auth0Connection         = os.Getenv("AUTH0_CONNECTION")
-	auth0InviteTTL          = os.Getenv("AUTH0_INVITE_TTL")
+dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
+	dexAuthPublicClientID = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
+	dexGrpcAddress        = os.Getenv("DEX_GRPC_ADDR")
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	kaytuHost          = os.Getenv("KAYTU_HOST")
-	kaytuKeyEnabledStr = os.Getenv("KAYTU_KEY_ENABLED")
-	kaytuPublicKeyStr  = os.Getenv("KAYTU_PUBLIC_KEY")
-	kaytuPrivateKeyStr = os.Getenv("KAYTU_PRIVATE_KEY")
-
-	workspaceBaseUrl   = os.Getenv("WORKSPACE_BASE_URL")
-	complianceBaseUrl  = os.Getenv("COMPLIANCE_BASE_URL")
-	integrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
-	describeBaseUrl    = os.Getenv("DESCRIBE_BASE_URL")
-	metadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
+	platformHost          = os.Getenv("PLATFORM_HOST")
+	platformKeyEnabledStr = os.Getenv("PLATFORM_KEY_ENABLED")
+	platformPublicKeyStr  = os.Getenv("PLATFORM_PUBLIC_KEY")
+	platformPrivateKeyStr = os.Getenv("PLATFORM_PRIVATE_KEY")
 )
 
 func Command() *cobra.Command {
@@ -89,21 +64,6 @@ func start(ctx context.Context) error {
 
 	logger = logger.Named("auth")
 
-	verifier, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientID)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier: %w", err)
-	}
-
-	verifierNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDNative)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier: %w", err)
-	}
-
-	verifierPennywiseNative, err := newAuth0OidcVerifier(ctx, auth0Domain, auth0ClientIDPennywiseNative)
-	if err != nil {
-		return fmt.Errorf("open id connect verifier pennywise: %w", err)
-	}
-
 	dexVerifier, err := newDexOidcVerifier(ctx, dexAuthDomain, dexAuthPublicClientID)
 	if err != nil {
 		return fmt.Errorf("open id connect dex verifier: %w", err)
@@ -112,19 +72,9 @@ func start(ctx context.Context) error {
 	logger.Info("Instantiated a new Open ID Connect verifier")
 	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
 
-	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
-	complianceClient := client2.NewComplianceClient(complianceBaseUrl)
-	integrationClient := client3.NewIntegrationServiceClient(integrationBaseUrl)
-	schedulerClient := client4.NewSchedulerServiceClient(describeBaseUrl)
-
-	inviteTTL, err := strconv.ParseInt(auth0InviteTTL, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse auth0InviteTTL=%s due to %v", auth0InviteTTL, err)
-	}
-
 	// setup postgres connection
 	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
+Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,
@@ -144,18 +94,18 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	if kaytuKeyEnabledStr == "" {
-		kaytuKeyEnabledStr = "false"
+	if platformKeyEnabledStr == "" {
+		platformKeyEnabledStr = "false"
 	}
-	kaytuKeyEnabled, err := strconv.ParseBool(kaytuKeyEnabledStr)
+	platformKeyEnabled, err := strconv.ParseBool(platformKeyEnabledStr)
 	if err != nil {
-		return fmt.Errorf("kaytuKeyEnabled [%s]: %w", kaytuKeyEnabledStr, err)
+		return fmt.Errorf("platformKeyEnabled [%s]: %w", platformKeyEnabledStr, err)
 	}
 
-	var kaytuPublicKey *rsa.PublicKey
-	var kaytuPrivateKey *rsa.PrivateKey
-	if kaytuKeyEnabled {
-		b, err := base64.StdEncoding.DecodeString(kaytuPublicKeyStr)
+	var platformPublicKey *rsa.PublicKey
+	var platformPrivateKey *rsa.PrivateKey
+	if platformKeyEnabled {
+		b, err := base64.StdEncoding.DecodeString(platformPublicKeyStr)
 		if err != nil {
 			return fmt.Errorf("public key decode: %w", err)
 		}
@@ -167,9 +117,9 @@ func start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		kaytuPublicKey = pub.(*rsa.PublicKey)
+		platformPublicKey = pub.(*rsa.PublicKey)
 
-		b, err = base64.StdEncoding.DecodeString(kaytuPrivateKeyStr)
+		b, err = base64.StdEncoding.DecodeString(platformPrivateKeyStr)
 		if err != nil {
 			return fmt.Errorf("private key decode: %w", err)
 		}
@@ -181,7 +131,7 @@ func start(ctx context.Context) error {
 		if err != nil {
 			panic(err)
 		}
-		kaytuPrivateKey = pri.(*rsa.PrivateKey)
+		platformPrivateKey = pri.(*rsa.PrivateKey)
 	} else {
 		keyPair, err := adb.GetKeyPair()
 		if err != nil {
@@ -189,13 +139,13 @@ func start(ctx context.Context) error {
 		}
 
 		if len(keyPair) == 0 {
-			kaytuPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+			platformPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 			if err != nil {
 				panic(fmt.Sprintf("Error generating RSA key: %v", err))
 			}
-			kaytuPublicKey = &kaytuPrivateKey.PublicKey
+			platformPublicKey = &platformPrivateKey.PublicKey
 
-			b, err := x509.MarshalPKIXPublicKey(kaytuPublicKey)
+			b, err := x509.MarshalPKIXPublicKey(platformPublicKey)
 			if err != nil {
 				panic(err)
 			}
@@ -213,7 +163,7 @@ func start(ctx context.Context) error {
 				panic(err)
 			}
 
-			b, err = x509.MarshalPKCS8PrivateKey(kaytuPrivateKey)
+			b, err = x509.MarshalPKCS8PrivateKey(platformPrivateKey)
 			if err != nil {
 				panic(err)
 			}
@@ -246,7 +196,7 @@ func start(ctx context.Context) error {
 					if err != nil {
 						return err
 					}
-					kaytuPublicKey = pub.(*rsa.PublicKey)
+					platformPublicKey = pub.(*rsa.PublicKey)
 				} else if k.Key == "private_key" {
 					b, err := base64.StdEncoding.DecodeString(k.Value)
 					if err != nil {
@@ -260,48 +210,32 @@ func start(ctx context.Context) error {
 					if err != nil {
 						panic(err)
 					}
-					kaytuPrivateKey = pri.(*rsa.PrivateKey)
+					platformPrivateKey = pri.(*rsa.PrivateKey)
 				}
 			}
 		}
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
-		auth0Connection, int(inviteTTL), adb)
-
 	authServer := &Server{
-		host:                    kaytuHost,
-		kaytuPublicKey:          kaytuPublicKey,
-		verifier:                verifier,
-		verifierNative:          verifierNative,
-		verifierPennywiseNative: verifierPennywiseNative,
-		dexVerifier:             dexVerifier,
-		logger:                  logger,
-		workspaceClient:         workspaceClient,
-		complianceClient:        complianceClient,
-		integrationClient:       integrationClient,
-		db:                      adb,
-		auth0Service:            auth0Service,
-		updateLoginUserList:     nil,
-		updateLogin:             make(chan User, 100000),
+		host:              platformHost,
+		platformPublicKey: platformPublicKey,
+
+		dexVerifier:         dexVerifier,
+		logger:              logger,
+		db:                  adb,
+		updateLoginUserList: nil,
+		updateLogin:         make(chan User, 100000),
 	}
-	go authServer.WorkspaceMapUpdater()
+
 	go authServer.UpdateLastLoginLoop()
 
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
-			logger: logger,
-			//emailService:    m,
-			workspaceClient:   workspaceClient,
-			complianceClient:  complianceClient,
-			integrationClient: integrationClient,
-			schedulerClient:   schedulerClient,
-			metadataBaseUrl:   metadataBaseUrl,
-			auth0Service:      auth0Service,
-			kaytuPrivateKey:   kaytuPrivateKey,
-			db:                adb,
-			authServer:        authServer,
+			logger:             logger,
+			platformPrivateKey: platformPrivateKey,
+			db:                 adb,
+			authServer:         authServer,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()

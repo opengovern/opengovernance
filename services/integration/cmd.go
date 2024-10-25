@@ -1,11 +1,15 @@
 package integration
 
 import (
+	"errors"
+	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/og-util/pkg/vault"
 	describe "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventory "github.com/opengovern/opengovernance/pkg/inventory/client"
+	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration/api"
 	"github.com/opengovern/opengovernance/services/integration/config"
 	"github.com/opengovern/opengovernance/services/integration/db"
@@ -33,6 +37,20 @@ func Command() *cobra.Command {
 				return err
 			}
 
+			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
+			d := describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
+			mClient := metadata.NewMetadataServiceClient(cnf.Metadata.BaseURL)
+
+			_, err = mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
+			if err != nil && errors.Is(err, metadata.ErrConfigNotFound) {
+				return err
+			}
+
+			m, err := meta.New(cnf.Metadata)
+			if err != nil {
+				return err
+			}
+
 			var vaultSc vault.VaultSourceConfig
 			switch cnf.Vault.Provider {
 			case vault.AwsKMS:
@@ -55,20 +73,13 @@ func Command() *cobra.Command {
 				}
 			}
 
-			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
-			d := describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
-			m, err := meta.New(cnf.Metadata)
-			if err != nil {
-				return err
-			}
-
 			cmd.SilenceUsage = true
 
 			return httpserver.RegisterAndStart(
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, d, i, m, db, vaultSc, cnf.Vault.KeyId, cnf.MasterAccessKey, cnf.MasterSecretKey),
+				api.New(logger, d, i, mClient, m, db, vaultSc, cnf.Vault.KeyId, cnf.MasterAccessKey, cnf.MasterSecretKey),
 			)
 		},
 	}

@@ -26,5 +26,5 @@ func New(logger *zap.Logger, esSinkService *service.EsSinkService) *API {
 func (api *API) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.POST("/ingest", httpserver.AuthorizeHandler(api.ingestApi.Ingest, authApi.InternalRole))
+	v1.POST("/ingest", httpserver.AuthorizeHandler(api.ingestApi.Ingest, authApi.AdminRole))
 }

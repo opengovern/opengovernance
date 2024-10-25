@@ -78,7 +78,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	ctx.UserRole = authApi.InternalRole
+	ctx.UserRole = authApi.AdminRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Connection
@@ -98,7 +98,7 @@ func (s *onboardClient) GetSourceBySourceId(ctx *httpclient.Context, sourceID st
 	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	ctx.UserRole = authApi.InternalRole
+	ctx.UserRole = authApi.AdminRole
 	url := fmt.Sprintf("%s/api/v2/sources/%s", s.baseURL, sourceID)
 
 	var source api.Connection
@@ -231,7 +231,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 }
 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error) {
-	ctx.UserRole = authApi.InternalRole
+	ctx.UserRole = authApi.AdminRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	for i, v := range t {
 		if i == 0 {
@@ -253,7 +253,7 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 }
 
 func (s *onboardClient) PurgeSampleData(ctx *httpclient.Context) error {
-	ctx.UserRole = authApi.InternalRole
+	ctx.UserRole = authApi.AdminRole
 	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
 
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {

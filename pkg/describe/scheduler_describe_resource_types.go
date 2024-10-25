@@ -17,24 +17,24 @@ import (
 func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes, error) {
 	var result api.ListDiscoveryResourceTypes
 
-	assetDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAssetDiscoveryEnabled)
+	assetDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, models.MetadataKeyAssetDiscoveryEnabled)
 	if err != nil {
 		return result, err
 	}
 	assetDiscoveryEnabled := assetDiscoveryEnabledMetadata.GetValue().(bool)
 
-	spendDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeySpendDiscoveryEnabled)
+	spendDiscoveryEnabledMetadata, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, models.MetadataKeySpendDiscoveryEnabled)
 	if err != nil {
 		return result, err
 	}
 	spendDiscoveryEnabled := spendDiscoveryEnabledMetadata.GetValue().(bool)
 
-	azureDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAzureDiscoveryRequiredOnly)
+	azureDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, models.MetadataKeyAzureDiscoveryRequiredOnly)
 	if err != nil {
 		return result, err
 	}
 
-	awsDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.InternalRole}, models.MetadataKeyAWSDiscoveryRequiredOnly)
+	awsDiscoveryType, err := s.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, models.MetadataKeyAWSDiscoveryRequiredOnly)
 	if err != nil {
 		return result, err
 	}
@@ -92,11 +92,11 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	}
 
 	var resourceTypes []string
-	assetMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, utils.GetPointer(analyticsDb.MetricTypeAssets))
+	assetMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.AdminRole}, utils.GetPointer(analyticsDb.MetricTypeAssets))
 	if err != nil {
 		return result, err
 	}
-	spendMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.InternalRole}, utils.GetPointer(analyticsDb.MetricTypeSpend))
+	spendMetrics, err := s.inventoryClient.ListAnalyticsMetrics(&httpclient.Context{UserRole: apiAuth.AdminRole}, utils.GetPointer(analyticsDb.MetricTypeSpend))
 	if err != nil {
 		return result, err
 	}
@@ -107,11 +107,11 @@ func (s *Scheduler) ListDiscoveryResourceTypes() (api.ListDiscoveryResourceTypes
 	result.AzureResourceTypes = append(result.AzureResourceTypes, "Microsoft.CostManagement/CostByResourceType")
 	result.AWSResourceTypes = append(result.AWSResourceTypes, "AWS::CostExplorer::ByServiceDaily")
 
-	queries, err := s.complianceClient.ListQueries(&httpclient.Context{UserRole: apiAuth.InternalRole})
+	queries, err := s.complianceClient.ListQueries(&httpclient.Context{UserRole: apiAuth.AdminRole})
 	if err != nil {
 		return result, err
 	}
-	controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.InternalRole}, nil, nil)
+	controls, err := s.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil, nil)
 	if err != nil {
 		return result, err
 	}

@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -13,43 +17,29 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	api3 "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/auth/api"
-	"github.com/opengovern/opengovernance/pkg/auth/auth0"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
-	client2 "github.com/opengovern/opengovernance/pkg/compliance/client"
-	"github.com/opengovern/opengovernance/pkg/workspace/client"
-	client3 "github.com/opengovern/opengovernance/services/integration/client"
+	"github.com/opengovern/opengovernance/pkg/auth/utils"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	"gorm.io/gorm"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type User struct {
-	UserID   string
-	Email    string
-	Metadata auth0.Metadata
+	ID         string
+	Email      string
+	ExternalId string
+	Role       api.Role
+	LastLogin  time.Time
+	CreatedAt  time.Time
 }
 
 type Server struct {
-	host string
-
-	kaytuPublicKey          *rsa.PublicKey
-	verifier                *oidc.IDTokenVerifier
-	verifierNative          *oidc.IDTokenVerifier
-	verifierPennywiseNative *oidc.IDTokenVerifier
-	dexVerifier             *oidc.IDTokenVerifier
-	logger                  *zap.Logger
-	workspaceClient         client.WorkspaceServiceClient
-	complianceClient        client2.ComplianceServiceClient
-	integrationClient       client3.IntegrationServiceClient
-	db                      db.Database
-	auth0Service            *auth0.Service
-
+	host                string
+	platformPublicKey   *rsa.PublicKey
+	dexVerifier         *oidc.IDTokenVerifier
+	logger              *zap.Logger
+	db                  db.Database
 	updateLoginUserList []User
 	updateLogin         chan User
 }
@@ -63,19 +53,6 @@ type DexClaims struct {
 	jwt.StandardClaims
 }
 
-func (s *Server) GetWorkspaceIDByName(workspaceName string) (string, error) {
-	workspaceMap, err := s.db.GetWorkspaceMapByName(workspaceName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", fmt.Errorf("workspace does not exists %s", workspaceName)
-		} else {
-			s.logger.Error("failed to get workspace map by name", zap.Error(err))
-			return "", err
-		}
-	}
-	return workspaceMap.ID, nil
-}
-
 func (s *Server) UpdateLastLoginLoop() {
 	for {
 		finished := false
@@ -84,7 +61,7 @@ func (s *Server) UpdateLastLoginLoop() {
 			case userId := <-s.updateLogin:
 				alreadyExists := false
 				for _, user := range s.updateLoginUserList {
-					if user.UserID == userId.UserID {
+					if user.ExternalId == userId.ExternalId {
 						alreadyExists = true
 					}
 				}
@@ -99,24 +76,26 @@ func (s *Server) UpdateLastLoginLoop() {
 
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
-			if user.UserID != "" {
-				usr, err := s.auth0Service.GetOrCreateUser(user.UserID, user.Email)
+			if user.ExternalId != "" {
+				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email, s.db)
 				if err != nil {
-					s.logger.Error("failed to get user metadata", zap.String("userId", user.UserID), zap.Error(err))
+					s.logger.Error("failed to get user metadata", zap.String("External Id", user.ID), zap.Error(err))
 					continue
 				}
 				tim := time.Time{}
-				if usr.AppMetadata.LastLogin != nil {
-					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
+				if !usr.LastLogin.IsZero() {
+					tim = usr.LastLogin
 				}
-				if time.Now().After(tim.Add(15 * time.Minute)) {
-					s.logger.Info("updating metadata", zap.String("userId", user.UserID))
-					usr.AppMetadata.LastLogin = user.Metadata.LastLogin
-					tim, _ = time.Parse("2006-01-02 15:04:05 MST", *usr.AppMetadata.LastLogin)
 
-					err = s.auth0Service.PatchUserAppMetadata(user.UserID, usr.AppMetadata, &tim)
+				if time.Now().After(tim.Add(15 * time.Minute)) {
+					s.logger.Info("updating metadata", zap.String("External Id", user.ExternalId))
+
+					tim = time.Now()
+					s.logger.Info("time is", zap.Time("time", tim))
+
+					err = utils.UpdateUserLastLogin(user.ExternalId, tim, s.db)
 					if err != nil {
-						s.logger.Error("failed to update user metadata", zap.String("userId", user.UserID), zap.Error(err))
+						s.logger.Error("failed to update user metadata", zap.String("External Id", user.ExternalId), zap.Error(err))
 					}
 				}
 			}
@@ -129,7 +108,7 @@ func (s *Server) UpdateLastLoginLoop() {
 }
 
 func (s *Server) UpdateLastLogin(claim *userClaim) {
-	timeNow := time.Now().Format("2006-01-02 15:04:05 MST")
+	timeNow := time.Now()
 	doUpdate := false
 	if claim.MemberSince == nil {
 		claim.MemberSince = &timeNow
@@ -139,8 +118,7 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 		claim.UserLastLogin = &timeNow
 		doUpdate = true
 	} else {
-		tim, _ := time.Parse("2006-01-02 15:04:05 MST", *claim.UserLastLogin)
-		if time.Now().After(tim.Add(15 * time.Minute)) {
+		if time.Now().After(claim.UserLastLogin.Add(15 * time.Minute)) {
 			claim.UserLastLogin = &timeNow
 			doUpdate = true
 		}
@@ -148,16 +126,11 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 
 	if doUpdate {
 		s.updateLogin <- User{
-			UserID: claim.ExternalUserID,
-			Email:  claim.Email,
-			Metadata: auth0.Metadata{
-				WorkspaceAccess: claim.WorkspaceAccess,
-				GlobalAccess:    claim.GlobalAccess,
-				ColorBlindMode:  claim.ColorBlindMode,
-				Theme:           claim.Theme,
-				MemberSince:     claim.MemberSince,
-				LastLogin:       claim.UserLastLogin,
-			},
+			ExternalId: claim.ExternalUserID,
+			LastLogin:  *claim.UserLastLogin,
+			CreatedAt:  *claim.MemberSince,
+
+			Email: claim.Email,
 		}
 	}
 }
@@ -203,16 +176,7 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	workspaceName := strings.TrimPrefix(httpRequest.Path, "/")
-	if idx := strings.Index(workspaceName, "/"); idx > 0 {
-		workspaceName = workspaceName[:idx]
-	}
-
-	if headerWorkspace, ok := headers["workspace-name"]; ok {
-		workspaceName = headerWorkspace
-	}
-
-	theUser, err := s.auth0Service.GetOrCreateUser(user.ExternalUserID, user.Email)
+	theUser, err := utils.GetOrCreateUser(user.ExternalUserID, user.Email, s.db)
 	if err != nil {
 		s.logger.Warn("failed to getOrCreate user",
 			zap.String("userId", user.ExternalUserID),
@@ -222,25 +186,20 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			return unAuth, nil
 		}
 	}
-	user.WorkspaceAccess = theUser.AppMetadata.WorkspaceAccess
-	user.GlobalAccess = theUser.AppMetadata.GlobalAccess
-	user.MemberSince = theUser.AppMetadata.MemberSince
-	user.UserLastLogin = theUser.AppMetadata.LastLogin
-	user.ColorBlindMode = theUser.AppMetadata.ColorBlindMode
-	user.Theme = theUser.AppMetadata.Theme
-	user.ConnectionIDs = theUser.AppMetadata.ConnectionIDs
+	user.Role = (api.Role)(theUser.Role)
 
-	if user.WorkspaceAccess == nil {
-		user.WorkspaceAccess = map[string]api3.Role{}
-	}
+	user.MemberSince = &theUser.CreatedAt
+	user.UserLastLogin = &theUser.LastLogin
 
-	rb, err := s.GetWorkspaceByName(workspaceName, user)
+	// if user.Role == nil {
+	// 	user.Role = *api.ViewerRole{}
+	// }
+
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
 			zap.String("reqId", httpRequest.Id),
 			zap.String("path", httpRequest.Path),
 			zap.String("method", httpRequest.Method),
-			zap.String("workspace", workspaceName),
 			zap.Error(err))
 		return unAuth, nil
 	}
@@ -255,36 +214,36 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		HttpResponse: &envoyauth.CheckResponse_OkResponse{
 			OkResponse: &envoyauth.OkHttpResponse{
 				Headers: []*envoycore.HeaderValueOption{
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XplatformWorkspaceIDHeader,
+					// 		Value: rb.WorkspaceID,
+					// 	},
+					// },
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XplatformWorkspaceNameHeader,
+					// 		Value: rb.WorkspaceName,
+					// 	},
+					// },
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuWorkspaceIDHeader,
-							Value: rb.WorkspaceID,
+							Key:   httpserver.XPlatformUserIDHeader,
+							Value: user.ExternalUserID,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuWorkspaceNameHeader,
-							Value: rb.WorkspaceName,
+							Key:   httpserver.XPlatformUserRoleHeader,
+							Value: string(user.Role),
 						},
 					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserIDHeader,
-							Value: rb.UserID,
-						},
-					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserRoleHeader,
-							Value: string(rb.RoleName),
-						},
-					},
-					{
-						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKaytuUserConnectionsScope,
-							Value: strings.Join(rb.ScopedConnectionIDs, ","),
-						},
-					},
+					// {
+					// 	Header: &envoycore.HeaderValue{
+					// 		Key:   httpserver.XPlatformUserConnectionsScope,
+					// 		Value: strings.Join(rb.ScopedConnectionIDs, ","),
+					// 	},
+					// },
 				},
 			},
 		},
@@ -292,15 +251,12 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 }
 
 type userClaim struct {
-	WorkspaceAccess map[string]api3.Role `json:"https://app.kaytu.io/workspaceAccess"`
-	GlobalAccess    *api3.Role           `json:"https://app.kaytu.io/globalAccess"`
-	Email           string               `json:"https://app.kaytu.io/email"`
-	MemberSince     *string              `json:"https://app.kaytu.io/memberSince"`
-	UserLastLogin   *string              `json:"https://app.kaytu.io/userLastLogin"`
-	ColorBlindMode  *bool                `json:"https://app.kaytu.io/colorBlindMode"`
-	Theme           *api.Theme           `json:"https://app.kaytu.io/theme"`
-	ConnectionIDs   map[string][]string  `json:"https://app.kaytu.io/connectionIDs"`
-
+	Role           api.Role
+	Email          string
+	MemberSince    *time.Time
+	UserLastLogin  *time.Time
+	ColorBlindMode *bool
+	ConnectionIDs  map[string][]string
 	ExternalUserID string `json:"sub"`
 }
 
@@ -318,32 +274,6 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 	}
 
 	var u userClaim
-	t, err := s.verifierNative.Verify(ctx, token)
-	if err == nil {
-		if err := t.Claims(&u); err != nil {
-			return nil, err
-		}
-
-		return &u, nil
-	}
-
-	t, err = s.verifier.Verify(ctx, token)
-	if err == nil {
-		if err := t.Claims(&u); err != nil {
-			return nil, err
-		}
-
-		return &u, nil
-	}
-
-	tp, err := s.verifierPennywiseNative.Verify(ctx, token)
-	if err == nil {
-		if err := tp.Claims(&u); err != nil {
-			return nil, err
-		}
-
-		return &u, nil
-	}
 
 	s.logger.Info("dex verifier verifying")
 	dv, err := s.dexVerifier.Verify(ctx, token)
@@ -364,7 +294,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
 		if claimsMap.Email == "" {
-			claimsMap.Email = "admin@example.com"
+			claimsMap.Email = "admin@opengovernance.io"
 		}
 
 		return &userClaim{
@@ -375,82 +305,17 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Error("dex verifier verify error", zap.Error(err))
 	}
 
-	if s.kaytuPublicKey != nil {
+	if s.platformPublicKey != nil {
 		_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-			return s.kaytuPublicKey, nil
+			return s.platformPublicKey, nil
 		})
 		if errk == nil {
 			return &u, nil
 		} else {
-			fmt.Println("failed to auth with kaytu cred due to", errk)
+			fmt.Println("failed to auth with platform cred due to", errk)
 		}
 	}
 	return nil, err
-}
-
-func (s *Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.RoleBinding, error) {
-	var rb api.RoleBinding
-
-	if user.ExternalUserID == api3.GodUserID {
-		return api.RoleBinding{}, errors.New("claiming to be god is banned")
-	}
-
-	rb = api.RoleBinding{
-		UserID:        user.ExternalUserID,
-		WorkspaceID:   "",
-		WorkspaceName: "",
-		RoleName:      api3.EditorRole,
-	}
-
-	if workspaceName != "kaytu" {
-		workspaceID, err := s.GetWorkspaceIDByName(workspaceName)
-		if err != nil {
-			return rb, err
-		}
-
-		rb.UserID = user.ExternalUserID
-		rb.WorkspaceName = workspaceName
-		rb.WorkspaceID = workspaceID
-		rb.ScopedConnectionIDs = user.ConnectionIDs[workspaceID]
-
-		if rl, ok := user.WorkspaceAccess[workspaceID]; ok {
-			rb.RoleName = rl
-		} else if user.GlobalAccess != nil {
-			rb.RoleName = *user.GlobalAccess
-		} else {
-			s.logger.Error("access denied",
-				zap.String("user", user.ExternalUserID),
-				zap.String("workspaceID", workspaceID),
-				zap.String("workspaceName", workspaceName),
-				zap.Any("workspaceAccess", user.WorkspaceAccess),
-			)
-			return rb, fmt.Errorf("access denied: %s", workspaceID)
-		}
-	}
-
-	return rb, nil
-}
-
-func newAuth0OidcVerifier(ctx context.Context, auth0Domain, clientId string) (*oidc.IDTokenVerifier, error) {
-	transport := &http.Transport{
-		MaxIdleConns:        10,
-		IdleConnTimeout:     30 * time.Second,
-		MaxIdleConnsPerHost: 10,
-	}
-
-	httpClient := &http.Client{
-		Transport: transport,
-	}
-
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), auth0Domain)
-	if err != nil {
-		return nil, err
-	}
-
-	return provider.Verifier(&oidc.Config{
-		ClientID:          clientId,
-		SkipClientIDCheck: true,
-	}), nil
 }
 
 func newDexOidcVerifier(ctx context.Context, domain, clientId string) (*oidc.IDTokenVerifier, error) {
