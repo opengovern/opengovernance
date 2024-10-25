@@ -894,6 +894,7 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 			SubType: localConnector.ConnectorSubType,
 			IsActive: localConnector.IsActive,
 			UserCount: localConnector.UserCount,
+			CreatedAt: localConnector.CreatedAt,
 
 
 		}

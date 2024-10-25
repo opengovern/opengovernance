@@ -45,6 +45,7 @@ type GetConnectorsResponse struct {
 		TenantID string `json:"tenant_id,omitempty"`
 		IsActive bool   `json:"is_active"`
 		UserCount uint `json:"user_count"`
+		CreatedAt any `json:"created_at"`
 	}
 
 
