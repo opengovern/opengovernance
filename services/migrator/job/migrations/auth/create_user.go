@@ -63,7 +63,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Password: &dexApi.Password{
 			Email:    conf.DefaultDexUserEmail,
 			Username: conf.DefaultDexUserName,
-			UserId:   fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+			UserId:   fmt.Sprintf("local|%s", conf.DefaultDexUserEmail),
 			Hash:     hashedPassword,
 		},
 	}
@@ -82,8 +82,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Username:              conf.DefaultDexUserEmail,
 		FullName:              conf.DefaultDexUserEmail,
 		Role:                  role,
-		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		Connector:             "local",
+		ExternalId:            fmt.Sprintf("local|%s", conf.DefaultDexUserEmail),
+		ConnectorId:             "local",
 		IsActive:              true,
 		RequirePasswordChange: true,
 	}

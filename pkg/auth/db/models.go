@@ -43,6 +43,5 @@ type User struct {
 	LastLogin             time.Time
 	Username              string
 	RequirePasswordChange bool `gorm:"default:true"`
-	Connector             string
 	IsActive              bool `gorm:"default:true"`
 }

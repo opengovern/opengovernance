@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/opengovernance/pkg/auth/db"
 	"time"
 
@@ -54,34 +53,25 @@ func DbUserToApi(u *db.User) (*User, error) {
 	}, nil
 }
 
-func GetOrCreateUser(userID string, email string, database db.Database) (*User, error) {
+func GetUserByEmail(email string, database db.Database) (*User, error) {
 
-	if userID == "" {
-		return nil, errors.New("GetOrCreateUser: empty user id")
+	if email == "" {
+		return nil, errors.New("GetUserByEmail: empty email")
 	}
 
-	user, err := database.GetUserByExternalID(userID)
+	user, err := database.GetUserByEmail(email)
 	if err != nil {
 		return nil, err
 	}
 
 	if user == nil {
-		user = &db.User{
-			Email:      email,
-			Username:   email,
-			FullName:   email,
-			ExternalId: userID,
-			Role:       api.ViewerRole,
-		}
-		err = database.CreateUser(user)
-		if err != nil {
-			return nil, err
-		}
+		return nil, errors.New("user not found")
 	}
 
 	if !user.IsActive {
 		return nil, errors.New("user disabled")
 	}
+	
 
 	resp, err := DbUserToApi(user)
 	if err != nil {
