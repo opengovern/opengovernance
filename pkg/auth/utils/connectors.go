@@ -21,7 +21,7 @@ type CreateConnectorRequest struct {
 	Name             string `json:"name,omitempty"` // Optional
 }
 type UpdateConnectorRequest struct {
-
+	ConnectorID 	string `json:"connector_id" validate:"required"`
 	ConnectorType    string `json:"connector_type" validate:"required,oneof=oidc"`                                  // 'oidc' is supported for now
 	ConnectorSubType string `json:"connector_sub_type" validate:"omitempty,oneof=general google-workspace entraid"` // Optional sub-type
 	Issuer           string `json:"issuer,omitempty" validate:"omitempty,url"`

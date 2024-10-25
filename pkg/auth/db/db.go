@@ -20,6 +20,7 @@ func (db Database) Initialize() error {
 		&ApiKey{},
 		&User{},
 		&Configuration{},
+		&Connector{},
 	)
 	if err != nil {
 		return err

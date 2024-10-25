@@ -895,6 +895,7 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 			IsActive: localConnector.IsActive,
 			UserCount: localConnector.UserCount,
 			CreatedAt: localConnector.CreatedAt,
+			LastUpdate: localConnector.LastUpdate,
 
 
 		}
@@ -1089,7 +1090,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if (req.ID =="" ){
+	if (req.ID ==0 ){
 		return echo.NewHTTPError(http.StatusBadRequest, "ID required")
 	}
 
@@ -1138,8 +1139,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 			TenantID : req.TenantID,
 			ClientID : req.ClientID,
 			ClientSecret : req.ClientSecret,
-			ID : req.ID,
-			Name : req.Name,
+			ID : req.ConnectorID,
 		}
 
 	dexreq,err := utils.UpdateOIDCConnector(dexRequest)	
@@ -1165,8 +1165,11 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
 	}
 	err = r.db.UpdateConnector(&db.Connector{
+		Model: gorm.Model{
+				ID: req.ID,
+			},
 		LastUpdate: time.Now(),
-		ConnectorID: req.ID,
+		ConnectorID: req.ConnectorID,
 		ConnectorType: req.ConnectorType,
 		ConnectorSubType: req.ConnectorSubType,
 		IsActive: req.IsActive,
