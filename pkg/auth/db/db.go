@@ -20,6 +20,7 @@ func (db Database) Initialize() error {
 		&ApiKey{},
 		&User{},
 		&Configuration{},
+		&Connector{},
 	)
 	if err != nil {
 		return err
@@ -69,8 +70,6 @@ func (db Database) ListApiKeysForUser(userId string) ([]ApiKey, error) {
 	}
 	return s, nil
 }
-
-
 
 func (db Database) AddApiKey(key *ApiKey) error {
 	tx := db.Orm.Create(key)
@@ -330,3 +329,96 @@ func (db Database) CountApiKeysForUser(userID string) (int64, error) {
 	}
 	return s, nil
 }
+
+// Get all connectors
+
+func (db Database) GetConnectors() ([]Connector, error) {
+	var s []Connector
+	tx := db.Orm.Model(&Connector{}).
+		Order("last_update desc").
+		Find(&s)
+		
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
+func (db Database) GetConnector(id string) (*Connector, error) {
+	var s Connector
+	tx := db.Orm.Model(&Connector{}).
+		Where("id = ?", id).
+		Find(&s)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+func (db Database) CreateConnector(connector *Connector) error {
+	tx := db.Orm.Create(connector)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateConnector(connector *Connector) error {
+	tx := db.Orm.Model(&Connector{}).
+		Where("id = ?", connector.ID).
+		Updates(connector).
+		Update("is_active", connector.IsActive)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+// delete connector by connector id
+func (db Database) DeleteConnector(connectorID string) error {
+	tx := db.Orm.Model(&Connector{}).
+		Where("connector_id = ?", connectorID).
+		Delete(&Connector{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+
+func (db Database) GetConnectorByConnectorID(connectorID string) (*Connector, error) {
+	var s Connector
+	tx := db.Orm.Model(&Connector{}).
+		Where("connector_id = ?", connectorID).
+		Find(&s)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+// get Connector by connector type 
+
+func (db Database) GetConnectorByConnectorType(connectorType string) (*Connector, error) {
+	var s Connector
+	tx := db.Orm.Model(&Connector{}).
+		Where("connector_type = ?", connectorType).
+		Find(&s)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &s, nil
+}
+
+
+

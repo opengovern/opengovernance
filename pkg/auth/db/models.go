@@ -22,6 +22,17 @@ type ApiKey struct {
 	MaskedKey     string
 }
 
+type Connector struct {
+	gorm.Model
+	UserCount 		uint  `gorm:"default:0"`
+	IsActive bool   `gorm:"default:true"`
+	ConnectorID string
+	ConnectorType string
+	ConnectorSubType string	
+	LastUpdate 		time.Time
+	
+}
+
 type User struct {
 	gorm.Model
 	Email                 string
