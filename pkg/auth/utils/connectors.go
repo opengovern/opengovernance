@@ -39,6 +39,7 @@ type OIDCConfig struct {
 	ClientSecret string `json:"clientSecret"`
 	Name 			string `json:"name,omitempty"`
 }
+
 type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
 
 var  connectorCreators = map[string]ConnectorCreator{
@@ -67,12 +68,7 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 		}
 		
 
-		if connectorID == "" {
-			connectorID = "default-oidc"
-		}
-		if connectorName == "" {
-			connectorName = "OIDC SSO"
-		}
+		
 
 	case "entraid":
 		// Required: tenantID, clientID, clientSecret
@@ -91,12 +87,7 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 		}
 		
 
-		if connectorID == "" {
-			connectorID = "entraid-oidc"
-		}
-		if connectorName == "" {
-			connectorName = "Microsoft AzureAD SSO"
-		}
+		
 
 	case "google-workspace":
 		// Required: clientID, clientSecret
@@ -106,13 +97,7 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 		}
 	
 
-		if connectorID == "" {
-			connectorID = "google-workspace-oidc"
-		}
-		if connectorName == "" {
-			connectorName = "Google Workspace SSO"
-		}
-
+		
 	default:
 		return nil, fmt.Errorf("unsupported connector_sub_type: %s", params.ConnectorSubType)
 	}
@@ -213,20 +198,12 @@ func UpdateOIDCConnector(params UpdateConnectorRequest) (*dexapi.UpdateConnector
 	
 		return nil, fmt.Errorf("failed to marshal new OIDC config: %w", err)
 	}
-	var req *dexapi.UpdateConnectorReq
-
-	if(params.Name == ""){
-		req = &dexapi.UpdateConnectorReq{
+	
+	req := &dexapi.UpdateConnectorReq{
 		Id:        params.ID,
 		NewConfig: configBytes,
 	}
-	}else{
-		req = &dexapi.UpdateConnectorReq{
-		Id:        params.ID,
-		NewConfig: configBytes,
-		NewName: params.Name,
-	}
-}
+	
 
 	
 	return req, nil

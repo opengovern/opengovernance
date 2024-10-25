@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	dexApi "github.com/dexidp/dex/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -71,9 +72,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 	v1.PUT("/connector", httpserver.AuthorizeHandler(r.UpdateConnector, api2.AdminRole))
 	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.DeleteConnector, api2.AdminRole))
-
-
-
+	
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -285,7 +284,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	}
 
 	if usr == nil {
-		return errors.New("failed to find user in auth0")
+		return errors.New("failed to find user in auth")
 	}
 
 	u := userClaim{
@@ -878,15 +877,26 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 	var resp []api.GetConnectorsResponse
 	for _, connector := range connectors {
 		
-		
+		localConnector,err := r.db.GetConnectorByConnectorID(connector.Id) 
+		if err != nil {
+			r.logger.Error("failed to get connector", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to get connector")
+		}
 		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
 			continue
 		}
 
 		info := api.GetConnectorsResponse{
-			ID:   connector.Id,
+			ID:   localConnector.ID,
+			ConnectorID: connector.Id,
 			Type: connector.Type,
 			Name: connector.Name,
+			SubType: localConnector.ConnectorSubType,
+			IsActive: localConnector.IsActive,
+			UserCount: localConnector.UserCount,
+			CreatedAt: localConnector.CreatedAt,
+
+
 		}
 
 		// If the connector is of type "oidc", attempt to extract Issuer and ClientID
@@ -976,66 +986,48 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			
 
 		}
-		// client_id and client_secret are already validated as required in the struct
 
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
-			req.ID = "default-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
-			r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.ID = "oidc-default"
 		}
 		if strings.TrimSpace(req.Name) == "" {
-			req.Name = "OIDC SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
-				r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.Name = "General OIDC"
 		}
 
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector")
+			err:= "Missing 'tenant_id' for 'entraid' OIDC connector"
 				r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		
 		}
-		// client_id and client_secret are already validated as required in the struct
+		// fetching issuer
+		
+
 
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
-			req.ID = "entraid-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
-			r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.ID = "entra-id"
 			
 		}
 		if strings.TrimSpace(req.Name) == "" {
-			req.Name = "Microsoft AzureAD SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
-			r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.Name = "AzureAD/EntraID"
 			
 		}
 
 	case "google-workspace":
 		// Required: client_id, client_secret
-		// No additional fields needed
-		// client_id and client_secret are already validated as required in the struct
-
+		
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
-			req.ID = "google-workspace-oidc"
-			err:= fmt.Sprintf("No 'id' provided. Defaulting to '%s'", req.ID)
-			r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.ID = "google-oidc"
 			
 		}
 		if strings.TrimSpace(req.Name) == "" {
-			req.Name = "Google Workspace SSO"
-			err:= fmt.Sprintf("No 'name' provided. Defaulting to '%s'", req.Name)
-			r.logger.Info(err)
-			// return echo.NewHTTPError(http.StatusBadRequest, err)
+			req.Name = "Google Workspaces "
+		
 			
 		}
 	}
@@ -1067,6 +1059,17 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		if res.AlreadyExists {
 			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
 		}
+		err = r.db.CreateConnector(&db.Connector{
+			LastUpdate: time.Now(),
+			ConnectorID: req.ID,
+			ConnectorType: req.ConnectorType,
+			ConnectorSubType: req.ConnectorSubType,
+		})
+		if err != nil {
+			r.logger.Error("failed to create connector", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to create connector")
+		}
+
 		return ctx.JSON(http.StatusCreated, res)
 }
 
@@ -1089,14 +1092,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	if (req.ID =="" ){
 		return echo.NewHTTPError(http.StatusBadRequest, "ID required")
 	}
-	// set Connector type to default if not provided
-	if(req.ConnectorType ==""){
-		req.ConnectorType ="oidc"
-	}
-	// set Connector sub type to default if not provided
-	if(req.ConnectorSubType ==""){
-		req.ConnectorSubType ="general"
-	}
+
 	if !utils.IsSupportedSubType(req.ConnectorType, req.ConnectorSubType) {
 		err := fmt.Sprintf("unsupported connector_sub_type '%s' for connector_type '%s'", req.ConnectorType, req.ConnectorSubType)
 		r.logger.Info(err)
@@ -1107,7 +1103,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	case "general":
 		// Required: issuer, client_id, client_secret
 		if strings.TrimSpace(req.Issuer) == "" {
-			err:= fmt.Sprintf("Missing 'issuer' for 'general' OIDC connector update")
+			err:= "Missing 'issuer' for 'general' OIDC connector update"
 			r.logger.Error(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 			
@@ -1117,7 +1113,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err:= fmt.Sprintf("Missing 'tenant_id' for 'entraid' OIDC connector update")
+			err:= "Missing 'tenant_id' for 'entraid' OIDC connector update"
 			r.logger.Error(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 			
@@ -1147,6 +1143,11 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		}
 
 	dexreq,err := utils.UpdateOIDCConnector(dexRequest)	
+	if err != nil {
+		r.logger.Error("Error on Creating dex request",zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
 	r.logger.Error("failed to create dex client", zap.Error(err))
@@ -1162,6 +1163,17 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 
 	if res.NotFound {
 		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
+	}
+	err = r.db.UpdateConnector(&db.Connector{
+		LastUpdate: time.Now(),
+		ConnectorID: req.ID,
+		ConnectorType: req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+		IsActive: req.IsActive,
+	})
+	if err != nil {
+		r.logger.Error("failed to update connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to update connector")
 	}
 	return ctx.JSON(http.StatusAccepted, res)
 
@@ -1201,6 +1213,12 @@ func (r *httpRoutes) DeleteConnector(ctx echo.Context) error {
 	if resp.NotFound {
 		return echo.NewHTTPError(http.StatusNotFound, "connector not found")
 	}
+	err = r.db.DeleteConnector(connectorID)
+	if err != nil {
+		r.logger.Error("failed to delete connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to delete connector")
+	}
+
 	return ctx.NoContent(http.StatusAccepted)
 }
 
