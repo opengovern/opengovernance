@@ -94,6 +94,7 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 		oidcConfig = OIDCConfig{
 		ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
+			Issuer:       "https://accounts.google.com",
 		}
 	
 
@@ -176,6 +177,9 @@ func UpdateOIDCConnector(params UpdateConnectorRequest) (*dexapi.UpdateConnector
 					return nil, fmt.Errorf("failed to fetch issuer for entraid: %w", err)
 				}
 				params.Issuer = issuer
+			}
+			if params.ConnectorSubType == "google-workspace" {
+				params.Issuer = "https://accounts.google.com"
 			}
 			
 				newOIDCConfig = OIDCConfig{
