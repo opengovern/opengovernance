@@ -370,8 +370,7 @@ func (db Database) CreateConnector(connector *Connector) error {
 func (db Database) UpdateConnector(connector *Connector) error {
 	tx := db.Orm.Model(&Connector{}).
 		Where("id = ?", connector.ID).
-		Updates(connector).
-		Update("is_active", connector.IsActive)
+		Updates(connector)
 	if tx.Error != nil {
 		return tx.Error
 	}

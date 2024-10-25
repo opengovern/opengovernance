@@ -885,14 +885,15 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
 			continue
 		}
-
+		if(connector.Id == "local"){
+			continue
+		}
 		info := api.GetConnectorsResponse{
 			ID:   localConnector.ID,
 			ConnectorID: connector.Id,
 			Type: connector.Type,
 			Name: connector.Name,
 			SubType: localConnector.ConnectorSubType,
-			IsActive: localConnector.IsActive,
 			UserCount: localConnector.UserCount,
 			CreatedAt: localConnector.CreatedAt,
 			LastUpdate: localConnector.LastUpdate,
@@ -1172,7 +1173,6 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		ConnectorID: req.ConnectorID,
 		ConnectorType: req.ConnectorType,
 		ConnectorSubType: req.ConnectorSubType,
-		IsActive: req.IsActive,
 	})
 	if err != nil {
 		r.logger.Error("failed to update connector", zap.Error(err))
