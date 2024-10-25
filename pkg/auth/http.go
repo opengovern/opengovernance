@@ -71,9 +71,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 	v1.PUT("/connector", httpserver.AuthorizeHandler(r.UpdateConnector, api2.AdminRole))
 	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.DeleteConnector, api2.AdminRole))
-
-
-
+	
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

@@ -39,6 +39,7 @@ type OIDCConfig struct {
 	ClientSecret string `json:"clientSecret"`
 	Name 			string `json:"name,omitempty"`
 }
+
 type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
 
 var  connectorCreators = map[string]ConnectorCreator{
