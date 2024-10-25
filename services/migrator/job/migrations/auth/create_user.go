@@ -92,7 +92,14 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		logger.Error("Auth Migrator: failed to create user in database", zap.Error(err))
 		return err
 	}
-
+	dbm.CreateConnector(&db.Connector{
+		ConnectorID:       "local",
+		ConnectorType:     "local",
+		ConnectorSubType:  "local",
+		IsActive:          true,
+		UserCount:         1,
+		LastUpdate:        user.CreatedAt,
+	})
 	return nil
 }
 
