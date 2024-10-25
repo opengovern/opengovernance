@@ -24,7 +24,7 @@ type ApiKey struct {
 
 type Connector struct {
 	gorm.Model
-	UserNumber 		uint
+	UserCount 		uint  `gorm:"default:0"`
 	IsActive bool   `gorm:"default:true"`
 	ConnectorID string
 	ConnectorType string

@@ -369,22 +369,25 @@ func (db Database) CreateConnector(connector *Connector) error {
 func (db Database) UpdateConnector(connector *Connector) error {
 	tx := db.Orm.Model(&Connector{}).
 		Where("id = ?", connector.ID).
-		Updates(connector)
+		Updates(connector).
+		Update("is_active", connector.IsActive)
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) DeleteConnector(id uint) error {
-	tx := db.Orm.
-		Where("id = ?", id).
+// delete connector by connector id
+func (db Database) DeleteConnector(connectorID string) error {
+	tx := db.Orm.Model(&Connector{}).
+		Where("connector_id = ?", connectorID).
 		Delete(&Connector{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
+
 
 func (db Database) GetConnectorByConnectorID(connectorID string) (*Connector, error) {
 	var s Connector
