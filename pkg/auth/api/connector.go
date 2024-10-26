@@ -48,7 +48,12 @@ type GetConnectorsResponse struct {
 	}
 
 
-type GetSupportedConnectorTypeResponse struct {
+type ConnectorSubTypes struct {
+	ID string  `json:""id"`
+	Name string `json:"name"`
+}
+	type GetSupportedConnectorTypeResponse struct {
 		ConnectorType string   `json:"connector_type"`
-		SubTypes      []string `json:"sub_types"`
+		SubTypes      []ConnectorSubTypes `json:"sub_types"`
+
 	}

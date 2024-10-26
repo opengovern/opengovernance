@@ -935,12 +935,24 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 
 func (r *httpRoutes) GetSupportedType(ctx echo.Context) error {
 	var connectors []api.GetSupportedConnectorTypeResponse
-	for ct, subTypes := range utils.SupportedConnectors {
-		connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
-			ConnectorType: ct,
-			SubTypes:      subTypes,
+	
+
+	subTypes :=  utils.SupportedConnectors["oidc"]
+	subTypesNames :=  utils.SupportedConnectorsNames["oidc"]
+
+	var types  []api.ConnectorSubTypes
+	for i,key := range subTypes {
+		types = append(types, api.ConnectorSubTypes{
+			ID: key,
+			Name: subTypesNames[i],
 		})
 	}
+	connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
+		ConnectorType: "oidc",
+		SubTypes: types,
+	})
+
+
 	return ctx.JSON(http.StatusOK, connectors)
 
 }
