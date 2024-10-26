@@ -460,9 +460,11 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 
 	user, err := r.db.GetUserByEmail(req.EmailAddress)
 	if err != nil {
+		r.logger.Error("failed to get user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
-	if user != nil {
+	
+	if user != nil && user.Email !="" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
 
@@ -912,7 +914,13 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 		// If the connector is of type "oidc", attempt to extract Issuer and ClientID
 		if strings.ToLower(connector.Type) == "oidc" {
 			var config api.OIDCConfig
+			var data  map[string]interface{}
 			err := json.Unmarshal(connector.Config, &config)
+			new_err := json.Unmarshal(connector.Config, &data)
+			r.logger.Info("data",zap.Any("data",data))
+			if(new_err != nil){
+				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
+			}
 			if  err != nil {
 				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
 			} else {

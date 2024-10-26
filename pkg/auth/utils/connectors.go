@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	dexapi "github.com/dexidp/dex/api/v2"
@@ -38,6 +39,9 @@ type OIDCConfig struct {
 	ClientID     string `json:"clientID"`
 	ClientSecret string `json:"clientSecret"`
 	Name 			string `json:"name,omitempty"`
+	RedirectURIs		[]string `json:"redirect_uris,omitempty"`
+	RedirectURI 		string `json:"redirectURI,omitempty"`
+
 }
 
 type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
@@ -69,6 +73,9 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			Issuer:       params.Issuer,
 			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+
 		}
 		
 
@@ -88,6 +95,9 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			TenantID:     params.TenantID,
 			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+
 		}
 		
 
@@ -96,9 +106,11 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 	case "google-workspace":
 		// Required: clientID, clientSecret
 		oidcConfig = OIDCConfig{
-		ClientID:     params.ClientID,
+			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
 			Issuer:       "https://accounts.google.com",
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
 		}
 	
 
