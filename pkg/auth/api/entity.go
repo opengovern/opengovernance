@@ -26,6 +26,7 @@ type GetUsersResponse struct {
 	CreatedAt     time.Time    `json:"created_at" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 	IsActive     bool       `json:"is_active"`
 	FullName 	string `json:"full_name"`
+	ConnectorId	string `json:"connector_id"`
 
 }
 
