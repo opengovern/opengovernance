@@ -168,6 +168,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
 			IsActive:      u.IsActive,
+			ConnectorId:  u.ConnectorId,
 		}
 		if u.LastLogin.IsZero() {
 			temp_resp.LastActivity = nil
