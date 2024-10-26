@@ -25,7 +25,6 @@ type ApiKey struct {
 type Connector struct {
 	gorm.Model
 	UserCount 		uint  `gorm:"default:0"`
-	IsActive bool   `gorm:"default:true"`
 	ConnectorID string
 	ConnectorType string
 	ConnectorSubType string	
@@ -44,6 +43,5 @@ type User struct {
 	LastLogin             time.Time
 	Username              string
 	RequirePasswordChange bool `gorm:"default:true"`
-	Connector             string
 	IsActive              bool `gorm:"default:true"`
 }

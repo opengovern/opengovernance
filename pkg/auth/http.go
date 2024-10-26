@@ -458,6 +458,9 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	user, err := r.db.GetUserByEmail(req.EmailAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
+	}
 	if user != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
@@ -493,9 +496,10 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	connector := ""
-	userId := fmt.Sprintf("dex|%s", req.EmailAddress)
+	userId := fmt.Sprintf("%s|%s", req.ConnectorId,req.EmailAddress)
 	if req.Password != nil {
 		connector = "local"
+		userId := fmt.Sprintf("local|%s", req.EmailAddress)
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			r.logger.Error("failed to create dex client", zap.Error(err))
@@ -550,7 +554,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		FullName:              req.EmailAddress,
 		Role:                  role,
 		EmailVerified:         false,
-		Connector:             connector,
+		ConnectorId:             connector,
 		ExternalId:            userId,
 		RequirePasswordChange: requirePasswordChange,
 		IsActive:              true,
@@ -591,7 +595,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "user not found")
 	}
 
-	if req.Password != nil && user.Connector == "local" {
+	if req.Password != nil && user.ConnectorId == "local" {
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			r.logger.Error("failed to create dex client", zap.Error(err))
@@ -616,7 +620,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		if resp.NotFound {
 			dexReq := &dexApi.CreatePasswordReq{
 				Password: &dexApi.Password{
-					UserId: fmt.Sprintf("dex|%s", req.EmailAddress),
+					UserId: fmt.Sprintf("local|%s", req.EmailAddress),
 					Email:  req.EmailAddress,
 					Hash:   hashedPassword,
 				},
@@ -778,7 +782,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if user.Connector != "local" {
+	if user.ConnectorId != "local" {
 		return echo.NewHTTPError(http.StatusBadRequest, "user connector should be local")
 	}
 
@@ -824,7 +828,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 	if passwordUpdateResp.NotFound {
 		dexReq := &dexApi.CreatePasswordReq{
 			Password: &dexApi.Password{
-				UserId: fmt.Sprintf("dex|%s", user.Email),
+				UserId: fmt.Sprintf("local|%s", user.Email),
 				Email:  user.Email,
 				Hash:   hashedPassword,
 			},
@@ -885,14 +889,15 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
 			continue
 		}
-
+		if(connector.Id == "local"){
+			continue
+		}
 		info := api.GetConnectorsResponse{
 			ID:   localConnector.ID,
 			ConnectorID: connector.Id,
 			Type: connector.Type,
 			Name: connector.Name,
 			SubType: localConnector.ConnectorSubType,
-			IsActive: localConnector.IsActive,
 			UserCount: localConnector.UserCount,
 			CreatedAt: localConnector.CreatedAt,
 			LastUpdate: localConnector.LastUpdate,
@@ -930,12 +935,24 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 
 func (r *httpRoutes) GetSupportedType(ctx echo.Context) error {
 	var connectors []api.GetSupportedConnectorTypeResponse
-	for ct, subTypes := range utils.SupportedConnectors {
-		connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
-			ConnectorType: ct,
-			SubTypes:      subTypes,
+	
+
+	subTypes :=  utils.SupportedConnectors["oidc"]
+	subTypesNames :=  utils.SupportedConnectorsNames["oidc"]
+
+	var types  []api.ConnectorSubTypes
+	for i,key := range subTypes {
+		types = append(types, api.ConnectorSubTypes{
+			ID: key,
+			Name: subTypesNames[i],
 		})
 	}
+	connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
+		ConnectorType: "oidc",
+		SubTypes: types,
+	})
+
+
 	return ctx.JSON(http.StatusOK, connectors)
 
 }
@@ -1172,7 +1189,6 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		ConnectorID: req.ConnectorID,
 		ConnectorType: req.ConnectorType,
 		ConnectorSubType: req.ConnectorSubType,
-		IsActive: req.IsActive,
 	})
 	if err != nil {
 		r.logger.Error("failed to update connector", zap.Error(err))

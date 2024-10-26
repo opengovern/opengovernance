@@ -63,7 +63,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Password: &dexApi.Password{
 			Email:    conf.DefaultDexUserEmail,
 			Username: conf.DefaultDexUserName,
-			UserId:   fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
+			UserId:   fmt.Sprintf("local|%s", conf.DefaultDexUserEmail),
 			Hash:     hashedPassword,
 		},
 	}
@@ -82,8 +82,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		Username:              conf.DefaultDexUserEmail,
 		FullName:              conf.DefaultDexUserEmail,
 		Role:                  role,
-		ExternalId:            fmt.Sprintf("dex|%s", conf.DefaultDexUserEmail),
-		Connector:             "local",
+		ExternalId:            fmt.Sprintf("local|%s", conf.DefaultDexUserEmail),
+		ConnectorId:             "local",
 		IsActive:              true,
 		RequirePasswordChange: true,
 	}
@@ -92,18 +92,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		logger.Error("Auth Migrator: failed to create user in database", zap.Error(err))
 		return err
 	}
-	err =dbm.CreateConnector(&db.Connector{
-		ConnectorID:       "local",
-		ConnectorType:     "local",
-		ConnectorSubType:  "local",
-		IsActive:          true,
-		UserCount:         1,
-		LastUpdate:        user.CreatedAt,
-	})
-	if err != nil {
-		logger.Error("Auth Migrator: failed to create connector in database", zap.Error(err))
-		return err
-	}
+	
 	return nil
 }
 

@@ -23,7 +23,6 @@ type UpdateConnectorRequest struct {
 	ClientSecret     string `json:"client_secret" validate:"required"`
 	ID               uint `json:"id,omitempty"`   // Optional
 	Name             string `json:"name,omitempty"` // Optional
-	IsActive		 bool `json:"is_active"` 
 
 }
 
@@ -43,14 +42,18 @@ type GetConnectorsResponse struct {
 		Issuer   string `json:"issuer,omitempty"`
 		ClientID string `json:"client_id,omitempty"`
 		TenantID string `json:"tenant_id,omitempty"`
-		IsActive bool   `json:"is_active"`
 		UserCount uint `json:"user_count"`
 		CreatedAt any `json:"created_at"`
 		LastUpdate any `json:"last_update"`
 	}
 
 
-type GetSupportedConnectorTypeResponse struct {
+type ConnectorSubTypes struct {
+	ID string  `json:""id"`
+	Name string `json:"name"`
+}
+	type GetSupportedConnectorTypeResponse struct {
 		ConnectorType string   `json:"connector_type"`
-		SubTypes      []string `json:"sub_types"`
+		SubTypes      []ConnectorSubTypes `json:"sub_types"`
+
 	}

@@ -50,6 +50,10 @@ var SupportedConnectors = map[string][]string{
 	"oidc": {"general", "google-workspace", "entraid"},
 	// Add more connector types and their sub-types here as needed.
 }
+var SupportedConnectorsNames = map[string][]string{
+	"oidc": {"General OIDC", "Google Workspaces", "AzureAD/EntraID"},
+
+}
 
 func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error) {
 
@@ -230,7 +234,7 @@ func IsSupportedSubType(connectorType, subType string) bool {
 func GetConnectorCreator(connectorType string) ConnectorCreator {
 	return connectorCreators[connectorType]
 }
-func GetSupportedConnectors(connectorType string) []string {
+func GetSupportedConnectors(connectorType string) ([]string ) {
 	return SupportedConnectors[connectorType]
 }
 

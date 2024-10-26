@@ -57,6 +57,8 @@ type UpdateUserRequest struct {
 	IsActive     bool      `json:"is_active"`
 	UserName     string    `json:"username"`
 	FullName     string    `json:"full_name"`
+	ConnectorId	 string    `json:"connector_id"`
+
 }
 
 type CreateUserRequest struct {
@@ -64,6 +66,7 @@ type CreateUserRequest struct {
 	Role         *api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"`
 	Password     *string   `json:"password"`
 	IsActive     bool      `json:"is_active"`
+	ConnectorId	 string    `json:"connector_id"`
 }
 
 type ResetUserPasswordRequest struct {
