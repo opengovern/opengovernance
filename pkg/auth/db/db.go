@@ -237,7 +237,12 @@ func (db Database) GetUserByEmail(email string) (*User, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).
 		Where("email = ? ", email).
-		First(&s)
+		Find(&s)
+	
+	if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

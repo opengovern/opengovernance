@@ -95,6 +95,15 @@
       </button>
      
       {{ end }} {{ end }}
+
+      {{ range $c := .Connectors }} {{ if and (eq $c.Name "Email") }}
+      <button asChild variant="secondary" class="w-full">
+        <a href="{{ $c.URL }}" class="inline-flex items-center gap-2">
+          Login with Email
+        </a>
+      </button>
+     
+      {{ end }} {{ end }}
     </div>
     <!-- <div
       class="tremor-Divider-root w-full mx-auto my-6 flex justify-between gap-3 items-center text-tremor-default text-tremor-content dark:text-dark-tremor-content"
