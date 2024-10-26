@@ -679,7 +679,7 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
-
+	
 	err := r.DoDeleteUser(id)
 	if err != nil {
 		return err
@@ -702,6 +702,9 @@ func (r *httpRoutes) DoDeleteUser(id string) error {
 	}
 	if user == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if( user.ID == 1){
+		return echo.NewHTTPError(http.StatusBadRequest, "cannot delete the first user")
 	}
 	dexReq := &dexApi.DeletePasswordReq{
 		Email: user.Email,
