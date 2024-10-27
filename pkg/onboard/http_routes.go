@@ -38,8 +38,8 @@ import (
 
 	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	api4 "github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/onboard/api"
 	"gorm.io/gorm"
@@ -221,18 +221,18 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	sdkCnf, err := kaytuAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	sdkCnf, err := opengovernanceAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
-	err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
+	err = opengovernanceAws.CheckGetUserPermission(h.logger, sdkCnf)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
 	}
 
 	// Create source section
-	cfg, err := kaytuAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := opengovernanceAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -364,13 +364,13 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
+	isAttached, err := opengovernanceAzure.CheckRole(opengovernanceAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
 		ClientID:     req.Config.ClientId,
 		ClientSecret: req.Config.ClientSecret,
-	}, req.Config.SubscriptionId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
+	}, req.Config.SubscriptionId, opengovernanceAzure.DefaultReaderRoleDefinitionIDTemplate)
 	if err != nil {
 		fmt.Printf("error in checking reader role roleAssignment: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -389,7 +389,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, kaytuAzure.AuthConfig{
+	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, opengovernanceAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
@@ -871,7 +871,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		return nil, err
 	}
 	h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
-	subs, err := discoverAzureSubscriptions(ctx, h.logger, kaytuAzure.AuthConfig{
+	subs, err := discoverAzureSubscriptions(ctx, h.logger, opengovernanceAzure.AuthConfig{
 		TenantID:     azureCnf.TenantID,
 		ObjectID:     azureCnf.ObjectID,
 		SecretID:     azureCnf.SecretID,
@@ -967,13 +967,13 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 		}
 
-		isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
+		isAttached, err := opengovernanceAzure.CheckRole(opengovernanceAzure.AuthConfig{
 			TenantID:     azureCnf.TenantID,
 			ObjectID:     azureCnf.ObjectID,
 			SecretID:     azureCnf.SecretID,
 			ClientID:     azureCnf.ClientID,
 			ClientSecret: azureCnf.ClientSecret,
-		}, sub.SubscriptionID, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
+		}, sub.SubscriptionID, opengovernanceAzure.DefaultReaderRoleDefinitionIDTemplate)
 		if err != nil {
 			h.logger.Warn("failed to check role", zap.Error(err))
 			continue
@@ -1046,7 +1046,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential mode
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := kaytuAws.GetConfig(
+	cfg, err := opengovernanceAws.GetConfig(
 		ctx,
 		awsCnf.AccessKey,
 		awsCnf.SecretKey,
@@ -1149,13 +1149,13 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential mode
 
 	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 	for _, account := range accountsToOnboard {
-		//assumeRoleArn := kaytuAws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
-		//sdkCnf, err := kaytuAws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+		//assumeRoleArn := opengovernanceAws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+		//sdkCnf, err := opengovernanceAws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
 		//if err != nil {
 		//	h.logger.Warn("failed to get config", zap.Error(err))
 		//	return err
 		//}
-		//isAttached, err := kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.SecurityAuditPolicyARN)
+		//isAttached, err := opengovernanceAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, opengovernanceAws.SecurityAuditPolicyARN)
 		//if err != nil {
 		//	h.logger.Warn("failed to check get user permission", zap.Error(err))
 		//	continue

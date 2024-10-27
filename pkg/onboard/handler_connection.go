@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/source"
@@ -48,8 +48,8 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				sKey = *awsCnf.SecretKey
 			}
 
-			assumeRoleArn := kaytuAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
-			sdkCnf, err := kaytuAws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
+			assumeRoleArn := opengovernanceAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
+			sdkCnf, err := opengovernanceAws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
 			if err != nil {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
@@ -79,12 +79,12 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return connection, err
 			}
-			assumeRoleArn := kaytuAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
+			assumeRoleArn := opengovernanceAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
 			var sdkCnf aws.Config
 			if awsCnf.AccountID != connection.SourceId {
-				sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+				sdkCnf, err = opengovernanceAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 			} else {
-				sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", "", nil)
+				sdkCnf, err = opengovernanceAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", "", nil)
 			}
 			if err != nil {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
@@ -120,7 +120,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 			h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err
 		}
-		authCnf := kaytuAzure.AuthConfig{
+		authCnf := opengovernanceAzure.AuthConfig{
 			TenantID:            azureCnf.TenantID,
 			ClientID:            azureCnf.ClientID,
 			ObjectID:            azureCnf.ObjectID,
@@ -140,7 +140,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		assetDiscoveryAttached = true
 		for _, rawRuleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
 			ruleID := fmt.Sprintf(rawRuleID, azureCnf.TenantID)
-			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
+			isAttached, err := opengovernanceAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err
 			}
@@ -158,7 +158,7 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection model
 		spendAttached = true
 		for _, rawRule := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
 			ruleID := fmt.Sprintf(rawRule, azureCnf.SubscriptionID)
-			isAttached, err := kaytuAzure.CheckRole(authCnf, connection.SourceId, ruleID)
+			isAttached, err := opengovernanceAzure.CheckRole(authCnf, connection.SourceId, ruleID)
 			if err != nil {
 				return connection, err
 			}

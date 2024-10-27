@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-util/pkg/source"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
@@ -58,7 +58,7 @@ func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg conne
 		metadata.AccountType = AWSAccountTypeOrganizationManager
 	}
 	if account.Organization != nil {
-		sdkCnf, err := kaytuAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		sdkCnf, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
 		if err != nil {
 			logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
 			return metadata, err
