@@ -45,6 +45,10 @@ type OIDCConfig struct {
 	Name 			string `json:"name,omitempty"`
 	RedirectURIs		[]string `json:"redirect_uris,omitempty"`
 	RedirectURI 		string `json:"redirectURI,omitempty"`
+	InsecureEnableGroups bool     `json:"insecureEnableGroups"`
+	InsecureSkipEmailVerified bool `json:"insecureSkipEmailVerified"`
+
+
 
 }
 
@@ -79,6 +83,9 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			ClientSecret: params.ClientSecret,
 			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
 			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
 
 		}
 		
@@ -101,6 +108,9 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			ClientSecret: params.ClientSecret,
 			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
 			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
 
 		}
 		
@@ -115,6 +125,10 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			Issuer:       "https://accounts.google.com",
 			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
 			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
+
 		}
 	
 
