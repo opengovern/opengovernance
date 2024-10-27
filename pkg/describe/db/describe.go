@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/describe/enums"
 	"github.com/opengovern/og-util/pkg/source"
-	kaytuTrace "github.com/opengovern/og-util/pkg/trace"
+	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"go.opentelemetry.io/otel"
@@ -168,7 +168,7 @@ func (db Database) UpdateDescribeConnectionJobNatsSeqNum(id uint, seqNum uint64)
 }
 
 func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int, manuals bool) ([]model.DescribeConnectionJob, error) {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	var job []model.DescribeConnectionJob
@@ -516,7 +516,7 @@ func (db Database) GetDescribeJobById(jobId string) (*model.DescribeConnectionJo
 }
 
 func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]model.DescribeConnectionJob, error) {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	var job []model.DescribeConnectionJob

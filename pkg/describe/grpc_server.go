@@ -8,7 +8,7 @@ import (
 	"github.com/opengovern/og-util/pkg/describe/enums"
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/source"
-	kaytuTrace "github.com/opengovern/og-util/pkg/trace"
+	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	"github.com/opengovern/og-util/proto/src/golang"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
@@ -88,7 +88,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 		zap.String("status", string(req.Status)),
 	)
 
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	if _, err := s.jq.Produce(ctx, DescribeResultsQueueName, result, fmt.Sprintf("job-result-%d-%d", req.JobId, req.DescribeJob.RetryCounter)); err != nil {
