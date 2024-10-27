@@ -13,29 +13,10 @@ type AWSCredentialType interface {
 	CreateAWSSession() (*aws.Config, error)
 }
 
-type AWSAccountIntegration struct {
-	Credential AWSCredentialType
-}
+type AWSAccountIntegration struct{}
 
-func CreateAWSAccountIntegration(credentialType *string, jsonData []byte) (interfaces.IntegrationType, error) {
-	integration := AWSAccountIntegration{}
-
-	if credentialType != nil {
-		if _, ok := CredentialTypes[*credentialType]; !ok {
-			return nil, fmt.Errorf("invalid credential type: %s", credentialType)
-		}
-		credentialCreator := CredentialTypes[*credentialType]
-		credential, err := credentialCreator(jsonData)
-		if err != nil {
-			return nil, err
-		}
-		awsCredential, ok := credential.(AWSCredentialType)
-		if !ok {
-			return nil, fmt.Errorf("credential is not of type AWSCredentialType")
-		}
-		integration.Credential = awsCredential
-	}
-	return &integration, nil
+func CreateAWSAccountIntegration() (interfaces.IntegrationType, error) {
+	return &AWSAccountIntegration{}, nil
 }
 
 var CredentialTypes = map[string]interfaces.CredentialCreator{
@@ -50,22 +31,27 @@ func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.Describer
 	}
 }
 
-func (i *AWSAccountIntegration) GetAnnotations() (map[string]any, error) {
+func (i *AWSAccountIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]any, error) {
 	annotations := make(map[string]any)
 
 	return annotations, nil
 }
 
-func (i *AWSAccountIntegration) GetMetadata() (map[string]any, error) {
+func (i *AWSAccountIntegration) GetMetadata(credentialType string, jsonData []byte) (map[string]any, error) {
 	annotations := make(map[string]any)
 
 	return annotations, nil
 }
 
-func (i *AWSAccountIntegration) GetLabels() (map[string]any, error) {
+func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]any, error) {
 	labels := make(map[string]any)
 
-	cfg, err := i.Credential.CreateAWSSession()
+	awsCredential, err := getCredentials(credentialType, jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := awsCredential.CreateAWSSession()
 	if err != nil {
 		return nil, err
 	}
@@ -103,14 +89,41 @@ func (i *AWSAccountIntegration) GetLabels() (map[string]any, error) {
 	return labels, nil
 }
 
-func (i *AWSAccountIntegration) HealthCheck() error {
-	return i.Credential.HealthCheck()
+func (i *AWSAccountIntegration) HealthCheck(credentialType string, jsonData []byte) (bool, error) {
+	awsCredential, err := getCredentials(credentialType, jsonData)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse AWS credentials of type %s: %s", credentialType, err.Error())
+	}
+
+	return awsCredential.HealthCheck()
 }
 
-func (i *AWSAccountIntegration) DiscoverIntegrations() ([]models.Integration, error) {
-	return i.Credential.DiscoverIntegrations()
+func (i *AWSAccountIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
+	awsCredential, err := getCredentials(credentialType, jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return awsCredential.DiscoverIntegrations()
 }
 
 func (i *AWSAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return nil, nil
+}
+
+func getCredentials(credentialType string, jsonData []byte) (AWSCredentialType, error) {
+	if _, ok := CredentialTypes[credentialType]; !ok {
+		return nil, fmt.Errorf("invalid credential type: %s", credentialType)
+	}
+	credentialCreator := CredentialTypes[credentialType]
+	credential, err := credentialCreator(jsonData)
+	if err != nil {
+		return nil, err
+	}
+	awsCredential, ok := credential.(AWSCredentialType)
+	if !ok {
+		return nil, fmt.Errorf("credential is not of type AWSCredentialType")
+	}
+
+	return awsCredential, nil
 }

@@ -39,37 +39,37 @@ func CreateAzureSPNCertificateCredentials(jsonData []byte) (interfaces.Credentia
 	return &credentials, nil
 }
 
-func (c *AzureSPNCertificateCredentials) HealthCheck() error {
+func (c *AzureSPNCertificateCredentials) HealthCheck() (bool, error) {
 	pvkBlock, _ := pem.Decode([]byte(c.AzureSPNPrivateKey))
 	if pvkBlock == nil {
-		return errors.New("failed to decode PEM block containing the private key")
+		return false, errors.New("failed to decode PEM block containing the private key")
 	}
 	if pvkBlock.Type != "PRIVATE KEY" {
-		return fmt.Errorf("PEM block is not of type 'PRIVATE KEY'")
+		return false, fmt.Errorf("PEM block is not of type 'PRIVATE KEY'")
 	}
 
 	// Parse the EC private key
 	privateKey, err := x509.ParsePKCS8PrivateKey(pvkBlock.Bytes)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Check if it's an RSA private key
 	rsaKey, ok := privateKey.(*rsa.PrivateKey)
 	if !ok {
-		return err
+		return false, err
 	}
 
 	// Decode the PEM-encoded certificate
 	block, _ := pem.Decode([]byte(c.AzureSPNCertificate))
 	if block == nil {
-		return errors.New("failed to decode PEM block containing the certificate")
+		return false, errors.New("failed to decode PEM block containing the certificate")
 	}
 
 	// Parse the certificate from the PEM block
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Create the certificate chain
@@ -84,7 +84,7 @@ func (c *AzureSPNCertificateCredentials) HealthCheck() error {
 		&azidentity.ClientCertificateCredentialOptions{},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create ClientCertificateCredential: %v", err)
+		return false, fmt.Errorf("failed to create ClientCertificateCredential: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -95,15 +95,15 @@ func (c *AzureSPNCertificateCredentials) HealthCheck() error {
 		Scopes: scopes,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to acquire token: %v", err)
+		return false, fmt.Errorf("failed to acquire token: %v", err)
 	}
 
 	_, err = ExtractObjectID(token.Token)
 	if err != nil {
-		return fmt.Errorf("failed to extract object ID from token: %v", err)
+		return false, fmt.Errorf("failed to extract object ID from token: %v", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (c *AzureSPNCertificateCredentials) DiscoverIntegrations() ([]models.Integration, error) {

@@ -210,7 +210,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 
 	for _, integration := range integrations {
 		s.logger.Info("running describe job scheduler for connection", zap.String("integrationTracker", integration.IntegrationTracker))
-		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType](nil, nil)
+		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
 		if err != nil {
 			s.logger.Error("failed to get integration type", zap.String("integrationType", string(integration.IntegrationType)),
 				zap.String("spot", "ListDiscoveryResourceTypes"), zap.Error(err))
@@ -232,10 +232,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 				continue
 			}
 
-			// TODO: make this in interface
-			removeResourcesAzure := azureAdOnlyOnOneConnection(connections, connection, resourceType)
-			removeResourcesAWS := awsOnlyOnOneConnection(connections, connection, resourceType)
-			_, err = s.describe(integration, resourceType, true, false, removeResourcesAzure || removeResourcesAWS, nil, "system")
+			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("integration_tracker", integration.IntegrationTracker), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -327,34 +324,6 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	retryCount := 0
 
 	for _, failedJob := range fdcs {
-		var isFastDiscovery, isCostDiscovery bool
-
-		switch failedJob.Connector {
-		case source.CloudAWS:
-			resourceType, err := aws.GetResourceType(failedJob.ResourceType)
-			if err != nil {
-				return fmt.Errorf("failed to get aws resource type due to: %v", err)
-			}
-			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
-		case source.CloudAzure:
-			resourceType, err := azure.GetResourceType(failedJob.ResourceType)
-			if err != nil {
-				return fmt.Errorf("failed to get aws resource type due to: %v", err)
-			}
-			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
-		}
-
-		describeCycle := s.fullDiscoveryIntervalHours
-		if isFastDiscovery {
-			describeCycle = s.describeIntervalHours
-		} else if isCostDiscovery {
-			describeCycle = s.costDiscoveryIntervalHours
-		}
-
-		if failedJob.CreatedAt.Before(time.Now().Add(-1 * describeCycle)) {
-			continue
-		}
-
 		err = s.db.RetryDescribeConnectionJob(failedJob.ID)
 		if err != nil {
 			return err
@@ -386,28 +355,6 @@ func (s *Scheduler) describe(connection apiIntegration.Integration, resourceType
 		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
-	}
-
-	// TODO: get resource type list from integration type and annotations
-	discoveryType := model.DiscoveryType_Full
-	if connection.Connector == source.CloudAWS {
-		rt, _ := aws.GetResourceType(resourceType)
-		if rt != nil {
-			if rt.FastDiscovery {
-				discoveryType = model.DiscoveryType_Fast
-			} else if rt.CostDiscovery {
-				discoveryType = model.DiscoveryType_Cost
-			}
-		}
-	} else if connection.Connector == source.CloudAzure {
-		rt, _ := azure.GetResourceType(resourceType)
-		if rt != nil {
-			if rt.FastDiscovery {
-				discoveryType = model.DiscoveryType_Fast
-			} else if rt.CostDiscovery {
-				discoveryType = model.DiscoveryType_Cost
-			}
-		}
 	}
 
 	// TODO: get resource type list from integration type and annotations
@@ -527,7 +474,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	integrationType, err := integration_type.IntegrationTypes[dc.IntegrationType](nil, nil)
+	integrationType, err := integration_type.IntegrationTypes[dc.IntegrationType]()
 	if err != nil {
 		s.logger.Error("failed to get integrationType", zap.String("integration_type", string(dc.IntegrationType)), zap.Error(err))
 		return err

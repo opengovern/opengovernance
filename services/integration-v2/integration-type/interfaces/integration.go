@@ -9,13 +9,13 @@ type DescriberConfiguration struct {
 
 type IntegrationType interface {
 	GetDescriberConfiguration() DescriberConfiguration
-	GetAnnotations() (map[string]any, error)
-	GetMetadata() (map[string]any, error)
-	GetLabels() (map[string]any, error)
+	GetAnnotations(credentialType string, jsonData []byte) (map[string]any, error)
+	GetMetadata(credentialType string, jsonData []byte) (map[string]any, error)
+	GetLabels(credentialType string, jsonData []byte) (map[string]any, error)
 	GetResourceTypesByLabels(map[string]string) ([]string, error)
-	HealthCheck() error
-	DiscoverIntegrations() ([]models.Integration, error)
+	HealthCheck(credentialType string, jsonData []byte) (bool, error)
+	DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error)
 }
 
 // IntegrationCreator IntegrationType interface, credentials, error
-type IntegrationCreator func(certificateType *string, jsonData []byte) (IntegrationType, error)
+type IntegrationCreator func() (IntegrationType, error)

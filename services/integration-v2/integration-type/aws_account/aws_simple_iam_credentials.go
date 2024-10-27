@@ -33,7 +33,7 @@ func CreateAWSSimpleIAMCredentials(jsonData []byte) (interfaces.CredentialType, 
 	return &creds, nil
 }
 
-func (c *AWSSimpleIAMCredentials) HealthCheck() error {
+func (c *AWSSimpleIAMCredentials) HealthCheck() (bool, error) {
 	creds := credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.AccessKeySecret, "")
 
 	// Load the AWS configuration with the custom credentials
@@ -42,7 +42,7 @@ func (c *AWSSimpleIAMCredentials) HealthCheck() error {
 		config.WithRegion("us-east-1"),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load AWS config: %v", err)
+		return false, fmt.Errorf("failed to load AWS config: %v", err)
 	}
 
 	stsClient := sts.NewFromConfig(cfg)
@@ -52,10 +52,10 @@ func (c *AWSSimpleIAMCredentials) HealthCheck() error {
 
 	_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return fmt.Errorf("failed to validate AWS credentials: %v", err)
+		return false, fmt.Errorf("failed to validate AWS credentials: %v", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, error) {

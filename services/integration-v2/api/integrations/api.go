@@ -67,19 +67,19 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
 	}
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, err := createCredentialFunction(&req.CredentialType, jsonData)
+	integration, err := createCredentialFunction()
 
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	err = integration.HealthCheck()
-	if err != nil {
+	healthy, err := integration.HealthCheck(req.CredentialType, jsonData)
+	if err != nil || !healthy {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
 	}
 
-	integrations, err := integration.DiscoverIntegrations()
+	integrations, err := integration.DiscoverIntegrations(req.CredentialType, jsonData)
 
 	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
 	if err != nil {
@@ -104,7 +104,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
-		metadata, err := integration.GetMetadata()
+		metadata, err := integration.GetMetadata(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get metadata", zap.Error(err))
 		}
@@ -116,7 +116,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		err = integrationMetadataJsonb.Set(metadataJsonData)
 		i.Metadata = integrationMetadataJsonb
 
-		annotations, err := integration.GetAnnotations()
+		annotations, err := integration.GetAnnotations(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get annotations", zap.Error(err))
 		}
@@ -128,7 +128,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
 		i.Annotations = integrationAnnotationsJsonb
 
-		labels, err := integration.GetLabels()
+		labels, err := integration.GetLabels(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get labels", zap.Error(err))
 		}
@@ -198,18 +198,18 @@ func (h API) AddIntegrations(c echo.Context) error {
 	}
 
 	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, err := createCredentialFunction(&req.CredentialType, jsonData)
+	integration, err := createCredentialFunction()
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	err = integration.HealthCheck()
-	if err != nil {
+	healthy, err := integration.HealthCheck(req.CredentialType, jsonData)
+	if err != nil || !healthy {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
 	}
 
-	integrations, err := integration.DiscoverIntegrations()
+	integrations, err := integration.DiscoverIntegrations(req.CredentialType, jsonData)
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
@@ -227,7 +227,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		i.CredentialID = credentialID
 
-		metadata, err := integration.GetMetadata()
+		metadata, err := integration.GetMetadata(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get metadata", zap.Error(err))
 		}
@@ -239,7 +239,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 		err = integrationMetadataJsonb.Set(metadataJsonData)
 		i.Metadata = integrationMetadataJsonb
 
-		annotations, err := integration.GetAnnotations()
+		annotations, err := integration.GetAnnotations(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get annotations", zap.Error(err))
 		}
@@ -251,7 +251,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
 		i.Annotations = integrationAnnotationsJsonb
 
-		labels, err := integration.GetLabels()
+		labels, err := integration.GetLabels(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get labels", zap.Error(err))
 		}

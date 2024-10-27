@@ -26,8 +26,8 @@ func CreateAWSIAMCredentialsRoleWithRoleJump(jsonData []byte) (interfaces.Creden
 	return &credentials, nil
 }
 
-func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() error {
-	return nil
+func (c *AWSIAMCredentialsRoleWithRoleJump) HealthCheck() (bool, error) {
+	return true, nil
 }
 
 func (c *AWSIAMCredentialsRoleWithRoleJump) DiscoverIntegrations() ([]models.Integration, error) {

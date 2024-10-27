@@ -34,10 +34,10 @@ func CreateAzureSPNPasswordCredentials(jsonData []byte) (interfaces.CredentialTy
 	return &credentials, nil
 }
 
-func (c *AzureSPNPasswordCredentials) HealthCheck() error {
+func (c *AzureSPNPasswordCredentials) HealthCheck() (bool, error) {
 	cred, err := azidentity.NewClientSecretCredential(c.AzureTenantID, c.AzureClientID, c.AzureClientPassword, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create ClientSecretCredential: %v", err)
+		return false, fmt.Errorf("failed to create ClientSecretCredential: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -49,15 +49,15 @@ func (c *AzureSPNPasswordCredentials) HealthCheck() error {
 		Scopes: scopes,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to acquire token: %v", err)
+		return false, fmt.Errorf("failed to acquire token: %v", err)
 	}
 
 	_, err = ExtractObjectID(token.Token)
 	if err != nil {
-		return fmt.Errorf("failed to extract object ID from token: %v", err)
+		return false, fmt.Errorf("failed to extract object ID from token: %v", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integration, error) {

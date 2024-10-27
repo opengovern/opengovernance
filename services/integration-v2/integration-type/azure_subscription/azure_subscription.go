@@ -7,26 +7,10 @@ import (
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 )
 
-type AzureSubscriptionIntegration struct {
-	Credential interfaces.CredentialType
-}
+type AzureSubscriptionIntegration struct{}
 
-func CreateAzureSubscriptionIntegration(credentialType *string, jsonData []byte) (interfaces.IntegrationType, error) {
-	integration := AzureSubscriptionIntegration{}
-
-	if credentialType != nil {
-		if _, ok := CredentialTypes[*credentialType]; !ok {
-			return nil, fmt.Errorf("invalid credential type: %s", credentialType)
-		}
-		credentialCreator := CredentialTypes[*credentialType]
-		credential, err := credentialCreator(jsonData)
-		if err != nil {
-			return nil, err
-		}
-		integration.Credential = credential
-	}
-
-	return &integration, nil
+func CreateAzureSubscriptionIntegration() (interfaces.IntegrationType, error) {
+	return &AzureSubscriptionIntegration{}, nil
 }
 
 var CredentialTypes = map[string]interfaces.CredentialCreator{
@@ -41,32 +25,55 @@ func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.De
 	}
 }
 
-func (i *AzureSubscriptionIntegration) GetAnnotations() (map[string]any, error) {
+func (i *AzureSubscriptionIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]any, error) {
 	annotations := make(map[string]any)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) GetMetadata() (map[string]any, error) {
+func (i *AzureSubscriptionIntegration) GetMetadata(credentialType string, jsonData []byte) (map[string]any, error) {
 	annotations := make(map[string]any)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) GetLabels() (map[string]any, error) {
+func (i *AzureSubscriptionIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]any, error) {
 	annotations := make(map[string]any)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) HealthCheck() error {
-	return i.Credential.HealthCheck()
+func (i *AzureSubscriptionIntegration) HealthCheck(credentialType string, jsonData []byte) (bool, error) {
+	azureCredential, err := getCredentials(credentialType, jsonData)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse Azure credentials of type %s: %s", credentialType, err.Error())
+	}
+
+	return azureCredential.HealthCheck()
 }
 
-func (i *AzureSubscriptionIntegration) DiscoverIntegrations() ([]models.Integration, error) {
-	return i.Credential.DiscoverIntegrations()
+func (i *AzureSubscriptionIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
+	azureCredential, err := getCredentials(credentialType, jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return azureCredential.DiscoverIntegrations()
 }
 
 func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return nil, nil
+}
+
+func getCredentials(credentialType string, jsonData []byte) (interfaces.CredentialType, error) {
+	if _, ok := CredentialTypes[credentialType]; !ok {
+		return nil, fmt.Errorf("invalid credential type: %s", credentialType)
+	}
+	credentialCreator := CredentialTypes[credentialType]
+	credential, err := credentialCreator(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return credential, nil
 }

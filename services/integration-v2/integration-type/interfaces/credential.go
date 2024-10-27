@@ -5,7 +5,7 @@ import (
 )
 
 type CredentialType interface {
-	HealthCheck() error
+	HealthCheck() (bool, error)
 	DiscoverIntegrations() ([]models.Integration, error)
 }
 
