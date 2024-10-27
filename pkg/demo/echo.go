@@ -31,6 +31,6 @@ func DecodeRequestArray(ctx echo.Context, value []string) []string {
 }
 
 func IsDemo(ctx echo.Context) bool {
-	demoHeader := ctx.Request().Header.Get("X-Kaytu-Demo")
+	demoHeader := ctx.Request().Header.Get("X-OpenGovernance-Demo")
 	return len(demoHeader) > 0 && demoHeader == "true"
 }
