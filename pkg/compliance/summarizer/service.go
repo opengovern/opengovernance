@@ -23,9 +23,9 @@ type Config struct {
 	ElasticSearch         config.ElasticSearch
 	NATS                  config.NATS
 	PrometheusPushAddress string
-	Inventory             config.KaytuService
-	Onboard               config.KaytuService
-	EsSink                config.KaytuService
+	Inventory             config.OpenGovernanceService
+	Onboard               config.OpenGovernanceService
+	EsSink                config.OpenGovernanceService
 }
 
 type Worker struct {

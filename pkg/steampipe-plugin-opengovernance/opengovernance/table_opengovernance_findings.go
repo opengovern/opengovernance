@@ -2,20 +2,20 @@ package opengovernance
 
 import (
 	"context"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tablePlatformFindings(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_findings",
-		Description: "Kaytu Compliance Findings",
+		Name:        "og_findings",
+		Description: "OpenGovernance Compliance Findings",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},
 		List: &plugin.ListConfig{
-			Hydrate: kaytu_client.ListFindings,
+			Hydrate: og_client.ListFindings,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING},

@@ -212,9 +212,9 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
 		switch {
-		case sort.KaytuResourceID != nil:
+		case sort.OpenGovernanceResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"kaytuResourceID": *sort.KaytuResourceID,
+				"opengovernanceResourceID": *sort.OpenGovernanceResourceID,
 			})
 		case sort.ResourceType != nil:
 			requestSort = append(requestSort, map[string]any{

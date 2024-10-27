@@ -42,7 +42,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 
 	if resource == nil {
 		logger.Warn("no resource found ignoring resource collection population for this finding",
-			zap.String("kaytuResourceId", finding.KaytuResourceID),
+			zap.String("opengovernanceResourceId", finding.OpenGovernanceResourceID),
 			zap.String("resourceId", finding.ResourceID),
 			zap.String("resourceType", finding.ResourceType),
 			zap.String("connectionId", finding.ConnectionID),
@@ -61,16 +61,16 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
-			KaytuResourceID:       resource.ResourceID,
-			ResourceType:          resource.ResourceType,
-			ResourceName:          resource.Name,
-			ResourceLocation:      resource.Location,
-			Connector:             resource.SourceType,
-			Findings:              nil,
-			ResourceCollection:    nil,
-			ResourceCollectionMap: make(map[string]bool),
-			JobId:                 job.ID,
-			EvaluatedAt:           job.CreatedAt.UnixMilli(),
+			OpenGovernanceResourceID: resource.ResourceID,
+			ResourceType:             resource.ResourceType,
+			ResourceName:             resource.Name,
+			ResourceLocation:         resource.Location,
+			Connector:                resource.SourceType,
+			Findings:                 nil,
+			ResourceCollection:       nil,
+			ResourceCollectionMap:    make(map[string]bool),
+			JobId:                    job.ID,
+			EvaluatedAt:              job.CreatedAt.UnixMilli(),
 		}
 		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
 	} else {

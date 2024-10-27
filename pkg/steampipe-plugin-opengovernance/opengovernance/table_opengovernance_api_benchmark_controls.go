@@ -3,7 +3,7 @@ package opengovernance
 import (
 	"context"
 	compliance "github.com/opengovern/opengovernance/pkg/compliance/api"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_api_benchmark_controls",
+		Name:        "og_api_benchmark_controls",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -36,13 +36,13 @@ func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 					Require:   plugin.Optional,
 				},
 			},
-			Hydrate: kaytu_client.ListBenchmarkControls,
+			Hydrate: og_client.ListBenchmarkControls,
 		},
 		Columns: []*plugin.Column{
 			{
 				Name:        "benchmark_id",
 				Type:        proto.ColumnType_STRING,
-				Description: "The ID of the benchmark in Kaytu",
+				Description: "The ID of the benchmark in the platform",
 				Transform:   transform.FromQual("benchmark_id"),
 			},
 			{
@@ -128,12 +128,12 @@ func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 				Name:        "api_result",
 				Type:        proto.ColumnType_JSON,
 				Description: "The result of the benchmark control summary",
-				Transform:   transform.From(getKaytuApiBenchmarkControlResult),
+				Transform:   transform.From(getOpenGovernanceApiBenchmarkControlResult),
 			},
 		},
 	}
 }
 
-func getKaytuApiBenchmarkControlResult(_ context.Context, d *transform.TransformData) (any, error) {
+func getOpenGovernanceApiBenchmarkControlResult(_ context.Context, d *transform.TransformData) (any, error) {
 	return d.HydrateItem.(compliance.ControlSummary), nil
 }

@@ -2,7 +2,7 @@ package opengovernance
 
 import (
 	"context"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
@@ -10,13 +10,13 @@ import (
 
 func tablePlatformLookup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_lookup",
-		Description: "Kaytu Resource Lookup",
+		Name:        "og_lookup",
+		Description: "OpenGovernance Resource Lookup",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},
 		List: &plugin.ListConfig{
-			Hydrate: kaytu_client.ListLookupResources,
+			Hydrate: og_client.ListLookupResources,
 		},
 		Columns: []*plugin.Column{
 			{Name: "resource_id", Type: proto.ColumnType_STRING},

@@ -62,12 +62,12 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 		providerAccountID = *j.ExecutionPlan.ProviderConnectionID
 	}
 
-	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, providerAccountID)
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, providerAccountID)
 	if err != nil {
 		w.logger.Error("failed to set account id", zap.Error(err))
 		return err
 	}
-	err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
+	err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType, "compliance")
 	if err != nil {
 		w.logger.Error("failed to set client type", zap.Error(err))
 		return err
@@ -94,9 +94,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	if err := w.Initialize(ctx, j); err != nil {
 		return 0, err
 	}
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters)
 
 	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole})
 	if err != nil {
@@ -223,7 +223,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					f.ComplianceJobID = j.ID
 					f.ParentComplianceJobID = j.ParentJobID
 					f.EvaluatedAt = j.CreatedAt.UnixMilli()
-					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.KaytuResourceID)
+					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.OpenGovernanceResourceID)
 					f.Reason = reason
 					fs := types.FindingEvent{
 						FindingEsID:               f.EsID,
@@ -241,7 +241,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						ConnectionID:              f.ConnectionID,
 						Connector:                 f.Connector,
 						Severity:                  f.Severity,
-						KaytuResourceID:           f.KaytuResourceID,
+						OpenGovernanceResourceID:  f.OpenGovernanceResourceID,
 						ResourceID:                f.ResourceID,
 						ResourceType:              f.ResourceType,
 						ParentBenchmarkReferences: f.ParentBenchmarkReferences,
@@ -282,7 +282,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					ConnectionID:              newFinding.ConnectionID,
 					Connector:                 newFinding.Connector,
 					Severity:                  newFinding.Severity,
-					KaytuResourceID:           newFinding.KaytuResourceID,
+					OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
 					ResourceID:                newFinding.ResourceID,
 					ResourceType:              newFinding.ResourceType,
 					ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
@@ -326,7 +326,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			ConnectionID:              newFinding.ConnectionID,
 			Connector:                 newFinding.Connector,
 			Severity:                  newFinding.Severity,
-			KaytuResourceID:           newFinding.KaytuResourceID,
+			OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
 			ResourceID:                newFinding.ResourceID,
 			ResourceType:              newFinding.ResourceType,
 			ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
