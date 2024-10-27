@@ -176,8 +176,8 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 	}
 
 	theUser, err := utils.GetUserByEmail( user.Email, s.db)
-	if err != nil {
-		s.logger.Warn("failed to getOrCreate user",
+	if err != nil  {
+		s.logger.Warn("failed to get user",
 			zap.String("userId", user.ExternalUserID),
 			zap.String("email", user.Email),
 			zap.Error(err))
@@ -188,6 +188,9 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 			return unAuth, nil
 		}
 		
+	}
+	if(theUser == nil){
+		return unAuth, nil
 	}
 	user.Role = (api.Role)(theUser.Role)
 	user.ExternalUserID = theUser.ExternalId
@@ -247,6 +250,7 @@ type userClaim struct {
 	UserLastLogin  *time.Time
 	ConnectionIDs  map[string][]string
 	ExternalUserID string `json:"sub"`
+	EmailVerified  bool
 }
 
 func (u userClaim) Valid() error {
@@ -284,6 +288,7 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 
 		return &userClaim{
 			Email:          claimsMap.Email,
+			EmailVerified:  claimsMap.EmailVerified,
 			
 		}, nil
 	} else {
