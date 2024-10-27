@@ -23,7 +23,7 @@ var (
 
 //go:generate ../../scripts/generate_doc.sh
 
-//	@title						Kaytu Service API
+//	@title						OpenGovernance Service API
 //	@version					1.0
 //	@host						api.opengovernance.io
 //	@schemes					https

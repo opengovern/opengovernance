@@ -5946,12 +5946,12 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	kaytuResourceIds := make([]string, 0, len(response.Findings))
+	opengovernanceResourceIds := make([]string, 0, len(response.Findings))
 	for _, finding := range response.Findings {
-		kaytuResourceIds = append(kaytuResourceIds, finding.OpenGovernanceResourceID)
+		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
