@@ -156,13 +156,13 @@ func ListResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 		return nil, err
 	}
 	plugin.Logger(ctx).Trace("ListResources 4", sc)
-	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyResourceCollectionFilters)
+	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyResourceCollectionFilters)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListResources GetConfigTableValueOrNil for resource_collection_filters", "error", err)
 		return nil, err
 	}
 	plugin.Logger(ctx).Trace("ListResources 5", encodedResourceCollectionFilters)
-	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyClientType)
+	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyClientType)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListResources GetConfigTableValueOrNil for client_type", "error", err)
 		return nil, err
