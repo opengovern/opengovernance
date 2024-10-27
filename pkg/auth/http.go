@@ -1099,6 +1099,13 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			r.logger.Error("failed to create connector", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to create connector")
 		}
+		// restart dex pod on connector creation
+		err = utils.RestartDexPod()
+		if err != nil {
+			r.logger.Error("failed to restart dex pod", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to restart dex pod")
+		}
+
 
 		return ctx.JSON(http.StatusCreated, res)
 }
