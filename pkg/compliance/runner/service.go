@@ -70,7 +70,6 @@ func NewWorker(
 	if err != nil {
 		return nil, err
 	}
-
 	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
 		return nil, err
 	}
