@@ -2,20 +2,20 @@ package opengovernance
 
 import (
 	"context"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 func tablePlatformCost(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_cost",
-		Description: "Account-level cost of connections onboarded into Kaytu platform",
+		Name:        "og_cost",
+		Description: "Account-level cost of connections onboarded into platform",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},
 		List: &plugin.ListConfig{
-			Hydrate: kaytu_client.ListCostSummary,
+			Hydrate: og_client.ListCostSummary,
 		},
 		Columns: []*plugin.Column{
 			{Name: "connection_id", Type: proto.ColumnType_STRING},

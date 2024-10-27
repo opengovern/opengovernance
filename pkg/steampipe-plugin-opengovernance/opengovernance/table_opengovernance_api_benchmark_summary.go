@@ -3,7 +3,7 @@ package opengovernance
 import (
 	"context"
 	compliance "github.com/opengovern/opengovernance/pkg/compliance/api"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_api_benchmark_summary",
+		Name:        "og_api_benchmark_summary",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -36,13 +36,13 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 					Require:   plugin.Optional,
 				},
 			},
-			Hydrate: kaytu_client.GetBenchmarkSummary,
+			Hydrate: og_client.GetBenchmarkSummary,
 		},
 		Columns: []*plugin.Column{
 			{
 				Name:        "benchmark_id",
 				Type:        proto.ColumnType_STRING,
-				Description: "The ID of the benchmark in Kaytu",
+				Description: "The ID of the benchmark in OpenGovernance",
 				Transform:   transform.FromQual("benchmark_id"),
 			},
 			{
@@ -272,12 +272,12 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Name:        "api_result",
 				Type:        proto.ColumnType_JSON,
 				Description: "The result of the benchmark summary",
-				Transform:   transform.From(getKaytuApiBenchmarkSummaryResult),
+				Transform:   transform.From(getOpenGovernanceApiBenchmarkSummaryResult),
 			},
 		},
 	}
 }
 
-func getKaytuApiBenchmarkSummaryResult(_ context.Context, d *transform.TransformData) (any, error) {
+func getOpenGovernanceApiBenchmarkSummaryResult(_ context.Context, d *transform.TransformData) (any, error) {
 	return d.HydrateItem.(*compliance.BenchmarkEvaluationSummary), nil
 }

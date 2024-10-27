@@ -26,6 +26,7 @@ type GetUsersResponse struct {
 	CreatedAt     time.Time    `json:"created_at" example:"2023-03-31T09:36:09.855Z"`         // Creation timestamp in UTC
 	IsActive     bool       `json:"is_active"`
 	FullName 	string `json:"full_name"`
+	ConnectorId	string `json:"connector_id"`
 
 }
 
@@ -57,6 +58,8 @@ type UpdateUserRequest struct {
 	IsActive     bool      `json:"is_active"`
 	UserName     string    `json:"username"`
 	FullName     string    `json:"full_name"`
+	ConnectorId	 string    `json:"connector_id"`
+
 }
 
 type CreateUserRequest struct {
@@ -64,6 +67,7 @@ type CreateUserRequest struct {
 	Role         *api.Role `json:"role" enums:"admin,editor,viewer" example:"admin"`
 	Password     *string   `json:"password"`
 	IsActive     bool      `json:"is_active"`
+	ConnectorId	 string    `json:"connector_id"`
 }
 
 type ResetUserPasswordRequest struct {

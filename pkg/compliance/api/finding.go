@@ -49,16 +49,16 @@ type FindingFiltersWithMetadata struct {
 }
 
 type FindingsSort struct {
-	Connector         *SortDirection `json:"connector"`
-	ResourceID        *SortDirection `json:"resourceID"`
-	KaytuResourceID   *SortDirection `json:"kaytuResourceID"`
-	ResourceTypeID    *SortDirection `json:"resourceTypeID"`
-	ConnectionID      *SortDirection `json:"connectionID"`
-	BenchmarkID       *SortDirection `json:"benchmarkID"`
-	ControlID         *SortDirection `json:"controlID"`
-	Severity          *SortDirection `json:"severity"`
-	ConformanceStatus *SortDirection `json:"conformanceStatus"`
-	StateActive       *SortDirection `json:"stateActive"`
+	Connector                *SortDirection `json:"connector"`
+	ResourceID               *SortDirection `json:"resourceID"`
+	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
+	ResourceTypeID           *SortDirection `json:"resourceTypeID"`
+	ConnectionID             *SortDirection `json:"connectionID"`
+	BenchmarkID              *SortDirection `json:"benchmarkID"`
+	ControlID                *SortDirection `json:"controlID"`
+	Severity                 *SortDirection `json:"severity"`
+	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
+	StateActive              *SortDirection `json:"stateActive"`
 }
 
 type GetFindingsRequest struct {
@@ -69,16 +69,16 @@ type GetFindingsRequest struct {
 }
 
 type GetSingleFindingRequest struct {
-	BenchmarkID     string `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID       string `json:"controlID" example:"azure_cis_v140_7_5"`
-	ConnectionID    string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	KaytuResourceID string `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID      string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	BenchmarkID              string `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID                string `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID             string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	OpenGovernanceResourceID string `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID               string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 }
 
 type GetSingleResourceFindingRequest struct {
-	KaytuResourceId string  `json:"kaytuResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType    *string `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	OpenGovernanceResourceId string  `json:"opengovernanceResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType             *string `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 }
 
 type ConformanceStatus string
@@ -126,7 +126,7 @@ type Finding struct {
 	Severity                  types.FindingSeverity `json:"severity" example:"low"`
 	Evaluator                 string                `json:"evaluator" example:"steampipe-v0.5"`
 	Connector                 source.Type           `json:"connector" example:"Azure"`
-	KaytuResourceID           string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	OpenGovernanceResourceID  string                `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID                string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceName              string                `json:"resourceName" example:"vm-1"`
 	ResourceLocation          string                `json:"resourceLocation" example:"eastus"`
@@ -160,7 +160,7 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 		Severity:                  finding.Severity,
 		Evaluator:                 finding.Evaluator,
 		Connector:                 finding.Connector,
-		KaytuResourceID:           finding.KaytuResourceID,
+		OpenGovernanceResourceID:  finding.OpenGovernanceResourceID,
 		ResourceID:                finding.ResourceID,
 		ResourceName:              finding.ResourceName,
 		ResourceLocation:          finding.ResourceLocation,

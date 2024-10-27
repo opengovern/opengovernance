@@ -6,12 +6,12 @@ import (
 )
 
 type Config struct {
-	Postgres   koanf.Postgres     `yaml:"postgres" koanf:"postgres"`
-	Http       koanf.HttpServer   `yaml:"http" koanf:"http"`
-	Onboard    koanf.KaytuService `yaml:"onboard" koanf:"onboard"`
-	Scheduler  koanf.KaytuService `yaml:"scheduler" koanf:"scheduler"`
-	Compliance koanf.KaytuService `yaml:"compliance" koanf:"compliance"`
-	Inventory  koanf.KaytuService `yaml:"inventory" koanf:"inventory"`
+	Postgres   koanf.Postgres              `yaml:"postgres" koanf:"postgres"`
+	Http       koanf.HttpServer            `yaml:"http" koanf:"http"`
+	Onboard    koanf.OpenGovernanceService `yaml:"onboard" koanf:"onboard"`
+	Scheduler  koanf.OpenGovernanceService `yaml:"scheduler" koanf:"scheduler"`
+	Compliance koanf.OpenGovernanceService `yaml:"compliance" koanf:"compliance"`
+	Inventory  koanf.OpenGovernanceService `yaml:"inventory" koanf:"inventory"`
 
 	Vault vault.Config `yaml:"vault" koanf:"vault"`
 

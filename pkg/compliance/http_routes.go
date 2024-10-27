@@ -26,7 +26,7 @@ import (
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
-	kaytuTypes "github.com/opengovern/opengovernance/pkg/types"
+	opengovernanceTypes "github.com/opengovern/opengovernance/pkg/types"
 	types2 "github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	model2 "github.com/opengovern/opengovernance/services/migrator/db/model"
@@ -247,7 +247,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
 	for _, status := range req.Filters.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -364,12 +364,12 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	kaytuResourceIds := make([]string, 0, len(response.Findings))
+	opengovernanceResourceIds := make([]string, 0, len(response.Findings))
 	for _, finding := range response.Findings {
-		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
+		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -377,7 +377,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 
 	for i, finding := range response.Findings {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[finding.KaytuResourceID]
+		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
@@ -390,7 +390,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 			response.Findings[i].ResourceLocation = lookupResource.Location
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("kaytu_resource_id", finding.KaytuResourceID),
+				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)
@@ -450,21 +450,21 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	kaytuResourceID := req.KaytuResourceId
+	opengovernanceResourceID := req.OpenGovernanceResourceId
 
-	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx, h.client, []string{kaytuResourceID})
+	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx, h.client, []string{opengovernanceResourceID})
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
-	if len(lookupResourceRes) == 0 || len(lookupResourceRes[req.KaytuResourceId]) == 0 {
+	if len(lookupResourceRes) == 0 || len(lookupResourceRes[req.OpenGovernanceResourceId]) == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 	var lookupResource *es2.LookupResource
 	if req.ResourceType == nil {
-		lookupResource = utils.GetPointer(lookupResourceRes[req.KaytuResourceId][0])
+		lookupResource = utils.GetPointer(lookupResourceRes[req.OpenGovernanceResourceId][0])
 	} else {
-		for _, r := range lookupResourceRes[req.KaytuResourceId] {
+		for _, r := range lookupResourceRes[req.OpenGovernanceResourceId] {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(*req.ResourceType) {
 				lookupResource = &r
@@ -690,7 +690,7 @@ func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
 		boolStateActives = append(boolStateActives, stateActiveBool)
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -741,7 +741,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
 	for _, status := range req.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -940,7 +940,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 
 	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
 	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
-		if kaytuTypes.ParseConformanceStatus(item.Key).IsPassed() {
+		if opengovernanceTypes.ParseConformanceStatus(item.Key).IsPassed() {
 			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
 		} else {
 			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
@@ -1001,7 +1001,7 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
 //	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
 //	@Param			controlId			query		[]string						false	"ControlID"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
 //	@Param			jobId				query		[]string						false	"Job ID to filter"
@@ -1036,7 +1036,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	benchmarkIDs := httpserver2.QueryArrayParam(echoCtx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(echoCtx, "controlId")
 	jobIDs := httpserver2.QueryArrayParam(echoCtx, "jobId")
-	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
+	severities := opengovernanceTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
@@ -1071,7 +1071,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 		}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -1284,7 +1284,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			for _, control := range item.ControlCount.Buckets {
 				isFailed := false
 				for _, conformanceStatus := range control.ConformanceStatuses.Buckets {
-					status := kaytuTypes.ParseConformanceStatus(conformanceStatus.Key)
+					status := opengovernanceTypes.ParseConformanceStatus(conformanceStatus.Key)
 					if !status.IsPassed() && conformanceStatus.DocCount > 0 {
 						isFailed = true
 						break
@@ -1455,7 +1455,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 //	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
 //	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
@@ -1477,14 +1477,14 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) erro
 	}
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(echoCtx, "connector"))
-	severities := kaytuTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
+	severities := opengovernanceTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
 			api.ConformanceStatusFailed,
 		}
 	}
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -1574,8 +1574,8 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 	for _, src := range srcs {
 		summary, ok := res[src.ID.String()]
 		if !ok {
-			summary.Result.SeverityResult = map[kaytuTypes.FindingSeverity]int{}
-			summary.Result.QueryResult = map[kaytuTypes.ConformanceStatus]int{}
+			summary.Result.SeverityResult = map[opengovernanceTypes.FindingSeverity]int{}
+			summary.Result.QueryResult = map[opengovernanceTypes.ConformanceStatus]int{}
 		}
 
 		account := api.AccountsFindingsSummary{
@@ -1589,11 +1589,11 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 				Low      int `json:"low"`
 				None     int `json:"none"`
 			}{
-				Critical: summary.Result.SeverityResult[kaytuTypes.FindingSeverityCritical],
-				High:     summary.Result.SeverityResult[kaytuTypes.FindingSeverityHigh],
-				Medium:   summary.Result.SeverityResult[kaytuTypes.FindingSeverityMedium],
-				Low:      summary.Result.SeverityResult[kaytuTypes.FindingSeverityLow],
-				None:     summary.Result.SeverityResult[kaytuTypes.FindingSeverityNone],
+				Critical: summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityCritical],
+				High:     summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityHigh],
+				Medium:   summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityMedium],
+				Low:      summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityLow],
+				None:     summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityNone],
 			},
 			ConformanceStatusesCount: struct {
 				Passed int `json:"passed"`
@@ -1602,11 +1602,11 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 				Info   int `json:"info"`
 				Skip   int `json:"skip"`
 			}{
-				Passed: summary.Result.QueryResult[kaytuTypes.ConformanceStatusOK],
-				Failed: summary.Result.QueryResult[kaytuTypes.ConformanceStatusALARM],
-				Error:  summary.Result.QueryResult[kaytuTypes.ConformanceStatusERROR],
-				Info:   summary.Result.QueryResult[kaytuTypes.ConformanceStatusINFO],
-				Skip:   summary.Result.QueryResult[kaytuTypes.ConformanceStatusSKIP],
+				Passed: summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusOK],
+				Failed: summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusALARM],
+				Error:  summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusERROR],
+				Info:   summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusINFO],
+				Skip:   summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusSKIP],
 			},
 			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
@@ -1672,7 +1672,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 			resMap[controlResult.Key] = controlResult.DocCount
 		}
 
-		securityScore := float64(resMap[string(kaytuTypes.ConformanceStatusOK)]) / float64(resourceType.DocCount) * 100.0
+		securityScore := float64(resMap[string(opengovernanceTypes.ConformanceStatusOK)]) / float64(resourceType.DocCount) * 100.0
 
 		resourceTypeMetadata := resourceTypeMap[strings.ToLower(resourceType.Key)]
 		if resourceTypeMetadata.ResourceType == "" {
@@ -1696,21 +1696,21 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 				Low      int `json:"low"`
 				None     int `json:"none"`
 			}{
-				Critical: sevMap[string(kaytuTypes.FindingSeverityCritical)],
-				High:     sevMap[string(kaytuTypes.FindingSeverityHigh)],
-				Medium:   sevMap[string(kaytuTypes.FindingSeverityMedium)],
-				Low:      sevMap[string(kaytuTypes.FindingSeverityLow)],
-				None:     sevMap[string(kaytuTypes.FindingSeverityNone)],
+				Critical: sevMap[string(opengovernanceTypes.FindingSeverityCritical)],
+				High:     sevMap[string(opengovernanceTypes.FindingSeverityHigh)],
+				Medium:   sevMap[string(opengovernanceTypes.FindingSeverityMedium)],
+				Low:      sevMap[string(opengovernanceTypes.FindingSeverityLow)],
+				None:     sevMap[string(opengovernanceTypes.FindingSeverityNone)],
 			},
 			ConformanceStatusesCount: struct {
 				Passed int `json:"passed"`
 				Failed int `json:"failed"`
 			}{
-				Passed: resMap[string(kaytuTypes.ConformanceStatusOK)] +
-					resMap[string(kaytuTypes.ConformanceStatusINFO)] +
-					resMap[string(kaytuTypes.ConformanceStatusSKIP)],
-				Failed: resMap[string(kaytuTypes.ConformanceStatusALARM)] +
-					resMap[string(kaytuTypes.ConformanceStatusERROR)],
+				Passed: resMap[string(opengovernanceTypes.ConformanceStatusOK)] +
+					resMap[string(opengovernanceTypes.ConformanceStatusINFO)] +
+					resMap[string(opengovernanceTypes.ConformanceStatusSKIP)],
+				Failed: resMap[string(opengovernanceTypes.ConformanceStatusALARM)] +
+					resMap[string(opengovernanceTypes.ConformanceStatusERROR)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -1755,7 +1755,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
 	for _, status := range req.Filters.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -1782,7 +1782,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 	}
 
 	res, totalCount, err := es.FindingEventsQuery(ctx, h.logger, h.client,
-		req.Filters.FindingID, req.Filters.KaytuResourceID,
+		req.Filters.FindingID, req.Filters.OpenGovernanceResourceID,
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceType,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
@@ -1816,7 +1816,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	var kaytuResourceIds []string
+	var opengovernanceResourceIds []string
 	for _, h := range res {
 		findingEvent := api.GetAPIFindingEventFromESFindingEvent(h.Source)
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
@@ -1827,12 +1827,12 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 			findingEvent.ProviderConnectionName = connection.ConnectionName
 		}
 		findingEvent.SortKey = h.Sort
-		kaytuResourceIds = append(kaytuResourceIds, h.Source.KaytuResourceID)
+		opengovernanceResourceIds = append(opengovernanceResourceIds, h.Source.OpenGovernanceResourceID)
 		response.FindingEvents = append(response.FindingEvents, findingEvent)
 	}
 	response.TotalCount = totalCount
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -1840,7 +1840,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 
 	for i, findingEvent := range response.FindingEvents {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[findingEvent.KaytuResourceID]
+		potentialResources := lookupResourcesMap[findingEvent.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(findingEvent.ResourceType) {
@@ -1854,7 +1854,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 			response.FindingEvents[i].ResourceLocation = lookupResource.Location
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("kaytu_resource_id", findingEvent.KaytuResourceID),
+				zap.String("og_resource_id", findingEvent.OpenGovernanceResourceID),
 				zap.String("resource_id", findingEvent.ResourceID),
 				zap.String("controlId", findingEvent.ControlID),
 			)
@@ -1887,7 +1887,7 @@ func (h *HttpHandler) CountFindingEvents(echoCtx echo.Context) error {
 		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -1994,7 +1994,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
 	for _, status := range req.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -2064,7 +2064,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 	}
 
 	possibleFilters, err := es.FindingEventsFiltersQuery(ctx, h.logger, h.client,
-		req.FindingID, req.KaytuResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
+		req.FindingID, req.OpenGovernanceResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
@@ -2186,7 +2186,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 
 	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
 	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
-		if kaytuTypes.ParseConformanceStatus(item.Key).IsPassed() {
+		if opengovernanceTypes.ParseConformanceStatus(item.Key).IsPassed() {
 			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
 		} else {
 			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
@@ -2339,7 +2339,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
 	for _, status := range req.Filters.ConformanceStatus {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -2425,39 +2425,39 @@ func (h *HttpHandler) GetControlRemediation(echoCtx echo.Context) error {
 func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSeverityStatus, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatus {
 	if control == nil {
 		control = &db.Control{
-			Severity: kaytuTypes.FindingSeverityNone,
+			Severity: opengovernanceTypes.FindingSeverityNone,
 		}
 	}
 	switch control.Severity {
-	case kaytuTypes.FindingSeverityCritical:
+	case opengovernanceTypes.FindingSeverityCritical:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Critical.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Critical.PassedCount++
 		}
-	case kaytuTypes.FindingSeverityHigh:
+	case opengovernanceTypes.FindingSeverityHigh:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.High.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.High.PassedCount++
 		}
-	case kaytuTypes.FindingSeverityMedium:
+	case opengovernanceTypes.FindingSeverityMedium:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Medium.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Medium.PassedCount++
 		}
-	case kaytuTypes.FindingSeverityLow:
+	case opengovernanceTypes.FindingSeverityLow:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Low.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Low.PassedCount++
 		}
-	case kaytuTypes.FindingSeverityNone, "":
+	case opengovernanceTypes.FindingSeverityNone, "":
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.None.TotalCount++
 		if controlResult.Passed {
@@ -2471,11 +2471,11 @@ func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSever
 func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSeverityStatusV2, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatusV2 {
 	if control == nil {
 		control = &db.Control{
-			Severity: kaytuTypes.FindingSeverityNone,
+			Severity: opengovernanceTypes.FindingSeverityNone,
 		}
 	}
 	switch control.Severity {
-	case kaytuTypes.FindingSeverityCritical:
+	case opengovernanceTypes.FindingSeverityCritical:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Critical.TotalCount++
 		if controlResult.Passed {
@@ -2485,7 +2485,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Critical.FailedCount++
 		}
-	case kaytuTypes.FindingSeverityHigh:
+	case opengovernanceTypes.FindingSeverityHigh:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.High.TotalCount++
 		if controlResult.Passed {
@@ -2495,7 +2495,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.High.FailedCount++
 		}
-	case kaytuTypes.FindingSeverityMedium:
+	case opengovernanceTypes.FindingSeverityMedium:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Medium.TotalCount++
 		if controlResult.Passed {
@@ -5948,7 +5948,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 
 	kaytuResourceIds := make([]string, 0, len(response.Findings))
 	for _, finding := range response.Findings {
-		kaytuResourceIds = append(kaytuResourceIds, finding.KaytuResourceID)
+		kaytuResourceIds = append(kaytuResourceIds, finding.OpenGovernanceResourceID)
 	}
 
 	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
@@ -5959,7 +5959,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 
 	for i, finding := range response.Findings {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[finding.KaytuResourceID]
+		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
@@ -5972,7 +5972,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			response.Findings[i].ResourceLocation = lookupResource.Location
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("kaytu_resource_id", finding.KaytuResourceID),
+				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)

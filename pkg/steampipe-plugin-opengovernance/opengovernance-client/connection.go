@@ -14,24 +14,24 @@ import (
 )
 
 type ConnectionRow struct {
-	KaytuID        string              `json:"kaytu_id"`
-	ID             string              `json:"id"`
-	Name           string              `json:"name"`
-	Connector      source.Type         `json:"connector"`
-	HealthState    string              `json:"health_state"`
-	LifecycleState string              `json:"lifecycle_state"`
-	Tags           map[string][]string `json:"tags"`
+	OpenGovernanceID string              `json:"og_id"`
+	ID               string              `json:"id"`
+	Name             string              `json:"name"`
+	Connector        source.Type         `json:"connector"`
+	HealthState      string              `json:"health_state"`
+	LifecycleState   string              `json:"lifecycle_state"`
+	Tags             map[string][]string `json:"tags"`
 }
 
 func getAWSConnectionRowFromConnection(ctx context.Context, connection onboard.Connection) (*ConnectionRow, error) {
 	row := ConnectionRow{
-		KaytuID:        connection.ID.String(),
-		ID:             connection.SourceId,
-		Name:           connection.Name,
-		Connector:      connection.Type,
-		HealthState:    strings.ToLower(string(connection.HealthState)),
-		LifecycleState: strings.ToLower(string(connection.LifecycleState)),
-		Tags:           make(map[string][]string),
+		OpenGovernanceID: connection.ID.String(),
+		ID:               connection.SourceId,
+		Name:             connection.Name,
+		Connector:        connection.Type,
+		HealthState:      strings.ToLower(string(connection.HealthState)),
+		LifecycleState:   strings.ToLower(string(connection.LifecycleState)),
+		Tags:             make(map[string][]string),
 	}
 
 	if connection.Metadata != nil && len(connection.Metadata) != 0 {
@@ -57,13 +57,13 @@ func getAWSConnectionRowFromConnection(ctx context.Context, connection onboard.C
 
 func getAzureConnectionRowFromConnection(ctx context.Context, connection onboard.Connection) (*ConnectionRow, error) {
 	row := ConnectionRow{
-		KaytuID:        connection.ID.String(),
-		ID:             connection.SourceId,
-		Name:           connection.Name,
-		Connector:      connection.Type,
-		HealthState:    strings.ToLower(string(connection.HealthState)),
-		LifecycleState: strings.ToLower(string(connection.LifecycleState)),
-		Tags:           make(map[string][]string),
+		OpenGovernanceID: connection.ID.String(),
+		ID:               connection.SourceId,
+		Name:             connection.Name,
+		Connector:        connection.Type,
+		HealthState:      strings.ToLower(string(connection.HealthState)),
+		LifecycleState:   strings.ToLower(string(connection.LifecycleState)),
+		Tags:             make(map[string][]string),
 	}
 
 	if connection.Metadata != nil && len(connection.Metadata) != 0 {
@@ -139,9 +139,9 @@ func GetConnection(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 	}
 	k := Client{PG: ke}
 
-	kaytuId := d.EqualsQuals["kaytu_id"].GetStringValue()
+	opengovernanceId := d.EqualsQuals["og_id"].GetStringValue()
 	id := d.EqualsQuals["id"].GetStringValue()
-	connection, err := k.PG.GetConnectionByIDs(ctx, kaytuId, id)
+	connection, err := k.PG.GetConnectionByIDs(ctx, opengovernanceId, id)
 	if err != nil {
 		return nil, err
 	}

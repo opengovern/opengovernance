@@ -24,12 +24,10 @@ import (
 )
 
 var (
-dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
+	dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
 	dexGrpcAddress        = os.Getenv("DEX_GRPC_ADDR")
-
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
-
 	platformHost          = os.Getenv("PLATFORM_HOST")
 	platformKeyEnabledStr = os.Getenv("PLATFORM_KEY_ENABLED")
 	platformPublicKeyStr  = os.Getenv("PLATFORM_PUBLIC_KEY")
@@ -74,7 +72,7 @@ func start(ctx context.Context) error {
 
 	// setup postgres connection
 	cfg := postgres.Config{
-Host:    conf.PostgreSQL.Host,
+        Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,
@@ -219,7 +217,6 @@ Host:    conf.PostgreSQL.Host,
 	authServer := &Server{
 		host:              platformHost,
 		platformPublicKey: platformPublicKey,
-
 		dexVerifier:         dexVerifier,
 		logger:              logger,
 		db:                  adb,

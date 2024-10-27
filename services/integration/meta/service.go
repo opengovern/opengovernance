@@ -18,7 +18,7 @@ type Meta struct {
 	Client metadata.MetadataServiceClient
 }
 
-func New(config koanf.KaytuService) (*Meta, error) {
+func New(config koanf.OpenGovernanceService) (*Meta, error) {
 	client := metadata.NewMetadataServiceClient(config.BaseURL)
 
 	ctx := &httpclient.Context{

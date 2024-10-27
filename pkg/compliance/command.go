@@ -23,10 +23,10 @@ type OpenAI struct {
 type ServerConfig struct {
 	ElasticSearch config.ElasticSearch
 	PostgreSQL    config.Postgres
-	Scheduler     config.KaytuService
-	Onboard       config.KaytuService
-	Inventory     config.KaytuService
-	Metadata      config.KaytuService
+	Scheduler     config.OpenGovernanceService
+	Onboard       config.OpenGovernanceService
+	Inventory     config.OpenGovernanceService
+	Metadata      config.OpenGovernanceService
 	OpenAI        OpenAI
 	Http          config.HttpServer
 

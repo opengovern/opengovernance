@@ -7,14 +7,14 @@ import (
 )
 
 type ResourceFinding struct {
-	ID                string      `json:"id"`
-	KaytuResourceID   string      `json:"kaytuResourceID"`
-	ResourceName      string      `json:"resourceName"`
-	ResourceLocation  string      `json:"resourceLocation"`
-	ResourceType      string      `json:"resourceType"`
-	ResourceTypeLabel string      `json:"resourceTypeLabel"`
-	Connector         source.Type `json:"connector"`
-	ComplianceJobID   string      `json:"complianceJobID"`
+	ID                       string      `json:"id"`
+	OpenGovernanceResourceID string      `json:"opengovernanceResourceID"`
+	ResourceName             string      `json:"resourceName"`
+	ResourceLocation         string      `json:"resourceLocation"`
+	ResourceType             string      `json:"resourceType"`
+	ResourceTypeLabel        string      `json:"resourceTypeLabel"`
+	Connector                source.Type `json:"connector"`
+	ComplianceJobID          string      `json:"complianceJobID"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
@@ -32,12 +32,12 @@ type ResourceFinding struct {
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
 	apiRf := ResourceFinding{
-		ID:               resourceFinding.EsID,
-		KaytuResourceID:  resourceFinding.KaytuResourceID,
-		ResourceName:     resourceFinding.ResourceName,
-		ResourceLocation: resourceFinding.ResourceLocation,
-		ResourceType:     resourceFinding.ResourceType,
-		Connector:        resourceFinding.Connector,
+		ID:                       resourceFinding.EsID,
+		OpenGovernanceResourceID: resourceFinding.OpenGovernanceResourceID,
+		ResourceName:             resourceFinding.ResourceName,
+		ResourceLocation:         resourceFinding.ResourceLocation,
+		ResourceType:             resourceFinding.ResourceType,
+		Connector:                resourceFinding.Connector,
 
 		FailedCount: 0,
 		TotalCount:  len(resourceFinding.Findings),
@@ -88,12 +88,12 @@ type ResourceFindingFilters struct {
 }
 
 type ResourceFindingsSort struct {
-	KaytuResourceID   *SortDirection `json:"kaytuResourceID"`
-	ResourceType      *SortDirection `json:"resourceType"`
-	ResourceName      *SortDirection `json:"resourceName"`
-	ResourceLocation  *SortDirection `json:"resourceLocation"`
-	FailedCount       *SortDirection `json:"failedCount"`
-	ConformanceStatus *SortDirection `json:"conformanceStatus"`
+	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
+	ResourceType             *SortDirection `json:"resourceType"`
+	ResourceName             *SortDirection `json:"resourceName"`
+	ResourceLocation         *SortDirection `json:"resourceLocation"`
+	FailedCount              *SortDirection `json:"failedCount"`
+	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
 }
 
 type ListResourceFindingsRequest struct {

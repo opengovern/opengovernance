@@ -75,7 +75,7 @@ func FetchFindingEventsByFindingIDs(ctx context.Context, logger *zap.Logger, cli
 }
 
 func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	findingIDs []string, kaytuResourceIDs []string,
+	findingIDs []string, opengovernanceResourceIDs []string,
 	provider []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity,
@@ -91,9 +91,9 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 			requestSort = append(requestSort, map[string]any{
 				"connector": *sort.Connector,
 			})
-		case sort.KaytuResourceID != nil:
+		case sort.OpenGovernanceResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"kaytuResourceID": *sort.KaytuResourceID,
+				"opengovernanceResourceID": *sort.OpenGovernanceResourceID,
 			})
 
 		case sort.ResourceType != nil:
@@ -176,8 +176,8 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 	if len(findingIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("findingEsID", findingIDs))
 	}
-	if len(kaytuResourceIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("kaytuResourceID", kaytuResourceIDs))
+	if len(opengovernanceResourceIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
 	}
 	if len(resourceTypes) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
@@ -290,7 +290,7 @@ type FindingEventFiltersAggregationResponse struct {
 }
 
 func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	findingIDs []string, kaytuResourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
+	findingIDs []string, opengovernanceResourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
@@ -301,8 +301,8 @@ func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client o
 	if len(findingIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("findingEsID", findingIDs))
 	}
-	if len(kaytuResourceIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("kaytuResourceID", kaytuResourceIDs))
+	if len(opengovernanceResourceIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
 	}
 	if len(resourceTypes) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
