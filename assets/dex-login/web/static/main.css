@@ -470,6 +470,11 @@ gap: 40px;
   white-space: nowrap;
   will-change: box-shadow,transform;
   font-size: 18px;
+  width: calc(100% - 50px);
+  min-width: max-content;
+}
+.connector-button.sign{
+  width: 100%;
 }
 
 .connector-button:focus {
@@ -506,3 +511,9 @@ gap: 40px;
   /* margin-bottom: 15px; */
 }
 
+.link-back{
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
