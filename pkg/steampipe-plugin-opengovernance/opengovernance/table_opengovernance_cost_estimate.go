@@ -2,7 +2,7 @@ package opengovernance
 
 import (
 	"context"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
@@ -15,7 +15,7 @@ func tablePlatformCostEstimate(_ context.Context) *plugin.Table {
 			Enabled: false,
 		},
 		List: &plugin.ListConfig{
-			Hydrate: kaytu_client.ListResourceCostEstimate,
+			Hydrate: og_client.ListResourceCostEstimate,
 			KeyColumns: []*plugin.KeyColumn{
 				{
 					Name:      "resource_id",

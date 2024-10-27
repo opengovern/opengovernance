@@ -143,12 +143,12 @@ func ListLookupResources(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 		plugin.Logger(ctx).Error("ListLookupResources NewSelfClientCached", "error", err)
 		return nil, err
 	}
-	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyResourceCollectionFilters)
+	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyResourceCollectionFilters)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListLookupResources GetConfigTableValueOrNil for resource_collection_filters", "error", err)
 		return nil, err
 	}
-	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.KaytuConfigKeyClientType)
+	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyClientType)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListLookupResources GetConfigTableValueOrNil for client_type", "error", err)
 		return nil, err

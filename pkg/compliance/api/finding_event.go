@@ -30,7 +30,7 @@ type FindingEvent struct {
 	ConnectionID              string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	Connector                 source.Type           `json:"connector" example:"Azure"`
 	Severity                  types.FindingSeverity `json:"severity" example:"low"`
-	KaytuResourceID           string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	OpenGovernanceResourceID  string                `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID                string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceType              string                `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	ParentBenchmarkReferences []string              `json:"parentBenchmarkReferences"`
@@ -63,7 +63,7 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 		ConnectionID:              findingEvent.ConnectionID,
 		Connector:                 findingEvent.Connector,
 		Severity:                  findingEvent.Severity,
-		KaytuResourceID:           findingEvent.KaytuResourceID,
+		OpenGovernanceResourceID:  findingEvent.OpenGovernanceResourceID,
 		ResourceID:                findingEvent.ResourceID,
 		ResourceType:              findingEvent.ResourceType,
 		ParentBenchmarkReferences: findingEvent.ParentBenchmarkReferences,
@@ -83,19 +83,19 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 }
 
 type FindingEventFilters struct {
-	Connector         []source.Type           `json:"connector" example:"Azure"`
-	ResourceType      []string                `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	ConnectionID      []string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	NotConnectionID   []string                `json:"notConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionGroup   []string                `json:"connectionGroup" example:"healthy"`
-	BenchmarkID       []string                `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID         []string                `json:"controlID" example:"azure_cis_v140_7_5"`
-	Severity          []types.FindingSeverity `json:"severity" example:"low"`
-	ConformanceStatus []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
-	StateActive       []bool                  `json:"stateActive" example:"true"`
-	FindingID         []string                `json:"findingID" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
-	KaytuResourceID   []string                `json:"kaytuResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	EvaluatedAt       struct {
+	Connector                []source.Type           `json:"connector" example:"Azure"`
+	ResourceType             []string                `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
+	ConnectionID             []string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	NotConnectionID          []string                `json:"notConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ConnectionGroup          []string                `json:"connectionGroup" example:"healthy"`
+	BenchmarkID              []string                `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID                []string                `json:"controlID" example:"azure_cis_v140_7_5"`
+	Severity                 []types.FindingSeverity `json:"severity" example:"low"`
+	ConformanceStatus        []ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
+	StateActive              []bool                  `json:"stateActive" example:"true"`
+	FindingID                []string                `json:"findingID" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
+	OpenGovernanceResourceID []string                `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	EvaluatedAt              struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	} `json:"evaluatedAt"`
@@ -114,15 +114,15 @@ type FindingEventFiltersWithMetadata struct {
 }
 
 type FindingEventsSort struct {
-	Connector         *SortDirection `json:"connector"`
-	KaytuResourceID   *SortDirection `json:"kaytuResourceID"`
-	ResourceType      *SortDirection `json:"resourceType"`
-	ConnectionID      *SortDirection `json:"connectionID"`
-	BenchmarkID       *SortDirection `json:"benchmarkID"`
-	ControlID         *SortDirection `json:"controlID"`
-	Severity          *SortDirection `json:"severity"`
-	ConformanceStatus *SortDirection `json:"conformanceStatus"`
-	StateActive       *SortDirection `json:"stateActive"`
+	Connector                *SortDirection `json:"connector"`
+	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
+	ResourceType             *SortDirection `json:"resourceType"`
+	ConnectionID             *SortDirection `json:"connectionID"`
+	BenchmarkID              *SortDirection `json:"benchmarkID"`
+	ControlID                *SortDirection `json:"controlID"`
+	Severity                 *SortDirection `json:"severity"`
+	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
+	StateActive              *SortDirection `json:"stateActive"`
 }
 
 type GetFindingEventsRequest struct {

@@ -144,10 +144,10 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 	if !finding.ConformanceStatus.IsPassed() {
 		control.Passed = false
 
-		control.failedResources.Insert([]byte(finding.KaytuResourceID))
+		control.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
 		control.failedConnections.Insert([]byte(finding.ConnectionID))
 	}
-	control.allResources.Insert([]byte(finding.KaytuResourceID))
+	control.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
 	control.allConnections.Insert([]byte(finding.ConnectionID))
 	control.CostOptimization = utils.PAdd(control.CostOptimization, finding.CostOptimization)
 	r.BenchmarkResult.Controls[finding.ControlID] = control
@@ -164,10 +164,10 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 	}
 	if !finding.ConformanceStatus.IsPassed() {
 		connectionControl.Passed = false
-		connectionControl.failedResources.Insert([]byte(finding.KaytuResourceID))
+		connectionControl.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
 		connectionControl.failedConnections.Insert([]byte(finding.ConnectionID))
 	}
-	connectionControl.allResources.Insert([]byte(finding.KaytuResourceID))
+	connectionControl.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
 	connectionControl.allConnections.Insert([]byte(finding.ConnectionID))
 	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, finding.CostOptimization)
 	connection.Controls[finding.ControlID] = connectionControl

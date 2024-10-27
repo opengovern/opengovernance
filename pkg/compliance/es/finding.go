@@ -235,9 +235,9 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernanc
 			requestSort = append(requestSort, map[string]any{
 				"connector": *sort.Connector,
 			})
-		case sort.KaytuResourceID != nil:
+		case sort.OpenGovernanceResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"kaytuResourceID": *sort.KaytuResourceID,
+				"opengovernanceResourceID": *sort.OpenGovernanceResourceID,
 			})
 		case sort.ResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -686,7 +686,7 @@ func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client opengoverna
 	root["aggs"] = map[string]any{
 		"resource_count": map[string]any{
 			"cardinality": map[string]any{
-				"field": "kaytuResourceID",
+				"field": "opengovernanceResourceID",
 			},
 		},
 		"control_count": map[string]any{
@@ -1259,29 +1259,29 @@ func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, l
 	return &resp, nil
 }
 
-type FindingCountPerKaytuResourceIdsResponse struct {
+type FindingCountPerOpenGovernanceResourceIdsResponse struct {
 	Aggregations struct {
-		KaytuResourceIDGroup struct {
+		OpenGovernanceResourceIDGroup struct {
 			Buckets []struct {
 				Key      string `json:"key"`
 				DocCount int    `json:"doc_count"`
 			} `json:"buckets"`
-		} `json:"kaytu_resource_id_group"`
+		} `json:"og_resource_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logger, client opengovernance.Client, kaytuResourceIds []string,
+func FetchFindingCountPerOpenGovernanceResourceIds(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceIds []string,
 	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
 ) (map[string]int, error) {
 	var filters []map[string]any
 
-	if len(kaytuResourceIds) == 0 {
+	if len(opengovernanceResourceIds) == 0 {
 		return map[string]int{}, nil
 	}
 
 	filters = append(filters, map[string]any{
 		"terms": map[string]any{
-			"kaytuResourceID": kaytuResourceIds,
+			"opengovernanceResourceID": opengovernanceResourceIds,
 		},
 	})
 	if len(severities) > 0 {
@@ -1306,10 +1306,10 @@ func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logge
 
 	request := map[string]any{
 		"aggs": map[string]any{
-			"kaytu_resource_id_group": map[string]any{
+			"og_resource_id_group": map[string]any{
 				"terms": map[string]any{
-					"field": "kaytuResourceID",
-					"size":  len(kaytuResourceIds),
+					"field": "opengovernanceResourceID",
+					"size":  len(opengovernanceResourceIds),
 				},
 			},
 		},
@@ -1326,15 +1326,15 @@ func FetchFindingCountPerKaytuResourceIds(ctx context.Context, logger *zap.Logge
 		return nil, err
 	}
 
-	logger.Info("FetchFindingCountPerKaytuResourceIds", zap.String("query", string(queryBytes)))
-	var resp FindingCountPerKaytuResourceIdsResponse
+	logger.Info("FetchFindingCountPerOpenGovernanceResourceIds", zap.String("query", string(queryBytes)))
+	var resp FindingCountPerOpenGovernanceResourceIdsResponse
 	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
 
 	result := make(map[string]int)
-	for _, bucket := range resp.Aggregations.KaytuResourceIDGroup.Buckets {
+	for _, bucket := range resp.Aggregations.OpenGovernanceResourceIDGroup.Buckets {
 		result[bucket.Key] = bucket.DocCount
 	}
 
@@ -1358,7 +1358,7 @@ type FindingsPerControlForResourceIdResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, kaytuResourceId string) ([]types.Finding, error) {
+func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceId string) ([]types.Finding, error) {
 	request := map[string]any{
 		"aggs": map[string]any{
 			"control_id_group": map[string]any{
@@ -1382,7 +1382,7 @@ func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logge
 			"bool": map[string]any{
 				"filter": map[string]any{
 					"term": map[string]any{
-						"kaytuResourceID": kaytuResourceId,
+						"opengovernanceResourceID": opengovernanceResourceId,
 					},
 				},
 			},

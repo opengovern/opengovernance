@@ -3,7 +3,7 @@ package opengovernance
 import (
 	"context"
 	metric "github.com/opengovern/opengovernance/pkg/analytics/db"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
@@ -11,13 +11,13 @@ import (
 
 func tablePlatformMetrics(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "kaytu_metrics",
+		Name:        "og_metrics",
 		Description: "opengovernance Metrics",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
 		},
 		List: &plugin.ListConfig{
-			Hydrate: kaytu_client.ListMetrics,
+			Hydrate: og_client.ListMetrics,
 		},
 		Columns: []*plugin.Column{
 			{Name: "id", Type: proto.ColumnType_STRING, Transform: transform.FromField("ID")},

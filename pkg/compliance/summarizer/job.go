@@ -25,12 +25,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	// We have to sort by kaytuResourceID to be able to optimize memory usage for resourceFinding generations
+	// We have to sort by opengovernanceResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
 	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []opengovernance.BoolFilter{
 		opengovernance.NewTermFilter("stateActive", "true"),
 	}, nil, []map[string]any{
-		{"kaytuResourceID": "asc"},
+		{"opengovernanceResourceID": "asc"},
 		{"resourceType": "asc"},
 	})
 	if err != nil {
@@ -101,7 +101,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 		resourceIds := make([]string, 0, len(page))
 		for _, f := range page {
-			resourceIds = append(resourceIds, f.KaytuResourceID)
+			resourceIds = append(resourceIds, f.OpenGovernanceResourceID)
 		}
 
 		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
@@ -113,7 +113,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			var resource *es2.LookupResource
-			potentialResources := lookupResourcesMap[f.KaytuResourceID]
+			potentialResources := lookupResourcesMap[f.OpenGovernanceResourceID]
 			for _, r := range potentialResources {
 				r := r
 				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
@@ -199,7 +199,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, currentResourceIds []string) error {
 	// Delete old resource findings
 	filters := make([]opengovernance.BoolFilter, 0, 2)
-	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("kaytuResourceID", currentResourceIds)))
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("opengovernanceResourceID", currentResourceIds)))
 	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
 
 	root := map[string]any{

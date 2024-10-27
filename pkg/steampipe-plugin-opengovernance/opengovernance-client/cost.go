@@ -132,7 +132,7 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 		for _, v := range page {
 			plugin.Logger(ctx).Warn("ListCostSummary: Page", v)
 			for _, connRes := range v.Connections {
-				row := KaytuCostTableRow{
+				row := OpenGovernanceCostTableRow{
 					ConnectionID:   connRes.ConnectionID,
 					ConnectionName: connRes.ConnectionName,
 					Connector:      connRes.Connector.String(),
@@ -155,7 +155,7 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 	return nil, nil
 }
 
-type KaytuCostTableRow struct {
+type OpenGovernanceCostTableRow struct {
 	ConnectionID   string    `json:"connection_id"`
 	ConnectionName string    `json:"connection_name"`
 	Connector      string    `json:"connector"`
