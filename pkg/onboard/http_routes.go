@@ -11,7 +11,6 @@ import (
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/demo"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	"github.com/opengovern/opengovernance/pkg/onboard/api/entities"
@@ -852,11 +851,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		}
 	}
 
-	for idx, c := range apiCredential.Connections {
-		c.ConnectionName = demo.EncodeResponseData(ctx, c.ConnectionName)
-		c.ConnectionID = demo.EncodeResponseData(ctx, c.ConnectionID)
-		apiCredential.Connections[idx] = c
-	}
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
@@ -2631,8 +2625,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
 	for idx, cnn := range result.Connections {
-		cnn.ConnectionID = demo.EncodeResponseData(ctx, cnn.ConnectionID)
-		cnn.ConnectionName = demo.EncodeResponseData(ctx, cnn.ConnectionName)
+
 		for _, pc := range pendingDescribeConnections {
 			if cnn.ID.String() == pc {
 				cnn.DescribeJobRunning = true
