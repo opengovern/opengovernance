@@ -499,7 +499,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	connector := ""
-	userId := fmt.Sprintf("%s|%s", req.ConnectorId,req.EmailAddress)
+	userId := fmt.Sprintf("%v|%s", req.ConnectorId,req.EmailAddress)
 	if req.Password != nil {
 		connector = "local"
 		userId := fmt.Sprintf("local|%s", req.EmailAddress)
@@ -598,7 +598,7 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "user not found")
 	}
 
-	if req.Password != nil && user.ConnectorId == "local" {
+	if req.Password != nil && req.ConnectorId == "local" {
 		dexClient, err := newDexClient(dexGrpcAddress)
 		if err != nil {
 			r.logger.Error("failed to create dex client", zap.Error(err))
@@ -653,6 +653,8 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			Username: req.UserName,
 			FullName: req.FullName,
 			Email:   user.Email,
+			ExternalId: fmt.Sprintf("%v|%s", req.ConnectorId,user.Email),
+			ConnectorId: req.ConnectorId,
 			
 
 
