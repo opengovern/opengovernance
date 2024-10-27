@@ -24,7 +24,7 @@ func NewConnectionGroup(ctx context.Context, steampipe *steampipe.Database, cg m
 
 	var connectionIds []string
 	for i, header := range connectionsQueryResult.Headers {
-		if header != "kaytu_id" {
+		if header != "og_id" {
 			continue
 		}
 		for _, row := range connectionsQueryResult.Data {
