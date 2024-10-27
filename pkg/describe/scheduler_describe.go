@@ -28,7 +28,7 @@ import (
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/ticker"
-	kaytuTrace "github.com/opengovern/og-util/pkg/trace"
+	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	apiDescribe "github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
@@ -63,7 +63,7 @@ func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
 }
 
 func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals bool) error {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	count, err := s.db.CountQueuedDescribeConnectionJobs(manuals)
@@ -354,7 +354,7 @@ func awsOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiO
 
 func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
 	defer span.End()
 
 	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
@@ -558,7 +558,7 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 }
 
 func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string) error {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
