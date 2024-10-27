@@ -13,6 +13,7 @@ import (
 type IntegrationServiceClient interface {
 	GetIntegration(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
 	ListIntegrations(ctx *httpclient.Context, integrationTypes []integration_type.IntegrationType) ([]models.Integration, error)
+	IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
 	GetCredential(ctx *httpclient.Context, credentialID string) (*models.Credential, error)
 }
 
@@ -64,6 +65,19 @@ func (c *integrationClient) GetCredential(ctx *httpclient.Context, credentialID 
 	var response *models.Credential
 
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (c *integrationClient) IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error) {
+	url := fmt.Sprintf("%s/api/v1/integrations/%s/healthcheck", c.baseURL, integrationID)
+	var response *models.Integration
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

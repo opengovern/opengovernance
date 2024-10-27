@@ -68,3 +68,15 @@ func (db Database) GetIntegration(tracker uuid.UUID) (*models.Integration, error
 
 	return &integration, nil
 }
+
+// UpdateIntegration deletes a integration
+func (db Database) UpdateIntegration(integration *models.Integration) error {
+	tx := db.Orm.
+		Where("integration_tracker = ?", integration.IntegrationTracker.String()).
+		Updates(integration)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}

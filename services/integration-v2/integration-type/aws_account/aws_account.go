@@ -28,23 +28,18 @@ func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.Describer
 	return interfaces.DescriberConfiguration{
 		NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:         awsDescriberLocal.StreamName,
 	}
 }
 
-func (i *AWSAccountIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]any, error) {
-	annotations := make(map[string]any)
+func (i *AWSAccountIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error) {
+	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *AWSAccountIntegration) GetMetadata(credentialType string, jsonData []byte) (map[string]any, error) {
-	annotations := make(map[string]any)
-
-	return annotations, nil
-}
-
-func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]any, error) {
-	labels := make(map[string]any)
+func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]string, error) {
+	labels := make(map[string]string)
 
 	awsCredential, err := getCredentials(credentialType, jsonData)
 	if err != nil {
@@ -62,7 +57,7 @@ func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte
 		return nil, err
 	}
 	if isStandalone {
-		labels["aws/account-type"] = "standalone"
+		labels["aws_cloud_account/account-type"] = "standalone"
 		return labels, nil
 	}
 
@@ -72,7 +67,7 @@ func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte
 		return nil, err
 	}
 	if isMember {
-		labels["aws/account-type"] = "organization-member"
+		labels["aws_cloud_account/account-type"] = "organization-member"
 		return labels, nil
 	}
 
@@ -82,7 +77,7 @@ func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte
 		return nil, err
 	}
 	if isMaster {
-		labels["aws/account-type"] = "organization-master"
+		labels["aws_cloud_account/account-type"] = "organization-master"
 		return labels, nil
 	}
 

@@ -9,19 +9,15 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/nats-io/nats.go/jetstream"
-	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
-	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
 	authAPI "github.com/opengovern/og-util/pkg/api"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -141,9 +137,6 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
-	lambdaClient     *lambda.Client
-	serviceBusClient *azservicebus.Client
-
 	complianceScheduler  *compliance.JobScheduler
 	discoveryScheduler   *discovery.Scheduler
 	queryRunnerScheduler *queryrunnerscheduler.JobScheduler
@@ -188,20 +181,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	lambdaCfg, err := awsConfig.LoadDefaultConfig(ctx)
-	lambdaCfg.Region = KeyRegion
-
 	s.conf = conf
-	s.lambdaClient = lambda.NewFromConfig(lambdaCfg)
-
-	if len(conf.ServiceBusConnectionString) > 0 {
-		serviceBusClient, err := azservicebus.NewClientFromConnectionString(conf.ServiceBusConnectionString, nil)
-		if err != nil {
-			s.logger.Error("Failed to create service bus client", zap.Error(err))
-			return nil, err
-		}
-		s.serviceBusClient = serviceBusClient
-	}
 
 	cfg := postgres.Config{
 		Host:    postgresHost,
@@ -375,13 +355,17 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 	}
 
 	if s.conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := s.jq.Stream(ctx, awsDescriberLocal.StreamName, "aws describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
-			return err
-		}
-		if err := s.jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
-			return err
+		for itName, it := range integration_type.IntegrationTypes {
+			integrationType, err := it()
+			if err != nil {
+				s.logger.Error("Failed to parse integration type", zap.Error(err))
+				return err
+			}
+			describerConfig := integrationType.GetDescriberConfiguration()
+			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 200000); err != nil {
+				s.logger.Error("Failed to stream to local integration type queue", zap.String("integration_type", string(itName)), zap.Error(err))
+				return err
+			}
 		}
 	}
 	return nil

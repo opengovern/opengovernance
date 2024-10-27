@@ -80,7 +80,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.ViewerRole))
 	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.ViewerRole))
 
-	v1.GET("/discovery/resourcetypes/list", httpserver.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
 	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.ViewerRole))
 
@@ -407,22 +406,6 @@ func UniqueArray[T any](arr []T) []T {
 		resp = append(resp, v)
 	}
 	return resp
-}
-
-// GetDiscoveryResourceTypeList godoc
-//
-//	@Summary	List all resource types that will be discovered
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Produce	json
-//	@Success	200	{object}	api.ListDiscoveryResourceTypes
-//	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
-func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
-	result, err := h.Scheduler.ListDiscoveryResourceTypes()
-	if err != nil {
-		return err
-	}
-	return ctx.JSON(http.StatusOK, result)
 }
 
 func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
@@ -3860,64 +3843,64 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 	triggerIdProgressSummary := &api.DiscoveryProgressStatusSummary{}
 	integrationsDiscoveryProgressStatus := make(map[string]api.IntegrationDiscoveryProgressStatus)
 	for _, j := range jobs {
-		if _, ok := integrationsDiscoveryProgressStatus[j.ConnectionID]; !ok {
-			integrationsDiscoveryProgressStatus[j.ConnectionID] = api.IntegrationDiscoveryProgressStatus{
-				Integration:             connectionInfo[j.ConnectionID],
+		if _, ok := integrationsDiscoveryProgressStatus[j.IntegrationTracker]; !ok {
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker] = api.IntegrationDiscoveryProgressStatus{
+				Integration:             connectionInfo[j.IntegrationTracker],
 				ProgressStatusBreakdown: &api.DiscoveryProgressStatusBreakdown{},
 				ProgressStatusSummary:   &api.DiscoveryProgressStatusSummary{},
 			}
 		}
 		switch j.Status {
 		case api.DescribeResourceJobCreated:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CreatedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CreatedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.CreatedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.CreatedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.CreatedCount = triggerIdProgressBreakdown.CreatedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobQueued:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.QueuedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.QueuedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.QueuedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.QueuedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.QueuedCount = triggerIdProgressBreakdown.QueuedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobInProgress:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.InProgressCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.InProgressCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.InProgressCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.InProgressCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.InProgressCount = triggerIdProgressBreakdown.InProgressCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobOldResourceDeletion:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.OldResourceDeletionCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.OldResourceDeletionCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.OldResourceDeletionCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.OldResourceDeletionCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.OldResourceDeletionCount = triggerIdProgressBreakdown.OldResourceDeletionCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobTimeout:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.TimeoutCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.TimeoutCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.TimeoutCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.TimeoutCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.TimeoutCount = triggerIdProgressBreakdown.TimeoutCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobFailed:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.FailedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.FailedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.FailedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.FailedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.FailedCount = triggerIdProgressBreakdown.FailedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobSucceeded:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.SucceededCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.SucceededCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.SucceededCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.SucceededCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.SucceededCount = triggerIdProgressBreakdown.SucceededCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobRemovingResources:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.RemovingResourcesCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.RemovingResourcesCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.RemovingResourcesCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.RemovingResourcesCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.RemovingResourcesCount = triggerIdProgressBreakdown.RemovingResourcesCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobCanceled:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CanceledCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CanceledCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.CanceledCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusBreakdown.CanceledCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationTracker].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.CanceledCount = triggerIdProgressBreakdown.CanceledCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1

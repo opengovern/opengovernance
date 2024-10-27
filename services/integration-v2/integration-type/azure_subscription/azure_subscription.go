@@ -22,23 +22,18 @@ func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.De
 	return interfaces.DescriberConfiguration{
 		NatsScheduledJobsTopic: azureDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    azureDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:         azureDescriberLocal.StreamName,
 	}
 }
 
-func (i *AzureSubscriptionIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]any, error) {
-	annotations := make(map[string]any)
+func (i *AzureSubscriptionIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error) {
+	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) GetMetadata(credentialType string, jsonData []byte) (map[string]any, error) {
-	annotations := make(map[string]any)
-
-	return annotations, nil
-}
-
-func (i *AzureSubscriptionIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]any, error) {
-	annotations := make(map[string]any)
+func (i *AzureSubscriptionIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]string, error) {
+	annotations := make(map[string]string)
 
 	return annotations, nil
 }

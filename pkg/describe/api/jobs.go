@@ -108,8 +108,7 @@ type ListJobsResponse struct {
 }
 
 type ListDiscoveryResourceTypes struct {
-	AWSResourceTypes   []string `json:"awsResourceTypes"`
-	AzureResourceTypes []string `json:"azureResourceTypes"`
+	IntegrationTypesResourceTypes map[string][]string `json:"integrationTypesResourceTypes"`
 }
 
 type JobSeqCheckResponse struct {
@@ -129,7 +128,6 @@ type GetDescribeJobsHistoryRequest struct {
 
 type GetDescribeJobsHistoryResponse struct {
 	JobId           uint                      `json:"job_id"`
-	DiscoveryType   string                    `json:"discovery_type"`
 	ResourceType    string                    `json:"resource_type"`
 	JobStatus       DescribeResourceJobStatus `json:"job_status"`
 	DateTime        time.Time                 `json:"date_time"`

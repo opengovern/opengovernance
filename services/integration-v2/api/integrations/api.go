@@ -14,6 +14,7 @@ import (
 	models2 "github.com/opengovern/opengovernance/services/integration-v2/models"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type API struct {
@@ -104,18 +105,6 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
-		metadata, err := integration.GetMetadata(req.CredentialType, jsonData)
-		if err != nil {
-			h.logger.Error("failed to get metadata", zap.Error(err))
-		}
-		metadataJsonData, err := json.Marshal(metadata)
-		if err != nil {
-			return err
-		}
-		integrationMetadataJsonb := pgtype.JSONB{}
-		err = integrationMetadataJsonb.Set(metadataJsonData)
-		i.Metadata = integrationMetadataJsonb
-
 		annotations, err := integration.GetAnnotations(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get annotations", zap.Error(err))
@@ -227,18 +216,6 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		i.CredentialID = credentialID
 
-		metadata, err := integration.GetMetadata(req.CredentialType, jsonData)
-		if err != nil {
-			h.logger.Error("failed to get metadata", zap.Error(err))
-		}
-		metadataJsonData, err := json.Marshal(metadata)
-		if err != nil {
-			return err
-		}
-		integrationMetadataJsonb := pgtype.JSONB{}
-		err = integrationMetadataJsonb.Set(metadataJsonData)
-		i.Metadata = integrationMetadataJsonb
-
 		annotations, err := integration.GetAnnotations(req.CredentialType, jsonData)
 		if err != nil {
 			h.logger.Error("failed to get annotations", zap.Error(err))
@@ -271,6 +248,91 @@ func (h API) AddIntegrations(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+// IntegrationHealthcheck godoc
+//
+//	@Summary		Add integrations
+//	@Description	Add integrations by given credential ID and integration IDs
+//	@Security		BearerToken
+//	@Tags			integrations
+//	@Produce		json
+//	@Success		200
+//	@Router			/integration/api/v1/integrations/{integrationTracker}/healthcheck [post]
+func (h API) IntegrationHealthcheck(c echo.Context) error {
+	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	integration, err := h.database.GetIntegration(integrationTracker)
+	if err != nil {
+		h.logger.Error("failed to get integration", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration")
+	}
+
+	credential, err := h.database.GetCredential(integration.CredentialID)
+	if err != nil {
+		h.logger.Error("failed to get credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
+
+	mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
+	if err != nil {
+		h.logger.Error("failed to encrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+	}
+
+	if _, ok := integration_type.IntegrationTypes[integration.IntegrationType]; !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+	}
+
+	jsonData, err := json.Marshal(mapData)
+	if err != nil {
+		h.logger.Error("failed to marshal json data", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
+	}
+
+	createCredentialFunction := integration_type.IntegrationTypes[integration.IntegrationType]
+	integrationType, err := createCredentialFunction()
+	if err != nil {
+		h.logger.Error("failed to create credential", zap.Error(err))
+	}
+	if integrationType == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+	}
+
+	healthy, err := integrationType.HealthCheck(credential.CredentialType, jsonData)
+	if err != nil || !healthy {
+		h.logger.Error("healthcheck failed", zap.Error(err))
+		if integration.State != models2.IntegrationStateArchived {
+			integration.State = models2.IntegrationStateInactive
+		}
+		_, err = integration.AddAnnotations("platform/integration/health-reason", err.Error())
+		if err != nil {
+			h.logger.Error("failed to add annotations", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to add annotations")
+		}
+	} else {
+		if integration.State != models2.IntegrationStateArchived {
+			integration.State = models2.IntegrationStateActive
+		}
+	}
+	healthcheckTime := time.Now()
+	integration.LastCheck = &healthcheckTime
+	err = h.database.UpdateIntegration(integration)
+	if err != nil {
+		h.logger.Error("failed to update integration", zap.Error(err), zap.Any("integration", *integration))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update integration")
+	}
+
+	integrationApi, err := integration.ToApi()
+	if err != nil {
+		h.logger.Error("failed to create integration api", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
+	}
+
+	return c.JSON(http.StatusOK, *integrationApi)
 }
 
 // Delete godoc
@@ -432,6 +494,7 @@ func (h API) Register(g *echo.Group) {
 	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
 	g.POST("/discover", httpserver.AuthorizeHandler(h.DiscoverIntegrations, api.EditorRole))
 	g.POST("/add", httpserver.AuthorizeHandler(h.AddIntegrations, api.EditorRole))
+	g.PUT("/:integrationTracker/healthcheck", httpserver.AuthorizeHandler(h.IntegrationHealthcheck, api.EditorRole))
 	g.DELETE("/:integrationTracker", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
 	g.GET("/:integrationTracker", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
 	g.POST("/:integrationTracker", httpserver.AuthorizeHandler(h.Update, api.EditorRole))

@@ -121,7 +121,7 @@ func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integrati
 			IntegrationID:      sub.SubscriptionID,
 			IntegrationName:    name,
 			Connector:          "Azure",
-			Type:               "azure_subscription",
+			IntegrationType:    "azure_subscription",
 			OnboardDate:        time.Now(),
 		})
 	}

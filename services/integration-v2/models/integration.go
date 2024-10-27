@@ -10,29 +10,25 @@ import (
 	"time"
 )
 
-type IntegrationLifecycle string
+type IntegrationState string
 
 const (
-	IntegrationLifecycleActive   IntegrationLifecycle = "ACTIVE"
-	IntegrationLifecycleInactive IntegrationLifecycle = "INACTIVE"
-	IntegrationLifecycleDisabled IntegrationLifecycle = "ARCHIVED"
+	IntegrationStateActive   IntegrationState = "ACTIVE"
+	IntegrationStateInactive IntegrationState = "INACTIVE"
+	IntegrationStateArchived IntegrationState = "ARCHIVED"
 )
 
 type Integration struct {
 	IntegrationTracker uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
 	IntegrationID      string    `gorm:"index:idx_type_integrationid,unique"`
 	IntegrationName    string
-	Connector          string
-	Type               integration_type.IntegrationType `gorm:"index:idx_type_integrationid,unique"`
-	OnboardDate        time.Time
-	Metadata           pgtype.JSONB
+	IntegrationType    integration_type.IntegrationType `gorm:"index:idx_type_integrationid,unique"`
 	Annotations        pgtype.JSONB
 	Labels             pgtype.JSONB
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 
-	Lifecycle IntegrationLifecycle
-	Reason    string
+	State     IntegrationState
 	LastCheck *time.Time
 
 	CreatedAt time.Time
@@ -40,14 +36,53 @@ type Integration struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 }
 
-func (i Integration) ToApi() (*api.Integration, error) {
-	var metadata map[string]string
-	if i.Metadata.Status == pgtype.Present {
-		if err := json.Unmarshal(i.Metadata.Bytes, &metadata); err != nil {
+func (i *Integration) AddLabel(key, value string) (*pgtype.JSONB, error) {
+	var labels map[string]string
+	if i.Labels.Status == pgtype.Present {
+		if err := json.Unmarshal(i.Labels.Bytes, &labels); err != nil {
 			return nil, err
 		}
+	} else {
+		labels = make(map[string]string)
 	}
 
+	labels[key] = value
+
+	labelsJsonData, err := json.Marshal(labels)
+	if err != nil {
+		return nil, err
+	}
+	integrationLabelsJsonb := pgtype.JSONB{}
+	err = integrationLabelsJsonb.Set(labelsJsonData)
+	i.Labels = integrationLabelsJsonb
+
+	return &integrationLabelsJsonb, nil
+}
+
+func (i *Integration) AddAnnotations(key, value string) (*pgtype.JSONB, error) {
+	var annotation map[string]string
+	if i.Annotations.Status == pgtype.Present {
+		if err := json.Unmarshal(i.Annotations.Bytes, &annotation); err != nil {
+			return nil, err
+		}
+	} else {
+		annotation = make(map[string]string)
+	}
+
+	annotation[key] = value
+
+	annotationsJsonData, err := json.Marshal(annotation)
+	if err != nil {
+		return nil, err
+	}
+	integrationAnnotationsJsonb := pgtype.JSONB{}
+	err = integrationAnnotationsJsonb.Set(annotationsJsonData)
+	i.Annotations = integrationAnnotationsJsonb
+
+	return &integrationAnnotationsJsonb, nil
+}
+
+func (i *Integration) ToApi() (*api.Integration, error) {
 	var labels map[string]string
 	if i.Labels.Status == pgtype.Present {
 		if err := json.Unmarshal(i.Labels.Bytes, &labels); err != nil {
@@ -66,16 +101,10 @@ func (i Integration) ToApi() (*api.Integration, error) {
 		IntegrationTracker: i.IntegrationTracker.String(),
 		IntegrationName:    i.IntegrationName,
 		IntegrationID:      i.IntegrationID,
-		IntegrationType:    i.Type,
-		Connector:          i.Connector,
-		OnboardDate:        i.OnboardDate,
+		IntegrationType:    i.IntegrationType,
 		CredentialID:       i.CredentialID.String(),
-		Lifecycle:          i.Lifecycle,
-		Reason:             i.Reason,
+		State:              i.State,
 		LastCheck:          i.LastCheck,
-		CreatedAt:          i.CreatedAt,
-		UpdatedAt:          i.UpdatedAt,
-		Metadata:           metadata,
 		Labels:             labels,
 		Annotations:        annotations,
 	}, nil

@@ -97,7 +97,7 @@ func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, 
 			IntegrationID:      id,
 			IntegrationName:    name,
 			Connector:          "AWS",
-			Type:               "aws_account",
+			IntegrationType:    "aws_account",
 			OnboardDate:        time.Now(),
 		})
 	}

@@ -4,7 +4,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/describe/enums"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"gorm.io/gorm"
 	"time"
 )
@@ -49,8 +49,7 @@ type DescribeConnectionJob struct {
 	IntegrationID      string
 	TriggerType        enums.DescribeTriggerType
 
-	ResourceType           string `gorm:"index:idx_resource_type_status;index"`
-	DiscoveryType          DiscoveryType
+	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
 	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING
