@@ -25,8 +25,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/open-policy-agent/opa/rego"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/describe"
 	"github.com/opengovern/og-util/pkg/model"
 	esSdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
@@ -769,7 +769,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var err error
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.OpenGovernancePrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
@@ -2856,9 +2856,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		metric := metricsMap[metricID]
 
 		for _, table := range metric.Tables {
-			if awsResourceType, err := kaytuAws.GetResourceType(table); err == nil && awsResourceType != nil {
+			if awsResourceType, err := opengovernanceAws.GetResourceType(table); err == nil && awsResourceType != nil {
 				includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
-			} else if azureResourceType, err := kaytuAzure.GetResourceType(table); err == nil && azureResourceType != nil {
+			} else if azureResourceType, err := opengovernanceAzure.GetResourceType(table); err == nil && azureResourceType != nil {
 				includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
 			}
 		}
