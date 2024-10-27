@@ -23,7 +23,7 @@ type SchedulerConfig struct {
 	ServiceBusConnectionString string `yaml:"service_bus_connection_string"`
 	ServerlessProvider         string `yaml:"serverless_provider"`
 	ElasticSearch              config.ElasticSearch
-	Onboard                    config.KaytuService
+	Onboard                    config.OpenGovernanceService
 	NATS                       config.NATS
 	Vault                      vault.Config `yaml:"vault" koanf:"vault"`
 }
