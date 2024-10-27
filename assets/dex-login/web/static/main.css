@@ -470,7 +470,7 @@ gap: 40px;
   white-space: nowrap;
   will-change: box-shadow,transform;
   font-size: 18px;
-  width: calc(100% - 50px);
+  width: 100% ;
   min-width: max-content;
 }
 .connector-button.sign{
@@ -516,4 +516,8 @@ gap: 40px;
   width: 100%;
   justify-content: center;
   align-items: center;
+}
+.connector-link{
+    width: calc(100% - 50px);
+  min-width: max-content;
 }
