@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	ogAws "github.com/opengovern/og-aws-describer/aws"
+	ogAzure "github.com/opengovern/og-azure-describer/azure"
 	"strings"
 	"time"
 
@@ -85,7 +85,7 @@ func (c *Connection) TenantID() string {
 
 func GetAWSSupportedResourceTypeMap() map[string]bool {
 	supportedMap := make(map[string]bool)
-	rts := kaytuAws.GetResourceTypesMap()
+	rts := ogAws.GetResourceTypesMap()
 	for rt := range rts {
 		supportedMap[strings.ToLower(rt)] = true
 	}
@@ -94,7 +94,7 @@ func GetAWSSupportedResourceTypeMap() map[string]bool {
 
 func GetAzureSupportedResourceTypeMap() map[string]bool {
 	supportedMap := make(map[string]bool)
-	rts := kaytuAzure.GetResourceTypesMap()
+	rts := ogAzure.GetResourceTypesMap()
 	for rt := range rts {
 		supportedMap[strings.ToLower(rt)] = true
 	}
@@ -109,13 +109,13 @@ func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
 	}
 	switch c.Connector {
 	case source.CloudAWS:
-		rts := kaytuAws.GetResourceTypesMap()
+		rts := ogAws.GetResourceTypesMap()
 		for rt := range rts {
 			c.supportedResourceTypes[strings.ToLower(rt)] = true
 		}
 		return c.supportedResourceTypes
 	case source.CloudAzure:
-		rts := kaytuAzure.GetResourceTypesMap()
+		rts := ogAzure.GetResourceTypesMap()
 		jsonC, _ := json.Marshal(c)
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
@@ -125,7 +125,7 @@ func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
 			if err == nil {
 				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
 					quotaId := *subscriptionModelObj.SubscriptionPolicies.QuotaID
-					unsupportedQuotas := kaytuAzure.GetUnsupportedCostQuotaIds()
+					unsupportedQuotas := ogAzure.GetUnsupportedCostQuotaIds()
 					for _, unsupportedQuota := range unsupportedQuotas {
 						if strings.ToLower(quotaId) == strings.ToLower(unsupportedQuota) {
 							delete(rts, "Microsoft.CostManagement/CostBySubscription")
