@@ -87,19 +87,19 @@ func (j *Job) Do(
 		}
 	}
 
-	err := steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, "all")
+	err := steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, "all")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID)
 
-	err = steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "analytics")
+	err = steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType, "analytics")
 	if err != nil {
 		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "analytics"))
 		return fail(err)
 	}
-	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
 
 	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, inventoryClient, logger, config); err != nil {
 		fail(err)
@@ -449,7 +449,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
 
 		for rcId, encodedFilter := range encodedResourceCollectionFilters {
-			err := steampipeDB.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters, encodedFilter)
+			err := steampipeDB.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters, encodedFilter)
 			if err != nil {
 				logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err),
 					zap.String("resource_collection", rcId))
@@ -464,7 +464,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			connectorMetricTrendSummary.ResourceCollections[rcId] = *perConnector
 		}
 	} else {
-		err := steampipeDB.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyResourceCollectionFilters)
+		err := steampipeDB.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters)
 		if err != nil {
 			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
 			return err

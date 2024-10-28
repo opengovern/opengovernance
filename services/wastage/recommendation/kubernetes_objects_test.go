@@ -32,7 +32,7 @@ func TestKubernetesNodeCost(t *testing.T) {
 			"failure-domain.beta.kubernetes.io/region":                "eastus2",
 			"failure-domain.beta.kubernetes.io/zone":                  "eastus2-2",
 			"kubernetes.azure.com/agentpool":                          "main0pool",
-			"kubernetes.azure.com/cluster":                            "MC_kaytu-development_kaytu-aks_eastus2",
+			"kubernetes.azure.com/cluster":                            "MC_opengovernance-development_opengovernance-aks_eastus2",
 			"kubernetes.azure.com/consolidated-additional-properties": "2b9f482d-14b1-11ef-aa6c-e6cb19606ff6",
 			"kubernetes.azure.com/kubelet-identity-client-id":         "044e3f42-e1bd-430a-92bb-6820098dbe50",
 			"kubernetes.azure.com/mode":                               "system",

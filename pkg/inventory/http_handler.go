@@ -5,9 +5,9 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 
-	kaytuAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
 	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
-	kaytuAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
 	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/postgres"
@@ -21,8 +21,8 @@ import (
 
 type HttpHandler struct {
 	client           opengovernance.Client
-	awsClient        kaytuAws.Client
-	azureClient      kaytuAzure.Client
+	awsClient        opengovernanceAws.Client
+	azureClient      opengovernanceAzure.Client
 	db               Database
 	steampipeConn    *steampipe.Database
 	schedulerClient  describeClient.SchedulerServiceClient
@@ -95,10 +95,10 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.awsClient = kaytuAws.Client{
+	h.awsClient = opengovernanceAws.Client{
 		Client: h.client,
 	}
-	h.azureClient = kaytuAzure.Client{
+	h.azureClient = opengovernanceAzure.Client{
 		Client: h.client,
 	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)

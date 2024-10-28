@@ -744,13 +744,13 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
 	version := ""
-	var kaytuVersionConfig corev1.ConfigMap
+	var opengovernanceVersionConfig corev1.ConfigMap
 	err := h.kubeClient.Get(echoCtx.Request().Context(), k8sclient.ObjectKey{
 		Namespace: h.cfg.OpengovernanceNamespace,
 		Name:      "platform-version",
-	}, &kaytuVersionConfig)
+	}, &opengovernanceVersionConfig)
 	if err == nil {
-		version = kaytuVersionConfig.Data["version"]
+		version = opengovernanceVersionConfig.Data["version"]
 	} else {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}

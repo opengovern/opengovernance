@@ -237,7 +237,12 @@ func (db Database) GetUserByEmail(email string) (*User, error) {
 	var s User
 	tx := db.Orm.Model(&User{}).
 		Where("email = ? ", email).
-		First(&s)
+		Find(&s)
+	
+	if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -370,8 +375,7 @@ func (db Database) CreateConnector(connector *Connector) error {
 func (db Database) UpdateConnector(connector *Connector) error {
 	tx := db.Orm.Model(&Connector{}).
 		Where("id = ?", connector.ID).
-		Updates(connector).
-		Update("is_active", connector.IsActive)
+		Updates(connector)
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -64,16 +64,16 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		}
 		resourceType := queryResourceType
 
-		var kaytuResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
+		var opengovernanceResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
 		var costOptimization *float64
 		var status types.ConformanceStatus
-		if v, ok := recordValue["kaytu_resource_id"].(string); ok {
-			kaytuResourceId = v
+		if v, ok := recordValue["og_resource_id"].(string); ok {
+			opengovernanceResourceId = v
 		}
-		if v, ok := recordValue["kaytu_account_id"].(string); ok {
+		if v, ok := recordValue["og_account_id"].(string); ok {
 			connectionId = v
 		}
-		if v, ok := recordValue["kaytu_table_name"].(string); ok && resourceType == "" {
+		if v, ok := recordValue["og_table_name"].(string); ok && resourceType == "" {
 			resourceType, connector = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
 		}
 		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
@@ -161,7 +161,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			Severity:                  severity,
 			Evaluator:                 w.ExecutionPlan.Query.Engine,
 			Connector:                 connector,
-			KaytuResourceID:           kaytuResourceId,
+			OpenGovernanceResourceID:  opengovernanceResourceId,
 			ResourceID:                resourceID,
 			ResourceName:              resourceName,
 			ResourceLocation:          resourceLocation,

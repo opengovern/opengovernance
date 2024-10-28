@@ -25,15 +25,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/open-policy-agent/opa/rego"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/describe"
 	"github.com/opengovern/og-util/pkg/model"
 	esSdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
-	"github.com/opengovern/opengovernance/pkg/demo"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/inventory/es"
 	"github.com/opengovern/opengovernance/pkg/utils"
@@ -769,7 +768,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var err error
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.OpenGovernancePrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
@@ -1804,7 +1803,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
-	connectionAccountIDMap := map[string]string{}
+	//connectionAccountIDMap := map[string]string{}
 	var metrics []analyticsDB.AnalyticMetric
 
 	if dimension == inventoryApi.DimensionTypeMetric {
@@ -1869,26 +1868,6 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 					break
 				}
 			}
-		} else if dimension == inventoryApi.DimensionTypeConnection {
-			if httpserver.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
-				continue
-			}
-
-			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
-				accountID = demo.EncodeResponseData(ctx, v)
-			} else {
-				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: api.AdminRole}, m.DimensionID)
-				if err != nil {
-					if !strings.Contains(err.Error(), "source not found") {
-						return err
-					}
-					h.logger.Error("source not found", zap.String("connection_id", m.DimensionID))
-				} else {
-					accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
-				}
-				connectionAccountIDMap[m.DimensionID] = accountID
-			}
-			dimensionName = demo.EncodeResponseData(ctx, dimensionName)
 		}
 
 		table = append(table, inventoryApi.SpendTableRow{
@@ -2397,7 +2376,7 @@ func (h *HttpHandler) RunSQLNamedQuery(ctx context.Context, title, query string,
 
 	accountIDExists := false
 	for _, header := range res.Headers {
-		if header == "kaytu_account_id" {
+		if header == "og_account_id" {
 			accountIDExists = true
 		}
 	}
@@ -2406,7 +2385,7 @@ func (h *HttpHandler) RunSQLNamedQuery(ctx context.Context, title, query string,
 		// Add account name
 		res.Headers = append(res.Headers, "account_name")
 		for colIdx, header := range res.Headers {
-			if strings.ToLower(header) != "kaytu_account_id" {
+			if strings.ToLower(header) != "og_account_id" {
 				continue
 			}
 			for rowIdx, row := range res.Data {
@@ -2856,9 +2835,9 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		metric := metricsMap[metricID]
 
 		for _, table := range metric.Tables {
-			if awsResourceType, err := kaytuAws.GetResourceType(table); err == nil && awsResourceType != nil {
+			if awsResourceType, err := opengovernanceAws.GetResourceType(table); err == nil && awsResourceType != nil {
 				includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
-			} else if azureResourceType, err := kaytuAzure.GetResourceType(table); err == nil && azureResourceType != nil {
+			} else if azureResourceType, err := opengovernanceAzure.GetResourceType(table); err == nil && azureResourceType != nil {
 				includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
 			}
 		}

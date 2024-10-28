@@ -19,7 +19,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/opengovern/og-aws-describer/aws"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-aws-describer/aws/describer"
 	"github.com/opengovern/og-util/pkg/fp"
 	"github.com/opengovern/og-util/pkg/source"
@@ -550,7 +550,7 @@ func (h Connection) NewAWS(
 	}
 
 	if req.AccountID == "" {
-		awsCred, err := kaytuAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		awsCred, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
 		if err != nil {
 			h.logger.Error("cannot read aws credentials", zap.Error(err))
 

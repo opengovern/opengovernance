@@ -7,7 +7,7 @@ import (
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
-	kaytuTypes "github.com/opengovern/opengovernance/pkg/types"
+	opengovernanceTypes "github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 	"regexp"
 	"time"
@@ -85,7 +85,7 @@ func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkI
 			}
 		}
 		if findingFilters != nil && len(findingFilters.ResourceTypeID) > 0 {
-			findingsResult.Results = make(map[kaytuTypes.ConformanceStatus]int)
+			findingsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
 			for resourceType, result := range finding.ResourceTypes {
 				if listContains(findingFilters.ResourceTypeID, resourceType) {
 					for k, v := range result.QueryResult {
@@ -230,7 +230,7 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 				}
 			}
 			if req.FindingFilters != nil && len(req.FindingFilters.ResourceTypeID) > 0 {
-				findingsResult.Results = make(map[kaytuTypes.ConformanceStatus]int)
+				findingsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
 				for resourceType, result := range finding.ResourceTypes {
 					if listContains(req.FindingFilters.ResourceTypeID, resourceType) {
 						for k, v := range result.QueryResult {

@@ -2,16 +2,16 @@ package opengovernance_client
 
 import (
 	aws "github.com/opengovern/og-aws-describer/aws/model"
-	kaytuAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
 	azure "github.com/opengovern/og-azure-describer/azure/model"
-	kaytuAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
 	"strings"
 )
 
 // getAwsEc2HostValues get resource values needed for cost estimate from model.EC2HostDescription
 func getAwsEc2HostValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.EC2Host); ok {
+	if v, ok := resource.Description.(opengovernanceAws.EC2Host); ok {
 		valuesMap["availability_zone"] = ""
 		if v.Description.Host.AvailabilityZone != nil {
 			valuesMap["availability_zone"] = *v.Description.Host.AvailabilityZone
@@ -33,7 +33,7 @@ func getAwsEc2HostValues(resource Resource) (map[string]interface{}, error) {
 // getAwsLambdaFunctionValues get resource values needed for cost estimate from model.LambdaFunctionDescription
 func getAwsLambdaFunctionValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.LambdaFunction); ok {
+	if v, ok := resource.Description.(opengovernanceAws.LambdaFunction); ok {
 		if v.Description.Function == nil {
 			return nil, nil
 		}
@@ -51,7 +51,7 @@ func getAwsLambdaFunctionValues(resource Resource) (map[string]interface{}, erro
 // getAwsEsDomainValues get resource values needed for cost estimate from model.ESDomainDescription
 func getAwsEsDomainValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.ESDomain); ok {
+	if v, ok := resource.Description.(opengovernanceAws.ESDomain); ok {
 		if v.Description.Domain.ElasticsearchClusterConfig != nil {
 			valuesMap["cluster_config"] = []map[string]interface{}{
 				{
@@ -86,7 +86,7 @@ func getAwsEsDomainValues(resource Resource) (map[string]interface{}, error) {
 func getAwsOpenSearchDomainValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
 
-	if v, ok := resource.Description.(kaytuAws.OpenSearchDomain); ok {
+	if v, ok := resource.Description.(opengovernanceAws.OpenSearchDomain); ok {
 
 		if v.Description.Domain.ClusterConfig != nil {
 			valuesMap["cluster_config"] = []map[string]interface{}{
@@ -127,7 +127,7 @@ func getAwsNatGatewayValues(resource Resource) (map[string]interface{}, error) {
 // getAwsFSXFileSystemValues get resource values needed for cost estimate from model.FSXFileSystemDescription
 func getAwsFSXFileSystemValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.FSXFileSystem); ok {
+	if v, ok := resource.Description.(opengovernanceAws.FSXFileSystem); ok {
 		valuesMap["storage_capacity"] = ptrInt2(v.Description.FileSystem.StorageCapacity)
 		valuesMap["storage_type"] = v.Description.FileSystem.StorageType
 		if v.Description.FileSystem.LustreConfiguration != nil {
@@ -153,7 +153,7 @@ func getAwsFSXFileSystemValues(resource Resource) (map[string]interface{}, error
 // getAwsEksNodeGroupValues get resource values needed for cost estimate from model.EKSNodegroupDescription
 func getAwsEksNodeGroupValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.EKSNodegroup); ok {
+	if v, ok := resource.Description.(opengovernanceAws.EKSNodegroup); ok {
 		if v.Description.Nodegroup.ScalingConfig != nil {
 			valuesMap["scaling_config"] = []map[string]interface{}{
 				{
@@ -203,7 +203,7 @@ func getAwsEc2EipValues(resource Resource) (map[string]interface{}, error) {
 // getAwsElastiCacheReplicationGroupValues get resource values needed for cost estimate from model.ElastiCacheReplicationGroupDescription
 func getAwsElastiCacheReplicationGroupValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.ElastiCacheReplicationGroup); ok {
+	if v, ok := resource.Description.(opengovernanceAws.ElastiCacheReplicationGroup); ok {
 		valuesMap["node_type"] = ptrStr2(v.Description.ReplicationGroup.CacheNodeType)
 		valuesMap["engine"] = "" // TODO find engine
 		valuesMap["num_node_groups"] = len(v.Description.ReplicationGroup.NodeGroups)
@@ -225,7 +225,7 @@ func getAwsElastiCacheReplicationGroupValues(resource Resource) (map[string]inte
 // getAwsElastiCacheClusterValues get resource values needed for cost estimate from model.ElastiCacheClusterDescription
 func getAwsElastiCacheClusterValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.ElastiCacheCluster); ok {
+	if v, ok := resource.Description.(opengovernanceAws.ElastiCacheCluster); ok {
 		valuesMap["node_type"] = ptrStr2(v.Description.Cluster.CacheNodeType)
 		valuesMap["availability_zone"] = ptrStr2(v.Description.Cluster.PreferredAvailabilityZone)
 		valuesMap["engine"] = ptrStr2(v.Description.Cluster.Engine)
@@ -239,7 +239,7 @@ func getAwsElastiCacheClusterValues(resource Resource) (map[string]interface{}, 
 // getAwsEfsFileSystemValues get resource values needed for cost estimate from model.EFSFileSystemDescription
 func getAwsEfsFileSystemValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.EFSFileSystem); ok {
+	if v, ok := resource.Description.(opengovernanceAws.EFSFileSystem); ok {
 		valuesMap["availability_zone_name"] = ptrStr2(v.Description.FileSystem.AvailabilityZoneName)
 		//valuesMap["lifecycle_policy"] = nil // TODO
 		valuesMap["throughput_mode"] = v.Description.FileSystem.ThroughputMode
@@ -312,7 +312,7 @@ func getAwsEbsVolumeGp3Values(resource Resource) (map[string]interface{}, error)
 func getAwsRdsDbInstanceValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
 
-	if v, ok := resource.Description.(kaytuAws.RDSDBInstance); ok {
+	if v, ok := resource.Description.(opengovernanceAws.RDSDBInstance); ok {
 		valuesMap["instance_class"] = ptrStr2(v.Description.DBInstance.DBInstanceClass)
 		valuesMap["availability_zone"] = ptrStr2(v.Description.DBInstance.AvailabilityZone)
 		valuesMap["engine"] = ptrStr2(v.Description.DBInstance.Engine)
@@ -329,7 +329,7 @@ func getAwsRdsDbInstanceValues(resource Resource) (map[string]interface{}, error
 // getAwsAutoscalingGroupValues get resource values needed for cost estimate from model.AutoScalingGroupDescription
 func getAwsAutoscalingGroupValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
-	if v, ok := resource.Description.(kaytuAws.AutoScalingGroup); ok {
+	if v, ok := resource.Description.(opengovernanceAws.AutoScalingGroup); ok {
 		valuesMap["availability_zones"] = v.Description.AutoScalingGroup.AvailabilityZones
 		valuesMap["launch_configuration"] = v.Description.AutoScalingGroup.LaunchConfigurationName
 	}
@@ -340,7 +340,7 @@ func getAwsAutoscalingGroupValues(resource Resource) (map[string]interface{}, er
 func getAwsEc2InstanceValues(resource Resource) (map[string]interface{}, error) {
 	var valuesMap map[string]interface{}
 
-	if v, ok := resource.Description.(kaytuAws.EC2Instance); ok {
+	if v, ok := resource.Description.(opengovernanceAws.EC2Instance); ok {
 		valuesMap["instance_type"] = v.Description.Instance.InstanceType
 		if v.Description.Instance.Placement != nil {
 			valuesMap["tenancy"] = v.Description.Instance.Placement.Tenancy
@@ -440,7 +440,7 @@ func getAwsDynamoDbTableValues(resource Resource) (map[string]interface{}, error
 }
 
 func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAzure.ComputeSnapshots); ok {
+	if v, ok := resource.Description.(opengovernanceAzure.ComputeSnapshots); ok {
 		return map[string]interface{}{
 			"disk_size_gb": ptrInt2(v.Description.Snapshot.Properties.DiskSizeGB),
 			"location":     ptrStr2(v.Description.Snapshot.Location),
@@ -455,7 +455,7 @@ func getAzureComputeSnapshotValues(resource Resource) (map[string]interface{}, e
 }
 
 func getAzureComputeDiskValues(resource Resource) (map[string]interface{}, error) {
-	if v, ok := resource.Description.(kaytuAzure.ComputeDisk); ok {
+	if v, ok := resource.Description.(opengovernanceAzure.ComputeDisk); ok {
 		return map[string]interface{}{
 			"storage_account_type":       *v.Description.Disk.SKU.Name,
 			"location":                   ptrStr2(v.Description.Disk.Location),

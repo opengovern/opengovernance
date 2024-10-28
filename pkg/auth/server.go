@@ -77,9 +77,9 @@ func (s *Server) UpdateLastLoginLoop() {
 		for i := 0; i < len(s.updateLoginUserList); i++ {
 			user := s.updateLoginUserList[i]
 			if user.ExternalId != "" {
-				usr, err := utils.GetOrCreateUser(user.ExternalId, user.Email, s.db)
+				usr, err := utils.GetUserByEmail(user.Email, s.db)
 				if err != nil {
-					s.logger.Error("failed to get user metadata", zap.String("External Id", user.ID), zap.Error(err))
+					s.logger.Error("failed to get user metadata", zap.String(" External", user.ExternalId), zap.Error(err))
 					continue
 				}
 				tim := time.Time{}
@@ -129,7 +129,6 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 			ExternalId: claim.ExternalUserID,
 			LastLogin:  *claim.UserLastLogin,
 			CreatedAt:  *claim.MemberSince,
-
 			Email: claim.Email,
 		}
 	}
@@ -176,33 +175,27 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	theUser, err := utils.GetOrCreateUser(user.ExternalUserID, user.Email, s.db)
-	if err != nil {
-		s.logger.Warn("failed to getOrCreate user",
+	theUser, err := utils.GetUserByEmail( user.Email, s.db)
+	if err != nil  {
+		s.logger.Warn("failed to get user",
 			zap.String("userId", user.ExternalUserID),
 			zap.String("email", user.Email),
 			zap.Error(err))
 		if errors.Is(err, errors.New("user disabled")) {
 			return unAuth, nil
 		}
+		if errors.Is(err, errors.New("user not found")) {
+			return unAuth, nil
+		}
+		
 	}
-	user.Role = (api.Role)(theUser.Role)
-
-	user.MemberSince = &theUser.CreatedAt
-	user.UserLastLogin = &theUser.LastLogin
-
-	// if user.Role == nil {
-	// 	user.Role = *api.ViewerRole{}
-	// }
-
-	if err != nil {
-		s.logger.Warn("denied access due to failure in getting workspace",
-			zap.String("reqId", httpRequest.Id),
-			zap.String("path", httpRequest.Path),
-			zap.String("method", httpRequest.Method),
-			zap.Error(err))
+	if(theUser == nil){
 		return unAuth, nil
 	}
+	user.Role = (api.Role)(theUser.Role)
+	user.ExternalUserID = theUser.ExternalId
+	user.MemberSince = &theUser.CreatedAt
+	user.UserLastLogin = &theUser.LastLogin
 
 	go s.UpdateLastLogin(user)
 
@@ -238,12 +231,12 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 							Value: string(user.Role),
 						},
 					},
-					// {
-					// 	Header: &envoycore.HeaderValue{
-					// 		Key:   httpserver.XPlatformUserConnectionsScope,
-					// 		Value: strings.Join(rb.ScopedConnectionIDs, ","),
-					// 	},
-					// },
+					{
+						Header: &envoycore.HeaderValue{
+							Key:   httpserver.XPlatformUserConnectionsScope,
+							Value: theUser.ExternalId,
+						},
+					},
 				},
 			},
 		},
@@ -255,9 +248,9 @@ type userClaim struct {
 	Email          string
 	MemberSince    *time.Time
 	UserLastLogin  *time.Time
-	ColorBlindMode *bool
 	ConnectionIDs  map[string][]string
 	ExternalUserID string `json:"sub"`
+	EmailVerified  bool
 }
 
 func (u userClaim) Valid() error {
@@ -293,13 +286,10 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		}
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
-		if claimsMap.Email == "" {
-			claimsMap.Email = "admin@opengovernance.io"
-		}
-
 		return &userClaim{
 			Email:          claimsMap.Email,
-			ExternalUserID: fmt.Sprintf("dex|%s", claimsMap.Email),
+			EmailVerified:  claimsMap.EmailVerified,
+			
 		}, nil
 	} else {
 		s.logger.Error("dex verifier verify error", zap.Error(err))

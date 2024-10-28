@@ -1,13 +1,18 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	dexapi "github.com/dexidp/dex/api/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 type CreateConnectorRequest struct {
 
@@ -38,6 +43,13 @@ type OIDCConfig struct {
 	ClientID     string `json:"clientID"`
 	ClientSecret string `json:"clientSecret"`
 	Name 			string `json:"name,omitempty"`
+	RedirectURIs		[]string `json:"redirect_uris,omitempty"`
+	RedirectURI 		string `json:"redirectURI,omitempty"`
+	InsecureEnableGroups bool     `json:"insecureEnableGroups"`
+	InsecureSkipEmailVerified bool `json:"insecureSkipEmailVerified"`
+
+
+
 }
 
 type ConnectorCreator func( params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error)
@@ -49,6 +61,10 @@ var  connectorCreators = map[string]ConnectorCreator{
 var SupportedConnectors = map[string][]string{
 	"oidc": {"general", "google-workspace", "entraid"},
 	// Add more connector types and their sub-types here as needed.
+}
+var SupportedConnectorsNames = map[string][]string{
+	"oidc": {"General OIDC", "Google Workspaces", "AzureAD/EntraID"},
+
 }
 
 func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnectorReq, error) {
@@ -65,6 +81,12 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			Issuer:       params.Issuer,
 			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
+
 		}
 		
 
@@ -84,6 +106,12 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 			TenantID:     params.TenantID,
 			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
+
 		}
 		
 
@@ -92,9 +120,15 @@ func  CreateOIDCConnector(params CreateConnectorRequest) (*dexapi.CreateConnecto
 	case "google-workspace":
 		// Required: clientID, clientSecret
 		oidcConfig = OIDCConfig{
-		ClientID:     params.ClientID,
+			ClientID:     params.ClientID,
 			ClientSecret: params.ClientSecret,
 			Issuer:       "https://accounts.google.com",
+			RedirectURIs: strings.Split(os.Getenv("DEX_CALLBACK_URL"),","),
+			RedirectURI: strings.Split(os.Getenv("DEX_CALLBACK_URL"),",")[0],
+			InsecureEnableGroups: true,
+			InsecureSkipEmailVerified: true,
+
+
 		}
 	
 
@@ -230,7 +264,42 @@ func IsSupportedSubType(connectorType, subType string) bool {
 func GetConnectorCreator(connectorType string) ConnectorCreator {
 	return connectorCreators[connectorType]
 }
-func GetSupportedConnectors(connectorType string) []string {
+func GetSupportedConnectors(connectorType string) ([]string ) {
 	return SupportedConnectors[connectorType]
 }
 
+
+
+func RestartDexPod() error {
+	// Restart Dex pod by deleting it.
+	// The pod will be recreated by the deployment.
+	// This is a workaround to reload the connectors.
+	kuberConfig, err := rest.InClusterConfig()
+	if err != nil {
+		
+		return  fmt.Errorf("failed to get kubernetes config: %w", err)
+	}
+	clientset, err := kubernetes.NewForConfig(kuberConfig)
+	if err != nil {
+		
+		return  fmt.Errorf("failed to create kubernetes clientset: %w", err)
+	}
+	pods, err := clientset.CoreV1().Pods(os.Getenv("NAMESPACE")).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list pods: %v", err)
+	}
+	for _, pod := range pods.Items {
+		if strings.Contains(pod.Name, "dex") {
+			err := clientset.CoreV1().Pods(os.Getenv("NAMESPACE")).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to delete pod %s: %v", pod.Name, err)
+			}
+			fmt.Printf("Pod %s deleted successfully\n", pod.Name)
+		}
+	}
+	
+
+	return nil
+
+
+}

@@ -186,25 +186,25 @@ func (p Control) ToApi() api.Control {
 		pa.Query = utils.GetPointer(p.Query.ToApi())
 	}
 
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"explanation"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"explanation"]; ok && len(v) > 0 {
 		pa.Explanation = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"noncompliance-cost"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"noncompliance-cost"]; ok && len(v) > 0 {
 		pa.NonComplianceCost = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"usefulness-example"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"usefulness-example"]; ok && len(v) > 0 {
 		pa.UsefulExample = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"manual-remediation"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"manual-remediation"]; ok && len(v) > 0 {
 		pa.ManualRemediation = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"cli-remediation"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"cli-remediation"]; ok && len(v) > 0 {
 		pa.CliRemediation = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"programmatic-remediation"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"programmatic-remediation"]; ok && len(v) > 0 {
 		pa.ProgrammaticRemediation = v[0]
 	}
-	if v, ok := p.GetTagsMap()[model.KaytuPrivateTagPrefix+"guardrail-remediation"]; ok && len(v) > 0 {
+	if v, ok := p.GetTagsMap()[model.OpenGovernancePrivateTagPrefix+"guardrail-remediation"]; ok && len(v) > 0 {
 		pa.GuardrailRemediation = v[0]
 	}
 

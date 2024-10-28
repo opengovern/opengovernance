@@ -27,11 +27,11 @@ import (
 type Config struct {
 	ElasticSearch         config.ElasticSearch
 	NATS                  config.NATS
-	Compliance            config.KaytuService
-	Onboard               config.KaytuService
-	Inventory             config.KaytuService
-	Metadata              config.KaytuService
-	EsSink                config.KaytuService
+	Compliance            config.OpenGovernanceService
+	Onboard               config.OpenGovernanceService
+	Inventory             config.OpenGovernanceService
+	Metadata              config.OpenGovernanceService
+	EsSink                config.OpenGovernanceService
 	Steampipe             config.Postgres
 	PennywiseBaseURL      string `yaml:"pennywise_base_url"`
 	PrometheusPushAddress string
@@ -70,8 +70,7 @@ func NewWorker(
 	if err != nil {
 		return nil, err
 	}
-
-	if err := steampipe.PopulateKaytuPluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
+	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
 		return nil, err
 	}
 

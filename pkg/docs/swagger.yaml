@@ -3869,11 +3869,11 @@ definitions:
         example: 100
         type: integer
       finderPerConnectionQuery:
-        example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
+        example: select * from og_resources where resource_type = 'aws::ec2::instance'
           AND connection_id IN <CONNECTION_ID_LIST>
         type: string
       finderQuery:
-        example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
+        example: select * from og_resources where resource_type = 'aws::ec2::instance'
         type: string
       id:
         example: vms
@@ -4636,7 +4636,7 @@ definitions:
         example: UltraSightApplication
         type: string
       query:
-        example: SELECT kaytu_id FROM kaytu_connections WHERE tags->'application'
+        example: SELECT og_id FROM og_connections WHERE tags->'application'
           IS NOT NULL AND tags->'application' @> '"UltraSight"'
         type: string
     type: object
@@ -7894,10 +7894,10 @@ definitions:
     - VolumeTypeSc1
     - VolumeTypeSt1
     - VolumeTypeGp3
-host: api.kaytu.io
+host: api.opengovernance.io
 info:
   contact: {}
-  title: Kaytu Service API
+  title: OpenGovernance Service API
   version: "1.0"
 paths:
   /auth/api/v1/key/{id}/delete:

@@ -10,8 +10,8 @@ import (
 
 type Metric struct {
 	ID                       string              `json:"id" example:"vms"`
-	FinderQuery              string              `json:"finderQuery" example:"select * from kaytu_resources where resource_type = 'aws::ec2::instance'"`
-	FinderPerConnectionQuery string              `json:"finderPerConnectionQuery" example:"select * from kaytu_resources where resource_type = 'aws::ec2::instance' AND connection_id IN <CONNECTION_ID_LIST>"`
+	FinderQuery              string              `json:"finderQuery" example:"select * from og_resources where resource_type = 'aws::ec2::instance'"`
+	FinderPerConnectionQuery string              `json:"finderPerConnectionQuery" example:"select * from og_resources where resource_type = 'aws::ec2::instance' AND connection_id IN <CONNECTION_ID_LIST>"`
 	Connectors               []source.Type       `json:"connectors" example:"[Azure]"`                  // Cloud Provider
 	Name                     string              `json:"name" example:"VMs"`                            // Resource Type
 	Tags                     map[string][]string `json:"tags,omitempty"`                                // Tags

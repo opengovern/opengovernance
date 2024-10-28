@@ -217,7 +217,6 @@ func start(ctx context.Context) error {
 	authServer := &Server{
 		host:              platformHost,
 		platformPublicKey: platformPublicKey,
-
 		dexVerifier:         dexVerifier,
 		logger:              logger,
 		db:                  adb,

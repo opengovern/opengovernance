@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-aws-describer/aws/describer"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"github.com/opengovern/opengovernance/pkg/utils"
@@ -60,7 +60,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config connectors.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	creds, err := opengovernanceAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config c
 		return nil, err
 	}
 
-	creds, err = kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
+	creds, err = opengovernanceAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeAdminRoleName, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -7,10 +7,10 @@ type WorkerConfig struct {
 	PostgreSQL       config.Postgres
 	ElasticSearch    config.ElasticSearch
 	Steampipe        config.Postgres
-	Onboard          config.KaytuService
-	Scheduler        config.KaytuService
-	Inventory        config.KaytuService
-	EsSink           config.KaytuService
+	Onboard          config.OpenGovernanceService
+	Scheduler        config.OpenGovernanceService
+	Inventory        config.OpenGovernanceService
+	EsSink           config.OpenGovernanceService
 	PennywiseBaseURL string `yaml:"pennywise_base_url"`
 
 	DoTelemetry          bool   `yaml:"do_telemetry"`
