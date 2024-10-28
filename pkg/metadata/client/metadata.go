@@ -21,6 +21,7 @@ type MetadataServiceClient interface {
 	ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error)
 	SetQueryParameter(ctx *httpclient.Context, request api.SetQueryParameterRequest) error
 	VaultConfigured(ctx *httpclient.Context) (*string, error)
+	GetViewsCheckpoint(ctx *httpclient.Context) (*api.GetViewsCheckpointResponse, error)
 }
 
 type metadataClient struct {
@@ -145,4 +146,16 @@ func (s *metadataClient) VaultConfigured(ctx *httpclient.Context) (*string, erro
 	}
 
 	return &status, nil
+}
+
+func (s *metadataClient) GetViewsCheckpoint(ctx *httpclient.Context) (*api.GetViewsCheckpointResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/views/checkpoint", s.baseURL)
+	var resp api.GetViewsCheckpointResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &resp, nil
 }
