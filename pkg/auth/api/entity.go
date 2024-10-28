@@ -49,6 +49,8 @@ type GetMeResponse struct {
 	Role           string    `json:"role"`
 	MemberSince    time.Time `json:"memberSince"`
 	LastLogin      any       `json:"lastLogin"`
+	ConnectorId	 string    `json:"connector_id"`
+
 }
 
 type UpdateUserRequest struct {
