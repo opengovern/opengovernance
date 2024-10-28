@@ -240,10 +240,7 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
 	connectionIDs := httpserver2.QueryArrayParam(c, "connectionId")
-	connectionIDs, err := httpserver2.ResolveConnectionIDs(c, connectionIDs)
-	if err != nil {
-		return err
-	}
+
 	resourceCollections := httpserver2.QueryArrayParam(c, "resourceCollection")
 	credentialTypes := model.ParseCredentialTypes(httpserver2.QueryArrayParam(c, "credentialType"))
 

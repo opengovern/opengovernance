@@ -249,6 +249,7 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		Role:          user.Role,
 		MemberSince:   user.CreatedAt,
 		LastLogin:     user.LastLogin,
+		ConnectorId:  user.ConnectorId,
 	}
 	if user.LastLogin.IsZero() {
 		resp.LastLogin = nil
