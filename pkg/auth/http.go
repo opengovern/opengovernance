@@ -118,11 +118,11 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 	}
 
 	if res.Status.Code != int32(codes.OK) {
-		return echo.NewHTTPError(http.StatusForbidden, res.Status.Message)
+		return echo.NewHTTPError(http.StatusUnauthorized, res.Status.Message)
 	}
 
 	if res.GetOkResponse() == nil {
-		return echo.NewHTTPError(http.StatusForbidden, "no ok response")
+		return echo.NewHTTPError(http.StatusUnauthorized, "no ok response")
 	}
 
 	for _, header := range res.GetOkResponse().GetHeaders() {

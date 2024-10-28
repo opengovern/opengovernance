@@ -982,21 +982,21 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
-//	@Param			count				path		int								true	"Count"
-//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by (inclusive)"
-//	@Param			notConnectionId		query		[]string						false	"Connection IDs to filter by (exclusive)"
-//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
-//	@Param			controlId			query		[]string						false	"ControlID"
+//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
+//	@Param			count				path		int										true	"Count"
+//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by (inclusive)"
+//	@Param			notConnectionId		query		[]string								false	"Connection IDs to filter by (exclusive)"
+//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
+//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
+//	@Param			benchmarkId			query		[]string								false	"BenchmarkID"
+//	@Param			controlId			query		[]string								false	"ControlID"
 //	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
-//	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
-//	@Param			jobId				query		[]string						false	"Job ID to filter"
-//	@Param			startTime			query		int64					false	"Start time to filter by"
-//	@Param			endTime				query		int64					false	"End time to filter by"
-//	@Param			interval			query		string					false	"Time interval to filter by"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool									false	"StateActive to filter by defaults to true"
+//	@Param			jobId				query		[]string								false	"Job ID to filter"
+//	@Param			startTime			query		int64									false	"Start time to filter by"
+//	@Param			endTime				query		int64									false	"End time to filter by"
+//	@Param			interval			query		string									false	"Time interval to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
@@ -1438,14 +1438,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string							true	"BenchmarkID"
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
-//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId			path		string									true	"BenchmarkID"
+//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string								false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
 //	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to failed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) error {
@@ -5596,10 +5596,10 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		assignment_type			query		string	true	"assignment type. options: implicit, explicit, any"
-//	@Param		include_potential		query		bool	true	"Include potentials"
-//	@Param		benchmark-id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	[]api.IntegrationInfo
+//	@Param		assignment_type		query		string	true	"assignment type. options: implicit, explicit, any"
+//	@Param		include_potential	query		bool	true	"Include potentials"
+//	@Param		benchmark-id		path		string	true	"Benchmark ID"
+//	@Success	200					{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v3/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
@@ -6636,9 +6636,9 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			job_id		path		string									true	"Benchmark ID to get the summary"
-//	@Param			show_top	query		int										true	"Show top integrations (5 by default)"
-//	@Success		200				{object}	api.ComplianceSummaryOfBenchmarkResponse
+//	@Param			job_id		path		string	true	"Benchmark ID to get the summary"
+//	@Param			show_top	query		int		true	"Show top integrations (5 by default)"
+//	@Success		200			{object}	api.ComplianceSummaryOfBenchmarkResponse
 //	@Router			/compliance/api/v3/compliance/summary/{job_id} [get]
 func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}

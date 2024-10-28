@@ -942,7 +942,7 @@ func (h HttpHandler) ReloadViews(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Success		200 {object}	api.GetViewsCheckpointResponse
+//	@Success		200	{object}	api.GetViewsCheckpointResponse
 //	@Router			/metadata/api/v3/views/checkpoint [get]
 func (h HttpHandler) GetViewsCheckpoint(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, api.GetViewsCheckpointResponse{
