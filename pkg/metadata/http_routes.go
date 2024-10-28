@@ -69,6 +69,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v3.PUT("/configured/unset", httpserver.AuthorizeHandler(h.UnsetConfiguredStatus, api3.ViewerRole))
 	v3.GET("/about", httpserver.AuthorizeHandler(h.GetAbout, api3.ViewerRole))
 	v3.GET("/vault/configured", httpserver.AuthorizeHandler(h.VaultConfigured, api3.ViewerRole))
+
+	v3.PUT("/views/reload", httpserver.AuthorizeHandler(h.ReloadViews, api3.AdminRole))
+	v3.GET("/views/checkpoint", httpserver.AuthorizeHandler(h.GetViewsCheckpoint, api3.AdminRole))
 }
 
 var tracer = otel.Tracer("metadata")
@@ -910,4 +913,39 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 func (h HttpHandler) VaultConfigured(echoCtx echo.Context) error {
 
 	return echoCtx.String(http.StatusOK, "True")
+}
+
+// ReloadViews godoc
+//
+//	@Summary		Reload views
+//
+//	@Description	Reloads the views
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/metadata/api/v3/views/reload [put]
+func (h HttpHandler) ReloadViews(echoCtx echo.Context) error {
+	h.viewCheckpoint = time.Now()
+	return echoCtx.NoContent(http.StatusOK)
+}
+
+// GetViewsCheckpoint godoc
+//
+//	@Summary		Get views checkpoint
+//
+//	@Description	Returns the views checkpoint
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200 {object}	api.GetViewsCheckpointResponse
+//	@Router			/metadata/api/v3/views/checkpoint [get]
+func (h HttpHandler) GetViewsCheckpoint(echoCtx echo.Context) error {
+	return echoCtx.JSON(http.StatusOK, api.GetViewsCheckpointResponse{
+		Checkpoint: h.viewCheckpoint,
+	})
 }
