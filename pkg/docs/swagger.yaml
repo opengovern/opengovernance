@@ -7894,10 +7894,10 @@ definitions:
     - VolumeTypeSc1
     - VolumeTypeSt1
     - VolumeTypeGp3
-host: api.kaytu.io
+host: api.opengovernance.io
 info:
   contact: {}
-  title: Kaytu Service API
+  title: OpenGovernance Service API
   version: "1.0"
 paths:
   /auth/api/v1/key/{id}/delete:

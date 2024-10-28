@@ -19613,7 +19613,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "api.opengovernance.io",
 	BasePath:         "",
 	Schemes:          []string{"https"},
-	Title:            "Kaytu Service API",
+	Title:            "OpenGovernance Service API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

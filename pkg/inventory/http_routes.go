@@ -33,7 +33,6 @@ import (
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
-	"github.com/opengovern/opengovernance/pkg/demo"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/inventory/es"
 	"github.com/opengovern/opengovernance/pkg/utils"
@@ -1804,7 +1803,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
-	connectionAccountIDMap := map[string]string{}
+	//connectionAccountIDMap := map[string]string{}
 	var metrics []analyticsDB.AnalyticMetric
 
 	if dimension == inventoryApi.DimensionTypeMetric {
@@ -1869,26 +1868,6 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 					break
 				}
 			}
-		} else if dimension == inventoryApi.DimensionTypeConnection {
-			if httpserver.CheckAccessToConnectionID(ctx, m.DimensionID) != nil {
-				continue
-			}
-
-			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
-				accountID = demo.EncodeResponseData(ctx, v)
-			} else {
-				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: api.AdminRole}, m.DimensionID)
-				if err != nil {
-					if !strings.Contains(err.Error(), "source not found") {
-						return err
-					}
-					h.logger.Error("source not found", zap.String("connection_id", m.DimensionID))
-				} else {
-					accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
-				}
-				connectionAccountIDMap[m.DimensionID] = accountID
-			}
-			dimensionName = demo.EncodeResponseData(ctx, dimensionName)
 		}
 
 		table = append(table, inventoryApi.SpendTableRow{

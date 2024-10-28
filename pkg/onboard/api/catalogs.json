@@ -67,7 +67,7 @@
     "name": "Azure Activity Logs",
     "displayName": "Azure Activity Logs",
     "category": "Ops Management",
-    "description": "Ingest Activity Logs to Kaytu to gain insights",
+    "description": "Ingest Activity Logs to OpenGovernance to gain insights",
     "state": "NOT_SETUP",
     "allowNewConnections": false,
     "maxConnectionsLimit": 1000000,
