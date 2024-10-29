@@ -15708,7 +15708,6 @@ const docTemplate = `{
                 "allowed_email_domains",
                 "auto_discovery_method",
                 "describe_job_interval",
-                "full_discovery_job_interval",
                 "cost_discovery_job_interval",
                 "health_check_job_interval",
                 "metrics_job_interval",

@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/google/uuid"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"gorm.io/gorm/clause"
 )
@@ -38,13 +38,40 @@ func (db Database) DeleteIntegration(integrationTracker uuid.UUID) error {
 }
 
 // ListIntegration list Integration
-func (db Database) ListIntegration(types []integration_type.IntegrationType) ([]models.Integration, error) {
+func (db Database) ListIntegration(types []integration.Type) ([]models.Integration, error) {
 	var integrations []models.Integration
 	tx := db.Orm.
 		Model(&models.Integration{})
 
 	if len(types) > 0 {
-		tx = tx.Where("type IN ?", types)
+		tx = tx.Where("integration_type IN ?", types)
+	}
+
+	tx = tx.Find(&integrations)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return integrations, nil
+}
+
+// ListIntegrationsByFilters list Integrations by filters
+func (db Database) ListIntegrationsByFilters(integrationTrackers, types []string, integrationNameRegex, integrationIDRegex *string) ([]models.Integration, error) {
+	var integrations []models.Integration
+	tx := db.Orm.
+		Model(&models.Integration{})
+
+	if len(integrationTrackers) > 0 {
+		tx = tx.Where("integration_tracker IN ?", integrationTrackers)
+	}
+	if len(types) > 0 {
+		tx = tx.Where("integration_type IN ?", types)
+	}
+	if integrationNameRegex != nil {
+		tx = tx.Where("integration_name ~* ?", *integrationNameRegex)
+	}
+	if integrationIDRegex != nil {
+		tx = tx.Where("integration_id ~* ?", *integrationIDRegex)
 	}
 
 	tx = tx.Find(&integrations)

@@ -29,7 +29,6 @@ var (
 	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
 
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
-	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	CostDiscoveryIntervalHours = os.Getenv("COST_DISCOVERY_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")

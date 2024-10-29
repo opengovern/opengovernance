@@ -106,8 +106,7 @@ type Scheduler struct {
 	httpServer *HttpServer
 	grpcServer *grpc.Server
 
-	describeIntervalHours      time.Duration
-	fullDiscoveryIntervalHours time.Duration
+	discoveryIntervalHours     time.Duration
 	costDiscoveryIntervalHours time.Duration
 	describeTimeoutHours       int64
 	checkupIntervalHours       int64
@@ -119,7 +118,6 @@ type Scheduler struct {
 	metadataClient    metadataClient.MetadataServiceClient
 	complianceClient  client.ComplianceServiceClient
 	integrationClient integrationClient.IntegrationServiceClient
-	onboardClient     onboardClient.OnboardServiceClient
 	inventoryClient   inventoryClient.InventoryServiceClient
 	sinkClient        esSinkClient.EsSinkServiceClient
 	authGrpcClient    envoyAuth.AuthorizationClient
@@ -242,14 +240,7 @@ func InitializeScheduler(
 		s.logger.Error("Failed to parse describe interval hours", zap.Error(err))
 		return nil, err
 	}
-	s.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
-
-	fullDiscoveryIntervalHours, err := strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
-	if err != nil {
-		s.logger.Error("Failed to parse full discovery interval hours", zap.Error(err))
-		return nil, err
-	}
-	s.fullDiscoveryIntervalHours = time.Duration(fullDiscoveryIntervalHours) * time.Hour
+	s.discoveryIntervalHours = time.Duration(describeIntervalHours) * time.Hour
 
 	costDiscoveryIntervalHours, err := strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
 	if err != nil {
@@ -388,22 +379,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := describeJobIntM.GetValue().(int); ok {
-			s.describeIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.describeIntervalHours.Hours())))
+			s.discoveryIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.discoveryIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
-		}
-	}
-
-	fullDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyFullDiscoveryJobInterval)
-	if err != nil {
-		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
-	} else {
-		if v, ok := fullDiscoveryJobIntM.GetValue().(int); ok {
-			s.fullDiscoveryIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.fullDiscoveryIntervalHours.Hours())))
-		} else {
-			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(fullDiscoveryJobIntM.GetType())))
 		}
 	}
 
@@ -520,12 +499,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
 	})
-	utils.EnsureRunGoroutine(func() {
-		s.UpdateDescribedResourceCountScheduler()
-	})
-	utils.EnsureRunGoroutine(func() {
-		s.UpdateDescribedResourceCountScheduler()
-	})
+
 	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer(ctx)))

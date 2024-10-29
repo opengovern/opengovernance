@@ -1592,6 +1592,8 @@ github.com/opengovern/og-aws-describer v0.59.4 h1:bmYCYs3XJTw+OXvue7qWpl2MAZm0Kc
 github.com/opengovern/og-aws-describer v0.59.4/go.mod h1:r9YGOpyXnySEMTeYEWgTdLUzQ+dMccO7Uxj4CBvvSFw=
 github.com/opengovern/og-aws-describer v0.59.7 h1:dsyU2uED/GDzFvm+rYOun7vRAsCAEl5/eSyEvUIQK9k=
 github.com/opengovern/og-aws-describer v0.59.7/go.mod h1:A2aF+QVV6C2WuLxcyYKBE4FuK91Isr00uEVSjqqGJ3A=
+github.com/opengovern/og-aws-describer v0.59.8 h1:7Yqp40QKNSEqw4drsQmSvhXJHKAZUjAl31iBFg9RBv4=
+github.com/opengovern/og-aws-describer v0.59.8/go.mod h1:4u41JOYo9HkpSstdy6QM5btw7MetX8dZfcxzazOeY50=
 github.com/opengovern/og-aws-describer v0.59.9 h1:F6NiGDY6jWznYKhDU1adSCE7FLT2lNWO7fzapcB3GNc=
 github.com/opengovern/og-aws-describer v0.59.9/go.mod h1:1vaalYP96FLNbjHfk+o5kKbKZzGI+/T5n+K499jQQo0=
 github.com/opengovern/og-aws-describer v0.59.10 h1:zXlDFIEpnb6zpb7seD+htXDCM2mKID+7A4760UBHGVM=
@@ -1608,6 +1610,8 @@ github.com/opengovern/og-azure-describer v0.37.4 h1:MOmDzMCZqmgEYQj+KtnxRaB0j7qm
 github.com/opengovern/og-azure-describer v0.37.4/go.mod h1:pe7Oo3gcIywa8ytSylWOBt5VxNqax21n81m+kKBfYWs=
 github.com/opengovern/og-azure-describer v0.37.7 h1:fvIPxHn2xLrg35TbX95nKlXJZTebuHlH17TLtNzutuw=
 github.com/opengovern/og-azure-describer v0.37.7/go.mod h1:BlW1CI9EJMsEPUBXaZ6gRQFXVoMsJ6MdFo9CkzYq9ts=
+github.com/opengovern/og-azure-describer v0.37.8 h1:BGQUQ4HcH/Q7RBAfl4n7nEvIfQzh463meIgk9dk3Us0=
+github.com/opengovern/og-azure-describer v0.37.8/go.mod h1:j67ozNK/HKRXIqQyCZDyuJzNIj8ZlLIu0xQc6o+pSrI=
 github.com/opengovern/og-azure-describer v0.37.9 h1:fagSP/XCm120KJXqn2crtZafyNirXLtpxBHV5Ey/7f8=
 github.com/opengovern/og-azure-describer v0.37.9/go.mod h1:UaVqB/9j6XWnmx1KZI2Z4uNXVq/RP1saXa3zbuBtWKk=
 github.com/opengovern/og-azure-describer v0.37.10 h1:98sFQoXMNgpEhHY5wf84NP6jQeeXBrWTz5F2ini5SV0=
@@ -1618,7 +1622,11 @@ github.com/opengovern/og-util v0.0.0-20241022190544-b087fe329212 h1:r5cC5k6VEpC2
 github.com/opengovern/og-util v0.0.0-20241022190544-b087fe329212/go.mod h1:7l7fNhK6uewIwA0cs7QagJuhjt/E6hEAC01SR8Y0kKk=
 github.com/opengovern/og-util v0.0.0-20241027163942-240185b23632 h1:PoCLO0dXyJy1QDVcvuIEcp53STO74hYqrNNHPoQwtes=
 github.com/opengovern/og-util v0.0.0-20241027163942-240185b23632/go.mod h1:NdAsJXLZwHJoqSpNfepDbqTvTWZJMUHFygKP1yVWeg8=
+github.com/opengovern/og-util v1.0.2-0.20241027164530-5e5fd2847c84 h1:nBUmBO0rmVU0NcFXv/u8zfEB8hS6vi1kPjjucwB4jrQ=
+github.com/opengovern/og-util v1.0.2-0.20241027164530-5e5fd2847c84/go.mod h1:NdAsJXLZwHJoqSpNfepDbqTvTWZJMUHFygKP1yVWeg8=
 github.com/opengovern/og-util v1.0.4/go.mod h1:7l7fNhK6uewIwA0cs7QagJuhjt/E6hEAC01SR8Y0kKk=
+github.com/opengovern/og-util v1.0.6-0.20241029135834-e80ab4603aaa h1:OYE0TvkJnhpmLIg+rYwGAyDZBMTG5F22l3tLMbgksYc=
+github.com/opengovern/og-util v1.0.6-0.20241029135834-e80ab4603aaa/go.mod h1:7l7fNhK6uewIwA0cs7QagJuhjt/E6hEAC01SR8Y0kKk=
 github.com/opengovern/plugin-aws v0.7.3 h1:76hZOjulNlgn4uaq5lq1/pmGmgJqvX1ZQbgqcQn03gI=
 github.com/opengovern/plugin-aws v0.7.3/go.mod h1:zfTMswfCyXZ0gD6SDCsmKg55LseXzeFzOH4jXn2QJVo=
 github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b h1:4xP98kDpOXUu6RcFJyZN63OeA2I26MLS+dEB9JWYQpY=

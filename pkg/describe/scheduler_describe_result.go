@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
@@ -12,66 +11,12 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/opengovern/og-aws-describer/aws"
-	"github.com/opengovern/og-azure-describer/azure"
 	es2 "github.com/opengovern/og-util/pkg/es"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/ticker"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
 	"go.uber.org/zap"
 )
-
-func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
-	s.logger.Info("DescribedResourceCount update scheduler started")
-
-	t := ticker.NewTicker(1*time.Minute, time.Second*10)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		s.UpdateDescribedResourceCount()
-	}
-}
-
-func (s *Scheduler) UpdateDescribedResourceCount() {
-	s.logger.Info("Updating DescribedResourceCount")
-	AwsFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobFailed)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "AWS"),
-			zap.String("status", "failed"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
-	AzureFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobFailed)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "Azure"),
-			zap.String("status", "failed"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
-	AwsSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobSucceeded)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "AWS"),
-			zap.String("status", "successful"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
-	AzureSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobSucceeded)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "Azure"),
-			zap.String("status", "successful"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
-}
 
 func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the JobResults queue")
@@ -175,61 +120,16 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 }
 
 func (s *Scheduler) handleTimeoutForDiscoveryJobs() {
-	awsResources := aws.ListResourceTypes()
-	for _, r := range awsResources {
-		var interval time.Duration
-		resourceType, err := aws.GetResourceType(r)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
-		}
-		if resourceType.FastDiscovery {
-			interval = s.describeIntervalHours
-		} else if resourceType.CostDiscovery {
-			interval = s.costDiscoveryIntervalHours
-		} else {
-			interval = s.fullDiscoveryIntervalHours
-		}
-
-		if _, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval); err != nil {
-			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
-		}
-	}
-	azureResources := azure.ListResourceTypes()
-	for _, r := range azureResources {
-		var interval time.Duration
-		resourceType, err := azure.GetResourceType(r)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
-		}
-		if resourceType.FastDiscovery {
-			interval = s.describeIntervalHours
-		} else if resourceType.CostDiscovery {
-			interval = s.costDiscoveryIntervalHours
-		} else {
-			interval = s.fullDiscoveryIntervalHours
-		}
-
-		if _, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval); err != nil {
-			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
-		}
+	err := s.db.UpdateDescribeConnectionJobsTimedOut(int64(s.discoveryIntervalHours.Hours()))
+	if err != nil {
+		s.logger.Error("failed to UpdateDescribeConnectionJobsTimedOut", zap.Error(err))
 	}
 }
 
 func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResult) (int64, error) {
 	var searchAfter []any
 
-	isCostResourceType := false
-	if strings.ToLower(res.DescribeJob.ResourceType) == "microsoft.costmanagement/costbyresourcetype" ||
-		strings.ToLower(res.DescribeJob.ResourceType) == "aws::costexplorer::byservicedaily" {
-		isCostResourceType = true
-	}
-
 	var additionalFilters []map[string]any
-	if isCostResourceType {
-		additionalFilters = append(additionalFilters, map[string]any{
-			"range": map[string]any{"cost_date": map[string]any{"lt": time.Now().AddDate(0, -2, -1).UnixMilli()}},
-		})
-	}
 
 	deletedCount := 0
 
@@ -278,7 +178,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				}
 			}
 
-			if !exists || isCostResourceType {
+			if !exists {
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es2.Resource{
 					ID:           esResourceID,

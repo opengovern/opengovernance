@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"github.com/opengovern/opengovernance/services/integration-v2/db"
@@ -373,12 +374,50 @@ func (h API) Delete(c echo.Context) error {
 func (h API) List(c echo.Context) error {
 	integrationTypesStr := httpserver.QueryArrayParam(c, "integration_type")
 
-	var integrationTypes []integration_type.IntegrationType
+	var integrationTypes []integration.Type
 	for _, i := range integrationTypesStr {
-		integrationTypes = append(integrationTypes, integration_type.IntegrationType(i))
+		integrationTypes = append(integrationTypes, integration.Type(i))
 	}
 
 	integrations, err := h.database.ListIntegration(integrationTypes)
+	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
+	}
+
+	var items []models.Integration
+	for _, integration := range integrations {
+		item, err := integration.ToApi()
+		if err != nil {
+			h.logger.Error("failed to convert integration to API model", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+		}
+		items = append(items, *item)
+	}
+
+	return c.JSON(http.StatusOK, models.ListIntegrationsResponse{
+		Integrations: items,
+		TotalCount:   len(items),
+	})
+}
+
+// ListByFilters godoc
+//
+//	@Summary		List integrations with given filters
+//	@Description	List integrations with given filters
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200				{object}	models.ListResponse
+//	@Router			/integration/api/v1/integrations/list [post]
+func (h API) ListByFilters(c echo.Context) error {
+	var req models.ListIntegrationsRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	integrations, err := h.database.ListIntegrationsByFilters(req.IntegrationTracker, req.IntegrationType, req.IntegrationNameRegex, req.IntegrationIDRegex)
 	if err != nil {
 		h.logger.Error("failed to list credentials", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
@@ -492,6 +531,7 @@ func (h API) Update(c echo.Context) error {
 
 func (h API) Register(g *echo.Group) {
 	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
+	g.POST("/list", httpserver.AuthorizeHandler(h.ListByFilters, api.ViewerRole))
 	g.POST("/discover", httpserver.AuthorizeHandler(h.DiscoverIntegrations, api.EditorRole))
 	g.POST("/add", httpserver.AuthorizeHandler(h.AddIntegrations, api.EditorRole))
 	g.PUT("/:integrationTracker/healthcheck", httpserver.AuthorizeHandler(h.IntegrationHealthcheck, api.EditorRole))

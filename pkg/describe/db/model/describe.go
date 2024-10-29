@@ -3,8 +3,8 @@ package model
 import (
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/describe/enums"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
-	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"gorm.io/gorm"
 	"time"
 )
@@ -45,7 +45,7 @@ type DescribeConnectionJob struct {
 	ParentID       *uint `gorm:"index:,sort:desc"`
 
 	IntegrationTracker string `gorm:"index:idx_source_id_full_discovery;index"`
-	IntegrationType    integration_type.IntegrationType
+	IntegrationType    integration.Type
 	IntegrationID      string
 	TriggerType        enums.DescribeTriggerType
 

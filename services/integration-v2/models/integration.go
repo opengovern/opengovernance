@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
+	"github.com/opengovern/og-util/pkg/integration"
 	api "github.com/opengovern/opengovernance/services/integration-v2/api/models"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"time"
 )
 
@@ -22,7 +22,7 @@ type Integration struct {
 	IntegrationTracker uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
 	IntegrationID      string    `gorm:"index:idx_type_integrationid,unique"`
 	IntegrationName    string
-	IntegrationType    integration_type.IntegrationType `gorm:"index:idx_type_integrationid,unique"`
+	IntegrationType    integration.Type
 	Annotations        pgtype.JSONB
 	Labels             pgtype.JSONB
 

@@ -202,7 +202,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 		return
 	}
 
-	for _, integration := range integrations {
+	for _, integration := range integrations.Integrations {
 		s.logger.Info("running describe job scheduler for connection", zap.String("integrationTracker", integration.IntegrationTracker))
 		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
 		if err != nil {
@@ -222,10 +222,6 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 			zap.String("integration_type", string(integration.IntegrationType)),
 			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
 		for _, resourceType := range resourceTypes {
-			if len(integrations) == 0 {
-				continue
-			}
-
 			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("integration_tracker", integration.IntegrationTracker), zap.String("resource_type", resourceType), zap.Error(err))
@@ -299,7 +295,7 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 	// TODO: get resource type list from integration type and annotations
 	if job != nil {
 		if scheduled {
-			interval := s.fullDiscoveryIntervalHours
+			interval := s.discoveryIntervalHours
 
 			if job.UpdatedAt.After(time.Now().Add(-interval)) {
 				return nil, nil
