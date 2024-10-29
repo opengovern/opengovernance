@@ -33,6 +33,8 @@ type HttpHandler struct {
 	vaultSecretHandler vault.VaultSecretHandler
 	dexClient          dexApi.DexClient
 	logger             *zap.Logger
+
+	viewCheckpoint time.Time
 }
 
 func InitializeHttpHandler(
@@ -106,12 +108,13 @@ func InitializeHttpHandler(
 	}
 
 	h := &HttpHandler{
-		cfg:        cfg,
-		db:         db,
-		migratorDb: migratorDb,
-		kubeClient: kubeClient,
-		logger:     logger,
-		dexClient:  dexClient,
+		cfg:            cfg,
+		db:             db,
+		migratorDb:     migratorDb,
+		kubeClient:     kubeClient,
+		logger:         logger,
+		dexClient:      dexClient,
+		viewCheckpoint: time.Now().Add(-time.Hour * 2),
 	}
 
 	switch cfg.Vault.Provider {

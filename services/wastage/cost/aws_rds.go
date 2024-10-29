@@ -8,7 +8,7 @@ import (
 	"github.com/kaytu-io/pennywise/pkg/cost"
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	kaytu_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
 	"github.com/opengovern/opengovernance/services/wastage/api/entity"
 	"net/http"
 	"time"
@@ -58,7 +58,7 @@ func (s *Service) GetRDSInstanceCost(ctx context.Context, region string, rdsInst
 
 	req.Resources = append(req.Resources, schema.ResourceDef{
 		Address:      rdsInstance.HashedInstanceId,
-		Type:         kaytu_client.ResourceTypeConversion("aws::rds::dbinstance"),
+		Type:         og_client.ResourceTypeConversion("aws::rds::dbinstance"),
 		Name:         "",
 		RegionCode:   region,
 		ProviderName: schema.AWSProvider,

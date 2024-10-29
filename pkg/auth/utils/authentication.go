@@ -29,7 +29,7 @@ type User struct {
 	Username      string    `json:"username"`
 	Role          string    `json:"role"`
 	IsActive      bool      `json:"is_active"`
-
+	ConnectorId   string    `json:"connector_id"`
 	ExternalId string `json:"external_id"`
 }
 
@@ -50,6 +50,7 @@ func DbUserToApi(u *db.User) (*User, error) {
 		ExternalId:    u.ExternalId,
 		ID:            u.ID,
 		IsActive:      u.IsActive,
+		ConnectorId:   u.ConnectorId,
 	}, nil
 }
 

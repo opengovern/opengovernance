@@ -240,10 +240,7 @@ func (h API) Summaries(c echo.Context) error {
 
 	connectors := source.ParseTypes(httpserver2.QueryArrayParam(c, "connector"))
 	connectionIDs := httpserver2.QueryArrayParam(c, "connectionId")
-	connectionIDs, err := httpserver2.ResolveConnectionIDs(c, connectionIDs)
-	if err != nil {
-		return err
-	}
+
 	resourceCollections := httpserver2.QueryArrayParam(c, "resourceCollection")
 	credentialTypes := model.ParseCredentialTypes(httpserver2.QueryArrayParam(c, "credentialType"))
 
@@ -755,12 +752,6 @@ func (h API) AzureHealthCheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
 	}
 
-	err = httpserver2.CheckAccessToConnectionID(c, id.String())
-	if err != nil {
-		return err
-	}
-	// means by default we are considering updateMetadata as true and makes it false only
-	// when we have a query parameter name updateMetadata equals to "false"
 	updateMetadata := strings.ToLower(c.QueryParam("updateMetadata")) != "false"
 
 	connections, err := h.connSvc.Get(ctx, []string{id.String()})
@@ -848,10 +839,6 @@ func (h API) AWSHealthCheck(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("connectionId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection uuid")
-	}
-	err = httpserver2.CheckAccessToConnectionID(c, id.String())
-	if err != nil {
-		return err
 	}
 
 	connections, err := h.connSvc.Get(ctx, []string{id.String()})

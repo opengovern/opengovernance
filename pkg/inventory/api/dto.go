@@ -77,8 +77,8 @@ type AllResource struct {
 	ResourceTypeLabel      string      `json:"resourceTypeLabel"`      // Resource Type Label
 	Connector              source.Type `json:"connector"`              // Resource Provider
 	Location               string      `json:"location"`               // The Region of the resource
-	ConnectionID           string      `json:"connectionID"`           // Kaytu Connection Id of the resource
-	ProviderConnectionID   string      `json:"providerConnectionID"`   // Provider Connection Id
+	ConnectionID           string      `json:"connectionID"`           // Platform Connection Id of the resource
+	ProviderConnectionID   string      `json:"providerConnectionID"`   // Platform Connection Id
 	ProviderConnectionName string      `json:"providerConnectionName"` // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
@@ -91,7 +91,7 @@ type AzureResource struct {
 	ResourceTypeLabel      string `json:"resourceTypeLabel"`      // Resource Type Label
 	ResourceGroup          string `json:"resourceGroup"`          // Resource Group
 	Location               string `json:"location"`               // The Region of the resource
-	ConnectionID           string `json:"connectionID"`           // Kaytu Connection Id of the resource
+	ConnectionID           string `json:"connectionID"`           // Platform Connection Id of the resource
 	ProviderConnectionID   string `json:"providerConnectionID"`   // Provider Connection Id
 	ProviderConnectionName string `json:"providerConnectionName"` // Provider Connection Name
 

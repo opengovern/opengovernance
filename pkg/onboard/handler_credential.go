@@ -9,9 +9,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/labstack/echo/v4"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-aws-describer/aws/describer"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"github.com/opengovern/opengovernance/pkg/onboard/api"
@@ -40,7 +40,7 @@ func (h HttpHandler) GetAWSSDKConfig(ctx context.Context, roleARN string, access
 		sKey = *secretKey
 	}
 
-	awsConfig, err := kaytuAws.GetConfig(
+	awsConfig, err := opengovernanceAws.GetConfig(
 		ctx,
 		aKey,
 		sKey,
@@ -158,7 +158,7 @@ func (h HttpHandler) autoOnboardAWSAccountsV2(ctx context.Context, credential mo
 		sKey = *awsCnf.SecretKey
 	}
 
-	awsConfig, err := kaytuAws.GetConfig(
+	awsConfig, err := opengovernanceAws.GetConfig(
 		ctx,
 		aKey,
 		sKey,
@@ -397,11 +397,11 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(ctx, awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		sdkCnf, err = opengovernanceAws.GetConfig(ctx, awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
+		err = opengovernanceAws.CheckGetUserPermission(h.logger, sdkCnf)
 		if err == nil {
 			metadata, err := getAWSCredentialsMetadata(ctx, h.logger, awsConfig)
 			if err != nil {
@@ -420,7 +420,7 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
-		authConfig := kaytuAzure.AuthConfig{
+		authConfig := opengovernanceAzure.AuthConfig{
 			TenantID:            azureConfig.TenantID,
 			ObjectID:            azureConfig.ObjectID,
 			SecretID:            azureConfig.SecretID,
@@ -432,10 +432,10 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred model.Crede
 			Password:            azureConfig.Password,
 		}
 
-		err = kaytuAzure.CheckSPNAccessPermission(authConfig)
+		err = opengovernanceAzure.CheckSPNAccessPermission(authConfig)
 
 		if err == nil {
-			entraExtra, err2 := kaytuAzure.CheckEntraIDPermission(authConfig)
+			entraExtra, err2 := opengovernanceAzure.CheckEntraIDPermission(authConfig)
 			if err2 == nil && cred.Name == nil && entraExtra != nil {
 				cred.Name = entraExtra.DefaultDomain
 

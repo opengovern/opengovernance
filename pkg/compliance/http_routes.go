@@ -21,7 +21,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	"github.com/opengovern/opengovernance/pkg/compliance/runner"
 	"github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
-	"github.com/opengovern/opengovernance/pkg/demo"
 	model3 "github.com/opengovern/opengovernance/pkg/describe/db/model"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
@@ -345,11 +344,6 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 			}
 		}
 
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
-		}
-
 		if control, ok := controlsMap[finding.ControlID]; ok {
 			finding.ControlTitle = control.Title
 		}
@@ -552,11 +546,6 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
-		}
-
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
 		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
@@ -993,21 +982,21 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
-//	@Param			count				path		int								true	"Count"
-//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by (inclusive)"
-//	@Param			notConnectionId		query		[]string						false	"Connection IDs to filter by (exclusive)"
-//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
-//	@Param			benchmarkId			query		[]string						false	"BenchmarkID"
-//	@Param			controlId			query		[]string						false	"ControlID"
+//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
+//	@Param			count				path		int										true	"Count"
+//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by (inclusive)"
+//	@Param			notConnectionId		query		[]string								false	"Connection IDs to filter by (exclusive)"
+//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
+//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
+//	@Param			benchmarkId			query		[]string								false	"BenchmarkID"
+//	@Param			controlId			query		[]string								false	"ControlID"
 //	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
-//	@Param			stateActive			query		[]bool							false	"StateActive to filter by defaults to true"
-//	@Param			jobId				query		[]string						false	"Job ID to filter"
-//	@Param			startTime			query		int64					false	"Start time to filter by"
-//	@Param			endTime				query		int64					false	"End time to filter by"
-//	@Param			interval			query		string					false	"Time interval to filter by"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool									false	"StateActive to filter by defaults to true"
+//	@Param			jobId				query		[]string								false	"Job ID to filter"
+//	@Param			startTime			query		int64									false	"Start time to filter by"
+//	@Param			endTime				query		int64									false	"End time to filter by"
+//	@Param			interval			query		string									false	"Time interval to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
@@ -1449,14 +1438,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string							true	"BenchmarkID"
-//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
-//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId			path		string									true	"BenchmarkID"
+//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string								false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
 //	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus			false	"ConformanceStatus to filter by defaults to failed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) error {
@@ -1615,8 +1604,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 	}
 
 	for idx, conn := range response.Accounts {
-		conn.AccountId = demo.EncodeResponseData(echoCtx, conn.AccountId)
-		conn.AccountName = demo.EncodeResponseData(echoCtx, conn.AccountName)
+
 		response.Accounts[idx] = conn
 	}
 
@@ -2505,7 +2493,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Medium.FailedCount++
 		}
-	case kaytuTypes.FindingSeverityLow:
+	case opengovernanceTypes.FindingSeverityLow:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Low.TotalCount++
 		if controlResult.Passed {
@@ -2515,7 +2503,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Low.FailedCount++
 		}
-	case kaytuTypes.FindingSeverityNone, "":
+	case opengovernanceTypes.FindingSeverityNone, "":
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.None.TotalCount++
 		if controlResult.Passed {
@@ -2618,7 +2606,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 	span3.SetName("new_PopulateConnectors(loop)")
 	defer span3.End()
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, nil, opengovernanceTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2638,7 +2626,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 
 		summaryAtTime := summariesAtTime[b.ID]
 		csResult := api.ConformanceStatusSummary{}
-		sResult := kaytuTypes.SeverityResult{}
+		sResult := opengovernanceTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
@@ -2672,13 +2660,13 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
 			topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 				nil, connectionIDs, nil, nil, []string{b.ID}, nil, nil,
-				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
 			}
 			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil,
-				connectionIDs, nil, nil, []string{b.ID}, nil, nil, kaytuTypes.GetConformanceStatuses(),
+				connectionIDs, nil, nil, []string{b.ID}, nil, nil, opengovernanceTypes.GetConformanceStatuses(),
 				[]bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
@@ -2837,7 +2825,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, nil, opengovernanceTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2852,7 +2840,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 	summaryAtTime := summariesAtTime[benchmarkID]
 
 	csResult := api.ConformanceStatusSummary{}
-	sResult := kaytuTypes.SeverityResult{}
+	sResult := opengovernanceTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	connectionsResult := api.BenchmarkStatusResult{}
 	var costOptimization *float64
@@ -2918,7 +2906,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 	if topAccountCount > 0 {
 		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
-			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
 			return err
@@ -2926,7 +2914,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
-			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -3319,7 +3307,7 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 		apiDataPoint := api.BenchmarkTrendDatapoint{
 			Timestamp:                time.Unix(datapoint.DateEpoch, 0),
 			ConformanceStatusSummary: api.ConformanceStatusSummary{},
-			Checks:                   kaytuTypes.SeverityResult{},
+			Checks:                   opengovernanceTypes.SeverityResult{},
 			ControlsSeverityStatus:   api.BenchmarkControlsSeverityStatus{},
 		}
 		apiDataPoint.ConformanceStatusSummary.AddESConformanceStatusMap(datapoint.QueryResult)
@@ -3442,11 +3430,11 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	var fRes map[string]map[string]int64
 
 	if req.FindingFilters != nil || req.FindingSummary {
-		var esConformanceStatuses []kaytuTypes.ConformanceStatus
+		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
 		if req.FindingFilters != nil {
-			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
 			for _, status := range req.FindingFilters.ConformanceStatus {
 				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 			}
@@ -3464,7 +3452,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
 			}
 		} else {
-			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0)
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
 		}
 
 		var controlIDs []string
@@ -3751,11 +3739,11 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	var fRes map[string]map[string]int64
 
 	if req.FindingFilters != nil {
-		var esConformanceStatuses []kaytuTypes.ConformanceStatus
+		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
 		if req.FindingFilters != nil {
-			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
 			for _, status := range req.FindingFilters.ConformanceStatus {
 				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 			}
@@ -3773,7 +3761,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
 			}
 		} else {
-			esConformanceStatuses = make([]kaytuTypes.ConformanceStatus, 0)
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
 		}
 
 		var controlIDs []string
@@ -4721,8 +4709,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 	}
 
 	for idx, conn := range resp.Connections {
-		conn.ProviderConnectionID = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionID)
-		conn.ProviderConnectionName = demo.EncodeResponseData(echoCtx, conn.ProviderConnectionName)
+
 		resp.Connections[idx] = conn
 	}
 
@@ -5609,10 +5596,10 @@ func (h *HttpHandler) ListComplianceTags(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		assignment_type			query		string	true	"assignment type. options: implicit, explicit, any"
-//	@Param		include_potential		query		bool	true	"Include potentials"
-//	@Param		benchmark-id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	[]api.IntegrationInfo
+//	@Param		assignment_type		query		string	true	"assignment type. options: implicit, explicit, any"
+//	@Param		include_potential	query		bool	true	"Include potentials"
+//	@Param		benchmark-id		path		string	true	"Benchmark ID"
+//	@Success	200					{object}	[]api.IntegrationInfo
 //	@Router		/compliance/api/v3/benchmark/{benchmark-id}/assignments [get]
 func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
@@ -5824,7 +5811,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		}
 	}
 
-	esConformanceStatuses := make([]kaytuTypes.ConformanceStatus, 0, len(conformanceStatuses))
+	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
 	for _, status := range conformanceStatuses {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
@@ -5927,11 +5914,6 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			}
 		}
 
-		if src, ok := allSourcesMap[finding.ConnectionID]; ok {
-			finding.ProviderConnectionID = demo.EncodeResponseData(echoCtx, src.ConnectionID)
-			finding.ProviderConnectionName = demo.EncodeResponseData(echoCtx, src.ConnectionName)
-		}
-
 		if control, ok := controlsMap[finding.ControlID]; ok {
 			finding.ControlTitle = control.Title
 		}
@@ -5946,12 +5928,12 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	kaytuResourceIds := make([]string, 0, len(response.Findings))
+	opengovernanceResourceIds := make([]string, 0, len(response.Findings))
 	for _, finding := range response.Findings {
-		kaytuResourceIds = append(kaytuResourceIds, finding.OpenGovernanceResourceID)
+		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, kaytuResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -6202,7 +6184,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, nil, nil, kaytuTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, connectionIDs, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -6217,7 +6199,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 	summaryAtTime := summariesAtTime[benchmarkID]
 
 	csResult := api.ConformanceStatusSummaryV2{}
-	sResult := kaytuTypes.SeverityResult{}
+	sResult := opengovernanceTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
@@ -6422,7 +6404,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			return err
 		}
 
-		passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, kaytuTypes.GetPassedConformanceStatuses())
+		passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses())
 		if err != nil {
 			h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 			return err
@@ -6437,7 +6419,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		summaryAtTime := summariesAtTime[benchmark.ID]
 
 		csResult := api.ConformanceStatusSummaryV2{}
-		sResult := kaytuTypes.SeverityResultV2{}
+		sResult := opengovernanceTypes.SeverityResultV2{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 		var costOptimization *float64
 		addToResults := func(resultGroup types.ResultGroup) {
@@ -6468,7 +6450,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		if req.ShowTop > 0 {
 			res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
-				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
+				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field", zap.Error(err))
 				return err
@@ -6476,7 +6458,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
-				kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
+				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 				return err
@@ -6654,9 +6636,9 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			job_id		path		string									true	"Benchmark ID to get the summary"
-//	@Param			show_top	query		int										true	"Show top integrations (5 by default)"
-//	@Success		200				{object}	api.ComplianceSummaryOfBenchmarkResponse
+//	@Param			job_id		path		string	true	"Benchmark ID to get the summary"
+//	@Param			show_top	query		int		true	"Show top integrations (5 by default)"
+//	@Success		200			{object}	api.ComplianceSummaryOfBenchmarkResponse
 //	@Router			/compliance/api/v3/compliance/summary/{job_id} [get]
 func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
@@ -6710,7 +6692,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	}
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResultByJobId(ctx, h.logger, h.client, []string{benchmarkId},
-		nil, nil, nil, kaytuTypes.GetPassedConformanceStatuses(), jobId)
+		nil, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses(), jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -6726,7 +6708,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	summaryAtTime := summariesAtTime[benchmarkId]
 
 	csResult := api.ConformanceStatusSummaryV2{}
-	sResult := kaytuTypes.SeverityResultV2{}
+	sResult := opengovernanceTypes.SeverityResultV2{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
 	var costOptimization *float64
 	addToResults := func(resultGroup types.ResultGroup) {
@@ -6744,7 +6726,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	topConnections := make([]api.TopFieldRecord, 0, showTop)
 	if showTop > 0 {
 		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil,
-			nil, nil, nil, []string{benchmarkId}, nil, nil, kaytuTypes.GetFailedConformanceStatuses(),
+			nil, nil, nil, []string{benchmarkId}, nil, nil, opengovernanceTypes.GetFailedConformanceStatuses(),
 			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field", zap.Error(err))
@@ -6753,7 +6735,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 			nil, nil, nil, nil, []string{benchmarkId}, nil, nil,
-			kaytuTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop), nil, nil)
+			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
 			return err
@@ -7507,7 +7489,7 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
 		apiDataPoint := api.BenchmarkTrendDatapointV3{
 			Timestamp:                  time.Unix(datapoint.DateEpoch, 0),
-			IncidentsSeverityBreakdown: &kaytuTypes.SeverityResult{},
+			IncidentsSeverityBreakdown: &opengovernanceTypes.SeverityResult{},
 		}
 		conformanceSummary := api.ConformanceStatusSummary{}
 		if len(datapoint.QueryResult) > 0 {

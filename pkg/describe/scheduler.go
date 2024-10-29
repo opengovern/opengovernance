@@ -89,7 +89,7 @@ var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 }, []string{"status"})
 
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "kaytu_scheduler_large_describe_resource_message",
+	Name: "og_scheduler_large_describe_resource_message",
 	Help: "The gauge whether the describe resource message is too large: 0 for not large and 1 for large",
 }, []string{"resource_type"})
 

@@ -72,7 +72,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.POST("/connector", httpserver.AuthorizeHandler(r.CreateConnector, api2.AdminRole))
 	v1.PUT("/connector", httpserver.AuthorizeHandler(r.UpdateConnector, api2.AdminRole))
 	v1.DELETE("/connector/:id", httpserver.AuthorizeHandler(r.DeleteConnector, api2.AdminRole))
-	
+
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -118,11 +118,11 @@ func (r *httpRoutes) Check(ctx echo.Context) error {
 	}
 
 	if res.Status.Code != int32(codes.OK) {
-		return echo.NewHTTPError(http.StatusForbidden, res.Status.Message)
+		return echo.NewHTTPError(http.StatusUnauthorized, res.Status.Message)
 	}
 
 	if res.GetOkResponse() == nil {
-		return echo.NewHTTPError(http.StatusForbidden, "no ok response")
+		return echo.NewHTTPError(http.StatusUnauthorized, "no ok response")
 	}
 
 	for _, header := range res.GetOkResponse().GetHeaders() {
@@ -165,13 +165,14 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 			EmailVerified: u.EmailVerified,
 			ExternalId:    u.ExternalId,
 			CreatedAt:     u.CreatedAt,
-			LastActivity:  u.LastLogin,
 			RoleName:      u.Role,
 			IsActive:      u.IsActive,
-			ConnectorId:  u.ConnectorId,
+			ConnectorId:   u.ConnectorId,
 		}
 		if u.LastLogin.IsZero() {
 			temp_resp.LastActivity = nil
+		} else {
+			temp_resp.LastActivity = &u.LastLogin
 		}
 		resp = append(resp, temp_resp)
 
@@ -206,7 +207,6 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.IsActive,
 		RoleName:      user.Role,
@@ -214,6 +214,8 @@ func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	// check if LastLogin is Default go time value remove it
 	if user.LastLogin.IsZero() {
 		resp.LastActivity = nil
+	} else {
+		resp.LastActivity = &user.LastLogin
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -243,17 +245,18 @@ func (r *httpRoutes) GetMe(ctx echo.Context) error {
 		UserName:      user.Username,
 		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		LastActivity:  user.LastLogin,
 		CreatedAt:     user.CreatedAt,
 		Blocked:       user.IsActive,
 		Role:          user.Role,
 		MemberSince:   user.CreatedAt,
-		LastLogin:     user.LastLogin,
+		ConnectorId:   user.ConnectorId,
 	}
 	if user.LastLogin.IsZero() {
 		resp.LastLogin = nil
 		resp.LastActivity = nil
-
+	} else {
+		resp.LastLogin = &user.LastLogin
+		resp.LastActivity = &user.LastLogin
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -463,8 +466,8 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		r.logger.Error("failed to get user", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get user")
 	}
-	
-	if user != nil && user.Email !="" {
+
+	if user != nil && user.Email != "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "email already used")
 	}
 
@@ -499,7 +502,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 	}
 
 	connector := ""
-	userId := fmt.Sprintf("%v|%s", req.ConnectorId,req.EmailAddress)
+	userId := fmt.Sprintf("%v|%s", req.ConnectorId, req.EmailAddress)
 	if req.Password != nil {
 		connector = "local"
 		userId := fmt.Sprintf("local|%s", req.EmailAddress)
@@ -557,7 +560,7 @@ func (r *httpRoutes) DoCreateUser(req api.CreateUserRequest) error {
 		FullName:              req.EmailAddress,
 		Role:                  role,
 		EmailVerified:         false,
-		ConnectorId:             connector,
+		ConnectorId:           connector,
 		ExternalId:            userId,
 		RequirePasswordChange: requirePasswordChange,
 		IsActive:              true,
@@ -648,16 +651,13 @@ func (r *httpRoutes) UpdateUser(ctx echo.Context) error {
 			Model: gorm.Model{
 				ID: user.ID,
 			},
-			Role:     *req.Role,
-			IsActive: req.IsActive,
-			Username: req.UserName,
-			FullName: req.FullName,
-			Email:   user.Email,
-			ExternalId: fmt.Sprintf("%v|%s", req.ConnectorId,user.Email),
+			Role:        *req.Role,
+			IsActive:    req.IsActive,
+			Username:    req.UserName,
+			FullName:    req.FullName,
+			Email:       user.Email,
+			ExternalId:  fmt.Sprintf("%v|%s", req.ConnectorId, user.Email),
 			ConnectorId: req.ConnectorId,
-			
-
-
 		}
 		err = r.db.UpdateUser(update_user)
 		if err != nil {
@@ -684,7 +684,7 @@ func (r *httpRoutes) DeleteUser(ctx echo.Context) error {
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "id is required")
 	}
-	
+
 	err := r.DoDeleteUser(id)
 	if err != nil {
 		return err
@@ -708,7 +708,7 @@ func (r *httpRoutes) DoDeleteUser(id string) error {
 	if user == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
 	}
-	if( user.ID == 1){
+	if user.ID == 1 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot delete the first user")
 	}
 	dexReq := &dexApi.DeletePasswordReq{
@@ -857,6 +857,7 @@ func (r *httpRoutes) ResetUserPassword(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusAccepted)
 }
+
 // GetConnector godoc
 //
 //	@Summary		Get  Connectors list
@@ -872,24 +873,24 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 	connectorType := ctx.Param("type")
 	// Create a context with timeout for the gRPC call.
 	dexClient, err := newDexClient(dexGrpcAddress)
-		if err != nil {
+	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-		}
+	}
 	// Execute the ListConnectors RPC.
 	respDex, err := dexClient.ListConnectors(context.TODO(), req)
 	if err != nil {
 		r.logger.Error("failed to list connectors", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to list connectors")
-	
+
 	}
 
 	connectors := respDex.Connectors
 
 	var resp []api.GetConnectorsResponse
 	for _, connector := range connectors {
-		
-		localConnector,err := r.db.GetConnectorByConnectorID(connector.Id) 
+
+		localConnector, err := r.db.GetConnectorByConnectorID(connector.Id)
 		if err != nil {
 			r.logger.Error("failed to get connector", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to get connector")
@@ -897,33 +898,31 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 		if connectorType != "" && strings.ToLower(connectorType) != strings.ToLower(connector.Type) {
 			continue
 		}
-		if(connector.Id == "local"){
+		if connector.Id == "local" {
 			continue
 		}
 		info := api.GetConnectorsResponse{
-			ID:   localConnector.ID,
+			ID:          localConnector.ID,
 			ConnectorID: connector.Id,
-			Type: connector.Type,
-			Name: connector.Name,
-			SubType: localConnector.ConnectorSubType,
-			UserCount: localConnector.UserCount,
-			CreatedAt: localConnector.CreatedAt,
-			LastUpdate: localConnector.LastUpdate,
-
-
+			Type:        connector.Type,
+			Name:        connector.Name,
+			SubType:     localConnector.ConnectorSubType,
+			UserCount:   localConnector.UserCount,
+			CreatedAt:   localConnector.CreatedAt,
+			LastUpdate:  localConnector.LastUpdate,
 		}
 
 		// If the connector is of type "oidc", attempt to extract Issuer and ClientID
 		if strings.ToLower(connector.Type) == "oidc" {
 			var config api.OIDCConfig
-			var data  map[string]interface{}
+			var data map[string]interface{}
 			err := json.Unmarshal(connector.Config, &config)
 			new_err := json.Unmarshal(connector.Config, &data)
-			r.logger.Info("data",zap.Any("data",data))
-			if(new_err != nil){
+			r.logger.Info("data", zap.Any("data", data))
+			if new_err != nil {
 				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
 			}
-			if  err != nil {
+			if err != nil {
 				r.logger.Error("Failed to unmarshal OIDC config for connector", zap.Error(err))
 			} else {
 				info.Issuer = config.Issuer
@@ -940,7 +939,7 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 // GetSupportedConnectors godoc
 //
 //	@Summary		Get Supported Connectors
-//	@Description	Returns a list of supported connectors. 
+//	@Description	Returns a list of supported connectors.
 //	@Security		BearerToken
 //	@Tags			connectors
 //	@Produce		json
@@ -949,27 +948,26 @@ func (r *httpRoutes) GetConnectors(ctx echo.Context) error {
 
 func (r *httpRoutes) GetSupportedType(ctx echo.Context) error {
 	var connectors []api.GetSupportedConnectorTypeResponse
-	
 
-	subTypes :=  utils.SupportedConnectors["oidc"]
-	subTypesNames :=  utils.SupportedConnectorsNames["oidc"]
+	subTypes := utils.SupportedConnectors["oidc"]
+	subTypesNames := utils.SupportedConnectorsNames["oidc"]
 
-	var types  []api.ConnectorSubTypes
-	for i,key := range subTypes {
+	var types []api.ConnectorSubTypes
+	for i, key := range subTypes {
 		types = append(types, api.ConnectorSubTypes{
-			ID: key,
+			ID:   key,
 			Name: subTypesNames[i],
 		})
 	}
 	connectors = append(connectors, api.GetSupportedConnectorTypeResponse{
 		ConnectorType: "oidc",
-		SubTypes: types,
+		SubTypes:      types,
 	})
-
 
 	return ctx.JSON(http.StatusOK, connectors)
 
 }
+
 // CreateConnector godoc
 //
 //	@Summary		Create Connector
@@ -985,7 +983,7 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if (req.ConnectorType =="" ){
+	if req.ConnectorType == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is required")
 	}
 	connectorTypeLower := strings.ToLower(req.ConnectorType)
@@ -993,8 +991,8 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 	if creator == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector type is not supported")
 	}
-	
-	 // default
+
+	// default
 	connectorSubTypeLower := "general" // default
 	if req.ConnectorSubType != "" {
 		connectorSubTypeLower = strings.ToLower(req.ConnectorSubType)
@@ -1015,7 +1013,6 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, map[string]string{
 				"error": "issuer is required for 'general' OIDC connector",
 			})
-			
 
 		}
 
@@ -1030,86 +1027,82 @@ func (r *httpRoutes) CreateConnector(ctx echo.Context) error {
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err:= "Missing 'tenant_id' for 'entraid' OIDC connector"
-				r.logger.Info(err)
+			err := "Missing 'tenant_id' for 'entraid' OIDC connector"
+			r.logger.Info(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-		
+
 		}
 		// fetching issuer
-		
-
 
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "entra-id"
-			
+
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "AzureAD/EntraID"
-			
+
 		}
 
 	case "google-workspace":
 		// Required: client_id, client_secret
-		
+
 		// Set default id and name if not provided
 		if strings.TrimSpace(req.ID) == "" {
 			req.ID = "google-oidc"
-			
+
 		}
 		if strings.TrimSpace(req.Name) == "" {
 			req.Name = "Google Workspaces "
-		
-			
+
 		}
 	}
-		dexRequest := utils.CreateConnectorRequest{
-			ConnectorType :  req.ConnectorType,
-			ConnectorSubType : req.ConnectorSubType,
-			Issuer : req.Issuer,
-			TenantID : req.TenantID,
-			ClientID : req.ClientID,
-			ClientSecret : req.ClientSecret,
-			ID : req.ID,
-			Name : req.Name,
-		}
-		dexreq,err := creator(dexRequest)
-		if err != nil {
-			r.logger.Error("Error on Creating dex request",zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, err)
-		}
-		dexClient, err := newDexClient(dexGrpcAddress)
-		if err != nil {
+	dexRequest := utils.CreateConnectorRequest{
+		ConnectorType:    req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+		Issuer:           req.Issuer,
+		TenantID:         req.TenantID,
+		ClientID:         req.ClientID,
+		ClientSecret:     req.ClientSecret,
+		ID:               req.ID,
+		Name:             req.Name,
+	}
+	dexreq, err := creator(dexRequest)
+	if err != nil {
+		r.logger.Error("Error on Creating dex request", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	dexClient, err := newDexClient(dexGrpcAddress)
+	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-		}
-		res, err := dexClient.CreateConnector(context.TODO(), dexreq)
-		if err != nil {
-			r.logger.Error("failed to create dex connector", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
-		}
-		if res.AlreadyExists {
-			return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
-		}
-		err = r.db.CreateConnector(&db.Connector{
-			LastUpdate: time.Now(),
-			ConnectorID: req.ID,
-			ConnectorType: req.ConnectorType,
-			ConnectorSubType: req.ConnectorSubType,
-		})
-		if err != nil {
-			r.logger.Error("failed to create connector", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "failed to create connector")
-		}
-		// restart dex pod on connector creation
-		err = utils.RestartDexPod()
-		if err != nil {
-			r.logger.Error("failed to restart dex pod", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "failed to restart dex pod")
-		}
+	}
+	res, err := dexClient.CreateConnector(context.TODO(), dexreq)
+	if err != nil {
+		r.logger.Error("failed to create dex connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex connector")
+	}
+	if res.AlreadyExists {
+		return echo.NewHTTPError(http.StatusBadRequest, "connector already exists")
+	}
+	err = r.db.CreateConnector(&db.Connector{
+		LastUpdate:       time.Now(),
+		ConnectorID:      req.ID,
+		ConnectorType:    req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+	})
+	if err != nil {
+		r.logger.Error("failed to create connector", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create connector")
+	}
+	// restart dex pod on connector creation
+	err = utils.RestartDexPod()
+	if err != nil {
+		r.logger.Error("failed to restart dex pod", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to restart dex pod")
+	}
 
-
-		return ctx.JSON(http.StatusCreated, res)
+	return ctx.JSON(http.StatusCreated, res)
 }
 
 // UpdateConnector godoc
@@ -1128,7 +1121,7 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if (req.ID ==0 ){
+	if req.ID == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "ID required")
 	}
 
@@ -1142,20 +1135,20 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	case "general":
 		// Required: issuer, client_id, client_secret
 		if strings.TrimSpace(req.Issuer) == "" {
-			err:= "Missing 'issuer' for 'general' OIDC connector update"
+			err := "Missing 'issuer' for 'general' OIDC connector update"
 			r.logger.Error(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 		// client_id and client_secret are already validated as required in the struct
 
 	case "entraid":
 		// Required: tenant_id, client_id, client_secret
 		if strings.TrimSpace(req.TenantID) == "" {
-			err:= "Missing 'tenant_id' for 'entraid' OIDC connector update"
+			err := "Missing 'tenant_id' for 'entraid' OIDC connector update"
 			r.logger.Error(err)
 			return echo.NewHTTPError(http.StatusBadRequest, err)
-			
+
 		}
 		// client_id and client_secret are already validated as required in the struct
 
@@ -1165,33 +1158,33 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 		// client_id and client_secret are already validated as required in the struct
 
 	default:
-		err:= fmt.Sprintf("unsupported connector_sub_type: %s", req.ConnectorSubType)
+		err := fmt.Sprintf("unsupported connector_sub_type: %s", req.ConnectorSubType)
 		r.logger.Error(err)
 		return echo.NewHTTPError(http.StatusBadRequest, err)
-		
+
 	}
 	dexRequest := utils.UpdateConnectorRequest{
-			ConnectorType :  req.ConnectorType,
-			ConnectorSubType : req.ConnectorSubType,
-			Issuer : req.Issuer,
-			TenantID : req.TenantID,
-			ClientID : req.ClientID,
-			ClientSecret : req.ClientSecret,
-			ID : req.ConnectorID,
-		}
+		ConnectorType:    req.ConnectorType,
+		ConnectorSubType: req.ConnectorSubType,
+		Issuer:           req.Issuer,
+		TenantID:         req.TenantID,
+		ClientID:         req.ClientID,
+		ClientSecret:     req.ClientSecret,
+		ID:               req.ConnectorID,
+	}
 
-	dexreq,err := utils.UpdateOIDCConnector(dexRequest)	
+	dexreq, err := utils.UpdateOIDCConnector(dexRequest)
 	if err != nil {
-		r.logger.Error("Error on Creating dex request",zap.Error(err))
+		r.logger.Error("Error on Creating dex request", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	dexClient, err := newDexClient(dexGrpcAddress)
 	if err != nil {
-	r.logger.Error("failed to create dex client", zap.Error(err))
-	return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
+		r.logger.Error("failed to create dex client", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
 	}
-	
+
 	res, err := dexClient.UpdateConnector(context.TODO(), dexreq)
 	if err != nil {
 		r.logger.Error("failed to update dex connector", zap.Error(err))
@@ -1204,11 +1197,11 @@ func (r *httpRoutes) UpdateConnector(ctx echo.Context) error {
 	}
 	err = r.db.UpdateConnector(&db.Connector{
 		Model: gorm.Model{
-				ID: req.ID,
-			},
-		LastUpdate: time.Now(),
-		ConnectorID: req.ConnectorID,
-		ConnectorType: req.ConnectorType,
+			ID: req.ID,
+		},
+		LastUpdate:       time.Now(),
+		ConnectorID:      req.ConnectorID,
+		ConnectorType:    req.ConnectorType,
 		ConnectorSubType: req.ConnectorSubType,
 	})
 	if err != nil {
@@ -1241,11 +1234,11 @@ func (r *httpRoutes) DeleteConnector(ctx echo.Context) error {
 		Id: connectorID,
 	}
 	dexClient, err := newDexClient(dexGrpcAddress)
-		if err != nil {
+	if err != nil {
 		r.logger.Error("failed to create dex client", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to create dex client")
-		}
-	resp,err := dexClient.DeleteConnector(context.TODO(), req)
+	}
+	resp, err := dexClient.DeleteConnector(context.TODO(), req)
 	if err != nil {
 		r.logger.Error("failed to delete connector", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to delete connector")
@@ -1261,5 +1254,3 @@ func (r *httpRoutes) DeleteConnector(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusAccepted)
 }
-
-

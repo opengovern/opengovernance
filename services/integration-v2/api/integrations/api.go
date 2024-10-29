@@ -43,7 +43,7 @@ func New(
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Param			request	body		entity.CreateRequest	true	"Request"
+//	@Param			request	body	models.DiscoverIntegrationRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/discover [post]
 func (h API) DiscoverIntegrations(c echo.Context) error {
 	var req models.DiscoverIntegrationRequest
@@ -151,7 +151,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Param			request	body		entity.CreateRequest	true	"Request"
+//	@Param			request	body	models.AddIntegrationsRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/add [post]
 func (h API) AddIntegrations(c echo.Context) error {
 	var req models.AddIntegrationsRequest
@@ -438,8 +438,8 @@ func (h API) Get(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200
-//	@Param			integrationId	path	string	true	"IntegrationID"
-//	@Param			request	body		models.UpdateRequest	true	"Request"
+//	@Param			integrationId	path	string					true	"IntegrationID"
+//	@Param			request			body	models.UpdateRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/{integrationId} [post]
 func (h API) Update(c echo.Context) error {
 	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))

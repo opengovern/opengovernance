@@ -96,11 +96,11 @@
     <div class="text">Welcome Back to Opengovernance.</div>
     <div class="connector-buttons">
       {{ range $c := .Connectors }}
-      <button asChild variant="secondary" class="connector-button">
-        <a href="{{ $c.URL }}" class="connector-link">
+      <a href="{{ $c.URL }}" class="connector-link">
+        <button asChild variant="secondary" class="connector-button">
           Login with {{ $c.Name }}
-        </a>
-      </button>
+        </button>
+      </a>
 
       {{ end }}
     </div>

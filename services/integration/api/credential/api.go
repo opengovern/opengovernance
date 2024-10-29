@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"net/http"
@@ -520,7 +520,7 @@ func (h API) CreateAWS(c echo.Context) error {
 	}
 
 	if req.Config.AccountID == "" && req.Config.AccessKey != nil && req.Config.SecretKey != nil {
-		awsCred, err := kaytuAws.GetConfig(ctx, *req.Config.AccessKey, *req.Config.SecretKey, "", "", nil)
+		awsCred, err := opengovernanceAws.GetConfig(ctx, *req.Config.AccessKey, *req.Config.SecretKey, "", "", nil)
 		if err != nil {
 			h.logger.Error("cannot read aws credentials", zap.Error(err))
 

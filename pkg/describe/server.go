@@ -2150,7 +2150,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 //	@Security	BearerToken
 //	@Tags		scheduler
 //	@Param		request			body	api.BenchmarkAuditHistoryRequest	true	"List jobs request"
-//	@Param		benchmark_id	query	string	true	"Benchmark ID to get the run history for"
+//	@Param		benchmark_id	query	string								true	"Benchmark ID to get the run history for"
 //	@Produce	json
 //	@Success	200	{object}	api.BenchmarkAuditHistoryResponse
 //	@Router		/schedule/api/v3/benchmark/:benchmark_id/run-history [post]
@@ -2326,9 +2326,9 @@ func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 //	@Summary	Get Last dicovery job for integration
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		request			body	api.GetIntegrationLastDiscoveryJobRequest	true	"List jobs request"
+//	@Param		request	body	api.GetIntegrationLastDiscoveryJobRequest	true	"List jobs request"
 //	@Produce	json
-//	@Success	200	{object}	model2.DescribeConnectionJob
+//	@Success	200
 //	@Router		/schedule/api/v3/integration/discovery/last-job [post]
 func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
@@ -3620,7 +3620,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 //	@Summary	List jobs by job type and filters
 //	@Security	BearerToken
 //	@Tags		scheduler
-//	@Param		job_ids		query	[]string	true	"Compliance Job ID"
+//	@Param		job_ids	query	[]string	true	"Compliance Job ID"
 //	@Produce	json
 //	@Success	200	{object}	[]string
 //	@Router		/schedule/api/v3/jobs/compliance/summary/jobs [get]

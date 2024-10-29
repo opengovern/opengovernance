@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	kaytuAws "github.com/opengovern/og-aws-describer/aws"
-	kaytuAzure "github.com/opengovern/og-azure-describer/azure"
+	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
+	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"strings"
 	"time"
 
@@ -185,13 +185,13 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 	}
 	switch c.Connector {
 	case source.CloudAWS:
-		rts := kaytuAws.GetResourceTypesMap()
+		rts := opengovernanceAws.GetResourceTypesMap()
 		for rt := range rts {
 			c.supportedResourceTypes[strings.ToLower(rt)] = true
 		}
 		return c.supportedResourceTypes
 	case source.CloudAzure:
-		rts := kaytuAzure.GetResourceTypesMap()
+		rts := opengovernanceAzure.GetResourceTypesMap()
 		jsonC, _ := json.Marshal(c)
 		// Remove cost resources if quota is not supported so we don't describe em
 		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
@@ -201,7 +201,7 @@ func (c Connection) GetSupportedResourceTypeMap() map[string]bool {
 			if err == nil {
 				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
 					quotaId := *subscriptionModelObj.SubscriptionPolicies.QuotaID
-					unsupportedQuotas := kaytuAzure.GetUnsupportedCostQuotaIds()
+					unsupportedQuotas := opengovernanceAzure.GetUnsupportedCostQuotaIds()
 					for _, unsupportedQuota := range unsupportedQuotas {
 						if strings.ToLower(quotaId) == strings.ToLower(unsupportedQuota) {
 							delete(rts, "Microsoft.CostManagement/CostBySubscription")

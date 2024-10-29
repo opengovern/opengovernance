@@ -6,7 +6,7 @@ import (
 	"fmt"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	kaytuTrace "github.com/opengovern/og-util/pkg/trace"
+	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	apiv2 "github.com/opengovern/opengovernance/pkg/onboard/api/v2"
 	"go.opentelemetry.io/otel"
 	"io"
@@ -75,7 +75,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()
 	}
-	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	_, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx.Ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	ctx.UserRole = authApi.AdminRole
@@ -95,7 +95,7 @@ func (s *onboardClient) GetSourceBySourceId(ctx *httpclient.Context, sourceID st
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()
 	}
-	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	_, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx.Ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
 	ctx.UserRole = authApi.AdminRole
@@ -151,7 +151,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()
 	}
-	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	_, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx.Ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
 
