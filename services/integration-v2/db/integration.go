@@ -25,9 +25,9 @@ func (db Database) CreateIntegration(s *models.Integration) error {
 }
 
 // DeleteIntegration deletes a integration
-func (db Database) DeleteIntegration(integrationTracker uuid.UUID) error {
+func (db Database) DeleteIntegration(IntegrationID uuid.UUID) error {
 	tx := db.Orm.
-		Where("integration_tracker = ?", integrationTracker.String()).
+		Where("integration_id = ?", IntegrationID.String()).
 		Unscoped().
 		Delete(&models.Integration{})
 	if tx.Error != nil {
@@ -56,22 +56,22 @@ func (db Database) ListIntegration(types []integration.Type) ([]models.Integrati
 }
 
 // ListIntegrationsByFilters list Integrations by filters
-func (db Database) ListIntegrationsByFilters(integrationTrackers, types []string, integrationNameRegex, integrationIDRegex *string) ([]models.Integration, error) {
+func (db Database) ListIntegrationsByFilters(IntegrationIDs, types []string, NameRegex, providerIDRegex *string) ([]models.Integration, error) {
 	var integrations []models.Integration
 	tx := db.Orm.
 		Model(&models.Integration{})
 
-	if len(integrationTrackers) > 0 {
-		tx = tx.Where("integration_tracker IN ?", integrationTrackers)
+	if len(IntegrationIDs) > 0 {
+		tx = tx.Where("integration_id IN ?", IntegrationIDs)
 	}
 	if len(types) > 0 {
 		tx = tx.Where("integration_type IN ?", types)
 	}
-	if integrationNameRegex != nil {
-		tx = tx.Where("integration_name ~* ?", *integrationNameRegex)
+	if NameRegex != nil {
+		tx = tx.Where("integration_name ~* ?", *NameRegex)
 	}
-	if integrationIDRegex != nil {
-		tx = tx.Where("integration_id ~* ?", *integrationIDRegex)
+	if providerIDRegex != nil {
+		tx = tx.Where("provider_id ~* ?", *providerIDRegex)
 	}
 
 	tx = tx.Find(&integrations)
@@ -87,7 +87,7 @@ func (db Database) GetIntegration(tracker uuid.UUID) (*models.Integration, error
 	var integration models.Integration
 	tx := db.Orm.
 		Model(&models.Integration{}).
-		Where("integration_tracker = ?", tracker.String()).
+		Where("integration_id = ?", tracker.String()).
 		First(&integration)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -99,7 +99,7 @@ func (db Database) GetIntegration(tracker uuid.UUID) (*models.Integration, error
 // UpdateIntegration deletes a integration
 func (db Database) UpdateIntegration(integration *models.Integration) error {
 	tx := db.Orm.
-		Where("integration_tracker = ?", integration.IntegrationTracker.String()).
+		Where("integration_id = ?", integration.IntegrationID.String()).
 		Updates(integration)
 	if tx.Error != nil {
 		return tx.Error

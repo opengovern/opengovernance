@@ -3235,7 +3235,7 @@ func (h HttpHandler) ListConnectorsV2(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			health_state		query		string		false	"health state"
 //	@Param			connectors			query		[]string	false	"connectors"
-//	@Param			integration_tracker	query		[]string	false	"integration tracker"
+//	@Param			integration_id	query		[]string	false	"integration tracker"
 //	@Param			name_regex			query		string		false	"name regex"
 //	@Param			id_regex			query		string		false	"id regex"
 //	@Param			per_page			query		int			false	"PerPage"
@@ -3246,7 +3246,7 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
 	healthStateStr := ctx.QueryParam("health_state")
 	connectors := httpserver.QueryArrayParam(ctx, "connectors")
-	integrationTracker := httpserver.QueryArrayParam(ctx, "integration_tracker")
+	IntegrationID := httpserver.QueryArrayParam(ctx, "integration_id")
 	nameRegex := ctx.QueryParam("name_regex")
 	idRegex := ctx.QueryParam("id_regex")
 	perPageStr := ctx.QueryParam("per_page")
@@ -3260,7 +3260,7 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 	}
 	healthState, _ := source.ParseHealthStatus(healthStateStr)
 
-	integrations, err := h.db.ListIntegrationsFiltered(integrationTracker, connectors, nameRegex, idRegex, healthState)
+	integrations, err := h.db.ListIntegrationsFiltered(IntegrationID, connectors, nameRegex, idRegex, healthState)
 	if err != nil {
 		return err
 	}
@@ -3268,10 +3268,10 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 	var items []api.ListIntegrationsItem
 
 	for _, c := range integrations {
-		integrationTracker := c.ID.String()
+		IntegrationID := c.ID.String()
 
 		item := api.ListIntegrationsItem{
-			IntegrationTracker:  c.ID.String(),
+			IntegrationID:       c.ID.String(),
 			ConnectionID:        c.ID.String(),
 			ID:                  c.SourceId,
 			Name:                c.Name,
@@ -3285,13 +3285,13 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 
 		lastJob, err := h.describeClient.GetIntegrationLastDiscoveryJob(clientCtx, api4.GetIntegrationLastDiscoveryJobRequest{
 			IntegrationInfo: struct {
-				Integration        *string `json:"integration"`
-				Type               *string `json:"type"`
-				ID                 *string `json:"id"`
-				IDName             *string `json:"id_name"`
-				IntegrationTracker *string `json:"integration_tracker"`
+				Integration   *string `json:"integration"`
+				Type          *string `json:"type"`
+				ID            *string `json:"id"`
+				IDName        *string `json:"id_name"`
+				IntegrationID *string `json:"integration_id"`
 			}{
-				IntegrationTracker: &integrationTracker,
+				IntegrationID: &IntegrationID,
 			},
 		})
 		if err != nil {

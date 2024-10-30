@@ -44,10 +44,10 @@ type DescribeConnectionJob struct {
 	CreatedBy      string
 	ParentID       *uint `gorm:"index:,sort:desc"`
 
-	IntegrationTracker string `gorm:"index:idx_source_id_full_discovery;index"`
-	IntegrationType    integration.Type
-	IntegrationID      string
-	TriggerType        enums.DescribeTriggerType
+	IntegrationID   string `gorm:"index:idx_source_id_full_discovery;index"`
+	IntegrationType integration.Type
+	ProviderID      string
+	TriggerType     enums.DescribeTriggerType
 
 	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
 	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`

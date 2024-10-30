@@ -507,11 +507,11 @@ definitions:
         - $ref: '#/definitions/source.Type'
         description: Clout Provider
         example: Azure
-      providerConnectionID:
+      providerID:
         description: Provider Connection ID
         example: "1283192749"
         type: string
-      providerConnectionName:
+      integrationName:
         description: Provider Connection Name
         type: string
       status:
@@ -1183,11 +1183,11 @@ definitions:
       parentComplianceJobID:
         example: 1
         type: integer
-      providerConnectionID:
+      providerID:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
-      providerConnectionName:
+      integrationName:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
@@ -1259,10 +1259,10 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
       previousStateActive:
         type: boolean
-      providerConnectionID:
+      providerID:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
-      providerConnectionName:
+      integrationName:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       reason:
@@ -2100,7 +2100,7 @@ definitions:
         type: string
       integration:
         type: string
-      integration_tracker:
+      integration_id:
         type: string
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.IntegrationFilterRequest:
@@ -2122,7 +2122,7 @@ definitions:
         type: string
       integration:
         type: string
-      integration_tracker:
+      integration_id:
         type: string
       type:
         type: string
@@ -2135,7 +2135,7 @@ definitions:
         type: string
       integration:
         type: string
-      integration_tracker:
+      integration_id:
         type: string
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ListBenchmarksFiltersResponse:
@@ -2439,11 +2439,11 @@ definitions:
         type: string
       opengovernanceResourceID:
         type: string
-      providerConnectionID:
+      providerID:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
-      providerConnectionName:
+      integrationName:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
@@ -2677,7 +2677,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -2716,7 +2716,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -2882,7 +2882,7 @@ definitions:
             type: string
           integration:
             type: string
-          integration_tracker:
+          integration_id:
             type: string
           type:
             type: string
@@ -2968,7 +2968,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3040,7 +3040,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3070,7 +3070,7 @@ definitions:
             type: string
           integration:
             type: string
-          integration_tracker:
+          integration_id:
             type: string
           type:
             type: string
@@ -3093,7 +3093,7 @@ definitions:
         type: string
       integration:
         type: string
-      integration_tracker:
+      integration_id:
         type: string
     type: object
   github_com_opengovern_opengovernance_pkg_describe_api.Job:
@@ -3196,7 +3196,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3232,7 +3232,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3301,7 +3301,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3389,7 +3389,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3422,7 +3422,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -3463,7 +3463,7 @@ definitions:
               type: string
             integration:
               type: string
-            integration_tracker:
+            integration_id:
               type: string
             type:
               type: string
@@ -4647,10 +4647,10 @@ definitions:
       onboardDate:
         example: "2023-05-07T00:00:00Z"
         type: string
-      providerConnectionID:
+      providerID:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
-      providerConnectionName:
+      integrationName:
         example: example-connection
         type: string
       resourceCount:
@@ -5023,7 +5023,7 @@ definitions:
         type: string
       integration_name:
         type: string
-      integration_tracker:
+      integration_id:
         type: string
       integration_type:
         type: string
@@ -5189,10 +5189,10 @@ definitions:
       onboardDate:
         example: "2023-05-07T00:00:00Z"
         type: string
-      providerConnectionID:
+      providerID:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
-      providerConnectionName:
+      integrationName:
         example: example-connection
         type: string
       resourceCount:
@@ -12454,7 +12454,7 @@ paths:
         in: query
         items:
           type: string
-        name: integration_tracker
+        name: integration_id
         type: array
       - description: name regex
         in: query

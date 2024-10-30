@@ -19,12 +19,12 @@ const (
 )
 
 type Integration struct {
-	IntegrationTracker uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
-	IntegrationID      string    `gorm:"index:idx_type_integrationid,unique"`
-	IntegrationName    string
-	IntegrationType    integration.Type
-	Annotations        pgtype.JSONB
-	Labels             pgtype.JSONB
+	IntegrationID   uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
+	ProviderID      string
+	Name            string
+	IntegrationType integration.Type
+	Annotations     pgtype.JSONB
+	Labels          pgtype.JSONB
 
 	CredentialID uuid.UUID `gorm:"not null"` // Foreign key to Credential
 
@@ -98,14 +98,14 @@ func (i *Integration) ToApi() (*api.Integration, error) {
 	}
 
 	return &api.Integration{
-		IntegrationTracker: i.IntegrationTracker.String(),
-		IntegrationName:    i.IntegrationName,
-		IntegrationID:      i.IntegrationID,
-		IntegrationType:    i.IntegrationType,
-		CredentialID:       i.CredentialID.String(),
-		State:              i.State,
-		LastCheck:          i.LastCheck,
-		Labels:             labels,
-		Annotations:        annotations,
+		IntegrationID:   i.IntegrationID.String(),
+		Name:            i.Name,
+		ProviderID:      i.ProviderID,
+		IntegrationType: i.IntegrationType,
+		CredentialID:    i.CredentialID.String(),
+		State:           i.State,
+		LastCheck:       i.LastCheck,
+		Labels:          labels,
+		Annotations:     annotations,
 	}, nil
 }

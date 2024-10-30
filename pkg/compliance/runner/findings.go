@@ -14,12 +14,12 @@ import (
 	"strconv"
 )
 
-func GetResourceTypeFromTableName(tableName string, queryConnector []source.Type) (string, source.Type) {
-	var connector source.Type
+func GetResourceTypeFromTableName(tableName string, queryConnector []string) (string, source.Type) {
+	var connector string
 	if len(queryConnector) == 1 {
 		connector = queryConnector[0]
 	} else {
-		connector = source.Nil
+		connector = ""
 	}
 	switch connector {
 	case source.CloudAWS:
@@ -49,7 +49,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			tableName = query.ListOfTables[0]
 		}
 		if tableName != "" {
-			queryResourceType, connector = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.Connector)
+			queryResourceType, connector = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.IntegrationType)
 		}
 	}
 

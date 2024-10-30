@@ -39,8 +39,8 @@ type ConnectionCountRequest struct {
 
 type Connection struct {
 	ID                   uuid.UUID                       `json:"id" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionID         string                          `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionName       string                          `json:"providerConnectionName" example:"example-connection"`
+	ConnectionID         string                          `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ConnectionName       string                          `json:"integrationName" example:"example-connection"`
 	Email                string                          `json:"email" example:"johndoe@example.com"`
 	Connector            source.Type                     `json:"connector" example:"Azure"`
 	Description          string                          `json:"description" example:"This is an example connection"`

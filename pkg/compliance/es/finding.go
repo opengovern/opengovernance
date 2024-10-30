@@ -9,8 +9,6 @@ import (
 	"go.uber.org/zap"
 	"time"
 
-	"github.com/opengovern/og-util/pkg/source"
-
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
@@ -96,7 +94,7 @@ type FindingsCountQueryHit struct {
 	} `json:"aggregations"`
 }
 
-func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
+func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
 	idx := types.FindingsIndex
 	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
@@ -131,12 +129,8 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client op
 	if len(notConnectionID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
-	if len(provider) > 0 {
-		var connectors []string
-		for _, p := range provider {
-			connectors = append(connectors, p.String())
-		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+	if len(integrationTypes) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
@@ -221,7 +215,7 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client op
 	return controlIDCount, nil
 }
 
-func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, provider []source.Type,
+func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string,
 	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus,
@@ -231,9 +225,9 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernanc
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
 		switch {
-		case sort.Connector != nil:
+		case sort.IntegrationType != nil:
 			requestSort = append(requestSort, map[string]any{
-				"connector": *sort.Connector,
+				"integrationType": *sort.IntegrationType,
 			})
 		case sort.OpenGovernanceResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -355,12 +349,8 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernanc
 	if len(notConnectionID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
-	if len(provider) > 0 {
-		var connectors []string
-		for _, p := range provider {
-			connectors = append(connectors, p.String())
-		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+	if len(integrationTypes) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
@@ -505,7 +495,7 @@ type FindingFiltersAggregationResponse struct {
 	Aggregations struct {
 		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
-		ConnectorFilter          AggregationResult `json:"connector_filter"`
+		IntegrationTypeFilter    AggregationResult `json:"integration_type_filter"`
 		ConnectionIDFilter       AggregationResult `json:"connection_id_filter"`
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
@@ -523,7 +513,7 @@ type FindingFiltersAggregationResponse struct {
 }
 
 func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	resourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
+	resourceIDs []string, integrationTypes []string, connectionID []string, notConnectionID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
@@ -564,12 +554,8 @@ func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengo
 	if len(notConnectionID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
-	if len(connector) > 0 {
-		var connectors []string
-		for _, p := range connector {
-			connectors = append(connectors, p.String())
-		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+	if len(integrationTypes) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
@@ -609,7 +595,7 @@ func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengo
 	root["size"] = 0
 
 	aggs := map[string]any{
-		"connector_filter":           map[string]any{"terms": map[string]any{"field": "connector", "size": 1000}},
+		"integration_type_filter":    map[string]any{"terms": map[string]any{"field": "integrationType", "size": 1000}},
 		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceType", "size": 1000}},
 		"connection_id_filter":       map[string]any{"terms": map[string]any{"field": "connectionID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},
@@ -733,7 +719,7 @@ type FindingsTopFieldResponse struct {
 }
 
 func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
+	field string, integrationTypes []string, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
 	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
 	size int, startTime, endTime *time.Time) (*FindingsTopFieldResponse, error) {
 	filters := make([]map[string]any, 0)
@@ -811,14 +797,10 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client openg
 		})
 	}
 
-	if len(connectors) > 0 {
-		var connectorsStr []string
-		for _, c := range connectors {
-			connectorsStr = append(connectorsStr, c.String())
-		}
+	if len(integrationTypes) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{
-				"connector": connectorsStr,
+				"integrationType": integrationTypes,
 			},
 		})
 	}
@@ -1017,7 +999,7 @@ type FindingsFieldCountByControlResponse struct {
 }
 
 func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
+	field string, integrationTypes []string, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
@@ -1045,8 +1027,8 @@ func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client
 		terms["resourceType"] = resourceTypeID
 	}
 
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
+	if len(integrationTypes) > 0 {
+		terms["integrationType"] = integrationTypes
 	}
 
 	terms["stateActive"] = []bool{true}
@@ -1134,7 +1116,7 @@ type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
 }
 
 func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	connectors []source.Type, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
+	integrationTypes []string, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
 	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
 	terms := make(map[string]any)
 	idx := types.FindingsIndex
@@ -1162,8 +1144,8 @@ func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, l
 		terms["resourceType"] = resourceTypeID
 	}
 
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
+	if len(integrationTypes) > 0 {
+		terms["integrationType"] = integrationTypes
 	}
 
 	terms["stateActive"] = []bool{true}
@@ -1442,7 +1424,7 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client opengovern
 }
 
 func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, notResourceIDs []string,
-	provider []source.Type, connectionID []string, notConnectionID []string, resourceTypes []string, notResourceTypes []string,
+	integrationTypes []string, connectionID []string, notConnectionID []string, resourceTypes []string, notResourceTypes []string,
 	benchmarkID []string, notBenchmarkID []string, controlID []string, notControlID []string, severity []types.FindingSeverity,
 	notSeverity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, notLastTransitionFrom *time.Time,
 	notLastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool,
@@ -1576,12 +1558,8 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client opengoverna
 	if len(notConnectionID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
 	}
-	if len(provider) > 0 {
-		var connectors []string
-		for _, p := range provider {
-			connectors = append(connectors, p.String())
-		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+	if len(integrationTypes) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)

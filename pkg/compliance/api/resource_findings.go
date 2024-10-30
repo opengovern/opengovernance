@@ -25,9 +25,9 @@ type ResourceFinding struct {
 
 	SortKey []any `json:"sortKey"`
 
-	ConnectionID           string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`           // Connection ID
-	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
-	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ConnectionID         string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`    // Connection ID
+	ProviderConnectionID string `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`      // Connection ID
+	IntegrationName      string `json:"integrationName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 }
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
@@ -61,7 +61,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 	if len(connectionIds) > 1 {
 		apiRf.ConnectionID = "Global (Multiple)"
 		apiRf.ProviderConnectionID = "Global (Multiple)"
-		apiRf.ProviderConnectionName = "Global (Multiple)"
+		apiRf.IntegrationName = "Global (Multiple)"
 	}
 
 	return apiRf

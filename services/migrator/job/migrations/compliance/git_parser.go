@@ -307,7 +307,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
-			Connector:         connectors,
+			IntegrationType:   connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
@@ -363,11 +363,11 @@ func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []stri
 	connectorMap := make(map[string]bool)
 
 	for idx, benchmark := range benchmarks {
-		if benchmark.Connector == nil {
-			benchmark.Children, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
+		if benchmark.IntegrationType == nil {
+			benchmark.Children, benchmark.IntegrationType = fillBenchmarksConnectors(benchmark.Children)
 			benchmarks[idx] = benchmark
 		}
-		for _, c := range benchmark.Connector {
+		for _, c := range benchmark.IntegrationType {
 			if _, ok := connectorMap[c]; !ok {
 				connectors = append(connectors, c)
 				connectorMap[c] = true

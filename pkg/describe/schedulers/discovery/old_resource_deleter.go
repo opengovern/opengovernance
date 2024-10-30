@@ -49,7 +49,7 @@ func (s *Scheduler) runDeleter(ctx context.Context) error {
 			if job == nil || job.Status != api.DescribeResourceJobOldResourceDeletion {
 				continue
 			}
-			s.logger.Info("deleting resources", zap.String("task", task.ID), zap.Uint("job", job.ID), zap.String("IntegrationTracker", job.IntegrationTracker), zap.String("resourceType", task.Source.ResourceType))
+			s.logger.Info("deleting resources", zap.String("task", task.ID), zap.Uint("job", job.ID), zap.String("IntegrationID", job.IntegrationID), zap.String("resourceType", task.Source.ResourceType))
 			for _, resource := range task.Source.DeletingResources {
 				err = s.esClient.Delete(string(resource.Key), resource.Index)
 				if err != nil {

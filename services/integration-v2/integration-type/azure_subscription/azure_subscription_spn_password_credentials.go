@@ -117,12 +117,12 @@ func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integrati
 			name = *sub.SubModel.DisplayName
 		}
 		integrations = append(integrations, models.Integration{
-			IntegrationTracker: uuid.New(),
-			IntegrationID:      sub.SubscriptionID,
-			IntegrationName:    name,
-			Connector:          "Azure",
-			IntegrationType:    "azure_subscription",
-			OnboardDate:        time.Now(),
+			IntegrationID:   uuid.New(),
+			ProviderID:      sub.SubscriptionID,
+			Name:            name,
+			Connector:       "Azure",
+			IntegrationType: "azure_subscription",
+			OnboardDate:     time.Now(),
 		})
 	}
 	return integrations, nil

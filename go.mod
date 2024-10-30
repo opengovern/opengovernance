@@ -50,7 +50,7 @@ require (
 	github.com/open-policy-agent/opa v0.69.0
 	github.com/opengovern/og-aws-describer v0.59.8
 	github.com/opengovern/og-azure-describer v0.37.8
-	github.com/opengovern/og-util v1.0.6-0.20241029135834-e80ab4603aaa
+	github.com/opengovern/og-util v1.0.6-0.20241030160928-52aac6bf0f8b
 	github.com/opengovern/plugin-aws v0.7.3
 	github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b
 	github.com/opengovern/plugin-kubernetes-internal v0.18.12

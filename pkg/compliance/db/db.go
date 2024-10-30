@@ -713,8 +713,8 @@ func (db Database) CleanupAllBenchmarkAssignments() error {
 
 func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *BenchmarkAssignment) error {
 	tx := db.Orm.WithContext(ctx).Where(BenchmarkAssignment{
-		BenchmarkId:  assignment.BenchmarkId,
-		ConnectionId: assignment.ConnectionId,
+		BenchmarkId:   assignment.BenchmarkId,
+		IntegrationID: assignment.IntegrationID,
 	}).FirstOrCreate(assignment)
 
 	if tx.Error != nil {
@@ -727,7 +727,7 @@ func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *Bench
 func (db Database) GetBenchmarkAssignmentsByConnectionId(ctx context.Context, connectionId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
 	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).
-		Where(BenchmarkAssignment{ConnectionId: &connectionId}).
+		Where(BenchmarkAssignment{IntegrationID: &connectionId}).
 		Where("resource_collection IS NULL").Scan(&s)
 
 	if tx.Error != nil {
@@ -779,7 +779,7 @@ func (db Database) GetBenchmarkAssignmentByIds(ctx context.Context, benchmarkId 
 	var s BenchmarkAssignment
 	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
-		ConnectionId:       connectionId,
+		IntegrationID:      connectionId,
 		ResourceCollection: resourceCollectionId,
 	}).Scan(&s)
 
@@ -807,7 +807,7 @@ func (db Database) GetBenchmarkAssignmentsCount() ([]BenchmarkAssignmentsCount, 
 func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) error {
 	tx := db.Orm.WithContext(ctx).Unscoped().Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
-		ConnectionId:       connectionId,
+		IntegrationID:      connectionId,
 		ResourceCollection: resourceCollectionId,
 	}).Delete(&BenchmarkAssignment{})
 

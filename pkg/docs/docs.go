@@ -7200,7 +7200,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "integration tracker",
-                        "name": "integration_tracker",
+                        "name": "integration_id",
                         "in": "query"
                     },
                     {
@@ -9862,12 +9862,12 @@ const docTemplate = `{
                     ],
                     "example": "Azure"
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "description": "Provider Connection ID",
                     "type": "string",
                     "example": "1283192749"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "description": "Provider Connection Name",
                     "type": "string"
                 },
@@ -10842,12 +10842,12 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -10952,11 +10952,11 @@ const docTemplate = `{
                 "previousStateActive": {
                     "type": "boolean"
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
@@ -12226,7 +12226,7 @@ const docTemplate = `{
                 "integration": {
                     "type": "string"
                 },
-                "integration_tracker": {
+                "integration_id": {
                     "type": "string"
                 }
             }
@@ -12260,7 +12260,7 @@ const docTemplate = `{
                 "integration": {
                     "type": "string"
                 },
-                "integration_tracker": {
+                "integration_id": {
                     "type": "string"
                 },
                 "type": {
@@ -12280,7 +12280,7 @@ const docTemplate = `{
                 "integration": {
                     "type": "string"
                 },
-                "integration_tracker": {
+                "integration_id": {
                     "type": "string"
                 }
             }
@@ -12730,12 +12730,12 @@ const docTemplate = `{
                 "opengovernanceResourceID": {
                     "type": "string"
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -13090,7 +13090,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -13150,7 +13150,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -13391,7 +13391,7 @@ const docTemplate = `{
                         "integration": {
                             "type": "string"
                         },
-                        "integration_tracker": {
+                        "integration_id": {
                             "type": "string"
                         },
                         "type": {
@@ -13523,7 +13523,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -13633,7 +13633,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -13679,7 +13679,7 @@ const docTemplate = `{
                         "integration": {
                             "type": "string"
                         },
-                        "integration_tracker": {
+                        "integration_id": {
                             "type": "string"
                         },
                         "type": {
@@ -13715,7 +13715,7 @@ const docTemplate = `{
                 "integration": {
                     "type": "string"
                 },
-                "integration_tracker": {
+                "integration_id": {
                     "type": "string"
                 }
             }
@@ -13871,7 +13871,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -13926,7 +13926,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -14032,7 +14032,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -14167,7 +14167,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -14218,7 +14218,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -14281,7 +14281,7 @@ const docTemplate = `{
                             "integration": {
                                 "type": "string"
                             },
-                            "integration_tracker": {
+                            "integration_id": {
                                 "type": "string"
                             },
                             "type": {
@@ -15981,11 +15981,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-05-07T00:00:00Z"
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "type": "string",
                     "example": "example-connection"
                 },
@@ -16520,7 +16520,7 @@ const docTemplate = `{
                 "integration_name": {
                     "type": "string"
                 },
-                "integration_tracker": {
+                "integration_id": {
                     "type": "string"
                 },
                 "integration_type": {
@@ -16765,11 +16765,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-05-07T00:00:00Z"
                 },
-                "providerConnectionID": {
+                "providerID": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "providerConnectionName": {
+                "integrationName": {
                     "type": "string",
                     "example": "example-connection"
                 },

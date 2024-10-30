@@ -163,7 +163,7 @@ func (db Database) ListSourcesByFilters(connector, providerNameRegex, providerId
 	return s, nil
 }
 
-func (db Database) ListIntegrationsFiltered(integrationTracker, connector []string, nameRegex, idRegex string, healthState source.HealthStatus) ([]model.Connection, error) {
+func (db Database) ListIntegrationsFiltered(IntegrationID, connector []string, nameRegex, idRegex string, healthState source.HealthStatus) ([]model.Connection, error) {
 	var s []model.Connection
 	tx := db.Orm.Model(&model.Connection{})
 
@@ -179,8 +179,8 @@ func (db Database) ListIntegrationsFiltered(integrationTracker, connector []stri
 	if healthState != "" {
 		tx = tx.Where("health_state = ?", healthState)
 	}
-	if len(integrationTracker) > 0 {
-		tx = tx.Where("id IN ?", integrationTracker)
+	if len(IntegrationID) > 0 {
+		tx = tx.Where("id IN ?", IntegrationID)
 	}
 
 	tx = tx.Find(&s)

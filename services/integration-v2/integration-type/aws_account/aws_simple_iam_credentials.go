@@ -93,12 +93,12 @@ func (c *AWSSimpleIAMCredentials) DiscoverIntegrations() ([]models.Integration, 
 			id = *acc.Id
 		}
 		integrations = append(integrations, models.Integration{
-			IntegrationTracker: uuid.New(),
-			IntegrationID:      id,
-			IntegrationName:    name,
-			Connector:          "AWS",
-			IntegrationType:    "aws_account",
-			OnboardDate:        time.Now(),
+			IntegrationID:   uuid.New(),
+			ProviderID:      id,
+			Name:            name,
+			Connector:       "AWS",
+			IntegrationType: "aws_account",
+			OnboardDate:     time.Now(),
 		})
 	}
 	return integrations, nil

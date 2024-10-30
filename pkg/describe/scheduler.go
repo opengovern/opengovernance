@@ -566,7 +566,7 @@ func (s *Scheduler) RunRemoveResourcesConnectionJobsCleanup() {
 		}
 
 		for _, j := range jobs {
-			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.IntegrationTracker, j.ResourceType)
+			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.IntegrationID, j.ResourceType)
 			if err != nil {
 				s.logger.Error("Failed to remove old resources", zap.Error(err))
 				continue

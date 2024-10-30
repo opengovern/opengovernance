@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/source"
 )
 
@@ -19,15 +20,15 @@ type FindingEvent struct {
 	EvaluatedAt               int64             `json:"evaluatedAt"`
 	Reason                    string            `json:"reason"`
 
-	BenchmarkID               string          `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string          `json:"controlID" example:"azure_cis_v140_7_5"`
-	ConnectionID              string          `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	Connector                 source.Type     `json:"connector" example:"Azure"`
-	Severity                  FindingSeverity `json:"severity" example:"low"`
-	OpenGovernanceResourceID  string          `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string          `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType              string          `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	ParentBenchmarkReferences []string        `json:"parentBenchmarkReferences"`
+	BenchmarkID               string           `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID                 string           `json:"controlID" example:"azure_cis_v140_7_5"`
+	ConnectionID              string           `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationType           integration.Type `json:"integrationType" example:"Azure"`
+	Severity                  FindingSeverity  `json:"severity" example:"low"`
+	OpenGovernanceResourceID  string           `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID                string           `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType              string           `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	ParentBenchmarkReferences []string         `json:"parentBenchmarkReferences"`
 }
 
 func (r FindingEvent) KeysAndIndex() ([]string, string) {
@@ -50,7 +51,7 @@ type Finding struct {
 	ConformanceStatus        ConformanceStatus `json:"conformanceStatus" example:"alarm"`
 	Severity                 FindingSeverity   `json:"severity" example:"low"`
 	Evaluator                string            `json:"evaluator" example:"steampipe-v0.5"`
-	Connector                source.Type       `json:"connector" example:"Azure"`
+	IntegrationType          integration.Type  `json:"integrationType" example:"Azure"`
 	OpenGovernanceResourceID string            `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID               string            `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceName             string            `json:"resourceName" example:"vm-1"`
@@ -95,7 +96,7 @@ type ResourceFinding struct {
 	ResourceType             string      `json:"resourceType"`
 	ResourceName             string      `json:"resourceName"`
 	ResourceLocation         string      `json:"resourceLocation"`
-	Connector                source.Type `json:"connector"`
+	IntegrationType          source.Type `json:"integrationType"`
 
 	//ConformanceStatusPerSeverity ConformanceStatusPerSeverity `json:"conformanceStatusPerSeverity"`
 	Findings []Finding `json:"findings"`

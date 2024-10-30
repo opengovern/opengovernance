@@ -182,30 +182,30 @@ type GetAnalyticsJobsHistoryResponse struct {
 
 type RunBenchmarkByIdRequest struct {
 	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
+		IntegrationType *string `json:"integration_type"`
+		ProviderID      *string `json:"provider_id"`
+		Name            *string `json:"name"`
+		IntegrationID   *string `json:"integration_id"`
 	} `json:"integration_info"`
 }
 
 type RunBenchmarkRequest struct {
-	BenchmarkIds    []string `json:"benchmark_ids"`
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
+	BenchmarkIds    []string                `json:"benchmark_ids"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
 }
 
 type IntegrationInfo struct {
-	Integration        string `json:"integration"`
-	ID                 string `json:"id"`
-	IDName             string `json:"id_name"`
-	IntegrationTracker string `json:"integration_tracker"`
+	IntegrationType string `json:"integration_type"`
+	ProviderID      string `json:"provider_id"`
+	Name            string `json:"name"`
+	IntegrationID   string `json:"integration_id"`
+}
+
+type IntegrationInfoFilter struct {
+	IntegrationType string `json:"integration_type"`
+	ProviderID      string `json:"provider_id"`
+	Name            string `json:"name"`
+	IntegrationID   string `json:"integration_id"`
 }
 
 type RunBenchmarkItem struct {
@@ -219,15 +219,9 @@ type RunBenchmarkResponse struct {
 }
 
 type RunDiscoveryRequest struct {
-	ResourceTypes   []string `json:"resource_types"`
-	ForceFull       bool     `json:"force_full"` // force full discovery. only matters if ResourceTypes is empty
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
+	ResourceTypes   []string                `json:"resource_types"`
+	ForceFull       bool                    `json:"force_full"` // force full discovery. only matters if ResourceTypes is empty
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
 }
 
 type RunDiscoveryJob struct {
@@ -279,114 +273,72 @@ type GetAsyncQueryRunJobStatusResponse struct {
 }
 
 type ListDescribeJobsRequest struct {
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	ResourceType  []string   `json:"resource_type"`
-	DiscoveryType []string   `json:"discovery_type"`
-	JobStatus     []string   `json:"job_status"`
-	StartTime     time.Time  `json:"start_time"`
-	EndTime       *time.Time `json:"end_time"`
-	SortBy        *string    `json:"sort_by"`
-	Cursor        *int64     `json:"cursor"`
-	PerPage       *int64     `json:"per_page"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	ResourceType    []string                `json:"resource_type"`
+	DiscoveryType   []string                `json:"discovery_type"`
+	JobStatus       []string                `json:"job_status"`
+	StartTime       time.Time               `json:"start_time"`
+	EndTime         *time.Time              `json:"end_time"`
+	SortBy          *string                 `json:"sort_by"`
+	Cursor          *int64                  `json:"cursor"`
+	PerPage         *int64                  `json:"per_page"`
 }
 
 type ListComplianceJobsRequest struct {
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	BenchmarkId []string   `json:"benchmark_id"`
-	JobStatus   []string   `json:"job_status"`
-	StartTime   time.Time  `json:"start_time"`
-	EndTime     *time.Time `json:"end_time"`
-	SortBy      *string    `json:"sort_by"`
-	Cursor      *int64     `json:"cursor"`
-	PerPage     *int64     `json:"per_page"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	BenchmarkId     []string                `json:"benchmark_id"`
+	JobStatus       []string                `json:"job_status"`
+	StartTime       time.Time               `json:"start_time"`
+	EndTime         *time.Time              `json:"end_time"`
+	SortBy          *string                 `json:"sort_by"`
+	Cursor          *int64                  `json:"cursor"`
+	PerPage         *int64                  `json:"per_page"`
 }
 
 type BenchmarkAuditHistoryRequest struct {
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	JobStatus []string   `json:"job_status"`
-	Interval  *string    `json:"interval"`
-	StartTime time.Time  `json:"start_time"`
-	EndTime   *time.Time `json:"end_time"`
-	SortBy    *string    `json:"sort_by"`
-	Cursor    *int64     `json:"cursor"`
-	PerPage   *int64     `json:"per_page"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	JobStatus       []string                `json:"job_status"`
+	Interval        *string                 `json:"interval"`
+	StartTime       time.Time               `json:"start_time"`
+	EndTime         *time.Time              `json:"end_time"`
+	SortBy          *string                 `json:"sort_by"`
+	Cursor          *int64                  `json:"cursor"`
+	PerPage         *int64                  `json:"per_page"`
 }
 
 type GetIntegrationLastDiscoveryJobRequest struct {
-	IntegrationInfo struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
+	IntegrationInfo IntegrationInfoFilter `json:"integration_info"`
 }
 
 type GetDescribeJobsHistoryByIntegrationRequest struct {
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	ResourceType  []string   `json:"resource_type"`
-	DiscoveryType []string   `json:"discovery_type"`
-	JobStatus     []string   `json:"job_status"`
-	StartTime     time.Time  `json:"start_time"`
-	EndTime       *time.Time `json:"end_time"`
-	SortBy        *string    `json:"sort_by"`
-	Cursor        *int64     `json:"cursor"`
-	PerPage       *int64     `json:"per_page"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	ResourceType    []string                `json:"resource_type"`
+	DiscoveryType   []string                `json:"discovery_type"`
+	JobStatus       []string                `json:"job_status"`
+	StartTime       time.Time               `json:"start_time"`
+	EndTime         *time.Time              `json:"end_time"`
+	SortBy          *string                 `json:"sort_by"`
+	Cursor          *int64                  `json:"cursor"`
+	PerPage         *int64                  `json:"per_page"`
 }
 
 type GetComplianceJobsHistoryByIntegrationRequest struct {
-	IntegrationInfo struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	BenchmarkId []string   `json:"benchmark_id"`
-	JobStatus   []string   `json:"job_status"`
-	StartTime   time.Time  `json:"start_time"`
-	EndTime     *time.Time `json:"end_time"`
-	SortBy      *string    `json:"sort_by"`
-	Cursor      *int64     `json:"cursor"`
-	PerPage     *int64     `json:"per_page"`
+	IntegrationInfo IntegrationInfoFilter `json:"integration_info"`
+	BenchmarkId     []string              `json:"benchmark_id"`
+	JobStatus       []string              `json:"job_status"`
+	StartTime       time.Time             `json:"start_time"`
+	EndTime         *time.Time            `json:"end_time"`
+	SortBy          *string               `json:"sort_by"`
+	Cursor          *int64                `json:"cursor"`
+	PerPage         *int64                `json:"per_page"`
 }
 
 type CancelJobRequest struct {
-	JobType         string   `json:"job_type"`
-	Selector        string   `json:"selector"`
-	JobId           []string `json:"job_id"`
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	Status []string `json:"status"`
+	JobType         string                  `json:"job_type"`
+	Selector        string                  `json:"selector"`
+	JobId           []string                `json:"job_id"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	Status          []string                `json:"status"`
 }
 
 type CancelJobResponse struct {
@@ -397,21 +349,15 @@ type CancelJobResponse struct {
 }
 
 type ListJobsByTypeRequest struct {
-	JobType         string   `json:"job_type"`
-	Selector        string   `json:"selector"`
-	JobId           []string `json:"job_id"`
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	Status    []string     `json:"status"`
-	Benchmark []string     `json:"benchmark"`
-	SortBy    JobSort      `json:"sort_by"`
-	SortOrder JobSortOrder `json:"sort_order"`
-	UpdatedAt struct {
+	JobType         string                  `json:"job_type"`
+	Selector        string                  `json:"selector"`
+	JobId           []string                `json:"job_id"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	Status          []string                `json:"status"`
+	Benchmark       []string                `json:"benchmark"`
+	SortBy          JobSort                 `json:"sort_by"`
+	SortOrder       JobSortOrder            `json:"sort_order"`
+	UpdatedAt       struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	} `json:"updated_at"`
@@ -467,14 +413,8 @@ type RunQueryResponse struct {
 }
 
 type GetIntegrationDiscoveryProgressRequest struct {
-	IntegrationInfo []struct {
-		Integration        *string `json:"integration"`
-		Type               *string `json:"type"`
-		ID                 *string `json:"id"`
-		IDName             *string `json:"id_name"`
-		IntegrationTracker *string `json:"integration_tracker"`
-	} `json:"integration_info"`
-	TriggerID string `json:"trigger_id"`
+	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	TriggerID       string                  `json:"trigger_id"`
 }
 
 type DiscoveryProgressStatusBreakdown struct {

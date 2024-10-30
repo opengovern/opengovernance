@@ -131,17 +131,17 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	integrationsMap := map[string]*apiIntegration.Integration{}
 	for _, dc := range dcs {
 		var integration *apiIntegration.Integration
-		if v, ok := integrationsMap[dc.IntegrationTracker]; ok {
+		if v, ok := integrationsMap[dc.IntegrationID]; ok {
 			integration = v
 		} else {
-			integration, err = s.integrationClient.GetIntegration(&httpclient.Context{UserRole: apiAuth.AdminRole}, dc.IntegrationTracker) // TODO: change service
+			integration, err = s.integrationClient.GetIntegration(&httpclient.Context{UserRole: apiAuth.AdminRole}, dc.IntegrationID) // TODO: change service
 			if err != nil {
 				s.logger.Error("failed to get integration", zap.String("spot", "GetIntegrationByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
 				DescribeResourceJobsCount.WithLabelValues("failure", "get_integration").Inc()
 				return err
 			}
 
-			integrationsMap[dc.IntegrationTracker] = integration
+			integrationsMap[dc.IntegrationID] = integration
 		}
 
 		credential, err := s.integrationClient.GetCredential(&httpclient.Context{UserRole: apiAuth.AdminRole}, integration.CredentialID)
@@ -203,7 +203,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	}
 
 	for _, integration := range integrations.Integrations {
-		s.logger.Info("running describe job scheduler for connection", zap.String("integrationTracker", integration.IntegrationTracker))
+		s.logger.Info("running describe job scheduler for connection", zap.String("IntegrationID", integration.IntegrationID))
 		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
 		if err != nil {
 			s.logger.Error("failed to get integration type", zap.String("integrationType", string(integration.IntegrationType)),
@@ -218,13 +218,13 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 		}
 
 		s.logger.Info("running describe job scheduler for connection for number of resource types",
-			zap.String("integration_tracker", integration.IntegrationTracker),
+			zap.String("integration_id", integration.IntegrationID),
 			zap.String("integration_type", string(integration.IntegrationType)),
 			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
 		for _, resourceType := range resourceTypes {
 			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
 			if err != nil {
-				s.logger.Error("failed to describe connection", zap.String("integration_tracker", integration.IntegrationTracker), zap.String("resource_type", resourceType), zap.Error(err))
+				s.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.String("resource_type", resourceType), zap.Error(err))
 			}
 		}
 	}
@@ -285,9 +285,9 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 		return nil, fmt.Errorf("invalid resource type for integration type: %s - %s", resourceType, integration.IntegrationType)
 	}
 
-	job, err := s.db.GetLastDescribeConnectionJob(integration.IntegrationTracker, resourceType)
+	job, err := s.db.GetLastDescribeConnectionJob(integration.IntegrationID, resourceType)
 	if err != nil {
-		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("integration_tracker", integration.IntegrationTracker), zap.Error(err))
+		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}
@@ -313,9 +313,9 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 	if integration.LastCheck.Before(time.Now().Add(-1 * 24 * time.Hour)) {
 		healthCheckedSrc, err := s.integrationClient.IntegrationHealthcheck(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
-		}, integration.IntegrationTracker)
+		}, integration.IntegrationID)
 		if err != nil {
-			s.logger.Error("failed to get source healthcheck", zap.String("resource_type", resourceType), zap.String("integration_tracker", integration.IntegrationTracker), zap.Error(err))
+			s.logger.Error("failed to get source healthcheck", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return nil, err
 		}
@@ -334,14 +334,14 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 	if costFullDiscovery {
 		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
-	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("integrationTracker", integration.IntegrationTracker), zap.String("resourceType", resourceType))
+	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("IntegrationID", integration.IntegrationID), zap.String("resourceType", resourceType))
 	daj := newDescribeConnectionJob(integration, resourceType, triggerType, parentId, createdBy)
 	if removeResources {
 		daj.Status = apiDescribe.DescribeResourceJobRemovingResources
 	}
 	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
-		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("integration_tracker", integration.IntegrationTracker), zap.Error(err))
+		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}
@@ -353,14 +353,14 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 func newDescribeConnectionJob(a apiIntegration.Integration, resourceType string, triggerType enums.DescribeTriggerType,
 	parentId *uint, createdBy string) model.DescribeConnectionJob {
 	return model.DescribeConnectionJob{
-		CreatedBy:          createdBy,
-		ParentID:           parentId,
-		IntegrationTracker: a.IntegrationTracker,
-		IntegrationType:    a.IntegrationType,
-		IntegrationID:      a.IntegrationID,
-		TriggerType:        triggerType,
-		ResourceType:       resourceType,
-		Status:             apiDescribe.DescribeResourceJobCreated,
+		CreatedBy:       createdBy,
+		ParentID:        parentId,
+		IntegrationID:   a.IntegrationID,
+		IntegrationType: a.IntegrationType,
+		ProviderID:      a.ProviderID,
+		TriggerType:     triggerType,
+		ResourceType:    resourceType,
+		Status:          apiDescribe.DescribeResourceJobCreated,
 	}
 }
 
@@ -376,8 +376,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("jobID", dc.ID),
-		zap.String("integrationTracker", dc.IntegrationTracker),
-		zap.String("integrationID", dc.IntegrationID),
+		zap.String("IntegrationID", dc.IntegrationID),
+		zap.String("ProviderID", dc.ProviderID),
 		zap.String("integrationType", string(dc.IntegrationType)),
 		zap.String("resourceType", dc.ResourceType),
 	)
@@ -394,8 +394,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		DescribeJob: describe.DescribeJob{
 			JobID:        dc.ID,
 			ResourceType: dc.ResourceType,
-			SourceID:     dc.IntegrationTracker,
-			AccountID:    dc.IntegrationID,
+			SourceID:     dc.IntegrationID,
+			AccountID:    dc.ProviderID,
 			DescribedAt:  dc.CreatedAt.UnixMilli(),
 			SourceType:   dc.IntegrationType,
 			CipherText:   cipherText,
@@ -407,7 +407,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
-			zap.String("integrationTracker", dc.IntegrationTracker),
+			zap.String("IntegrationID", dc.IntegrationID),
 			zap.String("resourceType", dc.ResourceType),
 			zap.Error(err),
 		)
@@ -419,7 +419,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),
-					zap.String("integrationTracker", dc.IntegrationTracker),
+					zap.String("IntegrationID", dc.IntegrationID),
 					zap.String("resourceType", dc.ResourceType),
 					zap.Error(err),
 				)
@@ -432,7 +432,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	input.DeliverEndpoint = s.describeDeliverLocalEndpoint
 	natsPayload, err := json.Marshal(input)
 	if err != nil {
-		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("integrationTracker", dc.IntegrationTracker), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("IntegrationID", dc.IntegrationID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
 		isFailed = true
 		return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 	}
@@ -455,7 +455,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			if err != nil {
 				s.logger.Error("failed to produce message to jetstream",
 					zap.Uint("jobID", dc.ID),
-					zap.String("integrationTracker", dc.IntegrationTracker),
+					zap.String("IntegrationID", dc.IntegrationID),
 					zap.String("resourceType", dc.ResourceType),
 					zap.Error(err),
 				)
@@ -465,7 +465,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		} else {
 			s.logger.Error("failed to produce message to jetstream",
 				zap.Uint("jobID", dc.ID),
-				zap.String("integrationTracker", dc.IntegrationTracker),
+				zap.String("IntegrationID", dc.IntegrationID),
 				zap.String("resourceType", dc.ResourceType),
 				zap.Error(err),
 				zap.String("error message", err.Error()),
@@ -486,7 +486,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 
 	s.logger.Info("successful job trigger",
 		zap.Uint("jobID", dc.ID),
-		zap.String("integrationTracker", dc.IntegrationTracker),
+		zap.String("IntegrationID", dc.IntegrationID),
 		zap.String("resourceType", dc.ResourceType),
 	)
 

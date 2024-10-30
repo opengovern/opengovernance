@@ -73,10 +73,10 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 				s.logger.Error("failed to get callers", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
-			var providerConnectionID *string
+			var providerID *string
 			if it.ConnectionID != nil && *it.ConnectionID != "" {
 				if _, ok := connectionsMap[*it.ConnectionID]; ok {
-					providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
+					providerID = &connectionsMap[*it.ConnectionID].ConnectionID
 				} else {
 					_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "connection does not exist")
 				}
@@ -90,7 +90,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 					Callers:              callers,
 					Query:                *query,
 					ConnectionID:         it.ConnectionID,
-					ProviderConnectionID: providerConnectionID,
+					ProviderConnectionID: providerID,
 				},
 			}
 

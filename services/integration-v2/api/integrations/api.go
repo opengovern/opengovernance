@@ -205,13 +205,13 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
 	}
 
-	integrationIDs := make(map[string]bool)
-	for _, i := range req.IntegrationIDs {
-		integrationIDs[i] = true
+	providerIDs := make(map[string]bool)
+	for _, i := range req.ProviderIDs {
+		providerIDs[i] = true
 	}
 
 	for _, i := range integrations {
-		if _, ok := integrationIDs[i.IntegrationID]; !ok {
+		if _, ok := providerIDs[i.ProviderID]; !ok {
 			continue
 		}
 
@@ -259,14 +259,14 @@ func (h API) AddIntegrations(c echo.Context) error {
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Router			/integration/api/v1/integrations/{integrationTracker}/healthcheck [post]
+//	@Router			/integration/api/v1/integrations/{IntegrationID}/healthcheck [post]
 func (h API) IntegrationHealthcheck(c echo.Context) error {
-	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))
+	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	integration, err := h.database.GetIntegration(integrationTracker)
+	integration, err := h.database.GetIntegration(IntegrationID)
 	if err != nil {
 		h.logger.Error("failed to get integration", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration")
@@ -344,15 +344,15 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200
-//	@Param			integrationTracker	path	string	true	"integrationTracker"
-//	@Router			/integration/api/v1/integrations/{integrationTracker} [delete]
+//	@Param			IntegrationID	path	string	true	"IntegrationID"
+//	@Router			/integration/api/v1/integrations/{IntegrationID} [delete]
 func (h API) Delete(c echo.Context) error {
-	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))
+	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	err = h.database.DeleteIntegration(integrationTracker)
+	err = h.database.DeleteIntegration(IntegrationID)
 	if err != nil {
 		h.logger.Error("failed to delete credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete credential")
@@ -417,7 +417,7 @@ func (h API) ListByFilters(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	integrations, err := h.database.ListIntegrationsByFilters(req.IntegrationTracker, req.IntegrationType, req.IntegrationNameRegex, req.IntegrationIDRegex)
+	integrations, err := h.database.ListIntegrationsByFilters(req.IntegrationID, req.IntegrationType, req.NameRegex, req.ProviderIDRegex)
 	if err != nil {
 		h.logger.Error("failed to list credentials", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
@@ -447,15 +447,15 @@ func (h API) ListByFilters(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200
-//	@Param			integrationTracker	path	string	true	"integrationTracker"
-//	@Router			/integration/api/v1/integrations/{integrationTracker} [get]
+//	@Param			IntegrationID	path	string	true	"IntegrationID"
+//	@Router			/integration/api/v1/integrations/{IntegrationID} [get]
 func (h API) Get(c echo.Context) error {
-	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))
+	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	integration, err := h.database.GetIntegration(integrationTracker)
+	integration, err := h.database.GetIntegration(IntegrationID)
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
@@ -481,7 +481,7 @@ func (h API) Get(c echo.Context) error {
 //	@Param			request			body	models.UpdateRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/{integrationId} [post]
 func (h API) Update(c echo.Context) error {
-	integrationTracker, err := uuid.Parse(c.Param("integrationTracker"))
+	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
@@ -492,7 +492,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	integration, err := h.database.GetIntegration(integrationTracker)
+	integration, err := h.database.GetIntegration(IntegrationID)
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
@@ -534,8 +534,8 @@ func (h API) Register(g *echo.Group) {
 	g.POST("/list", httpserver.AuthorizeHandler(h.ListByFilters, api.ViewerRole))
 	g.POST("/discover", httpserver.AuthorizeHandler(h.DiscoverIntegrations, api.EditorRole))
 	g.POST("/add", httpserver.AuthorizeHandler(h.AddIntegrations, api.EditorRole))
-	g.PUT("/:integrationTracker/healthcheck", httpserver.AuthorizeHandler(h.IntegrationHealthcheck, api.EditorRole))
-	g.DELETE("/:integrationTracker", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
-	g.GET("/:integrationTracker", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
-	g.POST("/:integrationTracker", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
+	g.PUT("/:IntegrationID/healthcheck", httpserver.AuthorizeHandler(h.IntegrationHealthcheck, api.EditorRole))
+	g.DELETE("/:IntegrationID", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
+	g.GET("/:IntegrationID", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
+	g.POST("/:IntegrationID", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
 }

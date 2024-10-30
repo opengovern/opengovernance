@@ -1,11 +1,9 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/types"
-	"strings"
 	"time"
-
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type BenchmarkAssignmentStatus string
@@ -27,11 +25,11 @@ type Benchmark struct {
 	AutoAssign        bool                `json:"autoAssign" example:"true"`                                                                                                                                                         // Whether the benchmark is auto assigned or not
 	TracksDriftEvents bool                `json:"tracksDriftEvents" example:"true"`                                                                                                                                                  // Whether the benchmark tracks drift events or not
 	Tags              map[string][]string `json:"tags" `                                                                                                                                                                             // Benchmark tags
-	Connectors        []source.Type       `json:"connectors" example:"[azure]"`                                                                                                                                                      // Benchmark connectors
-	Children          []string            `json:"children" example:"[azure_cis_v140_1, azure_cis_v140_2]"`                                                                                                                           // Benchmark children
-	Controls          []string            `json:"controls" example:"[azure_cis_v140_1_1, azure_cis_v140_1_2]"`                                                                                                                       // Benchmark controls
-	CreatedAt         time.Time           `json:"createdAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                          // Benchmark creation date
-	UpdatedAt         time.Time           `json:"updatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                          // Benchmark last update date
+	IntegrationTypes  []string            `json:"integrationTypes"`                                                                                                                                                                  // Benchmark connectors
+	Children          []string            `json:"children"`                                                                                                                                                                          // Benchmark children
+	Controls          []string            `json:"controls"`                                                                                                                                                                          // Benchmark controls
+	CreatedAt         time.Time           `json:"createdAt"`                                                                                                                                                                         // Benchmark creation date
+	UpdatedAt         time.Time           `json:"updatedAt"`                                                                                                                                                                         // Benchmark last update date
 }
 
 type NestedBenchmark struct {
@@ -45,7 +43,7 @@ type NestedBenchmark struct {
 	AutoAssign        bool                `json:"autoAssign" example:"true"`                                                                                                                                                         // Whether the benchmark is auto assigned or not
 	TracksDriftEvents bool                `json:"tracksDriftEvents" example:"true"`                                                                                                                                                  // Whether the benchmark tracks drift events or not
 	Tags              map[string][]string `json:"tags" `                                                                                                                                                                             // Benchmark tags
-	Connectors        []source.Type       `json:"connectors" example:"[azure]"`                                                                                                                                                      // Benchmark connectors
+	IntegrationTypes  []integration.Type  `json:"integrationTypes" example:"[azure]"`                                                                                                                                                // Benchmark connectors
 	Children          []NestedBenchmark   `json:"children" example:"[azure_cis_v140_1, azure_cis_v140_2]"`                                                                                                                           // Benchmark children
 	Controls          []string            `json:"controls" example:"[azure_cis_v140_1_1, azure_cis_v140_1_2]"`                                                                                                                       // Benchmark controls
 	CreatedAt         time.Time           `json:"createdAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                          // Benchmark creation date
@@ -177,7 +175,7 @@ type GetBenchmarkDetailsMetadata struct {
 	Description       string              `json:"description"`
 	Enabled           bool                `json:"enabled"`
 	TrackDriftEvents  bool                `json:"track_drift_events"`
-	Connectors        []source.Type       `json:"connectors"`
+	IntegrationTypes  []integration.Type  `json:"integration_types"`
 	NumberOfControls  int                 `json:"number_of_controls"`
 	SupportedControls []string            `json:"supported_controls"`
 	PrimaryTables     []string            `json:"primary_tables"`
@@ -231,7 +229,7 @@ type GetBenchmarkListMetadata struct {
 	ID                  string              `json:"id"`
 	Title               string              `json:"title"`
 	Description         string              `json:"description"`
-	Connectors          []source.Type       `json:"connectors"`
+	IntegrationType     []string            `json:"connectors"`
 	NumberOfControls    int                 `json:"number_of_controls"`
 	Enabled             bool                `json:"enabled"`
 	TrackDriftEvents    bool                `json:"track_drift_events"`
@@ -266,29 +264,17 @@ type GetBenchmarkAssignmentsItem struct {
 }
 
 type IntegrationInfo struct {
-	Integration        string `json:"integration"`
-	Type               string `json:"type"`
-	ID                 string `json:"id"`
-	IDName             string `json:"id_name"`
-	IntegrationTracker string `json:"integration_tracker"`
+	IntegrationType string  `json:"integration_type"`
+	ProviderID      *string `json:"provider_id"`
+	Name            *string `json:"name"`
+	IntegrationID   *string `json:"integration_id"`
 }
 
 type IntegrationFilter struct {
-	Integration        *string `json:"integration"`
-	ID                 *string `json:"id"`
-	IDName             *string `json:"id_name"`
-	IntegrationTracker *string `json:"integration_tracker"`
-}
-
-func GetTypeFromIntegration(integration string) string {
-	switch strings.ToLower(integration) {
-	case "aws":
-		return "aws_account"
-	case "azure":
-		return "azure_subscription"
-	default:
-		return ""
-	}
+	IntegrationType *string `json:"integration_type"`
+	ProviderID      *string `json:"provider_id"`
+	Name            *string `json:"name"`
+	IntegrationID   *string `json:"integration_id"`
 }
 
 type IntegrationFilterRequest struct {
@@ -345,7 +331,7 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	BenchmarkID                string                             `json:"benchmark_id"`
 	BenchmarkTitle             string                             `json:"benchmark_title"`
 	ComplianceScore            float64                            `json:"compliance_score"`
-	Connectors                 []source.Type                      `json:"connectors"` // Benchmark connectors
+	IntegrationTypes           []string                           `json:"connectors"` // Benchmark connectors
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
 	SeveritySummaryByIncidents types.SeverityResultV2             `json:"severity_summary_by_incidents"`

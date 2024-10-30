@@ -20,7 +20,7 @@ type DiscoverIntegrationResponse struct {
 type AddIntegrationsRequest struct {
 	IntegrationType integration.Type `json:"integration_type"`
 	CredentialType  string           `json:"credential_type"`
-	IntegrationIDs  []string         `json:"integration_ids"`
+	ProviderIDs     []string         `json:"provider_ids"`
 	CredentialID    string           `json:"credential_id"`
 }
 
@@ -29,16 +29,16 @@ type UpdateRequest struct {
 }
 
 type Integration struct {
-	IntegrationTracker string            `json:"integration_tracker"`
-	IntegrationID      string            `json:"integration_id"`
-	IntegrationName    string            `json:"integration_name"`
-	IntegrationType    integration.Type  `json:"integration_type"`
-	Annotations        map[string]string `json:"annotations"`
-	Labels             map[string]string `json:"labels"`
+	IntegrationID   string            `json:"integration_id"`
+	ProviderID      string            `json:"provider_id"`
+	Name            string            `json:"name"`
+	IntegrationType integration.Type  `json:"integration_type"`
+	Annotations     map[string]string `json:"annotations"`
+	Labels          map[string]string `json:"labels"`
 
 	CredentialID string `json:"credential_id"`
 
-	State     models.IntegrationState `json:"lifecycle"`
+	State     models.IntegrationState `json:"state"`
 	LastCheck *time.Time              `json:"last_check,omitempty"`
 }
 
@@ -48,8 +48,8 @@ type ListIntegrationsResponse struct {
 }
 
 type ListIntegrationsRequest struct {
-	IntegrationTracker   []string `json:"integration_tracker"`
-	IntegrationType      []string `json:"integration_type"`
-	IntegrationIDRegex   *string  `json:"integration_id_regex"`
-	IntegrationNameRegex *string  `json:"integration_name_regex"`
+	IntegrationID   []string `json:"integration_id"`
+	IntegrationType []string `json:"integration_type"`
+	ProviderIDRegex *string  `json:"provider_id_regex"`
+	NameRegex       *string  `json:"integration_name_regex"`
 }

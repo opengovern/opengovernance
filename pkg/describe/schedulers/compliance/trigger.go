@@ -254,11 +254,11 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		assignments = &complianceApi.BenchmarkAssignedEntities{}
 		for _, connection := range connections {
 			assignment := complianceApi.BenchmarkAssignedConnection{
-				ConnectionID:           connection.ID.String(),
-				ProviderConnectionID:   connection.ConnectionID,
-				ProviderConnectionName: connection.ConnectionName,
-				Connector:              connection.Connector,
-				Status:                 true,
+				ConnectionID:         connection.ID.String(),
+				ProviderConnectionID: connection.ConnectionID,
+				IntegrationName:      connection.ConnectionName,
+				Connector:            connection.Connector,
+				Status:               true,
 			}
 			assignments.Connections = append(assignments.Connections, assignment)
 		}

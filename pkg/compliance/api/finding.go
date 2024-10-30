@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"strings"
 	"time"
@@ -9,7 +9,7 @@ import (
 
 type FindingFilters struct {
 	JobID             []string                `json:"jobID"`
-	Connector         []source.Type           `json:"connector" example:"Azure"`
+	IntegrationType   []string                `json:"integrationType" example:"Azure"`
 	ResourceID        []string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceTypeID    []string                `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
 	ConnectionID      []string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
@@ -37,7 +37,7 @@ type FindingSummaryFilters struct {
 }
 
 type FindingFiltersWithMetadata struct {
-	Connector          []FilterWithMetadata `json:"connector"`
+	IntegrationType    []FilterWithMetadata `json:"integrationType"`
 	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`
 	ControlID          []FilterWithMetadata `json:"controlID"`
 	ResourceTypeID     []FilterWithMetadata `json:"resourceTypeID"`
@@ -49,7 +49,7 @@ type FindingFiltersWithMetadata struct {
 }
 
 type FindingsSort struct {
-	Connector                *SortDirection `json:"connector"`
+	IntegrationType          *SortDirection `json:"integrationType"`
 	ResourceID               *SortDirection `json:"resourceID"`
 	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
 	ResourceTypeID           *SortDirection `json:"resourceTypeID"`
@@ -125,7 +125,7 @@ type Finding struct {
 	ConformanceStatus         ConformanceStatus     `json:"conformanceStatus" example:"alarm"`
 	Severity                  types.FindingSeverity `json:"severity" example:"low"`
 	Evaluator                 string                `json:"evaluator" example:"steampipe-v0.5"`
-	Connector                 source.Type           `json:"connector" example:"Azure"`
+	IntegrationType           integration.Type      `json:"integrationType" example:"Azure"`
 	OpenGovernanceResourceID  string                `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID                string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceName              string                `json:"resourceName" example:"vm-1"`
@@ -139,11 +139,11 @@ type Finding struct {
 	ParentBenchmarks          []string              `json:"parentBenchmarks"`
 	LastEvent                 time.Time             `json:"lastEvent" example:"1589395200"`
 
-	ResourceTypeName       string   `json:"resourceTypeName" example:"Virtual Machine"`
-	ParentBenchmarkNames   []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
-	ControlTitle           string   `json:"controlTitle"`
-	ProviderConnectionID   string   `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
-	ProviderConnectionName string   `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ResourceTypeName     string   `json:"resourceTypeName" example:"Virtual Machine"`
+	ParentBenchmarkNames []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
+	ControlTitle         string   `json:"controlTitle"`
+	ProviderID           string   `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`      // Connection ID
+	IntegrationName      string   `json:"integrationName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 
 	SortKey []any `json:"sortKey"`
 }
@@ -159,7 +159,7 @@ func GetAPIFindingFromESFinding(finding types.Finding) Finding {
 		ConformanceStatus:         "",
 		Severity:                  finding.Severity,
 		Evaluator:                 finding.Evaluator,
-		Connector:                 finding.Connector,
+		IntegrationType:           finding.IntegrationType,
 		OpenGovernanceResourceID:  finding.OpenGovernanceResourceID,
 		ResourceID:                finding.ResourceID,
 		ResourceName:              finding.ResourceName,
@@ -264,10 +264,10 @@ type FindingFiltersV2 struct {
 }
 
 type IntegrationInfoFilter struct {
-	Integration        *string `json:"integration"`
-	ID                 *string `json:"id"`
-	IDName             *string `json:"id_name"`
-	IntegrationTracker *string `json:"integration_tracker"`
+	IntegrationType *string `json:"integration_type"`
+	ProviderID      *string `json:"provider_id"`
+	Name            *string `json:"name"`
+	IntegrationID   *string `json:"integration_id"`
 }
 
 type FindingsSortV2 struct {
