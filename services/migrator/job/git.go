@@ -2,11 +2,11 @@ package job
 
 import (
 	"archive/zip"
-	"strings"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	// "strings"
 
@@ -31,7 +31,7 @@ func Unzip(src, dest,url string) error {
     os.MkdirAll(dest, 0755)
 
     // Closure to address file descriptors issue with all the deferred .Close() methods
-    extractAndWriteFile := func(f *zip.File) error {
+    extractAndWriteFile := func(f *zip.File,index int,base string) error {
         rc, err := f.Open()
         if err != nil {
             return err
@@ -41,8 +41,16 @@ func Unzip(src, dest,url string) error {
                 panic(err)
             }
         }()
+        var path string
+        
+        if(index == 0){
+             path = filepath.Join(dest)
+		}else{
 
-        path := filepath.Join(dest, f.Name)
+            newName := strings.Replace(f.Name,base,"",1)
+            path = filepath.Join(dest, newName)
+        }
+
 
         // Check for ZipSlip (Directory traversal)
         // if !strings.HasPrefix(path, filepath.Clean(dest) + string(os.PathSeparator)) {
@@ -50,7 +58,7 @@ func Unzip(src, dest,url string) error {
         // }
 
         if f.FileInfo().IsDir() {
-			if(!strings.Contains(url,strings.Split(f.Name, "-")[0])){
+			if(index != 0){
   os.MkdirAll(path, f.Mode())
 			}
           
@@ -73,9 +81,12 @@ func Unzip(src, dest,url string) error {
         }
         return nil
     }
-
-    for _, f := range r.File {
-        err := extractAndWriteFile(f)
+    var baseFile string
+    for index, f := range r.File {
+        if(index ==0){
+            baseFile = f.Name
+        }
+        err := extractAndWriteFile(f,index,baseFile)
         if err != nil {
             return err
         }
@@ -105,7 +116,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
 	// refs := make([]string, 0, 2)
-	URL := gitConfig.AnalyticsGitURL
+	URL := "gitConfig.AnalyticsGitURL"
 
     resp, err := http.Get(URL)
     if err != nil {
@@ -115,6 +126,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
     defer resp.Body.Close()
     
+	os.RemoveAll("test.zip")
 
     // Create the file
     out, err := os.Create("test.zip")
@@ -125,9 +137,12 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
     // Write the body to file
     _, err = io.Copy(out, resp.Body)
+    if(err != nil){
 	logger.Error("err: %s", zap.Error(err))
+    }
 	os.RemoveAll(config.ConfigzGitPath)
 	Unzip("test.zip", config.ConfigzGitPath,URL)
+
 	os.Remove("test.zip")
 
 	
