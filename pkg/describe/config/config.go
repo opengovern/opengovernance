@@ -8,9 +8,7 @@ import (
 type ServerlessProviderType string
 
 const (
-	ServerlessProviderTypeAWSLambda      ServerlessProviderType = "aws-lambda"
-	ServerlessProviderTypeAzureFunctions ServerlessProviderType = "azure-functions"
-	ServerlessProviderTypeLocal          ServerlessProviderType = "local"
+	ServerlessProviderTypeLocal ServerlessProviderType = "local"
 )
 
 func (s ServerlessProviderType) String() string {

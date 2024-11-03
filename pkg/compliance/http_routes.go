@@ -4672,11 +4672,11 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 				return err
 			}
 			ba := api.BenchmarkAssignedConnection{
-				ConnectionID:         integration.IntegrationID,
-				ProviderConnectionID: integration.ProviderID,
-				IntegrationName:      integration.Name,
-				Connector:            connector,
-				Status:               false,
+				IntegrationID:   integration.IntegrationID,
+				ProviderID:      integration.ProviderID,
+				IntegrationName: integration.Name,
+				IntegrationType: connector,
+				Status:          false,
 			}
 			assignedConnections = append(assignedConnections, ba)
 		}
@@ -4708,7 +4708,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 	for _, assignment := range dbAssignments {
 		if assignment.IntegrationID != nil && !benchmark.AutoAssign {
 			for idx, r := range assignedConnections {
-				if r.ConnectionID == *assignment.IntegrationID {
+				if r.IntegrationID == *assignment.IntegrationID {
 					r.Status = true
 					assignedConnections[idx] = r
 				}
@@ -4719,7 +4719,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 	resp := api.BenchmarkAssignedEntities{}
 
 	for _, item := range assignedConnections {
-		if httpserver2.CheckAccessToConnectionID(echoCtx, item.ConnectionID) != nil {
+		if httpserver2.CheckAccessToConnectionID(echoCtx, item.IntegrationID) != nil {
 			continue
 		}
 		resp.Connections = append(resp.Connections, item)

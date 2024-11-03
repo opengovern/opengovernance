@@ -1,37 +1,10 @@
 package api
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/analytics/api"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"time"
 )
-
-type GetCredsForJobRequest struct {
-	SourceID string `json:"sourceId"`
-}
-
-type GetCredsForJobResponse struct {
-	Credentials string `json:"creds"`
-}
-
-type GetDataResponse struct {
-	Data string `json:"data"`
-}
-
-type TriggerBenchmarkEvaluationRequest struct {
-	BenchmarkID  string   `json:"benchmarkID" example:"azure_cis_v1"`                                                                          // Benchmark ID to evaluate
-	ConnectionID *string  `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                 // Connection ID to evaluate
-	ResourceIDs  []string `json:"resourceIDs" example:"/subscriptions/123/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1"` // Resource IDs to evaluate
-}
-
-type ListBenchmarkEvaluationsRequest struct {
-	EvaluatedAtAfter  *int64       `json:"evaluatedAtAfter" example:"1619510400"`                       // Filter evaluations created after this timestamp
-	EvaluatedAtBefore *int64       `json:"evaluatedAtBefore" example:"1619610400"`                      // Filter evaluations created before this timestamp
-	ConnectionID      *string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Filter evaluations for this connection
-	Connector         *source.Type `json:"connector" example:"Azure"`                                   // Filter evaluations for this connector
-	BenchmarkID       *string      `json:"benchmarkID" example:"azure_cis_v1"`                          // Filter evaluations for this benchmark
-}
 
 type JobType string
 
@@ -42,15 +15,6 @@ const (
 )
 
 type JobStatus string
-
-const (
-	JobStatus_Created    JobStatus = "created"
-	JobStatus_Queued     JobStatus = "queued"
-	JobStatus_InProgress JobStatus = "in_progress"
-	JobStatus_Successful JobStatus = "successful"
-	JobStatus_Failure    JobStatus = "failure"
-	JobStatus_Timeout    JobStatus = "timeout"
-)
 
 type JobSort string
 
@@ -107,10 +71,6 @@ type ListJobsResponse struct {
 	Summaries []JobSummary `json:"summaries"`
 }
 
-type ListDiscoveryResourceTypes struct {
-	IntegrationTypesResourceTypes map[string][]string `json:"integrationTypesResourceTypes"`
-}
-
 type JobSeqCheckResponse struct {
 	IsRunning bool `json:"isRunning"`
 }
@@ -165,12 +125,6 @@ type BenchmarkAuditHistoryItem struct {
 type BenchmarkAuditHistoryResponse struct {
 	Items      []BenchmarkAuditHistoryItem `json:"items"`
 	TotalCount int                         `json:"total_count"`
-}
-
-type GetAnalyticsJobsHistoryRequest struct {
-	SortBy  *string `json:"sort_by"`
-	Cursor  *int64  `json:"cursor"`
-	PerPage *int64  `json:"per_page"`
 }
 
 type GetAnalyticsJobsHistoryResponse struct {

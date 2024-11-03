@@ -7,12 +7,12 @@ import (
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/opengovern/og-util/pkg/describe/enums"
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/og-util/pkg/source"
 	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	"github.com/opengovern/og-util/proto/src/golang"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -65,17 +65,17 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 		Error:       req.Error,
 		ErrorCode:   req.ErrorCode,
 		DescribeJob: DescribeJob{
-			JobID:         uint(req.DescribeJob.JobId),
-			ScheduleJobID: uint(req.DescribeJob.ScheduleJobId),
-			ParentJobID:   uint(req.DescribeJob.ParentJobId),
-			ResourceType:  req.DescribeJob.ResourceType,
-			SourceID:      req.DescribeJob.SourceId,
-			AccountID:     req.DescribeJob.AccountId,
-			DescribedAt:   req.DescribeJob.DescribedAt,
-			SourceType:    source.Type(req.DescribeJob.SourceType),
-			CipherText:    req.DescribeJob.ConfigReg,
-			TriggerType:   enums.DescribeTriggerType(req.DescribeJob.TriggerType),
-			RetryCounter:  uint(req.DescribeJob.RetryCounter),
+			JobID:           uint(req.DescribeJob.JobId),
+			ScheduleJobID:   uint(req.DescribeJob.ScheduleJobId),
+			ParentJobID:     uint(req.DescribeJob.ParentJobId),
+			ResourceType:    req.DescribeJob.ResourceType,
+			SourceID:        req.DescribeJob.SourceId,
+			AccountID:       req.DescribeJob.AccountId,
+			DescribedAt:     req.DescribeJob.DescribedAt,
+			IntegrationType: integration_type.ParseType(req.DescribeJob.SourceType),
+			CipherText:      req.DescribeJob.ConfigReg,
+			TriggerType:     enums.DescribeTriggerType(req.DescribeJob.TriggerType),
+			RetryCounter:    uint(req.DescribeJob.RetryCounter),
 		},
 		DescribedResourceIDs: req.DescribedResourceIds,
 	})

@@ -9,6 +9,7 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"net"
 	"net/http"
@@ -41,7 +42,6 @@ import (
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	integrationClient "github.com/opengovern/opengovernance/services/integration-v2/client"
 	"github.com/prometheus/client_golang/prometheus"
@@ -233,8 +233,6 @@ func InitializeScheduler(
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
-	s.httpServer.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
-
 	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
 		s.logger.Error("Failed to parse describe interval hours", zap.Error(err))
@@ -278,7 +276,6 @@ func InitializeScheduler(
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
-	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
 	s.integrationClient = integrationClient.NewIntegrationServiceClient(IntegrationBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	s.sinkClient = esSinkClient.NewEsSinkServiceClient(s.logger, EsSinkBaseURL)
@@ -307,7 +304,6 @@ func InitializeScheduler(
 		conf,
 		s.logger,
 		s.complianceClient,
-		s.onboardClient,
 		s.db,
 		s.es,
 	)
@@ -471,7 +467,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.conf,
 		s.logger,
 		s.complianceClient,
-		s.onboardClient,
+		s.integrationClient,
 		s.db,
 		s.jq,
 		s.es,
@@ -534,17 +530,17 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
+		integrations, err := s.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue
 		}
 		disabledConnectionIds := make([]string, 0)
-		for _, connection := range connections {
-			if connection.IsEnabled() {
+		for _, integration := range integrations.Integrations {
+			if integration.State == integrationapi.IntegrationStateArchived {
 				continue
 			}
-			disabledConnectionIds = append(disabledConnectionIds, connection.ID.String())
+			disabledConnectionIds = append(disabledConnectionIds, integration.IntegrationID)
 		}
 
 		if len(disabledConnectionIds) > 0 {

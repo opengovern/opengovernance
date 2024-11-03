@@ -5,8 +5,6 @@ import (
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"time"
-
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 const (
@@ -28,11 +26,11 @@ type AssignedBenchmark struct {
 }
 
 type BenchmarkAssignedConnection struct {
-	ConnectionID         string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	ProviderConnectionID string      `json:"providerID" example:"1283192749"`                             // Provider Connection ID
-	IntegrationName      string      `json:"integrationName"`                                             // Provider Connection Name
-	Connector            source.Type `json:"connector" example:"Azure"`                                   // Clout Provider
-	Status               bool        `json:"status" example:"true"`                                       // Status
+	IntegrationID   string           `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ProviderID      string           `json:"providerID" example:"1283192749"`                              // Provider Connection ID
+	IntegrationName string           `json:"integrationName"`                                              // Provider Connection Name
+	IntegrationType integration.Type `json:"integrationType" example:"Azure"`                              // Clout Provider
+	Status          bool             `json:"status" example:"true"`                                        // Status
 }
 
 type BenchmarkAssignedResourceCollection struct {

@@ -53,7 +53,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 
 				dlc, err := s.cleanupOldResources(ctx, result)
 				if err != nil {
-					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
+					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
 
 					if err := msg.Nak(); err != nil {
@@ -81,7 +81,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
 			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
-				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
+				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "failure").Inc()
 
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 
@@ -92,7 +92,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 				return
 			}
 
-			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
+			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "successful").Inc()
 
 			if err := msg.Ack(); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
@@ -159,11 +159,11 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			break
 		}
 		task := es.DeleteTask{
-			DiscoveryJobID: res.JobID,
-			ConnectionID:   res.DescribeJob.SourceID,
-			ResourceType:   res.DescribeJob.ResourceType,
-			Connector:      res.DescribeJob.SourceType,
-			TaskType:       es.DeleteTaskTypeResource,
+			DiscoveryJobID:  res.JobID,
+			ConnectionID:    res.DescribeJob.SourceID,
+			ResourceType:    res.DescribeJob.ResourceType,
+			IntegrationType: res.DescribeJob.IntegrationType,
+			TaskType:        es.DeleteTaskTypeResource,
 		}
 
 		for _, hit := range esResp.Hits.Hits {
@@ -179,12 +179,12 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			}
 
 			if !exists {
-				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
+				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.IntegrationType)).Inc()
 				resource := es2.Resource{
-					ID:           esResourceID,
-					SourceID:     res.DescribeJob.SourceID,
-					ResourceType: res.DescribeJob.ResourceType,
-					SourceType:   res.DescribeJob.SourceType,
+					ID:              esResourceID,
+					SourceID:        res.DescribeJob.SourceID,
+					ResourceType:    res.DescribeJob.ResourceType,
+					IntegrationType: res.DescribeJob.IntegrationType,
 				}
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
@@ -195,10 +195,10 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				})
 
 				lookupResource := es2.LookupResource{
-					ResourceID:   esResourceID,
-					SourceID:     res.DescribeJob.SourceID,
-					ResourceType: res.DescribeJob.ResourceType,
-					SourceType:   res.DescribeJob.SourceType,
+					ResourceID:      esResourceID,
+					SourceID:        res.DescribeJob.SourceID,
+					ResourceType:    res.DescribeJob.ResourceType,
+					IntegrationType: res.DescribeJob.IntegrationType,
 				}
 				lookUpKeys, lookUpIdx := lookupResource.KeysAndIndex()
 				deletedCount += 1
@@ -270,10 +270,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 				searchAfter = hit.Sort
 
 				resource := es2.Resource{
-					ID:           hit.Source.ResourceID,
-					SourceID:     hit.Source.SourceID,
-					ResourceType: strings.ToLower(hit.Source.ResourceType),
-					SourceType:   hit.Source.SourceType,
+					ID:              hit.Source.ResourceID,
+					SourceID:        hit.Source.SourceID,
+					ResourceType:    strings.ToLower(hit.Source.ResourceType),
+					IntegrationType: hit.Source.IntegrationType,
 				}
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
@@ -287,10 +287,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 				}
 
 				lookupResource := es2.LookupResource{
-					ResourceID:   hit.Source.ResourceID,
-					SourceID:     hit.Source.SourceID,
-					ResourceType: strings.ToLower(hit.Source.ResourceType),
-					SourceType:   hit.Source.SourceType,
+					ResourceID:      hit.Source.ResourceID,
+					SourceID:        hit.Source.SourceID,
+					ResourceType:    strings.ToLower(hit.Source.ResourceType),
+					IntegrationType: hit.Source.IntegrationType,
 				}
 				deletedCount += 1
 				keys, idx = lookupResource.KeysAndIndex()
