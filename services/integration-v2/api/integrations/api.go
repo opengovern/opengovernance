@@ -42,7 +42,7 @@ func New(
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Param			request	body	models.DiscoverIntegrationRequest	true	"Request"
+//	@Param			request	body	entity.CreateRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/discover [post]
 func (h API) DiscoverIntegrations(c echo.Context) error {
 	var req models.DiscoverIntegrationRequest
@@ -156,7 +156,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Param			request	body	models.AddIntegrationsRequest	true	"Request"
+//	@Param			request	body	entity.CreateRequest	true	"Request"
 //	@Router			/integration/api/v1/integrations/add [post]
 func (h API) AddIntegrations(c echo.Context) error {
 	var req models.AddIntegrationsRequest
