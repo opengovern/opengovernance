@@ -3,7 +3,6 @@ package job
 import (
 	"archive/zip"
 	"strings"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
