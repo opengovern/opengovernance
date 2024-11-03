@@ -129,29 +129,29 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("finished fetching configz data")
 
 	
-	logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
+	// logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
 
-	os.RemoveAll(config.ControlEnrichmentGitPath)
-	URL = gitConfig.ControlEnrichmentGitURL
-	resp, err = http.Get(URL)
-	 if err != nil {
-        logger.Error("err: %s", zap.Error(err))
-    }
+	// os.RemoveAll(config.ControlEnrichmentGitPath)
+	// URL = gitConfig.ControlEnrichmentGitURL
+	// resp, err = http.Get(URL)
+	//  if err != nil {
+    //     logger.Error("err: %s", zap.Error(err))
+    // }
 
 
-    defer resp.Body.Close()
-    // Create the file
-    out, err = os.Create("test1.zip")
-    if err != nil {
-        logger.Error("err: %s", zap.Error(err))
-    }
-    defer out.Close()
+    // defer resp.Body.Close()
+    // // Create the file
+    // out, err = os.Create("test1.zip")
+    // if err != nil {
+    //     logger.Error("err: %s", zap.Error(err))
+    // }
+    // defer out.Close()
 
-    // Write the body to file
-    _, err = io.Copy(out, resp.Body)
-	logger.Error("err: %s", zap.Error(err))
-	Unzip("test1.zip", config.ControlEnrichmentGitPath)
-	os.Remove("test1.zip")
-	logger.Info("finished fetching control enrichment data")
+    // // Write the body to file
+    // _, err = io.Copy(out, resp.Body)
+	// logger.Error("err: %s", zap.Error(err))
+	// Unzip("test1.zip", config.ControlEnrichmentGitPath)
+	// os.Remove("test1.zip")
+	// logger.Info("finished fetching control enrichment data")
 	return string("both completed need releases"), nil
 }
