@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	IntegrationTypeAWSAccount        integration.Type = "AWS_ACCOUNT"
-	IntegrationTypeAzureSubscription integration.Type = "AZURE_SUBSCRIPTION"
+	IntegrationTypeAWSAccount        = aws_account.IntegrationTypeAWSAccount
+	IntegrationTypeAzureSubscription = azure_subscription.IntegrationTypeAzureSubscription
 )
 
 var AllIntegrationTypes = []integration.Type{

@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
+)
+
+const (
+	IntegrationTypeAWSAccount integration.Type = "AWS_ACCOUNT"
 )
 
 type AWSCredentialType interface {

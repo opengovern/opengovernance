@@ -3,8 +3,13 @@ package azure_subscription
 import (
 	"fmt"
 	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
+)
+
+const (
+	IntegrationTypeAzureSubscription integration.Type = "AZURE_SUBSCRIPTION"
 )
 
 type AzureSubscriptionIntegration struct{}

@@ -206,9 +206,7 @@ func (c *AzureSPNCertificateCredentials) DiscoverIntegrations() ([]models.Integr
 			IntegrationID:   uuid.New(),
 			ProviderID:      sub.SubscriptionID,
 			Name:            name,
-			Connector:       "Azure",
-			IntegrationType: "azure_subscription",
-			OnboardDate:     time.Now(),
+			IntegrationType: IntegrationTypeAzureSubscription,
 		})
 	}
 	return integrations, nil
