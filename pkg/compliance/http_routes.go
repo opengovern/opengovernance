@@ -30,7 +30,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/utils"
 	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
-	integrationmodels "github.com/opengovern/opengovernance/services/integration-v2/models"
 	model2 "github.com/opengovern/opengovernance/services/migrator/db/model"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -4390,7 +4389,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 				return err
 			}
 			for _, src := range srcs.Integrations {
-				if src.State == integrationmodels.IntegrationStateActive {
+				if src.State == integrationapi.IntegrationStateActive {
 					integrations = append(integrations, src)
 				}
 			}
@@ -4542,7 +4541,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(echoCtx echo.Context) error {
 			Benchmark: benchmark.ToApi(),
 			Status:    false,
 		}
-		if benchmark.AutoAssign && integration.State == integrationmodels.IntegrationStateActive {
+		if benchmark.AutoAssign && integration.State == integrationapi.IntegrationStateActive {
 			res.Status = true
 		} else {
 			for _, assignment := range dbAssignments {
@@ -4665,7 +4664,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 		}
 
 		for _, integration := range integrations.Integrations {
-			if integration.State != integrationmodels.IntegrationStateActive {
+			if integration.State != integrationapi.IntegrationStateActive {
 				continue
 			}
 			connector, err := source.ParseType(c)
@@ -5661,7 +5660,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		for _, integration := range integrations.Integrations {
-			if integration.State != integrationmodels.IntegrationStateActive {
+			if integration.State != integrationapi.IntegrationStateActive {
 				continue
 			}
 			integrationInfos[integration.IntegrationID] = api.GetBenchmarkAssignmentsItem{
@@ -5714,7 +5713,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			for _, integration := range integrations.Integrations {
-				if integration.State != integrationmodels.IntegrationStateActive {
+				if integration.State != integrationapi.IntegrationStateActive {
 					continue
 				}
 				integrationInfos[integration.IntegrationID] = api.GetBenchmarkAssignmentsItem{

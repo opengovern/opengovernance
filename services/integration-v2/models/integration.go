@@ -103,7 +103,7 @@ func (i *Integration) ToApi() (*api.Integration, error) {
 		ProviderID:      i.ProviderID,
 		IntegrationType: i.IntegrationType,
 		CredentialID:    i.CredentialID.String(),
-		State:           i.State,
+		State:           api.IntegrationState(i.State),
 		LastCheck:       i.LastCheck,
 		Labels:          labels,
 		Annotations:     annotations,

@@ -8,7 +8,6 @@ import (
 	apiAuth "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
-	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"math/rand"
 	"time"
 
@@ -21,7 +20,7 @@ import (
 	apiDescribe "github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
-	apiIntegration "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -35,8 +34,8 @@ var ErrJobInProgress = errors.New("job already in progress")
 
 type CloudNativeCall struct {
 	dc   model.DescribeConnectionJob
-	src  *apiIntegration.Integration
-	cred *apiIntegration.Credential
+	src  *integrationapi.Integration
+	cred *integrationapi.Credential
 }
 
 func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
@@ -128,9 +127,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
 	wp := concurrency.NewWorkPool(len(dcs))
-	integrationsMap := map[string]*apiIntegration.Integration{}
+	integrationsMap := map[string]*integrationapi.Integration{}
 	for _, dc := range dcs {
-		var integration *apiIntegration.Integration
+		var integration *integrationapi.Integration
 		if v, ok := integrationsMap[dc.IntegrationID]; ok {
 			integration = v
 		} else {
@@ -264,7 +263,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) describe(integration apiIntegration.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
+func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
 	removeResources bool, parentId *uint, createdBy string) (*model.DescribeConnectionJob, error) {
 
 	integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
@@ -322,7 +321,7 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 		integration = *healthCheckedSrc
 	}
 
-	if integration.State != models.IntegrationStateActive {
+	if integration.State != integrationapi.IntegrationStateActive {
 		return nil, errors.New("connection is not active")
 	}
 
@@ -350,7 +349,7 @@ func (s *Scheduler) describe(integration apiIntegration.Integration, resourceTyp
 	return &daj, nil
 }
 
-func newDescribeConnectionJob(a apiIntegration.Integration, resourceType string, triggerType enums.DescribeTriggerType,
+func newDescribeConnectionJob(a integrationapi.Integration, resourceType string, triggerType enums.DescribeTriggerType,
 	parentId *uint, createdBy string) model.DescribeConnectionJob {
 	return model.DescribeConnectionJob{
 		CreatedBy:       createdBy,

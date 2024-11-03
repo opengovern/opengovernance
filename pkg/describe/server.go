@@ -15,8 +15,8 @@ import (
 	runner2 "github.com/opengovern/opengovernance/pkg/compliance/runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
-	"github.com/opengovern/opengovernance/services/integration-v2/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"github.com/sony/sonyflake"
 	"net/http"
 	"regexp"
@@ -31,7 +31,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	model2 "github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -443,7 +442,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 	}
 	for _, integration := range integrations.Integrations {
-		if integration.State != models.IntegrationStateActive {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
 		}
 		integrationTypeObj, ok := integration_type.IntegrationTypes[integration.IntegrationType]
@@ -644,7 +643,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 	var describeJobs []ReEvaluateDescribeJob
 	// TODO: filter needed resource types for tables for controls queries
 	for _, integration := range integrations.Integrations {
-		if integration.State != models.IntegrationStateActive {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
 		}
 		integrationTypeObj, ok := integration_type.IntegrationTypes[integration.IntegrationType]
@@ -1257,14 +1256,14 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Integration != nil {
-			integrationTypes = append(integrationTypes, *info.Integration)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.IntegrationID,
 			})
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
@@ -1277,10 +1276,10 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	var connectionIDs []string
 	for _, c := range integrations {
 		connectionInfo = append(connectionInfo, api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
@@ -1357,14 +1356,14 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Integration != nil {
-			integrationTypes = append(integrationTypes, *info.Integration)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
@@ -1377,10 +1376,10 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 	var connectionIDs []string
 	for _, c := range integrations {
 		connectionInfo = append(connectionInfo, api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
@@ -1477,14 +1476,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Integration != nil {
-			integrationTypes = append(integrationTypes, *info.Integration)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
@@ -1495,7 +1494,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 
 	var jobs []api.RunDiscoveryJob
 	for _, integration := range integrations {
-		if integration.State != models.IntegrationStateActive {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
 		}
 		rtToDescribe := request.ResourceTypes
@@ -1578,10 +1577,10 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				Status:        status,
 				FailureReason: failureReason,
 				IntegrationInfo: api.IntegrationInfo{
-					IntegrationID: integration.IntegrationID,
-					Integration:   string(integration.IntegrationType),
-					ID:            integration.ProviderID,
-					IDName:        integration.Name,
+					IntegrationID:   integration.IntegrationID,
+					IntegrationType: string(integration.IntegrationType),
+					ProviderID:      integration.ProviderID,
+					Name:            integration.Name,
 				},
 			})
 		}
@@ -1618,10 +1617,10 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 	jobsResult := api.GetDescribeJobStatusResponse{
 		JobId: j.ID,
 		IntegrationInfo: api.IntegrationInfo{
-			IntegrationID: connection.IntegrationID,
-			Integration:   string(connection.IntegrationType),
-			ID:            connection.ProviderID,
-			IDName:        connection.Name,
+			IntegrationID:   connection.IntegrationID,
+			IntegrationType: string(connection.IntegrationType),
+			ProviderID:      connection.ProviderID,
+			Name:            connection.Name,
 		},
 		ResourceType: j.ResourceType,
 		JobStatus:    string(j.Status),
@@ -1661,10 +1660,10 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	connectionInfo = api.IntegrationInfo{
-		IntegrationID: integration.IntegrationID,
-		Integration:   string(integration.IntegrationType),
-		ID:            integration.ProviderID,
-		IDName:        integration.Name,
+		IntegrationID:   integration.IntegrationID,
+		IntegrationType: string(integration.IntegrationType),
+		ProviderID:      integration.ProviderID,
+		Name:            integration.Name,
 	}
 
 	jobsResult := api.GetComplianceJobStatusResponse{
@@ -1777,14 +1776,14 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Type != nil {
-			integrationTypes = append(integrationTypes, *info.Type)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1796,10 +1795,10 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	var connectionIDs []string
 	for _, c := range integrations {
 		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
@@ -1893,14 +1892,14 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Type != nil {
-			integrationTypes = append(integrationTypes, *info.Type)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1912,10 +1911,10 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	var connectionIDs []string
 	for _, c := range integrations {
 		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
@@ -2012,14 +2011,14 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Type != nil {
-			integrationTypes = append(integrationTypes, *info.Type)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2039,10 +2038,10 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 	}
 	for _, c := range connections2.Integrations {
 		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 	}
 
@@ -2151,10 +2150,10 @@ func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 
 	for _, c := range connections.Integrations {
 		integrations = append(integrations, api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
 	}
 
@@ -2190,14 +2189,14 @@ func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 		}
 	} else {
 		var integrationTypes []string
-		if request.IntegrationInfo.Type != nil {
-			integrationTypes = append(integrationTypes, *request.IntegrationInfo.Type)
+		if request.IntegrationInfo.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *request.IntegrationInfo.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       request.IntegrationInfo.IDName,
-				ProviderIDRegex: request.IntegrationInfo.ID,
+				NameRegex:       request.IntegrationInfo.Name,
+				ProviderIDRegex: request.IntegrationInfo.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2355,14 +2354,14 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 			continue
 		}
 		var integrationTypes []string
-		if info.Type != nil {
-			integrationTypes = append(integrationTypes, *info.Type)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2373,10 +2372,10 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	for _, c := range integrations {
 		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 	}
 
@@ -2467,14 +2466,14 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 		}
 	} else {
 		var integrationTypes []string
-		if request.IntegrationInfo.Type != nil {
-			integrationTypes = append(integrationTypes, *request.IntegrationInfo.Type)
+		if request.IntegrationInfo.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *request.IntegrationInfo.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       request.IntegrationInfo.IDName,
-				ProviderIDRegex: request.IntegrationInfo.ID,
+				NameRegex:       request.IntegrationInfo.Name,
+				ProviderIDRegex: request.IntegrationInfo.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2484,10 +2483,10 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	connectionInfo[integrations.IntegrationID] = api.IntegrationInfo{
-		IntegrationID: integrations.IntegrationID,
-		Integration:   string(integrations.IntegrationType),
-		IDName:        integrations.Name,
-		ID:            integrations.ProviderID,
+		IntegrationID:   integrations.IntegrationID,
+		IntegrationType: string(integrations.IntegrationType),
+		Name:            integrations.Name,
+		ProviderID:      integrations.ProviderID,
 	}
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
@@ -2508,10 +2507,10 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 				}
 				if integration != nil {
 					info = api.IntegrationInfo{
-						IntegrationID: integration.IntegrationID,
-						Integration:   string(integration.IntegrationType),
-						IDName:        integration.Name,
-						ID:            integration.ProviderID,
+						IntegrationID:   integration.IntegrationID,
+						IntegrationType: string(integration.IntegrationType),
+						Name:            integration.Name,
+						ProviderID:      integration.ProviderID,
 					}
 					connectionInfo[j.ConnectionID] = info
 					jobIntegrations = info
@@ -2762,14 +2761,14 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				continue
 			}
 			var integrationTypes []string
-			if info.Type != nil {
-				integrationTypes = append(integrationTypes, *info.Type)
+			if info.IntegrationType != nil {
+				integrationTypes = append(integrationTypes, *info.IntegrationType)
 			}
 			connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 				integrationapi.ListIntegrationsRequest{
 					IntegrationType: integrationTypes,
-					NameRegex:       info.IDName,
-					ProviderIDRegex: info.ID,
+					NameRegex:       info.Name,
+					ProviderIDRegex: info.ProviderID,
 				})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -3193,14 +3192,14 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 			}
 
 			var integrationTypes []string
-			if info.Type != nil {
-				integrationTypes = append(integrationTypes, *info.Type)
+			if info.IntegrationType != nil {
+				integrationTypes = append(integrationTypes, *info.IntegrationType)
 			}
 			connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 				integrationapi.ListIntegrationsRequest{
 					IntegrationType: integrationTypes,
-					NameRegex:       info.IDName,
-					ProviderIDRegex: info.ID,
+					NameRegex:       info.Name,
+					ProviderIDRegex: info.ProviderID,
 				})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -3668,14 +3667,14 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 			continue
 		}
 		var integrationTypes []string
-		if info.Type != nil {
-			integrationTypes = append(integrationTypes, *info.Type)
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
 		}
 		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
-				NameRegex:       info.IDName,
-				ProviderIDRegex: info.ID,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -3696,10 +3695,10 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 	var IntegrationIDs []string
 	for _, c := range integrations {
 		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
-			IntegrationID: c.IntegrationID,
-			Integration:   string(c.IntegrationType),
-			IDName:        c.Name,
-			ID:            c.ProviderID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 		IntegrationIDs = append(IntegrationIDs, c.IntegrationID)
 	}
@@ -3888,10 +3887,10 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 	integrationsMap := make(map[string]api.IntegrationInfo)
 	for _, c := range integrations.Integrations {
 		integrationsMap[c.IntegrationID] = api.IntegrationInfo{
-			Integration:   string(c.IntegrationType),
-			ID:            c.ProviderID,
-			IDName:        c.Name,
-			IntegrationID: c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			ProviderID:      c.ProviderID,
+			Name:            c.Name,
+			IntegrationID:   c.IntegrationID,
 		}
 	}
 	sort.Slice(items, func(i, j int) bool {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/integration-v2/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -35,7 +35,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler(ctx context.Context) {
 		}
 		hasEnabled := false
 		for _, integration := range integrations.Integrations {
-			if integration.State == models.IntegrationStateActive {
+			if integration.State == integrationapi.IntegrationStateActive {
 				hasEnabled = true
 				break
 			}

@@ -2,8 +2,15 @@ package models
 
 import (
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"time"
+)
+
+type IntegrationState string
+
+const (
+	IntegrationStateActive   IntegrationState = "ACTIVE"
+	IntegrationStateInactive IntegrationState = "INACTIVE"
+	IntegrationStateArchived IntegrationState = "ARCHIVED"
 )
 
 type DiscoverIntegrationRequest struct {
@@ -38,8 +45,8 @@ type Integration struct {
 
 	CredentialID string `json:"credential_id"`
 
-	State     models.IntegrationState `json:"state"`
-	LastCheck *time.Time              `json:"last_check,omitempty"`
+	State     IntegrationState `json:"state"`
+	LastCheck *time.Time       `json:"last_check,omitempty"`
 }
 
 type ListIntegrationsResponse struct {

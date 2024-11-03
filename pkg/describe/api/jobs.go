@@ -202,10 +202,10 @@ type IntegrationInfo struct {
 }
 
 type IntegrationInfoFilter struct {
-	IntegrationType string `json:"integration_type"`
-	ProviderID      string `json:"provider_id"`
-	Name            string `json:"name"`
-	IntegrationID   string `json:"integration_id"`
+	IntegrationType *string `json:"integration_type"`
+	ProviderID      *string `json:"provider_id"`
+	Name            *string `json:"name"`
+	IntegrationID   *string `json:"integration_id"`
 }
 
 type RunBenchmarkItem struct {
