@@ -19,9 +19,9 @@ on:
           - "prod"
         default: "dev"
   push:
-    branches: ["main","dev"]
+    branches: ["main","dev","feat-integrations-service"]
   pull_request:
-    branches: ["main","dev"]
+    branches: ["main","dev","feat-integrations-service"]
 
 jobs:
   tag:
