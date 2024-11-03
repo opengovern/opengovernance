@@ -2,12 +2,14 @@ package job
 
 import (
 	"archive/zip"
+	"strings"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+
+	// "strings"
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -16,7 +18,7 @@ import (
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 )
-func Unzip(src, dest string) error {
+func Unzip(src, dest,url string) error {
     r, err := zip.OpenReader(src)
     if err != nil {
         return err
@@ -44,12 +46,15 @@ func Unzip(src, dest string) error {
         path := filepath.Join(dest, f.Name)
 
         // Check for ZipSlip (Directory traversal)
-        if !strings.HasPrefix(path, filepath.Clean(dest) + string(os.PathSeparator)) {
-            return fmt.Errorf("illegal file path: %s", path)
-        }
+        // if !strings.HasPrefix(path, filepath.Clean(dest) + string(os.PathSeparator)) {
+        //     return fmt.Errorf("illegal file path: %s", path)
+        // }
 
         if f.FileInfo().IsDir() {
-            os.MkdirAll(path, f.Mode())
+			if(!strings.Contains(url,strings.Split(f.Name, "-")[0])){
+  os.MkdirAll(path, f.Mode())
+			}
+          
         } else {
             os.MkdirAll(filepath.Dir(path), f.Mode())
             f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
@@ -102,6 +107,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	// refs := make([]string, 0, 2)
 	URL := gitConfig.AnalyticsGitURL
+
     resp, err := http.Get(URL)
     if err != nil {
         logger.Error("err: %s", zap.Error(err))
@@ -122,7 +128,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
     _, err = io.Copy(out, resp.Body)
 	logger.Error("err: %s", zap.Error(err))
 	os.RemoveAll(config.ConfigzGitPath)
-	Unzip("test.zip", config.ConfigzGitPath)
+	Unzip("test.zip", config.ConfigzGitPath,URL)
 	os.Remove("test.zip")
 
 	
