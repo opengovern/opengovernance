@@ -13,6 +13,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/inventory/rego_runner"
 	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"math"
 	"net/http"
@@ -2860,7 +2861,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 			item.LogoURI = resourceType.GetTags()["logo_uri"][0]
 		}
 		switch resourceType.GetConnector() {
-		case source.CloudAWS:
+		case integration_type.IntegrationTypeAWSAccount:
 			subcategory, ok := awsLandscapesSubcategories[category]
 			if !ok {
 				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
@@ -2875,7 +2876,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 			}
 			subcategory.Items = append(subcategory.Items, item)
 			awsLandscapesSubcategories[category] = subcategory
-		case source.CloudAzure:
+		case integration_type.IntegrationTypeAzureSubscription:
 			subcategory, ok := azureLandscapesSubcategories[category]
 			if !ok {
 				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{

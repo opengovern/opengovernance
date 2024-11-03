@@ -3284,13 +3284,7 @@ func (h HttpHandler) ListIntegrations(ctx echo.Context) error {
 		}
 
 		lastJob, err := h.describeClient.GetIntegrationLastDiscoveryJob(clientCtx, api4.GetIntegrationLastDiscoveryJobRequest{
-			IntegrationInfo: struct {
-				Integration   *string `json:"integration"`
-				Type          *string `json:"type"`
-				ID            *string `json:"id"`
-				IDName        *string `json:"id_name"`
-				IntegrationID *string `json:"integration_id"`
-			}{
+			IntegrationInfo: api4.IntegrationInfoFilter{
 				IntegrationID: &IntegrationID,
 			},
 		})

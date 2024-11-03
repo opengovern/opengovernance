@@ -4667,7 +4667,6 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 			if integration.State != integrationapi.IntegrationStateActive {
 				continue
 			}
-			connector, err := source.ParseType(c)
 			if err != nil {
 				return err
 			}
@@ -4675,7 +4674,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 				IntegrationID:   integration.IntegrationID,
 				ProviderID:      integration.ProviderID,
 				IntegrationName: integration.Name,
-				IntegrationType: connector,
+				IntegrationType: integration_type.ParseType(c),
 				Status:          false,
 			}
 			assignedConnections = append(assignedConnections, ba)
