@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type FindingEvent struct {
@@ -92,11 +91,11 @@ type ResourceFinding struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	OpenGovernanceResourceID string      `json:"opengovernanceResourceID"`
-	ResourceType             string      `json:"resourceType"`
-	ResourceName             string      `json:"resourceName"`
-	ResourceLocation         string      `json:"resourceLocation"`
-	IntegrationType          source.Type `json:"integrationType"`
+	OpenGovernanceResourceID string           `json:"opengovernanceResourceID"`
+	ResourceType             string           `json:"resourceType"`
+	ResourceName             string           `json:"resourceName"`
+	ResourceLocation         string           `json:"resourceLocation"`
+	IntegrationType          integration.Type `json:"integrationType"`
 
 	//ConformanceStatusPerSeverity ConformanceStatusPerSeverity `json:"conformanceStatusPerSeverity"`
 	Findings []Finding `json:"findings"`

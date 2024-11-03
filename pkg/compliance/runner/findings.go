@@ -2,44 +2,41 @@ package runner
 
 import (
 	"fmt"
-	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
-	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"go.uber.org/zap"
+	"net/http"
 	"reflect"
 	"strconv"
 )
 
-func GetResourceTypeFromTableName(tableName string, queryConnector []string) (string, source.Type) {
-	var connector string
-	if len(queryConnector) == 1 {
-		connector = queryConnector[0]
+func GetResourceTypeFromTableName(tableName string, queryIntegrationType []integration.Type) (string, integration.Type, error) {
+	var integrationType integration.Type
+	if len(queryIntegrationType) == 1 {
+		integrationType = queryIntegrationType[0]
 	} else {
-		connector = ""
+		integrationType = ""
 	}
-	switch connector {
-	case source.CloudAWS:
-		return awsSteampipe.ExtractResourceType(tableName), source.CloudAWS
-	case source.CloudAzure:
-		return azureSteampipe.ExtractResourceType(tableName), source.CloudAzure
-	default:
-		resourceType := awsSteampipe.ExtractResourceType(tableName)
-		if resourceType == "" {
-			resourceType = azureSteampipe.ExtractResourceType(tableName)
-			return resourceType, source.CloudAzure
-		} else {
-			return resourceType, source.CloudAWS
-		}
+	integrationTypeObj, ok := integration_type.IntegrationTypes[integrationType]
+	if !ok {
+		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
 	}
+	integration, err := integrationTypeObj()
+	if err != nil {
+		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration type")
+	}
+	return integration.GetResourceTypeFromTableName(tableName), integrationType, nil
 }
 
 func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Benchmark, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
 	var findings []types.Finding
-	var connector source.Type
+	var integrationType integration.Type
+	var err error
 	queryResourceType := ""
 	if query.PrimaryTable != nil || len(query.ListOfTables) == 1 {
 		tableName := ""
@@ -49,7 +46,10 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			tableName = query.ListOfTables[0]
 		}
 		if tableName != "" {
-			queryResourceType, connector = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.IntegrationType)
+			queryResourceType, integrationType, err = GetResourceTypeFromTableName(tableName, w.ExecutionPlan.Query.IntegrationType)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -74,7 +74,10 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			connectionId = v
 		}
 		if v, ok := recordValue["og_table_name"].(string); ok && resourceType == "" {
-			resourceType, connector = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.Connector)
+			resourceType, integrationType, err = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.IntegrationType)
+			if err != nil {
+				return nil, err
+			}
 		}
 		if v, ok := recordValue["resource"].(string); ok && v != "" && v != "null" {
 			resourceID = v
@@ -160,7 +163,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			ConformanceStatus:         status,
 			Severity:                  severity,
 			Evaluator:                 w.ExecutionPlan.Query.Engine,
-			Connector:                 connector,
+			IntegrationType:           integrationType,
 			OpenGovernanceResourceID:  opengovernanceResourceId,
 			ResourceID:                resourceID,
 			ResourceName:              resourceName,

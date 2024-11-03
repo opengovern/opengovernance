@@ -72,3 +72,7 @@ func getCredentials(credentialType string, jsonData []byte) (interfaces.Credenti
 
 	return credential, nil
 }
+
+func (i *AzureSubscriptionIntegration) GetResourceTypeFromTableName(tableName string) string {
+	return ""
+}

@@ -1,20 +1,21 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
 )
 
 type ResourceFinding struct {
-	ID                       string      `json:"id"`
-	OpenGovernanceResourceID string      `json:"opengovernanceResourceID"`
-	ResourceName             string      `json:"resourceName"`
-	ResourceLocation         string      `json:"resourceLocation"`
-	ResourceType             string      `json:"resourceType"`
-	ResourceTypeLabel        string      `json:"resourceTypeLabel"`
-	Connector                source.Type `json:"connector"`
-	ComplianceJobID          string      `json:"complianceJobID"`
+	ID                       string           `json:"id"`
+	OpenGovernanceResourceID string           `json:"opengovernanceResourceID"`
+	ResourceName             string           `json:"resourceName"`
+	ResourceLocation         string           `json:"resourceLocation"`
+	ResourceType             string           `json:"resourceType"`
+	ResourceTypeLabel        string           `json:"resourceTypeLabel"`
+	IntegrationType          integration.Type `json:"integrationType"`
+	ComplianceJobID          string           `json:"complianceJobID"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
@@ -37,7 +38,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 		ResourceName:             resourceFinding.ResourceName,
 		ResourceLocation:         resourceFinding.ResourceLocation,
 		ResourceType:             resourceFinding.ResourceType,
-		Connector:                resourceFinding.Connector,
+		IntegrationType:          resourceFinding.IntegrationType,
 
 		FailedCount: 0,
 		TotalCount:  len(resourceFinding.Findings),

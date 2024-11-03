@@ -44,3 +44,11 @@ func ParseTypes(str []string) []integration.Type {
 	}
 	return result
 }
+
+func UnparseTypes(types []integration.Type) []string {
+	result := make([]string, 0, len(types))
+	for _, t := range types {
+		result = append(result, t.String())
+	}
+	return result
+}

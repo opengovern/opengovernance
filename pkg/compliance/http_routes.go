@@ -4039,7 +4039,11 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 		if control.Query != nil {
 			apiControl.IntegrationType = control.Query.IntegrationType
 			if control.Query.PrimaryTable != nil {
-				rtName, _ := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, control.Query.IntegrationType)
+				rtName, _, err := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, integration_type.ParseTypes(control.Query.IntegrationType))
+				if err != nil {
+					h.logger.Error("failed to get resource type from table name", zap.Error(err))
+					return err
+				}
 				resourceType = resourceTypeMap[strings.ToLower(rtName)]
 			}
 		}
@@ -4154,7 +4158,11 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 	if control.Query != nil {
 		apiControl.IntegrationType = control.Query.IntegrationType
 		if control.Query != nil && control.Query.PrimaryTable != nil {
-			rtName, _ := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, control.Query.IntegrationType)
+			rtName, _, err := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, integration_type.ParseTypes(control.Query.IntegrationType))
+			if err != nil {
+				h.logger.Error("failed to get resource type from table name", zap.Error(err))
+				return nil, err
+			}
 			resourceType = resourceTypeMap[strings.ToLower(rtName)]
 		}
 	}
@@ -6919,7 +6927,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	response = api.ComplianceSummaryOfBenchmarkResponse{
 		BenchmarkID:                benchmarkId,
 		BenchmarkTitle:             title,
-		IntegrationTypes:           integrationTypes,
+		IntegrationTypes:           integration_type.UnparseTypes(integrationTypes),
 		ComplianceScore:            complianceScore,
 		SeveritySummaryByControl:   controlSeverityResult,
 		SeveritySummaryByResource:  resourcesSeverityResult,

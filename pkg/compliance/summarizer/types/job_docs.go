@@ -65,7 +65,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			ResourceType:             resource.ResourceType,
 			ResourceName:             resource.Name,
 			ResourceLocation:         resource.Location,
-			Connector:                resource.SourceType,
+			IntegrationType:          resource.IntegrationType,
 			Findings:                 nil,
 			ResourceCollection:       nil,
 			ResourceCollectionMap:    make(map[string]bool),
@@ -95,7 +95,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			found := false
 
 			for _, connector := range filter.Connectors {
-				if strings.ToLower(connector) == strings.ToLower(finding.Connector.String()) {
+				if strings.ToLower(connector) == strings.ToLower(finding.IntegrationType.String()) {
 					found = true
 					break
 				}

@@ -15,6 +15,7 @@ type IntegrationType interface {
 	GetResourceTypesByLabels(map[string]string) ([]string, error)
 	HealthCheck(credentialType string, jsonData []byte) (bool, error)
 	DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error)
+	GetResourceTypeFromTableName(tableName string) string
 }
 
 // IntegrationCreator IntegrationType interface, credentials, error

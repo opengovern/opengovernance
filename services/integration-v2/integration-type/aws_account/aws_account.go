@@ -122,3 +122,7 @@ func getCredentials(credentialType string, jsonData []byte) (AWSCredentialType, 
 
 	return awsCredential, nil
 }
+
+func (i *AWSAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
+	return ""
+}
