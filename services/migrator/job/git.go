@@ -116,7 +116,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
 	// refs := make([]string, 0, 2)
-	URL := "gitConfig.AnalyticsGitURL"
+	URL := gitConfig.AnalyticsGitURL
 
     resp, err := http.Get(URL)
     if err != nil {
