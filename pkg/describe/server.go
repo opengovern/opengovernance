@@ -2345,7 +2345,7 @@ func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 //	@Tags		scheduler
 //	@Param		request	body	api.GetIntegrationLastDiscoveryJobRequest	true	"List jobs request"
 //	@Produce	json
-//	@Success	200	{object}	model2.DescribeConnectionJob
+//	@Success	200
 //	@Router		/schedule/api/v3/integration/discovery/last-job [post]
 func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.AdminRole}
