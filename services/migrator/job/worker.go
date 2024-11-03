@@ -36,12 +36,12 @@ func InitializeJob(
 	}
 
 	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
-		Port:    conf.PostgreSQL.Port,
-		User:    conf.PostgreSQL.Username,
-		Passwd:  conf.PostgreSQL.Password,
-		DB:      conf.PostgreSQL.DB,
-		SSLMode: conf.PostgreSQL.SSLMode,
+		Host:    "localhost",
+		Port:    "5432",
+		User:    "postgres",
+		Passwd:  "postgres",
+		DB:      "migrator",
+		SSLMode: "disable",
 	}
 	orm, err := postgres.NewClient(&cfg, logger)
 	if err != nil {

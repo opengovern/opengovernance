@@ -54,55 +54,55 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 	if err != nil {
 		g.logger.Warn("failed to load manual remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
+		// g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
 	}
 
 	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "cli"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	guardrailRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "guardrail"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	programmaticRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "programmatic"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "noncompliance-cost"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "usefulness-example"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "explanation"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	g.logger.Info("extracting controls", zap.Int("manualRemediationMap", len(manualRemediationMap)),
-		zap.Int("cliRemediationMap", len(cliRemediationMap)), zap.Int("guardrailRemediationMap", len(guardrailRemediationMap)),
-		zap.Int("programmaticRemediationMap", len(programmaticRemediationMap)), zap.Int("noncomplianceCostMap", len(noncomplianceCostMap)),
-		zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
+	// g.logger.Info("extracting controls", zap.Int("manualRemediationMap", len(manualRemediationMap)),
+	// 	zap.Int("cliRemediationMap", len(cliRemediationMap)), zap.Int("guardrailRemediationMap", len(guardrailRemediationMap)),
+	// 	zap.Int("programmaticRemediationMap", len(programmaticRemediationMap)), zap.Int("noncomplianceCostMap", len(noncomplianceCostMap)),
+	// 	zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
 
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
 		//if g.Comparison != nil {
@@ -208,23 +208,23 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
-				IntegrationType:    control.IntegrationType,
+				Connector:          control.Connector,
 				Enabled:            true,
 				Benchmarks:         nil,
-				Severity:           types.ParseComplianceResultSeverity(control.Severity),
+				Severity:           types.ParseFindingSeverity(control.Severity),
 				ManualVerification: control.ManualVerification,
 				Managed:            control.Managed,
 			}
 
 			if control.Query != nil {
 				q := db.Query{
-					ID:              control.ID,
-					QueryToExecute:  control.Query.QueryToExecute,
-					IntegrationType: control.IntegrationType,
-					PrimaryTable:    control.Query.PrimaryTable,
-					ListOfTables:    control.Query.ListOfTables,
-					Engine:          control.Query.Engine,
-					Global:          control.Query.Global,
+					ID:             control.ID,
+					QueryToExecute: control.Query.QueryToExecute,
+					Connector:      control.Connector,
+					PrimaryTable:   control.Query.PrimaryTable,
+					ListOfTables:   control.Query.ListOfTables,
+					Engine:         control.Query.Engine,
+					Global:         control.Query.Global,
 				}
 				g.controlsQueries[control.ID] = q
 				for _, parameter := range control.Query.Parameters {
@@ -277,7 +277,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	if err != nil {
 		return err
 	}
-	g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
+	// g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
 
 	children := map[string][]string{}
 	for _, o := range benchmarks {
@@ -292,10 +292,22 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			})
 		}
 
+		var connectors []string
+		if len(o.Connectors) > 0 {
+			connectors = o.Connectors
+		} else {
+			if strings.HasPrefix(o.ID, "aws_") {
+				connectors = []string{"AWS"}
+			} else if strings.HasPrefix(o.ID, "azure_") {
+				connectors = []string{"Azure"}
+			}
+		}
+
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
+			Connector:         connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
@@ -316,22 +328,13 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			}
 		}
 
-		integrationTypes := make(map[string]bool)
-		for _, c := range b.Controls {
-			for _, it := range c.IntegrationType {
-				integrationTypes[it] = true
-			}
+		if len(o.Controls) != len(b.Controls) {
+			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
 		}
-		var integrationTypesList []string
-		for k, _ := range integrationTypes {
-			integrationTypesList = append(integrationTypesList, k)
-		}
-		b.IntegrationType = integrationTypesList
-
 		g.benchmarks = append(g.benchmarks, b)
 		children[o.ID] = o.Children
 	}
-	g.logger.Info("Extracted benchmarks 2", zap.Int("count", len(g.benchmarks)))
+	// g.logger.Info("Extracted benchmarks 2", zap.Int("count", len(g.benchmarks)))
 
 	for idx, benchmark := range g.benchmarks {
 		for _, childID := range children[benchmark.ID] {
@@ -347,31 +350,31 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 		g.benchmarks[idx] = benchmark
 	}
-	g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
+	// g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
 
-	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
-	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
+	g.benchmarks, _ = fillBenchmarksConnectors(g.benchmarks)
+	// g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
 
 	return nil
 }
 
-func fillBenchmarksIntegrationTypes(benchmarks []db.Benchmark) ([]db.Benchmark, []string) {
-	var integrationTypes []string
-	integrationTypesMap := make(map[string]bool)
+func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []string) {
+	var connectors []string
+	connectorMap := make(map[string]bool)
 
 	for idx, benchmark := range benchmarks {
-		if benchmark.IntegrationType == nil {
-			benchmark.Children, benchmark.IntegrationType = fillBenchmarksIntegrationTypes(benchmark.Children)
+		if benchmark.Connector == nil {
+			benchmark.Children, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
 			benchmarks[idx] = benchmark
 		}
-		for _, c := range benchmark.IntegrationType {
-			if _, ok := integrationTypesMap[c]; !ok {
-				integrationTypes = append(integrationTypes, c)
-				integrationTypesMap[c] = true
+		for _, c := range benchmark.Connector {
+			if _, ok := connectorMap[c]; !ok {
+				connectors = append(connectors, c)
+				connectorMap[c] = true
 			}
 		}
 	}
-	return benchmarks, integrationTypes
+	return benchmarks, connectors
 }
 
 func (g *GitParser) CheckForDuplicate() error {
@@ -501,9 +504,8 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 		}
 
 		g.queryViews = append(g.queryViews, models.QueryView{
-			ID:           obj.ID,
-			Query:        obj.Query,
-			Dependencies: obj.Dependencies,
+			ID:    obj.ID,
+			Query: obj.Query,
 		})
 
 		return nil
