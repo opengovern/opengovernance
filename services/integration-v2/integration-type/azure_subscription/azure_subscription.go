@@ -2,6 +2,7 @@ package azure_subscription
 
 import (
 	"fmt"
+	"github.com/opengovern/og-azure-describer/azure"
 	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
@@ -62,7 +63,7 @@ func (i *AzureSubscriptionIntegration) DiscoverIntegrations(credentialType strin
 }
 
 func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return nil, nil
+	return azure.ListResourceTypes(), nil
 }
 
 func getCredentials(credentialType string, jsonData []byte) (interfaces.CredentialType, error) {
