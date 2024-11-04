@@ -167,7 +167,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid credential id")
 	}
-	credential, err := h.database.GetCredential(credentialID)
+	credential, err := h.database.GetCredential(req.CredentialID)
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
@@ -278,7 +278,7 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration")
 	}
 
-	credential, err := h.database.GetCredential(integration.CredentialID)
+	credential, err := h.database.GetCredential(integration.CredentialID.String())
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
@@ -508,7 +508,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
 	}
 
-	credential, err := h.database.GetCredential(integration.CredentialID)
+	credential, err := h.database.GetCredential(integration.CredentialID.String())
 	if err != nil {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
@@ -530,7 +530,7 @@ func (h API) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 	}
 
-	err = h.database.UpdateCredential(integration.CredentialID, secret)
+	err = h.database.UpdateCredential(integration.CredentialID.String(), secret)
 	if err != nil {
 		h.logger.Error("failed to update credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update credential")
