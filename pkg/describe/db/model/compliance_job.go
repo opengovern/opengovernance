@@ -38,7 +38,7 @@ type ComplianceJob struct {
 	BenchmarkID         string
 	Status              ComplianceJobStatus
 	AreAllRunnersQueued bool
-	ConnectionID        string
+	IntegrationID       string
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
 	CreatedBy           string

@@ -221,7 +221,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		BenchmarkID:         benchmarkID,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
-		ConnectionID:        connectionID,
+		IntegrationID:       connectionID,
 		TriggerType:         triggerType,
 		CreatedBy:           createdBy,
 	}
@@ -248,7 +248,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
 		integrations, err := s.integrationClient.ListIntegrationsByFilters(&httpclient.Context{UserRole: api.AdminRole}, integrationapi.ListIntegrationsRequest{
-			IntegrationID: []string{job.ConnectionID},
+			IntegrationID: []string{job.IntegrationID},
 		})
 		if err != nil {
 			s.logger.Error("error while getting sources", zap.Error(err))

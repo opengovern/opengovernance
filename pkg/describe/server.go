@@ -467,7 +467,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		for _, resourceType := range rtToDescribe {
 			_, err = h.Scheduler.describe(integration, resourceType, false, false, false, nil, userID)
 			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", integration.IntegrationID), zap.Error(err))
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			}
 		}
 	}
@@ -748,7 +748,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 	for _, describeJob := range describeJobs {
 		daj, err := h.Scheduler.describe(describeJob.Integration, describeJob.ResourceType, false, false, false, nil, userID)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Integration.IntegrationID), zap.Error(err))
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
 		}
 		dependencyIDs = append(dependencyIDs, int64(daj.ID))
@@ -798,7 +798,7 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	for _, describeJob := range describeJobs {
 		daj, err := h.Scheduler.db.GetLastDescribeConnectionJob(describeJob.Integration.IntegrationID, describeJob.ResourceType)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Integration.IntegrationID), zap.Error(err))
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
 		}
 		dependencyIDs = append(dependencyIDs, int64(daj.ID))
@@ -1553,7 +1553,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 					if err != nil {
 						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", integration.IntegrationID), zap.Error(err))
 					}
-					h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", integration.IntegrationID), zap.Error(err))
+					h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 					status = "FAILED"
 					failureReason = fmt.Sprintf("job already in progress: %v", tmpJob.ID)
 				} else {
@@ -1655,7 +1655,7 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	}
 
 	var connectionInfo api.IntegrationInfo
-	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.ConnectionID)
+	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -1932,7 +1932,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			JobStatus:   j.Status.ToApi(),
 			DateTime:    j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.ConnectionID]; ok {
+		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			jobResult.IntegrationInfo = info
 		}
 
@@ -2067,7 +2067,7 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			CreatedAt:   j.CreatedAt,
 			UpdatedAt:   j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.ConnectionID]; ok {
+		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			item.IntegrationInfo = info
 			item.NumberOfIntegrations = 1
 		}
@@ -2498,10 +2498,10 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 
 		for _, j := range jobs {
 			var jobIntegrations api.IntegrationInfo
-			if info, ok := connectionInfo[j.ConnectionID]; ok {
+			if info, ok := connectionInfo[j.IntegrationID]; ok {
 				jobIntegrations = info
 			} else {
-				integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.ConnectionID)
+				integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
@@ -2512,7 +2512,7 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 						Name:            integration.Name,
 						ProviderID:      integration.ProviderID,
 					}
-					connectionInfo[j.ConnectionID] = info
+					connectionInfo[j.IntegrationID] = info
 					jobIntegrations = info
 				}
 			}

@@ -104,7 +104,7 @@ func (db Database) CountRunningDescribeJobsPerResourceType(manuals bool) ([]Reso
 
 func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType string) (*model.DescribeConnectionJob, error) {
 	var job model.DescribeConnectionJob
-	tx := db.ORM.Preload(clause.Associations).Where("connection_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
+	tx := db.ORM.Preload(clause.Associations).Where("integration_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -117,7 +117,7 @@ func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType strin
 
 func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) ([]model.DescribeConnectionJob, error) {
 	var jobs []model.DescribeConnectionJob
-	tx := db.ORM.Preload(clause.Associations).Where("connection_id = ?", connectionID).Find(&jobs)
+	tx := db.ORM.Preload(clause.Associations).Where("integration_id = ?", connectionID).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -230,11 +230,11 @@ func (db Database) ListAllJobs(pageStart, pageEnd int, interval *string, from *t
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, *interval, whereQuery, sortBy, sortOrder)
@@ -242,11 +242,11 @@ UNION ALL
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ?)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, whereQuery, sortBy, sortOrder)
@@ -335,11 +335,11 @@ UNION ALL
 	return job, nil
 }
 
-func (db Database) ListDescribeJobs(connectionId string) (*model.DescribeConnectionJob, error) {
+func (db Database) ListDescribeJobs(integrationId string) (*model.DescribeConnectionJob, error) {
 	var job model.DescribeConnectionJob
 
 	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
-		Where("connection_id = ?", connectionId).
+		Where("integration_id = ?", integrationId).
 		Order("updated_at DESC").
 		Limit(1).
 		First(&job)
@@ -417,7 +417,7 @@ func (db Database) ListDescribeJobsForInterval(interval, triggerType, createdBy 
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds []string, resourceType []string,
+func (db Database) ListDescribeJobsByFilters(parentIds []string, integrationIds []string, resourceType []string,
 	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
 	var job []model.DescribeConnectionJob
 
@@ -427,8 +427,8 @@ func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds [
 		tx = tx.Where("parent_id IN ?", parentIds)
 	}
 
-	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id IN ?", connectionIds)
+	if len(integrationIds) > 0 {
+		tx = tx.Where("integration_id IN ?", integrationIds)
 	}
 
 	if len(resourceType) > 0 {
@@ -465,14 +465,11 @@ func (db Database) ListPendingDescribeJobsByFilters(connectionIds []string, reso
 	tx := db.ORM.Model(&model.DescribeConnectionJob{})
 
 	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id IN ?", connectionIds)
+		tx = tx.Where("integration_id IN ?", connectionIds)
 	}
 
 	if len(resourceType) > 0 {
 		tx = tx.Where("resource_type IN ?", resourceType)
-	}
-	if len(discoveryType) > 0 {
-		tx = tx.Where("discovery_type IN ?", discoveryType)
 	}
 	if len(jobStatus) > 0 {
 		tx = tx.Where("status IN ?", jobStatus)
@@ -702,11 +699,11 @@ func (db Database) GetDescribeStatus(resourceType string) ([]api.DescribeStatus,
 
 	tx := db.ORM.Raw(`with conns as (
     select 
-        connection_id, max(updated_at) as updated_at 
+        integration_id, max(updated_at) as updated_at 
     from describe_connection_jobs 
     where lower(resource_type) = ? and status in ('SUCCEEDED', 'FAILED', 'TIMEOUT') group by 1
 )
-select j.connection_id, j.connector, j.status from describe_connection_jobs j inner join conns c on j.connection_id = c.connection_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
+select j.integration_id, j.connector, j.status from describe_connection_jobs j inner join conns c on j.integration_id = c.integration_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -725,7 +722,7 @@ func (db Database) GetConnectionDescribeStatus(connectionID string) ([]api.Conne
     from
 		describe_connection_jobs 
     where 
-		connection_id = ?
+		integration_id = ?
 	group by 1
 )
 select 
@@ -733,7 +730,7 @@ select
 from 
 	describe_connection_jobs j inner join resourceTypes c on j.resource_type = c.resource_type 
 where 
-	connection_id = ? AND j.updated_at = c.updated_at;`,
+	integration_id = ? AND j.updated_at = c.updated_at;`,
 		connectionID, connectionID).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -757,7 +754,7 @@ func (db Database) CountJobsWithStatus(interval int, connector source.Type, stat
 func (db Database) ListAllPendingConnection() ([]string, error) {
 	var connectionIDs []string
 
-	tx := db.ORM.Raw(`select distinct(connection_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS')`).Find(&connectionIDs)
+	tx := db.ORM.Raw(`select distinct(integration_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS')`).Find(&connectionIDs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -843,7 +840,7 @@ func (db Database) ListIntegrationDiscovery(triggerId string, connectionIds []st
 		Where("trigger_id = ?", triggerId)
 
 	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id in ?", connectionIds)
+		tx = tx.Where("integration_id in ?", connectionIds)
 	}
 	tx = tx.Find(&jobs)
 	if tx.Error != nil {
