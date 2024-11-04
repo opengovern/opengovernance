@@ -91,8 +91,10 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	credentialID := uuid.New()
 
+	metadata := make(map[string]string)
+	metadataJsonData, err := json.Marshal(metadata)
 	credentialMetadataJsonb := pgtype.JSONB{}
-	err = credentialMetadataJsonb.Set([]byte(""))
+	err = credentialMetadataJsonb.Set(metadataJsonData)
 	err = h.database.CreateCredential(&models2.Credential{
 		ID:             credentialID,
 		Secret:         secret,
@@ -173,8 +175,8 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 	mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
 	if err != nil {
-		h.logger.Error("failed to encrypt secret", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+		h.logger.Error("failed to decrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt config")
 	}
 
 	if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
@@ -243,6 +245,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		healthcheckTime := time.Now()
 		i.LastCheck = &healthcheckTime
+		i.State = models2.IntegrationStateActive
 
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
@@ -280,11 +283,15 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		h.logger.Error("failed to get credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
 	}
+	if credential == nil {
+		h.logger.Error("credential not found", zap.Any("credentialId", integration.CredentialID))
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
 
 	mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
 	if err != nil {
-		h.logger.Error("failed to encrypt secret", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+		h.logger.Error("failed to decrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt config")
 	}
 
 	if _, ok := integration_type.IntegrationTypes[integration.IntegrationType]; !ok {

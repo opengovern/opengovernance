@@ -71,7 +71,7 @@ func (h API) List(c echo.Context) error {
 	for _, credential := range credentials {
 		item, err := credential.ToApi()
 		if err != nil {
-			h.logger.Error("failed to convert integration to API model", zap.Error(err))
+			h.logger.Error("failed to convert credentials to API model", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 		}
 		items = append(items, *item)
@@ -92,7 +92,7 @@ func (h API) List(c echo.Context) error {
 //	@Produce		json
 //	@Success		200
 //	@Param			credentialId	path	string	true	"credentialId"
-//	@Router			/integration/api/v1/integrations/{credentialId} [get]
+//	@Router			/integration/api/v1/credentials/{credentialId} [get]
 func (h API) Get(c echo.Context) error {
 	credentialId, err := uuid.Parse(c.Param("credentialId"))
 	if err != nil {
@@ -107,7 +107,7 @@ func (h API) Get(c echo.Context) error {
 
 	item, err := credential.ToApi()
 	if err != nil {
-		h.logger.Error("failed to convert integration to API model", zap.Error(err))
+		h.logger.Error("failed to convert credentials to API model", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 	}
 	return c.JSON(http.StatusOK, item)

@@ -90,7 +90,7 @@ func (s *JobScheduler) buildRunners(
 			runnerJob := model.ComplianceRunner{
 				BenchmarkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
-				ConnectionID:         nil,
+				IntegrationID:        nil,
 				ResourceCollectionID: resourceCollectionID,
 				ParentJobID:          parentJobID,
 				StartedAt:            time.Time{},
@@ -108,7 +108,7 @@ func (s *JobScheduler) buildRunners(
 			runnerJob := model.ComplianceRunner{
 				BenchmarkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
-				ConnectionID:         connectionID,
+				IntegrationID:        connectionID,
 				ResourceCollectionID: resourceCollectionID,
 				ParentJobID:          parentJobID,
 				StartedAt:            time.Time{},
