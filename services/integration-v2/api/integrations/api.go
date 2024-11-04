@@ -241,6 +241,9 @@ func (h API) AddIntegrations(c echo.Context) error {
 		err = integrationLabelsJsonb.Set(labelsJsonData)
 		i.Labels = integrationLabelsJsonb
 
+		healthcheckTime := time.Now()
+		i.LastCheck = &healthcheckTime
+
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
 			h.logger.Error("failed to create credential", zap.Error(err))

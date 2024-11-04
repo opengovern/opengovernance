@@ -796,7 +796,7 @@ func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.db.GetLastDescribeConnectionJob(describeJob.Integration.IntegrationID, describeJob.ResourceType)
+		daj, err := h.Scheduler.db.GetLastDescribeIntegrationJob(describeJob.Integration.IntegrationID, describeJob.ResourceType)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
@@ -943,7 +943,7 @@ func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
 func (h HttpServer) GetConnectionDescribeStatus(ctx echo.Context) error {
 	connectionID := ctx.QueryParam("connection_id")
 
-	status, err := h.DB.GetConnectionDescribeStatus(connectionID)
+	status, err := h.DB.GetIntegrationDescribeStatus(connectionID)
 	if err != nil {
 		return err
 	}
@@ -951,7 +951,7 @@ func (h HttpServer) GetConnectionDescribeStatus(ctx echo.Context) error {
 }
 
 func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
-	status, err := h.DB.ListAllPendingConnection()
+	status, err := h.DB.ListAllPendingIntegration()
 	if err != nil {
 		return err
 	}
@@ -968,7 +968,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
-	pendingDiscoveryTypes, err := h.DB.ListAllFirstTryPendingConnection()
+	pendingDiscoveryTypes, err := h.DB.ListAllFirstTryPendingIntegration()
 	if err != nil {
 		return err
 	}
@@ -1549,7 +1549,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			job, err := h.Scheduler.describe(integration, resourceType, false, false, false, &integrationDiscovery.ID, userID)
 			if err != nil {
 				if err.Error() == "job already in progress" {
-					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(integration.IntegrationID, resourceType)
+					tmpJob, err := h.Scheduler.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
 					if err != nil {
 						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", integration.IntegrationID), zap.Error(err))
 					}
@@ -2655,7 +2655,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
 		}
 		if job.Status == api.DescribeResourceJobCreated {
-			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2678,7 +2678,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2781,10 +2781,10 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		for _, c := range integrations {
 			IntegrationIDsMap[c.IntegrationID] = true
 		}
-		var connectionIDs []string
+		var integrationIDs []string
 		switch strings.ToLower(request.JobType) {
 		case "compliance":
-			jobs, err := h.DB.ListPendingComplianceJobsByConnectionID(connectionIDs)
+			jobs, err := h.DB.ListPendingComplianceJobsByIntegrationID(integrationIDs)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2792,7 +2792,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
 		case "discovery":
-			jobs, err := h.DB.ListPendingDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			jobs, err := h.DB.ListPendingDescribeJobsByFilters(integrationIDs, nil, nil, nil, nil)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2948,7 +2948,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				break
 			}
 			if job.Status == api.DescribeResourceJobCreated {
-				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 				if err != nil {
 					failureReason = err.Error()
 					break
@@ -2975,7 +2975,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 					failureReason = err.Error()
 					break
 				}
-				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 				if err != nil {
 					failureReason = err.Error()
 					break
@@ -3214,7 +3214,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		var connectionIDs []string
 		switch strings.ToLower(request.JobType) {
 		case "compliance":
-			jobs, err := h.DB.ListComplianceJobsByConnectionID(connectionIDs)
+			jobs, err := h.DB.ListComplianceJobsByIntegrationID(connectionIDs)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -3604,7 +3604,7 @@ func (h HttpServer) RunQuery(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/schedule/api/v3/sample/purge [put]
 func (h HttpServer) PurgeSampleData(c echo.Context) error {
-	err := h.DB.CleanupAllDescribeConnectionJobs()
+	err := h.DB.CleanupAllDescribeIntegrationJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete describe connection jobs")
 	}

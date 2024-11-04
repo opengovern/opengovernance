@@ -243,7 +243,7 @@ type ResourceCountResponse struct {
 func (s *Scheduler) resolveDescribeDependency(ctx context.Context, job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
-		describeConnectionJob, err := s.db.GetDescribeConnectionJobByID(uint(id))
+		describeConnectionJob, err := s.db.GetDescribeIntegrationJobByID(uint(id))
 		if err != nil {
 			return err
 		}

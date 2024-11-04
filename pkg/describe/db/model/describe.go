@@ -34,7 +34,7 @@ type IntegrationDiscovery struct {
 	ResourceTypes pq.StringArray `gorm:"type:text[]" json:"resourceTypes"`
 }
 
-type DescribeConnectionJob struct {
+type DescribeIntegrationJob struct {
 	ID             uint `gorm:"primarykey"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time      `gorm:"index:,sort:desc"`

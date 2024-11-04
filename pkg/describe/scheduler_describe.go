@@ -33,7 +33,7 @@ const (
 var ErrJobInProgress = errors.New("job already in progress")
 
 type CloudNativeCall struct {
-	dc   model.DescribeConnectionJob
+	dc   model.DescribeIntegrationJob
 	src  *integrationapi.Integration
 	cred *integrationapi.Credential
 }
@@ -53,9 +53,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
-	count, err := s.db.CountQueuedDescribeConnectionJobs(manuals)
+	count, err := s.db.CountQueuedDescribeIntegrationJobs(manuals)
 	if err != nil {
-		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
+		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeIntegrationJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "queue_length").Inc()
 		return err
 	}
@@ -68,7 +68,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
-	count, err = s.db.CountDescribeConnectionJobsRunOverLast10Minutes(manuals)
+	count, err = s.db.CountDescribeIntegrationJobsRunOverLast10Minutes(manuals)
 	if err != nil {
 		s.logger.Error("failed to get last hour length", zap.String("spot", "CountDescribeConnectionJobsRunOverLastHour"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "last_hour_length").Inc()
@@ -83,7 +83,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 		DescribePublishingBlocked.WithLabelValues("hour queued").Set(0)
 	}
 
-	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall), manuals)
+	dcs, err := s.db.ListRandomCreatedDescribeIntegrationJobs(ctx, int(s.MaxConcurrentCall), manuals)
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_error").Inc()
@@ -241,7 +241,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
 	defer span.End()
 
-	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	fdcs, err := s.db.GetFailedDescribeIntegrationJobs(ctx)
 	if err != nil {
 		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 		return err
@@ -250,7 +250,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	retryCount := 0
 
 	for _, failedJob := range fdcs {
-		err = s.db.RetryDescribeConnectionJob(failedJob.ID)
+		err = s.db.RetryDescribeIntegrationJob(failedJob.ID)
 		if err != nil {
 			return err
 		}
@@ -264,7 +264,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 }
 
 func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
-	removeResources bool, parentId *uint, createdBy string) (*model.DescribeConnectionJob, error) {
+	removeResources bool, parentId *uint, createdBy string) (*model.DescribeIntegrationJob, error) {
 
 	integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
 	if err != nil {
@@ -284,7 +284,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 		return nil, fmt.Errorf("invalid resource type for integration type: %s - %s", resourceType, integration.IntegrationType)
 	}
 
-	job, err := s.db.GetLastDescribeConnectionJob(integration.IntegrationID, resourceType)
+	job, err := s.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
 	if err != nil {
 		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -309,7 +309,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 		}
 	}
 
-	if integration.LastCheck.Before(time.Now().Add(-1 * 24 * time.Hour)) {
+	if integration.LastCheck == nil || integration.LastCheck.Before(time.Now().Add(-1*24*time.Hour)) {
 		healthCheckedSrc, err := s.integrationClient.IntegrationHealthcheck(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
 		}, integration.IntegrationID)
@@ -338,7 +338,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 	if removeResources {
 		daj.Status = apiDescribe.DescribeResourceJobRemovingResources
 	}
-	err = s.db.CreateDescribeConnectionJob(&daj)
+	err = s.db.CreateDescribeIntegrationJob(&daj)
 	if err != nil {
 		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -350,8 +350,8 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 }
 
 func newDescribeConnectionJob(a integrationapi.Integration, resourceType string, triggerType enums.DescribeTriggerType,
-	parentId *uint, createdBy string) model.DescribeConnectionJob {
-	return model.DescribeConnectionJob{
+	parentId *uint, createdBy string) model.DescribeIntegrationJob {
+	return model.DescribeIntegrationJob{
 		CreatedBy:       createdBy,
 		ParentID:        parentId,
 		IntegrationID:   a.IntegrationID,
@@ -363,7 +363,7 @@ func newDescribeConnectionJob(a integrationapi.Integration, resourceType string,
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeIntegrationJob, cipherText string) error {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -403,7 +403,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		},
 	}
 
-	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
+	if err := s.db.QueueDescribeIntegrationJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
 			zap.String("IntegrationID", dc.IntegrationID),
@@ -414,7 +414,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	isFailed := false
 	defer func() {
 		if isFailed {
-			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
+			err := s.db.UpdateDescribeIntegrationJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),
@@ -474,8 +474,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		}
 	}
 	if seqNum != nil {
-		if err := s.db.UpdateDescribeConnectionJobNatsSeqNum(dc.ID, *seqNum); err != nil {
-			s.logger.Error("failed to UpdateDescribeConnectionJobNatsSeqNum",
+		if err := s.db.UpdateDescribeIntegrationJobNatsSeqNum(dc.ID, *seqNum); err != nil {
+			s.logger.Error("failed to UpdateDescribeIntegrationJobNatsSeqNum",
 				zap.Uint("jobID", dc.ID),
 				zap.Uint64("seqNum", *seqNum),
 				zap.Error(err),

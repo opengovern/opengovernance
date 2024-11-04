@@ -568,7 +568,7 @@ func (s *Scheduler) RunRemoveResourcesConnectionJobsCleanup() {
 				continue
 			}
 
-			err = s.db.UpdateDescribeConnectionJobStatus(j.ID, api.DescribeResourceJobSucceeded, "", "", 0, 0)
+			err = s.db.UpdateDescribeIntegrationJobStatus(j.ID, api.DescribeResourceJobSucceeded, "", "", 0, 0)
 			if err != nil {
 				s.logger.Error("Failed to update job", zap.Error(err))
 				continue
@@ -582,12 +582,12 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	defer ticker.Stop()
 	for range ticker.C {
 		tOlder := time.Now().AddDate(0, 0, -7)
-		err := s.db.CleanupScheduledDescribeConnectionJobsOlderThan(tOlder)
+		err := s.db.CleanupScheduledDescribeIntegrationJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}
 		tOlderManual := time.Now().AddDate(0, 0, -30)
-		err = s.db.CleanupManualDescribeConnectionJobsOlderThan(tOlderManual)
+		err = s.db.CleanupManualDescribeIntegrationJobsOlderThan(tOlderManual)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}

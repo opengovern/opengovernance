@@ -80,7 +80,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 			}
 
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
-			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
+			if err := s.db.UpdateDescribeIntegrationJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "failure").Inc()
 
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
@@ -120,7 +120,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 }
 
 func (s *Scheduler) handleTimeoutForDiscoveryJobs() {
-	err := s.db.UpdateDescribeConnectionJobsTimedOut(int64(s.discoveryIntervalHours.Hours()))
+	err := s.db.UpdateDescribeIntegrationJobsTimedOut(int64(s.discoveryIntervalHours.Hours()))
 	if err != nil {
 		s.logger.Error("failed to UpdateDescribeConnectionJobsTimedOut", zap.Error(err))
 	}
