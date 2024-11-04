@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opengovernance/services/integration-v2/api/models"
@@ -10,9 +11,9 @@ import (
 )
 
 type Credential struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
-	CredentialType string    `json:"credentialType"`
-	Secret         string    `json:"-"`
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	CredentialType string
+	Secret         string
 	Metadata       pgtype.JSONB
 
 	CreatedAt time.Time
@@ -24,7 +25,7 @@ func (c *Credential) ToApi() (*models.Credential, error) {
 	var metadata map[string]string
 	if c.Metadata.Status == pgtype.Present {
 		if err := json.Unmarshal(c.Metadata.Bytes, &metadata); err != nil {
-			return nil, err
+			fmt.Println("could not unmarshal metadata", err)
 		}
 	}
 

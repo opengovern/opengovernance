@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"gorm.io/gorm/clause"
 )
@@ -24,9 +23,9 @@ func (db Database) CreateCredential(s *models.Credential) error {
 }
 
 // DeleteCredential deletes a credential
-func (db Database) DeleteCredential(id uuid.UUID) error {
+func (db Database) DeleteCredential(id string) error {
 	tx := db.Orm.
-		Where("id = ?", id.String()).
+		Where("id = ?", id).
 		Unscoped().
 		Delete(&models.Credential{})
 	if tx.Error != nil {
@@ -50,11 +49,11 @@ func (db Database) ListCredentials() ([]models.Credential, error) {
 }
 
 // GetCredential get a credential
-func (db Database) GetCredential(id uuid.UUID) (*models.Credential, error) {
+func (db Database) GetCredential(id string) (*models.Credential, error) {
 	var credential models.Credential
 	tx := db.Orm.
 		Model(&models.Credential{}).
-		Where("id = ?", id.String()).
+		Where("id = ?", id).
 		First(&credential)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -63,10 +62,10 @@ func (db Database) GetCredential(id uuid.UUID) (*models.Credential, error) {
 	return &credential, nil
 }
 
-func (db Database) UpdateCredential(id uuid.UUID, secret string) error {
+func (db Database) UpdateCredential(id string, secret string) error {
 	tx := db.Orm.
 		Model(&models.Credential{}).
-		Where("id = ?", id.String()).Update("secret", secret)
+		Where("id = ?", id).Update("secret", secret)
 
 	if tx.Error != nil {
 		return tx.Error

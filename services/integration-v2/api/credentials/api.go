@@ -1,7 +1,6 @@
 package credentials
 
 import (
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
@@ -37,12 +36,9 @@ func New(
 //	@Param			credentialId	path	string	true	"credentialId"
 //	@Router			/integration/api/v1/credentials/{credentialId} [delete]
 func (h API) Delete(c echo.Context) error {
-	credentialId, err := uuid.Parse(c.Param("credentialId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
+	credentialId := c.Param("credentialId")
 
-	err = h.database.DeleteCredential(credentialId)
+	err := h.database.DeleteCredential(credentialId)
 	if err != nil {
 		h.logger.Error("failed to delete credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete credential")
@@ -72,7 +68,7 @@ func (h API) List(c echo.Context) error {
 		item, err := credential.ToApi()
 		if err != nil {
 			h.logger.Error("failed to convert credentials to API model", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert credentials to API model")
 		}
 		items = append(items, *item)
 	}
@@ -94,10 +90,7 @@ func (h API) List(c echo.Context) error {
 //	@Param			credentialId	path	string	true	"credentialId"
 //	@Router			/integration/api/v1/credentials/{credentialId} [get]
 func (h API) Get(c echo.Context) error {
-	credentialId, err := uuid.Parse(c.Param("credentialId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
+	credentialId := c.Param("credentialId")
 
 	credential, err := h.database.GetCredential(credentialId)
 	if err != nil {
