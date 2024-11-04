@@ -90,7 +90,8 @@ func InitializeJob(
 		}
 	}
 
-	w.commitRefs, err = GitClone(conf, logger)
+	// w.commitRefs, err = GitClone(conf, logger)
+	w.commitRefs ="no fetch"
 	if err != nil {
 		return nil, fmt.Errorf("failure while running git clone: %w", err)
 	}
