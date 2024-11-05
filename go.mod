@@ -32,7 +32,7 @@ require (
 	github.com/goccy/go-yaml v1.11.2
 	github.com/gogo/googleapis v1.4.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
