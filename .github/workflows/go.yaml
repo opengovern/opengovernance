@@ -1,6 +1,4 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
+# .github/workflows/go.yaml
 name: Go
 
 on:
@@ -19,9 +17,9 @@ on:
           - "prod"
         default: "dev"
   push:
-    branches: ["main","dev"]
+    branches: ["main", "dev"]
   pull_request:
-    branches: ["main","dev"]
+    branches: ["main", "dev"]
 
 jobs:
   tag:
@@ -33,6 +31,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Tag version
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.1
@@ -40,6 +39,7 @@ jobs:
           github_token: ${{ secrets.GH_ACCESS_TOKEN }}
           release_branches: main
           tag_prefix: v
+
       - name: Set latest tag output
         id: set_latest_tag
         run: |
@@ -48,6 +48,7 @@ jobs:
           else
             echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
           fi
+
   build:
     runs-on: ubuntu-latest
     needs:
@@ -82,60 +83,67 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
           large-packages: false
           docker-images: true
           swap-storage: true
+
       - name: Install musl cc
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: musl-tools musl-dev musl
-      - uses: actions/checkout@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version-file: "./go.mod"
           cache: false
-      - name: Go Cache
-        uses: actions/cache@v3
+
+      - name: Cache Go Modules and Build Cache
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-
             ${{ runner.os }}-go-
-      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
+      - name: Configure Git for Private Repos
+        run: |
+          git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
       - name: Build services
         id: build_services
         run: |
           set -x
-          ./scripts/list_services > ./service-list
+          ./scripts/list_services > ./service-list || { echo "Error generating service list"; exit 1; }
           cat ./service-list
           cat ./service-list | sed 's/\s\+/\n/g' | sed 's/^\<steampipe\>$//g' | sed '/^$/d' > ./build_services
           cat ./build_services
           mkdir -p ./build
           if [ ! -z "$(cat ./build_services)" ]; then
             for f in $(cat ./build_services); do
-              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
+              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/$f ./cmd/$f;
             done
             chmod +x ./build/*
           fi
           for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
+
       - name: Pack build
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
         run: |
           tar -czvf build.tar.gz build
+
       - name: Upload artifact
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
         uses: actions/upload-artifact@v3
@@ -143,620 +151,280 @@ jobs:
           name: build
           path: build.tar.gz
           retention-days: 1
+
+  # Deployment Jobs using Reusable Workflow
+
   deploy-steampipe:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
       - deploy-steampipe-plugin-opengovernance
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "steampipe-service"
+      dockerfile: "docker/SteampipeServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/SteampipeServiceDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+
   deploy-auth-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "auth-service"
+      dockerfile: "docker/AuthServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/AuthServiceDockerfile
-          context: .
+
   deploy-checkup-worker:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "checkup-worker"
+      dockerfile: "docker/CheckupWorkerDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/CheckupWorkerDockerfile
-          context: .
+
   deploy-compliance-report-worker:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
       - deploy-steampipe-plugin-opengovernance
       - deploy-steampipe
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "compliance-report-worker"
+      dockerfile: "docker/ComplianceReportWorkerDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ComplianceReportWorkerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+
   deploy-compliance-summarizer:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "compliance-summarizer"
+      dockerfile: "docker/ComplianceSummarizerDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ComplianceSummarizerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+
   deploy-compliance-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "compliance-service"
+      dockerfile: "docker/ComplianceServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ComplianceServiceDockerfile
-          context: .
+
   deploy-describe-scheduler:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "describe-scheduler"
+      dockerfile: "docker/DescribeSchedulerDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DescribeSchedulerDockerfile
-          context: .
+
   deploy-integration-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "integration"
+      dockerfile: "docker/IntegrationServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
-          file: docker/IntegrationServiceDockerfile
-          context: .
+
   deploy-integration-v2-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "integration-v2"
+      dockerfile: "docker/IntegrationV2ServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.integration-v2-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
-          file: docker/IntegrationV2ServiceDockerfile
-          context: .
+
   deploy-es-sink-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "es-sink"
+      dockerfile: "docker/EsSinkServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.es-sink-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
-          file: docker/EsSinkServiceDockerfile
-          context: .
+
   deploy-inventory-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "inventory-service"
+      dockerfile: "docker/InventoryServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/InventoryServiceDockerfile
-          context: .
+
   deploy-metadata-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "metadata-service"
+      dockerfile: "docker/MetadataServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/MetadataServiceDockerfile
-          context: .
+
   deploy-migrator-worker:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "migrator"
+      dockerfile: "docker/MigratorDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
-          file: docker/MigratorDockerfile
-          context: .
+
   deploy-onboard-service:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "onboard-service"
+      dockerfile: "docker/OnboardServiceDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/OnboardServiceDockerfile
-          context: .
+
   deploy-swagger-ui:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "swagger-ui"
+      dockerfile: "docker/SwaggerUIDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
-          file: docker/SwaggerUIDockerfile
-          context: .
+
   deploy-analytics-worker:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
       - deploy-steampipe-plugin-opengovernance
       - deploy-compliance-report-worker
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "analytics-worker"
+      dockerfile: "docker/AnalyticsWorkerDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/AnalyticsWorkerDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
     needs:
       - build
       - tag
+    environment: docker
     permissions:
       id-token: write
       contents: read
-    environment: docker
     if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' ||
-      needs.build.outputs.steampipe == 'true' ||
-      needs.build.outputs.compliance-report-worker == 'true' ||
-      needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+          needs.build.outputs.steampipe == 'true' ||
+          needs.build.outputs.compliance-report-worker == 'true' ||
+          needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Check if we need to actually push
         id: check_if_push
         run: |
           if [[ -z "${{ needs.build.outputs.steampipe-plugin-opengovernance }}" ]]; then
-            echo "do_build=false" >> $GITHUB_OUTPUT
+            echo "do_build=false" >> "$GITHUB_OUTPUT"
           else
-            echo "do_build=true" >> $GITHUB_OUTPUT
+            echo "do_build=true" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Checkout code
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/checkout@v3
+
       - name: Download artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/download-artifact@v3
         with:
           name: build
           path: .
+
       - name: Unpack artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        if: steps.check_if_push.outputs.do_build == 'true'
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
+
       - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        if: steps.check_if_push.outputs.do_build == 'true'
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
+
       - name: Build and push Docker images
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
@@ -766,227 +434,55 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:0.0.1
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginOpengovernanceDockerfile
-          context: .
-  deploy-wastage-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.wastage-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/WastageServiceDockerfile
-          context: .
-  deploy-information-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.information-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/InformationServiceDockerfile
-          context: .
-  deploy-query-runner-worker:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-      - deploy-steampipe-plugin-opengovernance
-      - deploy-steampipe
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.query-runner-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/QueryRunnerWorkerDockerfile
-          build-args: |
+          build_args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+          context: .  # Set context to repository root
+
   deploy-import-data-script:
-    runs-on: ubuntu-latest
     needs:
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/import-data-script:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ImportDataScriptDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "import-data-script"
+      dockerfile: "docker/ImportDataScriptDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+
   deploy-export-data-script:
-    runs-on: ubuntu-latest
     needs:
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/export-data-script:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ExportDataScriptDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: .
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "export-data-script"
+      dockerfile: "docker/ExportDataScriptDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+
   deploy-demo-importer-worker:
-    runs-on: ubuntu-latest
     needs:
       - build
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "demo-importer"
+      dockerfile: "docker/DemoImporterDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
     if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DemoImporterDockerfile
-          context: .
+
   deploy-dex-login:
-    runs-on: ubuntu-latest
     needs:
       - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/dex-login:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DexLoginDockerfile
-          context: .
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service_name: "dex-login"
+      dockerfile: "docker/DexLoginDockerfile"
+      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+    secrets:
+      GHCR_PAT: ${{ secrets.GHCR_PAT }}
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
