@@ -13,8 +13,12 @@ on:
         required: true
         type: string
       build_args:
-        description: 'Build arguments for Docker'
+        description: 'Build arguments for Docker (optional, newline-separated if multiple)'
         required: false
+        type: string
+      tags:
+        description: 'Docker image tags (newline-separated if multiple)'
+        required: true
         type: string
     secrets:
       GHCR_PAT:
@@ -37,6 +41,7 @@ jobs:
 
       - name: Unpack Build Artifact
         run: |
+          set -e
           tar -xvf build.tar.gz
           ls -la ./build
 
@@ -61,8 +66,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ inputs.service_name }}:${{ needs.tag.outputs.latest_tag }}
+            ${{ inputs.tags }}
           file: ${{ inputs.dockerfile }}
           build-args: |
-            ${{ inputs.build_args }}
+            ${{ inputs.build_args || '' }}
           context: .

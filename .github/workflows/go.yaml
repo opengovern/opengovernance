@@ -125,6 +125,7 @@ jobs:
       - name: Build services
         id: build_services
         run: |
+          set -e
           set -x
           ./scripts/list_services > ./service-list || { echo "Error generating service list"; exit 1; }
           cat ./service-list
@@ -164,9 +165,11 @@ jobs:
       service_name: "steampipe-service"
       dockerfile: "docker/SteampipeServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-auth-service:
     needs:
@@ -177,9 +180,11 @@ jobs:
       service_name: "auth-service"
       dockerfile: "docker/AuthServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-checkup-worker:
     needs:
@@ -190,9 +195,11 @@ jobs:
       service_name: "checkup-worker"
       dockerfile: "docker/CheckupWorkerDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-compliance-report-worker:
     needs:
@@ -205,9 +212,11 @@ jobs:
       service_name: "compliance-report-worker"
       dockerfile: "docker/ComplianceReportWorkerDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-compliance-summarizer:
     needs:
@@ -218,9 +227,11 @@ jobs:
       service_name: "compliance-summarizer"
       dockerfile: "docker/ComplianceSummarizerDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-compliance-service:
     needs:
@@ -231,9 +242,11 @@ jobs:
       service_name: "compliance-service"
       dockerfile: "docker/ComplianceServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-describe-scheduler:
     needs:
@@ -244,9 +257,11 @@ jobs:
       service_name: "describe-scheduler"
       dockerfile: "docker/DescribeSchedulerDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-integration-service:
     needs:
@@ -257,9 +272,11 @@ jobs:
       service_name: "integration"
       dockerfile: "docker/IntegrationServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-integration-v2-service:
     needs:
@@ -270,9 +287,11 @@ jobs:
       service_name: "integration-v2"
       dockerfile: "docker/IntegrationV2ServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.integration-v2-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.integration-v2-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-es-sink-service:
     needs:
@@ -283,9 +302,11 @@ jobs:
       service_name: "es-sink"
       dockerfile: "docker/EsSinkServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.es-sink-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.es-sink-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-inventory-service:
     needs:
@@ -296,9 +317,11 @@ jobs:
       service_name: "inventory-service"
       dockerfile: "docker/InventoryServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-metadata-service:
     needs:
@@ -309,9 +332,11 @@ jobs:
       service_name: "metadata-service"
       dockerfile: "docker/MetadataServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-migrator-worker:
     needs:
@@ -322,9 +347,11 @@ jobs:
       service_name: "migrator"
       dockerfile: "docker/MigratorDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-onboard-service:
     needs:
@@ -335,9 +362,11 @@ jobs:
       service_name: "onboard-service"
       dockerfile: "docker/OnboardServiceDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-swagger-ui:
     needs:
@@ -348,9 +377,11 @@ jobs:
       service_name: "swagger-ui"
       dockerfile: "docker/SwaggerUIDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-analytics-worker:
     needs:
@@ -363,9 +394,11 @@ jobs:
       service_name: "analytics-worker"
       dockerfile: "docker/AnalyticsWorkerDockerfile"
       build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
+      tags: |
+        ghcr.io/${{ github.repository_owner }}/analytics-worker:${{ needs.tag.outputs.latest_tag }}
     secrets:
       GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
 
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
@@ -404,6 +437,7 @@ jobs:
       - name: Unpack artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         run: |
+          set -e
           tar -xvf build.tar.gz
           ls -la ./build
 
@@ -417,7 +451,7 @@ jobs:
             exit 1
           fi
 
-      - name: Log in to the Container registry
+      - name: Log in to Container Registry
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/login-action@v4
         with:
@@ -425,7 +459,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Build and push Docker images
+      - name: Build and Push Docker Image for Steampipe Plugin Opengovernance
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/build-push-action@v4
         with:
@@ -437,52 +471,3 @@ jobs:
           build_args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .  # Set context to repository root
-
-  deploy-import-data-script:
-    needs:
-      - tag
-    uses: ./.github/workflows/deploy-service.yml
-    with:
-      service_name: "import-data-script"
-      dockerfile: "docker/ImportDataScriptDockerfile"
-      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
-    secrets:
-      GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-
-  deploy-export-data-script:
-    needs:
-      - tag
-    uses: ./.github/workflows/deploy-service.yml
-    with:
-      service_name: "export-data-script"
-      dockerfile: "docker/ExportDataScriptDockerfile"
-      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
-    secrets:
-      GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-
-  deploy-demo-importer-worker:
-    needs:
-      - build
-      - tag
-    uses: ./.github/workflows/deploy-service.yml
-    with:
-      service_name: "demo-importer"
-      dockerfile: "docker/DemoImporterDockerfile"
-      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
-    secrets:
-      GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-
-  deploy-dex-login:
-    needs:
-      - tag
-    uses: ./.github/workflows/deploy-service.yml
-    with:
-      service_name: "dex-login"
-      dockerfile: "docker/DexLoginDockerfile"
-      build_args: "PLUGIN_REGISTRY=ghcr.io/opengovern"
-    secrets:
-      GHCR_PAT: ${{ secrets.GHCR_PAT }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
