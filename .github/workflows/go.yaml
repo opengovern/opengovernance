@@ -176,13 +176,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Azure Plugin Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
-          path: .
+          path: .  # Download to the current directory
 
-      - name: Unpack Azure Plugin Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -202,7 +202,7 @@ jobs:
           file: docker/SteampipeServiceDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -218,13 +218,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -242,7 +242,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/AuthServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-checkup-worker:
     runs-on: ubuntu-latest
@@ -258,13 +258,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -282,7 +282,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/CheckupWorkerDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-compliance-report-worker:
     runs-on: ubuntu-latest
@@ -300,13 +300,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -326,7 +326,7 @@ jobs:
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -342,13 +342,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -368,7 +368,7 @@ jobs:
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -384,13 +384,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -408,7 +408,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-describe-scheduler:
     runs-on: ubuntu-latest
@@ -424,13 +424,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -448,7 +448,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
           file: docker/DescribeSchedulerDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-integration-service:
     runs-on: ubuntu-latest
@@ -464,13 +464,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -488,7 +488,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-integration-v2-service:
     runs-on: ubuntu-latest
@@ -504,13 +504,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -528,7 +528,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationV2ServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-es-sink-service:
     runs-on: ubuntu-latest
@@ -544,13 +544,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -568,7 +568,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
           file: docker/EsSinkServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-inventory-service:
     runs-on: ubuntu-latest
@@ -584,13 +584,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -608,7 +608,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InventoryServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-metadata-service:
     runs-on: ubuntu-latest
@@ -624,13 +624,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -648,7 +648,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/MetadataServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-migrator-worker:
     runs-on: ubuntu-latest
@@ -664,13 +664,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -688,7 +688,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-onboard-service:
     runs-on: ubuntu-latest
@@ -704,13 +704,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -728,7 +728,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/OnboardServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-swagger-ui:
     runs-on: ubuntu-latest
@@ -744,13 +744,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -768,7 +768,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-analytics-worker:
     runs-on: ubuntu-latest
@@ -786,13 +786,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -812,7 +812,7 @@ jobs:
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
@@ -841,14 +841,14 @@ jobs:
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
@@ -869,7 +869,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:0.0.1
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginOpengovernanceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-wastage-service:
     runs-on: ubuntu-latest
@@ -885,13 +885,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -909,7 +909,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WastageServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-information-service:
     runs-on: ubuntu-latest
@@ -925,13 +925,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -949,7 +949,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InformationServiceDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-query-runner-worker:
     runs-on: ubuntu-latest
@@ -967,13 +967,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
           path: .
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -993,19 +993,31 @@ jobs:
           file: docker/QueryRunnerWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-import-data-script:
     runs-on: ubuntu-latest
     needs:
+      - build    # Added build as a dependency
       - tag
     permissions:
       id-token: write
       contents: read
     environment: docker
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          path: .  # Download to the current directory
+
+      - name: Unpack Build Artifact
+        run: |
+          tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1023,19 +1035,31 @@ jobs:
           file: docker/ImportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-export-data-script:
     runs-on: ubuntu-latest
     needs:
+      - build    # Added build as a dependency
       - tag
     permissions:
       id-token: write
       contents: read
     environment: docker
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          path: .  # Download to the current directory
+
+      - name: Unpack Build Artifact
+        run: |
+          tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1053,7 +1077,7 @@ jobs:
           file: docker/ExportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-demo-importer-worker:
     runs-on: ubuntu-latest
@@ -1069,13 +1093,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
-          path: .
+          path: .  # Download to the current directory
 
-      - name: Unpack Artifact
+      - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
@@ -1093,19 +1117,31 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
           file: docker/DemoImporterDockerfile
-          context: ./build  # Isolated Docker build context
+          context: ./build  # Ensure ./build exists after unpacking
 
   deploy-dex-login:
     runs-on: ubuntu-latest
     needs:
+      - build
       - tag
     permissions:
       id-token: write
       contents: read
     environment: docker
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          path: .  # Download to the current directory
+
+      - name: Unpack Build Artifact
+        run: |
+          tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1121,4 +1157,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/dex-login:${{ needs.tag.outputs.latest_tag }}
           file: docker/DexLoginDockerfile
-          context: ./build  # Isolated Docker build context
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: ./build  # Ensure ./build exists after unpacking
+
