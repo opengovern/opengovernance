@@ -1,5 +1,5 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# This workflow builds Go services and deploys Docker images
+# For more information, see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
 name: Go
 
@@ -49,7 +49,6 @@ jobs:
             echo "latest_tag=${{ steps.tag_version.outputs.previous_tag }}" >> "$GITHUB_OUTPUT"
           else
             echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
-          fi
 
   build:
     runs-on: ubuntu-latest
@@ -85,12 +84,7 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # This might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # All of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -155,11 +149,15 @@ jobs:
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
         uses: actions/upload-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Unique artifact name
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Unique artifact name with tag
           path: build-${{ needs.tag.outputs.latest_tag }}.tar.gz
           retention-days: 2  # Retain artifacts for 2 days
 
   # Deployment Jobs
+
+  # Example Deploy Job Template
+  # To avoid repetition, consider using a reusable workflow or a composite action.
+  # Below are individual deploy jobs with necessary dependencies and steps.
 
   deploy-steampipe:
     runs-on: ubuntu-latest
@@ -179,12 +177,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact with tag
           path: .  # Download to the current directory
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build  # Verify build directory exists
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -202,7 +210,7 @@ jobs:
           file: docker/SteampipeServiceDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -221,12 +229,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
-          path: .
+          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact with tag
+          path: .  # Download to the current directory
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build  # Verify build directory exists
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -242,7 +260,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/AuthServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-checkup-worker:
     runs-on: ubuntu-latest
@@ -261,12 +281,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -282,7 +312,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/CheckupWorkerDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-compliance-report-worker:
     runs-on: ubuntu-latest
@@ -303,12 +335,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -326,7 +368,7 @@ jobs:
           file: docker/ComplianceReportWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
@@ -345,12 +387,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -368,7 +420,7 @@ jobs:
           file: docker/ComplianceSummarizerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-compliance-service:
     runs-on: ubuntu-latest
@@ -387,12 +439,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -408,7 +470,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-describe-scheduler:
     runs-on: ubuntu-latest
@@ -427,12 +491,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -448,7 +522,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
           file: docker/DescribeSchedulerDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-integration-service:
     runs-on: ubuntu-latest
@@ -467,12 +543,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -488,7 +574,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-integration-v2-service:
     runs-on: ubuntu-latest
@@ -507,12 +595,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -528,7 +626,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationV2ServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-es-sink-service:
     runs-on: ubuntu-latest
@@ -547,12 +647,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -568,7 +678,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
           file: docker/EsSinkServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-inventory-service:
     runs-on: ubuntu-latest
@@ -587,12 +699,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -608,7 +730,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InventoryServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-metadata-service:
     runs-on: ubuntu-latest
@@ -627,12 +751,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -648,7 +782,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/MetadataServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-migrator-worker:
     runs-on: ubuntu-latest
@@ -667,12 +803,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -688,7 +834,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-onboard-service:
     runs-on: ubuntu-latest
@@ -707,12 +855,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -728,7 +886,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/OnboardServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-swagger-ui:
     runs-on: ubuntu-latest
@@ -747,12 +907,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -768,7 +938,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-analytics-worker:
     runs-on: ubuntu-latest
@@ -789,12 +961,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -812,7 +994,7 @@ jobs:
           file: docker/AnalyticsWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
@@ -835,7 +1017,6 @@ jobs:
             echo "do_build=false" >> $GITHUB_OUTPUT
           else
             echo "do_build=true" >> $GITHUB_OUTPUT
-          fi
 
       - name: Checkout code
         if: steps.check_if_push.outputs.do_build == 'true'
@@ -845,15 +1026,27 @@ jobs:
         if: steps.check_if_push.outputs.do_build == 'true'
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         if: steps.check_if_push.outputs.do_build == 'true'
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        if: steps.check_if_push.outputs.do_build == 'true'
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
+        if: steps.check_if_push.outputs.do_build == 'true'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -869,7 +1062,9 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:0.0.1
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginOpengovernanceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-wastage-service:
     runs-on: ubuntu-latest
@@ -888,12 +1083,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -909,7 +1114,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WastageServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-information-service:
     runs-on: ubuntu-latest
@@ -928,12 +1135,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -949,7 +1166,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InformationServiceDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          build-args: |
+            PLUGIN_REGISTRY=ghcr.io/opengovern
+          context: .  # Set context to repository root
 
   deploy-query-runner-worker:
     runs-on: ubuntu-latest
@@ -970,12 +1189,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -993,12 +1222,12 @@ jobs:
           file: docker/QueryRunnerWorkerDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-import-data-script:
     runs-on: ubuntu-latest
     needs:
-      - build    # Added build as a dependency
+      - build
       - tag
     permissions:
       id-token: write
@@ -1012,12 +1241,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .  # Download to the current directory
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build  # Verify build directory exists
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1035,7 +1274,7 @@ jobs:
           file: docker/ImportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-export-data-script:
     runs-on: ubuntu-latest
@@ -1054,12 +1293,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .  # Download to the current directory
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build  # Verify build directory exists
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1077,47 +1326,7 @@ jobs:
           file: docker/ExportDataScriptDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
-
-  deploy-demo-importer-worker:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
-          path: .  # Download to the current directory
-
-      - name: Unpack Build Artifact
-        run: |
-          tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-
-      - name: Build and Push Docker Image for Demo Importer Worker
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DemoImporterDockerfile
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
 
   deploy-dex-login:
     runs-on: ubuntu-latest
@@ -1136,12 +1345,22 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-${{ needs.tag.outputs.latest_tag }}  # Download the unique artifact
+          name: build-${{ needs.tag.outputs.latest_tag }}
           path: .  # Download to the current directory
 
       - name: Unpack Build Artifact
         run: |
           tar -xvf build-${{ needs.tag.outputs.latest_tag }}.tar.gz
+          ls -la ./build  # Verify build directory exists
+
+      - name: Verify Build Directory
+        run: |
+          if [ -d "./build" ]; then
+            echo "Build directory exists."
+          else
+            echo "Build directory does not exist!"
+            exit 1
+          fi
 
       - name: Log in to Container Registry
         uses: docker/login-action@v2
@@ -1159,5 +1378,7 @@ jobs:
           file: docker/DexLoginDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
-          context: ./build  # Ensure ./build exists after unpacking
+          context: .  # Set context to repository root
+
+  # Add additional deploy jobs following the same pattern...
 
