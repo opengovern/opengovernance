@@ -314,7 +314,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 			UserRole: apiAuth.EditorRole,
 		}, integration.IntegrationID)
 		if err != nil {
-			s.logger.Error("failed to get source healthcheck", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
+			s.logger.Error("failed to get integration healthcheck", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return nil, err
 		}
@@ -391,15 +391,15 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		VaultConfig: s.conf.Vault,
 
 		DescribeJob: describe.DescribeJob{
-			JobID:        dc.ID,
-			ResourceType: dc.ResourceType,
-			SourceID:     dc.IntegrationID,
-			AccountID:    dc.ProviderID,
-			DescribedAt:  dc.CreatedAt.UnixMilli(),
-			SourceType:   dc.IntegrationType,
-			CipherText:   cipherText,
-			TriggerType:  dc.TriggerType,
-			RetryCounter: 0,
+			JobID:           dc.ID,
+			ResourceType:    dc.ResourceType,
+			IntegrationID:   dc.IntegrationID,
+			ProviderID:      dc.ProviderID,
+			DescribedAt:     dc.CreatedAt.UnixMilli(),
+			IntegrationType: dc.IntegrationType,
+			CipherText:      cipherText,
+			TriggerType:     dc.TriggerType,
+			RetryCounter:    0,
 		},
 	}
 

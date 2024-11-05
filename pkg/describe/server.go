@@ -1248,7 +1248,8 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		if info.IntegrationID != nil {
 			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
+				return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 			}
 			if integration != nil {
 				integrations = append(integrations, *integration)
@@ -1263,7 +1264,7 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 			integrationapi.ListIntegrationsRequest{
 				IntegrationType: integrationTypes,
 				NameRegex:       info.Name,
-				ProviderIDRegex: info.IntegrationID,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))

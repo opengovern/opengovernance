@@ -135,7 +135,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 
 	s.logger.Info("starting to schedule deleting old resources",
 		zap.Uint("jobId", res.JobID),
-		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("integration_id", res.DescribeJob.IntegrationID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
 	)
 
@@ -143,7 +143,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(
 			ctx,
 			s.es,
-			res.DescribeJob.SourceID,
+			res.DescribeJob.IntegrationID,
 			res.DescribeJob.ResourceType,
 			additionalFilters,
 			searchAfter,
@@ -160,7 +160,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 		}
 		task := es.DeleteTask{
 			DiscoveryJobID:  res.JobID,
-			ConnectionID:    res.DescribeJob.SourceID,
+			ConnectionID:    res.DescribeJob.IntegrationID,
 			ResourceType:    res.DescribeJob.ResourceType,
 			IntegrationType: res.DescribeJob.IntegrationType,
 			TaskType:        es.DeleteTaskTypeResource,
@@ -181,8 +181,8 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			if !exists {
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.IntegrationType)).Inc()
 				resource := es2.Resource{
-					ID:              esResourceID,
-					SourceID:        res.DescribeJob.SourceID,
+					ResourceID:      esResourceID,
+					IntegrationID:   res.DescribeJob.IntegrationID,
 					ResourceType:    res.DescribeJob.ResourceType,
 					IntegrationType: res.DescribeJob.IntegrationType,
 				}
@@ -196,7 +196,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 
 				lookupResource := es2.LookupResource{
 					ResourceID:      esResourceID,
-					SourceID:        res.DescribeJob.SourceID,
+					IntegrationID:   res.DescribeJob.IntegrationID,
 					ResourceType:    res.DescribeJob.ResourceType,
 					IntegrationType: res.DescribeJob.IntegrationType,
 				}
@@ -227,7 +227,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				if _, err := s.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.AdminRole}, []es2.Doc{task}); err != nil {
 					s.logger.Error("failed to send delete message to elastic",
 						zap.Uint("jobId", res.JobID),
-						zap.String("connection_id", res.DescribeJob.SourceID),
+						zap.String("integration_id", res.DescribeJob.IntegrationID),
 						zap.String("resource_type", res.DescribeJob.ResourceType),
 						zap.Error(err))
 					if i > 10 {
@@ -244,7 +244,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 
 	s.logger.Info("scheduled deleting old resources",
 		zap.Uint("jobId", res.JobID),
-		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("connection_id", res.DescribeJob.IntegrationID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
 		zap.Int("deleted_count", deletedCount))
 
@@ -270,8 +270,8 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 				searchAfter = hit.Sort
 
 				resource := es2.Resource{
-					ID:              hit.Source.ResourceID,
-					SourceID:        hit.Source.SourceID,
+					ResourceID:      hit.Source.ResourceID,
+					IntegrationID:   hit.Source.IntegrationID,
 					ResourceType:    strings.ToLower(hit.Source.ResourceType),
 					IntegrationType: hit.Source.IntegrationType,
 				}
@@ -288,7 +288,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 
 				lookupResource := es2.LookupResource{
 					ResourceID:      hit.Source.ResourceID,
-					SourceID:        hit.Source.SourceID,
+					IntegrationID:   hit.Source.IntegrationID,
 					ResourceType:    strings.ToLower(hit.Source.ResourceType),
 					IntegrationType: hit.Source.IntegrationType,
 				}
@@ -318,7 +318,7 @@ func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(Integra
 			"filter": []any{
 				map[string]any{
 					"term": map[string]any{
-						"source_id": IntegrationID,
+						"integration_id": IntegrationID,
 					},
 				},
 				map[string]any{

@@ -37,8 +37,8 @@ type DescribeJob struct {
 	ScheduleJobID   uint
 	ParentJobID     uint // DescribeSourceJob ID
 	ResourceType    string
-	SourceID        string
-	AccountID       string
+	IntegrationID   string
+	ProviderID      string
 	DescribedAt     int64
 	IntegrationType integration.Type
 	CipherText      string

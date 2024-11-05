@@ -56,7 +56,7 @@ func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetI
 }
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
-	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
+	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.IntegrationType).Inc()
 
 	result, err := json.Marshal(DescribeJobResult{
 		JobID:       uint(req.JobId),
@@ -69,10 +69,10 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			ScheduleJobID:   uint(req.DescribeJob.ScheduleJobId),
 			ParentJobID:     uint(req.DescribeJob.ParentJobId),
 			ResourceType:    req.DescribeJob.ResourceType,
-			SourceID:        req.DescribeJob.SourceId,
-			AccountID:       req.DescribeJob.AccountId,
+			IntegrationID:   req.DescribeJob.IntegrationId,
+			ProviderID:      req.DescribeJob.ProviderId,
 			DescribedAt:     req.DescribeJob.DescribedAt,
-			IntegrationType: integration_type.ParseType(req.DescribeJob.SourceType),
+			IntegrationType: integration_type.ParseType(req.DescribeJob.IntegrationType),
 			CipherText:      req.DescribeJob.ConfigReg,
 			TriggerType:     enums.DescribeTriggerType(req.DescribeJob.TriggerType),
 			RetryCounter:    uint(req.DescribeJob.RetryCounter),
