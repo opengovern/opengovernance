@@ -1,7 +1,11 @@
 package es
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/opengovern/og-util/pkg/integration"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
 const DeleteTasksIndex = "delete_tasks"
@@ -45,4 +49,44 @@ func (d DeleteTask) KeysAndIndex() ([]string, string) {
 	ids = append(ids, string(d.TaskType))
 	ids = append(ids, d.Query)
 	return ids, DeleteTasksIndex
+}
+
+type GetDeleteTasksResponse struct {
+	Hits GetDeleteTasksHits `json:"hits"`
+}
+type GetDeleteTasksHits struct {
+	Total opengovernance.SearchTotal `json:"total"`
+	Hits  []GetDeleteTasksHit        `json:"hits"`
+}
+type GetDeleteTasksHit struct {
+	ID      string     `json:"_id"`
+	Score   float64    `json:"_score"`
+	Index   string     `json:"_index"`
+	Type    string     `json:"_type"`
+	Version int64      `json:"_version,omitempty"`
+	Source  DeleteTask `json:"_source"`
+	Sort    []any      `json:"sort"`
+}
+
+func GetDeleteTasks(ctx context.Context, client opengovernance.Client) (*GetDeleteTasksResponse, error) {
+	root := map[string]any{}
+	root["size"] = 10000
+	root["sort"] = []map[string]any{
+		{"_id": "desc"},
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	var response GetDeleteTasksResponse
+	err = client.Search(ctx, DeleteTasksIndex,
+		string(queryBytes), &response)
+	if err != nil {
+		fmt.Println("query=", string(queryBytes))
+		return nil, err
+	}
+
+	return &response, nil
 }
