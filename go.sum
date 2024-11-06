@@ -1262,6 +1262,8 @@ github.com/opencontainers/runc v1.1.14 h1:rgSuzbmgz5DUJjeSnw337TxDbRuqjs6iqQck/2
 github.com/opencontainers/runc v1.1.14/go.mod h1:E4C2z+7BxR7GHXp0hAY53mek+x49X1LjPNeMTfRGvOA=
 github.com/opengovern/og-describer-azure v0.0.28 h1:34DfL/f85fKsITw9XCYfg+wBlcOlL402dQIaPm76mcg=
 github.com/opengovern/og-describer-azure v0.0.28/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
+github.com/opengovern/og-describer-azure v0.0.31 h1:jCtjzl1MjbWqtHnEd9RrDU9KunNWHsh7Eg9TCF0EX3o=
+github.com/opengovern/og-describer-azure v0.0.31/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
 github.com/opengovern/og-util v1.0.6-0.20241105222646-0d15ca2bc5c5 h1:rfIElwBZ3EdvKX6gV/luUAdbrILVKyNpWP/VXHWb5ik=
 github.com/opengovern/og-util v1.0.6-0.20241105222646-0d15ca2bc5c5/go.mod h1:7l7fNhK6uewIwA0cs7QagJuhjt/E6hEAC01SR8Y0kKk=
 github.com/opengovern/plugin-aws v0.7.3 h1:76hZOjulNlgn4uaq5lq1/pmGmgJqvX1ZQbgqcQn03gI=
