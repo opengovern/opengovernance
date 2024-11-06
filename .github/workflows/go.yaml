@@ -134,7 +134,7 @@ jobs:
           ./scripts/list_services > ./service-list
           cat ./service-list
           # Process the service list to determine services to build
-          cat ./service-list | tr ' ' '\n' | grep -v '^steampipe$' | grep -v '^$' > ./build_services
+          cat ./service-list | tr ' ' '\n' | grep -v '^steampipe$' || true | grep -v '^$' || true > ./build_services
           cat ./build_services
           mkdir -p ./build
           service_count=0
