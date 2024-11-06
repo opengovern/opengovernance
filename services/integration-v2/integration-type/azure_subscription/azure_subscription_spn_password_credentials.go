@@ -10,22 +10,20 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	azureDescriberLocal "github.com/opengovern/og-describer-azure/provider/configs"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
 	"github.com/opengovern/opengovernance/services/integration/model"
 	"time"
 )
 
-// AzureSPNPasswordCredentials represents Azure SPN credentials using a password.
-type AzureSPNPasswordCredentials struct {
-	AzureClientID       string  `json:"azure_client_id" binding:"required"`
-	AzureTenantID       string  `json:"azure_tenant_id" binding:"required"`
-	AzureClientPassword string  `json:"azure_client_password" binding:"required"`
-	AzureSPNObjectID    *string `json:"azure_spn_object_id,omitempty"`
+// AzureClientSecretCredentials represents Azure SPN credentials using a password.
+type AzureClientSecretCredentials struct {
+	azureDescriberLocal.AccountCredentials
 }
 
-func CreateAzureSPNPasswordCredentials(jsonData []byte) (interfaces.CredentialType, error) {
-	var credentials AzureSPNPasswordCredentials
+func CreateAzureClientSecretCredentials(jsonData []byte) (interfaces.CredentialType, error) {
+	var credentials AzureClientSecretCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
 		return nil, err
@@ -34,8 +32,8 @@ func CreateAzureSPNPasswordCredentials(jsonData []byte) (interfaces.CredentialTy
 	return &credentials, nil
 }
 
-func (c *AzureSPNPasswordCredentials) HealthCheck() (bool, error) {
-	cred, err := azidentity.NewClientSecretCredential(c.AzureTenantID, c.AzureClientID, c.AzureClientPassword, nil)
+func (c *AzureClientSecretCredentials) HealthCheck() (bool, error) {
+	cred, err := azidentity.NewClientSecretCredential(c.TenantID, c.ClientID, c.ClientSecret, nil)
 	if err != nil {
 		return false, fmt.Errorf("failed to create ClientSecretCredential: %v", err)
 	}
@@ -60,12 +58,12 @@ func (c *AzureSPNPasswordCredentials) HealthCheck() (bool, error) {
 	return true, nil
 }
 
-func (c *AzureSPNPasswordCredentials) DiscoverIntegrations() ([]models.Integration, error) {
+func (c *AzureClientSecretCredentials) DiscoverIntegrations() ([]models.Integration, error) {
 	ctx := context.Background()
 	identity, err := azidentity.NewClientSecretCredential(
-		c.AzureTenantID,
-		c.AzureClientID,
-		c.AzureClientPassword,
+		c.TenantID,
+		c.ClientID,
+		c.ClientSecret,
 		nil)
 	if err != nil {
 		return nil, err

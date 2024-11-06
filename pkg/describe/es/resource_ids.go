@@ -42,7 +42,7 @@ func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client open
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"created_at": "asc"},
+		{"described_at": "asc"},
 		{"_id": "desc"},
 	}
 
@@ -76,7 +76,7 @@ func GetResourceIDsNotInIntegrationsFromES(ctx context.Context, client opengover
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"created_at": "asc"},
+		{"described_at": "asc"},
 		{"_id": "desc"},
 	}
 
@@ -110,7 +110,7 @@ func GetResourceIDsForIntegrationFromES(ctx context.Context, client opengovernan
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"created_at": "asc"},
+		{"described_at": "asc"},
 		{"_id": "desc"},
 	}
 

@@ -20,8 +20,8 @@ func CreateAzureSubscriptionIntegration() (interfaces.IntegrationType, error) {
 }
 
 var CredentialTypes = map[string]interfaces.CredentialCreator{
-	"azure_spn_password":    CreateAzureSPNPasswordCredentials,
-	"azure_spn_certificate": CreateAzureSPNCertificateCredentials,
+	"client_secret":      CreateAzureClientSecretCredentials,
+	"client_certificate": CreateAzureClientCertificateCredentials,
 }
 
 func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
