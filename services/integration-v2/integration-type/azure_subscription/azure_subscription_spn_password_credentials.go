@@ -3,19 +3,28 @@ package azure_subscription
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	azureDescriberLocal "github.com/opengovern/og-describer-azure/provider/configs"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
-	"github.com/opengovern/opengovernance/services/integration/model"
+	"golang.org/x/time/rate"
+	"net/http"
+	"strconv"
 	"time"
 )
+
+const MAX_SUBSCRIPTIONS = 500
+
+const READ_REQUESTS_PER_SECOND = 20
+
+const LIMIT = 10
 
 // AzureClientSecretCredentials represents Azure SPN credentials using a password.
 type AzureClientSecretCredentials struct {
@@ -73,54 +82,75 @@ func (c *AzureClientSecretCredentials) DiscoverIntegrations() ([]models.Integrat
 		return nil, err
 	}
 
-	it := client.NewListPager(nil)
-	subs := make([]model.AzureSubscription, 0)
-	for it.More() {
-		page, err := it.NextPage(ctx)
+	pager := client.NewListPager(nil)
+
+	includeStates := []armsubscription.SubscriptionState{
+		armsubscription.SubscriptionStateEnabled,
+		armsubscription.SubscriptionStatePastDue,
+		armsubscription.SubscriptionStateWarned,
+	}
+
+	// Create a set of states to include for efficient lookup
+	statesToInclude := make(map[armsubscription.SubscriptionState]bool)
+	for _, state := range includeStates {
+		statesToInclude[state] = true
+	}
+
+	// Create a rate limiter
+	limiter := rate.NewLimiter(rate.Limit(READ_REQUESTS_PER_SECOND), READ_REQUESTS_PER_SECOND)
+
+	// Define maximum retries
+	const MAX_RETRIES = 5
+	retries := 0
+	var integrations []models.Integration
+
+	for pager.More() && len(integrations) < LIMIT {
+		// Wait for permission to make the next request
+		err := limiter.Wait(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rate limiter error: %w", err)
 		}
-		for _, v := range page.Value {
-			if v == nil || v.State == nil {
+
+		// Proceed to make the request
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			// Handle throttling and retry logic
+			if shouldRetry(err, retries, MAX_RETRIES) {
+				retries++
 				continue
+			} else {
+				return nil, fmt.Errorf("failed to get next page: %w", err)
 			}
-			tagsClient, err := armresources.NewTagsClient(*v.SubscriptionID, identity, nil)
-			if err != nil {
-				return nil, err
-			}
-			tagIt := tagsClient.NewListPager(nil)
-			tagList := make([]armresources.TagDetails, 0)
-			for tagIt.More() {
-				tagPage, err := tagIt.NextPage(ctx)
-				if err != nil {
-					return nil, err
+		}
+
+		// Reset retries after a successful request
+		retries = 0
+
+		for _, sub := range page.Value {
+			if sub.State != nil {
+				state := *sub.State
+				if statesToInclude[state] {
+					// Safeguard against nil pointers
+					if sub.SubscriptionID == nil || sub.DisplayName == nil || sub.State == nil {
+						continue
+					}
+
+					s := models.Integration{
+						IntegrationID:   uuid.New(),
+						ProviderID:      *sub.SubscriptionID,
+						Name:            *sub.DisplayName,
+						IntegrationType: IntegrationTypeAzureSubscription,
+						//State: string(*sub.State),
+					}
+					integrations = append(integrations, s)
+					if len(integrations) >= LIMIT {
+						break
+					}
 				}
-				for _, tag := range tagPage.Value {
-					tagList = append(tagList, *tag)
-				}
 			}
-			localV := v
-			subs = append(subs, model.AzureSubscription{
-				SubscriptionID: *v.SubscriptionID,
-				SubModel:       *localV,
-				SubTags:        tagList,
-			})
 		}
 	}
 
-	var integrations []models.Integration
-	for _, sub := range subs {
-		var name string
-		if sub.SubModel.DisplayName != nil {
-			name = *sub.SubModel.DisplayName
-		}
-		integrations = append(integrations, models.Integration{
-			IntegrationID:   uuid.New(),
-			ProviderID:      sub.SubscriptionID,
-			Name:            name,
-			IntegrationType: IntegrationTypeAzureSubscription,
-		})
-	}
 	return integrations, nil
 }
 
@@ -138,4 +168,28 @@ func ExtractObjectID(tokenString string) (string, error) {
 		return "", fmt.Errorf("oid claim not found in token")
 	}
 	return "", fmt.Errorf("failed to parse claims")
+}
+
+// shouldRetry handles throttling and retry logic
+func shouldRetry(err error, retries, maxRetries int) bool {
+	var responseError *azcore.ResponseError
+	if errors.As(err, &responseError) {
+		if responseError.StatusCode == http.StatusTooManyRequests {
+			// Read Retry-After header
+			retryAfter := time.Duration(1) * time.Second // Default retry after 1 second
+			if responseError.RawResponse != nil {
+				if h := responseError.RawResponse.Header.Get("Retry-After"); h != "" {
+					// Retry-After can be in seconds or HTTP-date
+					if seconds, parseErr := strconv.Atoi(h); parseErr == nil {
+						retryAfter = time.Duration(seconds) * time.Second
+					} else if date, parseErr := http.ParseTime(h); parseErr == nil {
+						retryAfter = time.Until(date)
+					}
+				}
+			}
+			time.Sleep(retryAfter)
+			return retries < maxRetries
+		}
+	}
+	return false
 }

@@ -75,12 +75,6 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	healthy, err := integration.HealthCheck(req.CredentialType, jsonData)
-	if err != nil || !healthy {
-		h.logger.Error("healthcheck failed", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
-	}
-
 	integrations, err := integration.DiscoverIntegrations(req.CredentialType, jsonData)
 
 	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
@@ -137,6 +131,14 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 			h.logger.Error("failed to create integration api", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 		}
+
+		healthy, err := integration.HealthCheck(req.CredentialType, jsonData, integrationAPI.ProviderID, integrationAPI.Labels)
+		if err != nil || !healthy {
+			integrationAPI.State = models.IntegrationStateInactive
+		} else {
+			integrationAPI.State = models.IntegrationStateActive
+		}
+
 		integrationsAPI = append(integrationsAPI, *integrationAPI)
 	}
 
@@ -195,12 +197,6 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	healthy, err := integration.HealthCheck(req.CredentialType, jsonData)
-	if err != nil || !healthy {
-		h.logger.Error("healthcheck failed", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "healthcheck failed")
-	}
-
 	integrations, err := integration.DiscoverIntegrations(req.CredentialType, jsonData)
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
@@ -245,7 +241,13 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		healthcheckTime := time.Now()
 		i.LastCheck = &healthcheckTime
-		i.State = models2.IntegrationStateActive
+
+		healthy, err := integration.HealthCheck(req.CredentialType, jsonData, i.ProviderID, labels)
+		if err != nil || !healthy {
+			i.State = models2.IntegrationStateInactive
+		} else {
+			i.State = models2.IntegrationStateActive
+		}
 
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
@@ -312,8 +314,13 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 	if integrationType == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
+	integrationApi, err := integration.ToApi()
+	if err != nil {
+		h.logger.Error("failed to create integration api", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
+	}
 
-	healthy, err := integrationType.HealthCheck(credential.CredentialType, jsonData)
+	healthy, err := integrationType.HealthCheck(credential.CredentialType, jsonData, integrationApi.ProviderID, integrationApi.Labels)
 	if err != nil || !healthy {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		if integration.State != models2.IntegrationStateArchived {
@@ -337,7 +344,7 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update integration")
 	}
 
-	integrationApi, err := integration.ToApi()
+	integrationApi, err = integration.ToApi()
 	if err != nil {
 		h.logger.Error("failed to create integration api", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")

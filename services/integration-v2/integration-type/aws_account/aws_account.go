@@ -90,7 +90,7 @@ func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte
 	return labels, nil
 }
 
-func (i *AWSAccountIntegration) HealthCheck(credentialType string, jsonData []byte) (bool, error) {
+func (i *AWSAccountIntegration) HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error) {
 	awsCredential, err := getCredentials(credentialType, jsonData)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse AWS credentials of type %s: %s", credentialType, err.Error())

@@ -13,7 +13,7 @@ type IntegrationType interface {
 	GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error)
 	GetLabels(credentialType string, jsonData []byte) (map[string]string, error)
 	GetResourceTypesByLabels(map[string]string) ([]string, error)
-	HealthCheck(credentialType string, jsonData []byte) (bool, error)
+	HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error)
 	DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error)
 	GetResourceTypeFromTableName(tableName string) string
 }
