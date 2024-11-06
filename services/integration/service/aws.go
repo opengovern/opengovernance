@@ -5,18 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
-	"net/http"
 	"strings"
 	"time"
 
 	awsOfficial "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"github.com/opengovern/og-util/pkg/fp"
 	"github.com/opengovern/og-util/pkg/source"
@@ -67,89 +62,90 @@ func (h Credential) NewAWS(
 }
 
 func (h Credential) AWSSDKConfig(ctx context.Context, roleName string, accountId, accessKey, secretKey, externalID *string) (awsOfficial.Config, error) {
-	aKey := h.masterAccessKey
-	sKey := h.masterSecretKey
-	if accessKey != nil {
-		aKey = *accessKey
-	}
-	if secretKey != nil {
-		sKey = *secretKey
-	}
+	//aKey := h.masterAccessKey
+	//sKey := h.masterSecretKey
+	//if accessKey != nil {
+	//	aKey = *accessKey
+	//}
+	//if secretKey != nil {
+	//	sKey = *secretKey
+	//}
+	//
+	//if accountId == nil || *accountId == "" {
+	//	awsConfig, err := aws.GetConfig(ctx, aKey, sKey, "", "", nil)
+	//	if err != nil {
+	//		h.logger.Error("failed to get aws config", zap.Error(err))
+	//		return awsOfficial.Config{}, err
+	//	}
+	//	thisAccount, err := sts.NewFromConfig(awsConfig).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	//	if err != nil {
+	//		h.logger.Error("failed to get aws account", zap.Error(err))
+	//		return awsOfficial.Config{}, err
+	//	}
+	//	if thisAccount.Account == nil {
+	//		h.logger.Error("failed to get aws account", zap.Error(err))
+	//		return awsOfficial.Config{}, errors.New("GetCallerIdentity returned empty account id")
+	//	}
+	//	accountId = thisAccount.Account
+	//}
+	//
+	//awsConfig, err := aws.GetConfig(
+	//	ctx,
+	//	aKey,
+	//	sKey,
+	//	"",
+	//	aws.GetRoleArnFromName(*accountId, roleName),
+	//	externalID,
+	//)
+	//if err != nil {
+	//	return awsOfficial.Config{}, err
+	//}
+	//
+	//if awsConfig.Region == "" {
+	//	awsConfig.Region = "us-east-1"
+	//}
 
-	if accountId == nil || *accountId == "" {
-		awsConfig, err := aws.GetConfig(ctx, aKey, sKey, "", "", nil)
-		if err != nil {
-			h.logger.Error("failed to get aws config", zap.Error(err))
-			return awsOfficial.Config{}, err
-		}
-		thisAccount, err := sts.NewFromConfig(awsConfig).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-		if err != nil {
-			h.logger.Error("failed to get aws account", zap.Error(err))
-			return awsOfficial.Config{}, err
-		}
-		if thisAccount.Account == nil {
-			h.logger.Error("failed to get aws account", zap.Error(err))
-			return awsOfficial.Config{}, errors.New("GetCallerIdentity returned empty account id")
-		}
-		accountId = thisAccount.Account
-	}
-
-	awsConfig, err := aws.GetConfig(
-		ctx,
-		aKey,
-		sKey,
-		"",
-		aws.GetRoleArnFromName(*accountId, roleName),
-		externalID,
-	)
-	if err != nil {
-		return awsOfficial.Config{}, err
-	}
-
-	if awsConfig.Region == "" {
-		awsConfig.Region = "us-east-1"
-	}
-
-	return awsConfig, nil
+	return awsOfficial.Config{}, nil
 }
 
 func AWSCurrentAccount(ctx context.Context, cfg awsOfficial.Config) (*model.AWSAccount, error) {
-	stsClient := sts.NewFromConfig(cfg)
-	account, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	orgs, err := describer.OrganizationOrganization(ctx, cfg)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
-			return nil, err
-		}
-	}
-
-	acc, err := describer.OrganizationAccount(ctx, cfg, *account.Account)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
-			return nil, err
-		}
-	}
-	accountName := account.UserId
-	if acc != nil {
-		accountName = acc.Name
-	}
-
-	return &model.AWSAccount{
-		AccountID:    *account.Account,
-		AccountName:  accountName,
-		Organization: orgs,
-		Account:      acc,
-	}, nil
+	//stsClient := sts.NewFromConfig(cfg)
+	//account, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//orgs, err := describer.OrganizationOrganization(ctx, cfg)
+	//if err != nil {
+	//	var ae smithy.APIError
+	//	if !errors.As(err, &ae) ||
+	//		(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+	//			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+	//		return nil, err
+	//	}
+	//}
+	//
+	//acc, err := describer.OrganizationAccount(ctx, cfg, *account.Account)
+	//if err != nil {
+	//	var ae smithy.APIError
+	//	if !errors.As(err, &ae) ||
+	//		(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+	//			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+	//		return nil, err
+	//	}
+	//}
+	//accountName := account.UserId
+	//if acc != nil {
+	//	accountName = acc.Name
+	//}
+	//
+	//return &model.AWSAccount{
+	//	AccountID:    *account.Account,
+	//	AccountName:  accountName,
+	//	Organization: orgs,
+	//	Account:      acc,
+	//}, nil
+	return nil, nil
 }
 
 // AWSHealthCheck checks the AWS credential health
@@ -216,201 +212,28 @@ func (h Credential) AWSHealthCheck(
 }
 
 func (h Credential) AWSOrgAccounts(ctx context.Context, cfg awsOfficial.Config) (*types.Organization, []types.Account, error) {
-	orgs, err := describer.OrganizationOrganization(ctx, cfg)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
-			return nil, nil, err
-		}
-	}
-
-	accounts, err := describer.OrganizationAccounts(ctx, cfg)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) ||
-			(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-				ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
-			return nil, nil, err
-		}
-	}
-
-	return orgs, accounts, nil
-}
-
-func (h Credential) AWSOnboard(ctx context.Context, credential model.Credential) ([]model.Connection, error) {
-	onboardedSources := make([]model.Connection, 0)
-
-	cnf, err := h.vault.Decrypt(ctx, credential.Secret)
-	if err != nil {
-		return nil, err
-	}
-
-	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
-	if err != nil {
-		return nil, err
-	}
-
-	aKey := h.masterAccessKey
-	sKey := h.masterSecretKey
-	if awsCnf.AccessKey != nil {
-		aKey = *awsCnf.AccessKey
-	}
-	if awsCnf.SecretKey != nil {
-		sKey = *awsCnf.SecretKey
-	}
-
-	h.logger.Info("auto onboard cred", zap.String("assumedRoleName", awsCnf.AssumeRoleName), zap.String("accountID", awsCnf.AccountID))
-
-	awsConfig, err := aws.GetConfig(
-		ctx,
-		aKey,
-		sKey,
-		"",
-		aws.GetRoleArnFromName(awsCnf.AccountID, awsCnf.AssumeRoleName),
-		awsCnf.ExternalId,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if awsConfig.Region == "" {
-		awsConfig.Region = "us-east-1"
-	}
-
-	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
-
-	org, err := describer.OrganizationOrganization(ctx, awsConfig)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) {
-			return nil, err
-		}
-		if ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode() {
-			return nil, err
-		} else {
-			h.logger.Warn("failed to get organization", zap.Error(err), zap.Any("smittyError", ae))
-		}
-	}
-
-	accounts, err := describer.OrganizationAccounts(ctx, awsConfig)
-	if err != nil {
-		var ae smithy.APIError
-		if !errors.As(err, &ae) {
-			return nil, err
-		}
-		if ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
-			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode() {
-			return nil, err
-		} else {
-			h.logger.Warn("failed to get accounts", zap.Error(err), zap.Any("smittyError", ae))
-		}
-	}
-
-	h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
-
-	existingConnections, err := h.connSvc.List(ctx, []source.Type{credential.ConnectorType})
-	if err != nil {
-		return nil, err
-	}
-
-	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
-	for _, conn := range existingConnections {
-		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
-	}
-	accountsToOnboard := make([]types.Account, 0)
-
-	for _, account := range accounts {
-		if !fp.Includes(*account.Id, existingConnectionAccountIDs) {
-			accountsToOnboard = append(accountsToOnboard, account)
-		} else {
-			for _, conn := range existingConnections {
-				if conn.SourceId == *account.Id {
-					name := *account.Id
-					if account.Name != nil {
-						name = *account.Name
-					}
-
-					if conn.CredentialID.String() != credential.ID.String() {
-						h.logger.Warn("organization account is onboarded as an standalone account",
-							zap.String("accountID", *account.Id),
-							zap.String("connectionID", conn.ID.String()))
-					}
-
-					localConn := conn
-					if conn.Name != name {
-						localConn.Name = name
-					}
-					if account.Status != types.AccountStatusActive {
-						localConn.LifecycleState = model.ConnectionLifecycleStateArchived
-					} else if localConn.LifecycleState == model.ConnectionLifecycleStateArchived {
-						localConn.LifecycleState = model.ConnectionLifecycleStateDiscovered
-						if credential.AutoOnboardEnabled {
-							localConn.LifecycleState = model.ConnectionLifecycleStateOnboard
-						}
-					}
-					if conn.Name != name || account.Status != types.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
-						if err := h.connSvc.Update(ctx, localConn); err != nil {
-							h.logger.Error("failed to update source", zap.Error(err))
-
-							return nil, err
-						}
-					}
-				}
-			}
-		}
-	}
-
-	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
-
-	for _, account := range accountsToOnboard {
-		h.logger.Info("onboarding account", zap.String("accountID", *account.Id))
-		count, err := h.connSvc.Count(ctx, nil, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		maxConnections, err := h.connSvc.MaxConnections(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		if count >= maxConnections {
-			h.logger.Warn("max connections exceeded", zap.Int64("count", count), zap.Int64("maxConnections", maxConnections))
-			return nil, ErrMaxConnectionsExceeded
-		}
-
-		src, err := NewAWSAutoOnboardedConnection(
-			ctx,
-			org,
-			account,
-			source.SourceCreationMethodAutoOnboard,
-			fmt.Sprintf("Auto onboarded account %s", *account.Id),
-			credential,
-			awsConfig,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := h.connSvc.Create(ctx, src); err != nil {
-			return nil, err
-		}
-
-		metadata := make(map[string]any)
-		if src.Metadata.String() != "" {
-			err := json.Unmarshal(src.Metadata, &metadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		onboardedSources = append(onboardedSources, src)
-	}
-
-	return onboardedSources, nil
+	//orgs, err := describer.OrganizationOrganization(ctx, cfg)
+	//if err != nil {
+	//	var ae smithy.APIError
+	//	if !errors.As(err, &ae) ||
+	//		(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+	//			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+	//		return nil, nil, err
+	//	}
+	//}
+	//
+	//accounts, err := describer.OrganizationAccounts(ctx, cfg)
+	//if err != nil {
+	//	var ae smithy.APIError
+	//	if !errors.As(err, &ae) ||
+	//		(ae.ErrorCode() != (&types.AWSOrganizationsNotInUseException{}).ErrorCode() &&
+	//			ae.ErrorCode() != (&types.AccessDeniedException{}).ErrorCode()) {
+	//		return nil, nil, err
+	//	}
+	//}
+	//
+	//return orgs, accounts, nil
+	return nil, nil, nil
 }
 
 func NewAWSAutoOnboardedConnection(
@@ -546,25 +369,25 @@ func (h Connection) NewAWS(
 		CredentialType: model.CredentialTypeAutoAws,
 	}
 
-	if req.AccountID == "" {
-		awsCred, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
-		if err != nil {
-			h.logger.Error("cannot read aws credentials", zap.Error(err))
-
-			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
-		}
-		stsClient := sts.NewFromConfig(awsCred)
-		stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-		if err != nil {
-			h.logger.Error("cannot read aws account", zap.Error(err))
-			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
-		}
-		if stsAccount.Account == nil {
-			h.logger.Error("cannot read aws account", zap.Error(err))
-			return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
-		}
-		req.AccountID = *stsAccount.Account
-	}
+	//if req.AccountID == "" {
+	//	awsCred, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+	//	if err != nil {
+	//		h.logger.Error("cannot read aws credentials", zap.Error(err))
+	//
+	//		return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
+	//	}
+	//	stsClient := sts.NewFromConfig(awsCred)
+	//	stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	//	if err != nil {
+	//		h.logger.Error("cannot read aws account", zap.Error(err))
+	//		return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
+	//	}
+	//	if stsAccount.Account == nil {
+	//		h.logger.Error("cannot read aws account", zap.Error(err))
+	//		return model.Connection{}, echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
+	//	}
+	//	req.AccountID = *stsAccount.Account
+	//}
 
 	accountName := account.AccountID
 	if account.AccountName != nil {
@@ -722,82 +545,82 @@ func (h Credential) AWSCredentialConfig(ctx context.Context, credential model.Cr
 // AWSHealthCheck checks the connection health status and update the returned model. if the update flag is false then
 // the database is not get updated.
 func (h Connection) AWSHealthCheck(ctx context.Context, connection model.Connection, update bool) (model.Connection, error) {
-	var cnf map[string]any
+	//var cnf map[string]any
+	//
+	//cnf, err := h.vault.Decrypt(ctx, connection.Credential.Secret)
+	//if err != nil {
+	//	h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//	return connection, err
+	//}
 
-	cnf, err := h.vault.Decrypt(ctx, connection.Credential.Secret)
-	if err != nil {
-		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("connectionId", connection.SourceId))
-		return connection, err
-	}
+	//awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
+	//if err != nil {
+	//	h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//	return connection, err
+	//}
 
-	awsCnf, err := fp.FromMap[model.AWSCredentialConfig](cnf)
-	if err != nil {
-		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
-		return connection, err
-	}
+	//assumeRoleArn := aws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
 
-	assumeRoleArn := aws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
+	//aKey := h.masterAccessKey
+	//sKey := h.masterSecretKey
+	//if awsCnf.AccessKey != nil {
+	//	aKey = *awsCnf.AccessKey
+	//}
+	//if awsCnf.SecretKey != nil {
+	//	sKey = *awsCnf.SecretKey
+	//}
 
-	aKey := h.masterAccessKey
-	sKey := h.masterSecretKey
-	if awsCnf.AccessKey != nil {
-		aKey = *awsCnf.AccessKey
-	}
-	if awsCnf.SecretKey != nil {
-		sKey = *awsCnf.SecretKey
-	}
+	//sdkCnf, err := aws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
+	//if err != nil {
+	//	h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//	return connection, err
+	//}
 
-	sdkCnf, err := aws.GetConfig(ctx, aKey, sKey, "", assumeRoleArn, awsCnf.ExternalId)
-	if err != nil {
-		h.logger.Error("failed to get aws config", zap.Error(err), zap.String("connectionId", connection.SourceId))
-		return connection, err
-	}
-
-	iamClient := iam.NewFromConfig(sdkCnf)
-	paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
-		RoleName: &awsCnf.AssumeRoleName,
-	})
-	var policyARNs []string
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			healthMessage := err.Error()
-			connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, nil, nil, update)
-			if err != nil {
-				h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
-				return connection, err
-			}
-			return connection, nil
-		}
-		for _, policy := range page.AttachedPolicies {
-			policyARNs = append(policyARNs, *policy.PolicyArn)
-		}
-	}
-
-	assetDiscoveryAttached := true
-	spendAttached := connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
-	if !assetDiscoveryAttached && !spendAttached {
-		var healthMessage string
-		if err == nil {
-			healthMessage = "failed to find read permission"
-		} else {
-			healthMessage = err.Error()
-		}
-
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false), update)
-		if err != nil {
-			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
-
-			return connection, err
-		}
-	} else {
-		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached, update)
-		if err != nil {
-			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
-
-			return connection, err
-		}
-	}
+	//iamClient := iam.NewFromConfig(sdkCnf)
+	//paginator := iam.NewListAttachedRolePoliciesPaginator(iamClient, &iam.ListAttachedRolePoliciesInput{
+	//	RoleName: &awsCnf.AssumeRoleName,
+	//})
+	//var policyARNs []string
+	//for paginator.HasMorePages() {
+	//	page, err := paginator.NextPage(ctx)
+	//	if err != nil {
+	//		healthMessage := err.Error()
+	//		connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, nil, nil, update)
+	//		if err != nil {
+	//			h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//			return connection, err
+	//		}
+	//		return connection, nil
+	//	}
+	//	for _, policy := range page.AttachedPolicies {
+	//		policyARNs = append(policyARNs, *policy.PolicyArn)
+	//	}
+	//}
+	//
+	//assetDiscoveryAttached := true
+	//spendAttached := connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery
+	//if !assetDiscoveryAttached && !spendAttached {
+	//	var healthMessage string
+	//	if err == nil {
+	//		healthMessage = "failed to find read permission"
+	//	} else {
+	//		healthMessage = err.Error()
+	//	}
+	//
+	//	connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusUnhealthy, &healthMessage, fp.Optional(false), fp.Optional(false), update)
+	//	if err != nil {
+	//		h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//
+	//		return connection, err
+	//	}
+	//} else {
+	//	connection, err = h.UpdateHealth(ctx, connection, source.HealthStatusHealthy, fp.Optional(""), &spendAttached, &assetDiscoveryAttached, update)
+	//	if err != nil {
+	//		h.logger.Warn("failed to update connection health", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//
+	//		return connection, err
+	//	}
+	//}
 
 	return connection, nil
 }
