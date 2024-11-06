@@ -63,8 +63,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		resourceFinding = types.ResourceFinding{
 			OpenGovernanceResourceID: resource.ResourceID,
 			ResourceType:             resource.ResourceType,
-			ResourceName:             resource.Name,
-			ResourceLocation:         resource.Location,
+			ResourceName:             resource.ResourceName,
 			IntegrationType:          resource.IntegrationType,
 			Findings:                 nil,
 			ResourceCollection:       nil,
@@ -78,10 +77,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		resourceFinding.EvaluatedAt = job.CreatedAt.UnixMilli()
 	}
 	if resourceFinding.ResourceName == "" {
-		resourceFinding.ResourceName = resource.Name
-	}
-	if resourceFinding.ResourceLocation == "" {
-		resourceFinding.ResourceLocation = resource.Location
+		resourceFinding.ResourceName = resource.ResourceName
 	}
 	if resourceFinding.ResourceType == "" {
 		resourceFinding.ResourceType = resource.ResourceType
@@ -125,17 +121,6 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 				}
 			}
 			if !found && len(filter.AccountIDs) > 0 {
-				continue
-			}
-
-			found = false
-			for _, region := range filter.Regions {
-				if strings.ToLower(region) == strings.ToLower(resource.Location) {
-					found = true
-					break
-				}
-			}
-			if !found && len(filter.Regions) > 0 {
 				continue
 			}
 
