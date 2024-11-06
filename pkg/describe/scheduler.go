@@ -481,7 +481,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunCheckupJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunDisabledConnectionCleanup(ctx)
+		s.RunDeletedIntegrationsResourcesCleanup(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunRemoveResourcesConnectionJobsCleanup()
@@ -524,8 +524,8 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
-	ticker := ticker.NewTicker(time.Hour, time.Second*10)
+func (s *Scheduler) RunDeletedIntegrationsResourcesCleanup(ctx context.Context) {
+	ticker := ticker.NewTicker(time.Minute*10, time.Second*10)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -538,7 +538,7 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 		for _, integration := range integrations.Integrations {
 			integrationIds = append(integrationIds, integration.IntegrationID)
 		}
-		s.cleanupDescribeResourcesNotInConnections(ctx, integrationIds)
+		s.cleanupDescribeResourcesNotInIntegrations(ctx, integrationIds)
 	}
 }
 

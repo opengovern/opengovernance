@@ -252,7 +252,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 	return int64(deletedCount), nil
 }
 
-func (s *Scheduler) cleanupDescribeResourcesNotInConnections(ctx context.Context, integrationIDs []string) {
+func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Context, integrationIDs []string) {
 	var searchAfter []any
 	totalDeletedCount := 0
 	deletedIntegrationIDs := make(map[string]bool)
@@ -311,7 +311,7 @@ func (s *Scheduler) cleanupDescribeResourcesNotInConnections(ctx context.Context
 	return
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, connectionIds []string) {
+func (s *Scheduler) cleanupDescribeResourcesForIntegrations(ctx context.Context, connectionIds []string) {
 	for _, connectionId := range connectionIds {
 		var searchAfter []any
 		for {
