@@ -28,7 +28,7 @@ const LIMIT = 10
 
 // AzureClientSecretCredentials represents Azure SPN credentials using a password.
 type AzureClientSecretCredentials struct {
-	azureDescriberLocal.AccountCredentials
+	azureDescriberLocal.IntegrationCredentials
 }
 
 func CreateAzureClientSecretCredentials(jsonData []byte) (interfaces.CredentialType, error) {

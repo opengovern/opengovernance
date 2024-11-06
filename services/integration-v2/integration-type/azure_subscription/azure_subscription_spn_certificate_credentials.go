@@ -9,7 +9,7 @@ import (
 
 // AzureClientCertificateCredentials represents Azure SPN credentials using a certificate.
 type AzureClientCertificateCredentials struct {
-	azureDescriberLocal.AccountCredentials
+	azureDescriberLocal.IntegrationCredentials
 }
 
 func CreateAzureClientCertificateCredentials(jsonData []byte) (interfaces.CredentialType, error) {
