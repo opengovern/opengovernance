@@ -32,9 +32,9 @@ var CredentialTypes = map[string]interfaces.CredentialCreator{
 
 func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
 	return interfaces.DescriberConfiguration{
-		//NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
-		//NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
-		//NatsStreamName:         awsDescriberLocal.StreamName,
+		NatsScheduledJobsTopic: "og_aws_describer_job_queue",
+		NatsManualJobsTopic:    "og_aws_describer_manuals_job_queue",
+		NatsStreamName:         "og_aws_describer",
 	}
 }
 
