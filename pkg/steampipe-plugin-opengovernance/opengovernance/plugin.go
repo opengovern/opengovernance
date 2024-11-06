@@ -21,7 +21,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"og_lookup":                 tablePlatformLookup(ctx),
 			"og_cost":                   tablePlatformCost(ctx),
 			"pennywise_cost_estimate":   tablePlatformCostEstimate(ctx),
-			"og_connections":            tablePlatformConnections(ctx),
+			"og_integrations":           tablePlatformConnections(ctx),
 			"og_metrics":                tablePlatformMetrics(ctx),
 			"og_api_benchmark_summary":  tablePlatformApiBenchmarkSummary(ctx),
 			"og_api_benchmark_controls": tablePlatformApiBenchmarkControls(ctx),
