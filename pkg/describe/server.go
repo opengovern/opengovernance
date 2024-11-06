@@ -139,7 +139,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	sortBy := "id"
 	switch request.SortBy {
-	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
+	case api.JobSort_ByIntegrationID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
 		sortBy = string(request.SortBy)
 	}
 
@@ -3097,7 +3097,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 
 	sortBy := "id"
 	switch request.SortBy {
-	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus, api.JobSort_ByCreatedAt,
+	case api.JobSort_ByIntegrationID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus, api.JobSort_ByCreatedAt,
 		api.JobSort_ByUpdatedAt:
 		sortBy = string(request.SortBy)
 	}

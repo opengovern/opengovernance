@@ -19,12 +19,12 @@ type JobStatus string
 type JobSort string
 
 const (
-	JobSort_ByJobID        = "id"
-	JobSort_ByJobType      = "job_type"
-	JobSort_ByConnectionID = "connection_id"
-	JobSort_ByStatus       = "status"
-	JobSort_ByCreatedAt    = "created_at"
-	JobSort_ByUpdatedAt    = "updated_at"
+	JobSort_ByJobID         = "id"
+	JobSort_ByJobType       = "job_type"
+	JobSort_ByIntegrationID = "integration_id"
+	JobSort_ByStatus        = "status"
+	JobSort_ByCreatedAt     = "created_at"
+	JobSort_ByUpdatedAt     = "updated_at"
 )
 
 type JobSortOrder string

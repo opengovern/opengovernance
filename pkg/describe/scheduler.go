@@ -9,7 +9,6 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
 	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"net"
 	"net/http"
@@ -535,18 +534,11 @@ func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue
 		}
-		disabledConnectionIds := make([]string, 0)
+		integrationIds := make([]string, 0)
 		for _, integration := range integrations.Integrations {
-			if integration.State == integrationapi.IntegrationStateArchived {
-				continue
-			}
-			disabledConnectionIds = append(disabledConnectionIds, integration.IntegrationID)
+			integrationIds = append(integrationIds, integration.IntegrationID)
 		}
-
-		if len(disabledConnectionIds) > 0 {
-			s.cleanupDescribeResourcesForConnections(ctx, disabledConnectionIds)
-		}
-
+		s.cleanupDescribeResourcesNotInConnections(ctx, integrationIds)
 	}
 }
 

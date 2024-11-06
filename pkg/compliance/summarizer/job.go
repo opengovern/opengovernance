@@ -217,7 +217,7 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 
 	task := es3.DeleteTask{
 		DiscoveryJobID: j.ID,
-		ConnectionID:   j.BenchmarkID,
+		IntegrationID:  j.BenchmarkID,
 		ResourceType:   "resource-finding",
 		TaskType:       es3.DeleteTaskTypeQuery,
 		Query:          string(rootJson),

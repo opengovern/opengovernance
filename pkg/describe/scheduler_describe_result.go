@@ -160,7 +160,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 		}
 		task := es.DeleteTask{
 			DiscoveryJobID:  res.JobID,
-			ConnectionID:    res.DescribeJob.IntegrationID,
+			IntegrationID:   res.DescribeJob.IntegrationID,
 			ResourceType:    res.DescribeJob.ResourceType,
 			IntegrationType: res.DescribeJob.IntegrationType,
 			TaskType:        es.DeleteTaskTypeResource,
@@ -252,11 +252,70 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 	return int64(deletedCount), nil
 }
 
+func (s *Scheduler) cleanupDescribeResourcesNotInConnections(ctx context.Context, integrationIDs []string) {
+	var searchAfter []any
+	totalDeletedCount := 0
+	deletedIntegrationIDs := make(map[string]bool)
+	for {
+		esResp, err := es.GetResourceIDsNotInIntegrationsFromES(ctx, s.es, integrationIDs, searchAfter, 1000)
+		if err != nil {
+			s.logger.Error("failed to get resource ids from es", zap.Error(err))
+			break
+		}
+		totalDeletedCount += len(esResp.Hits.Hits)
+		if len(esResp.Hits.Hits) == 0 {
+			break
+		}
+		deletedCount := 0
+		for _, hit := range esResp.Hits.Hits {
+			deletedIntegrationIDs[hit.Source.IntegrationID] = true
+			searchAfter = hit.Sort
+
+			resource := es2.Resource{
+				ResourceID:      hit.Source.ResourceID,
+				IntegrationID:   hit.Source.IntegrationID,
+				ResourceType:    strings.ToLower(hit.Source.ResourceType),
+				IntegrationType: hit.Source.IntegrationType,
+			}
+			keys, idx := resource.KeysAndIndex()
+			deletedCount += 1
+			key := es2.HashOf(keys...)
+			resource.EsID = key
+			resource.EsIndex = idx
+			err = s.es.Delete(key, idx)
+			if err != nil {
+				s.logger.Error("failed to delete resource from open-search", zap.Error(err))
+				return
+			}
+
+			lookupResource := es2.LookupResource{
+				ResourceID:      hit.Source.ResourceID,
+				IntegrationID:   hit.Source.IntegrationID,
+				ResourceType:    strings.ToLower(hit.Source.ResourceType),
+				IntegrationType: hit.Source.IntegrationType,
+			}
+			deletedCount += 1
+			keys, idx = lookupResource.KeysAndIndex()
+			key = es2.HashOf(keys...)
+			lookupResource.EsID = key
+			lookupResource.EsIndex = idx
+			err = s.es.Delete(key, idx)
+			if err != nil {
+				s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+				return
+			}
+		}
+	}
+	s.logger.Info("total deleted resource count", zap.Int("count", totalDeletedCount),
+		zap.Any("deleted integrations", deletedIntegrationIDs))
+	return
+}
+
 func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, connectionIds []string) {
 	for _, connectionId := range connectionIds {
 		var searchAfter []any
 		for {
-			esResp, err := es.GetResourceIDsForAccountFromES(ctx, s.es, connectionId, searchAfter, 1000)
+			esResp, err := es.GetResourceIDsForIntegrationFromES(ctx, s.es, connectionId, searchAfter, 1000)
 			if err != nil {
 				s.logger.Error("failed to get resource ids from es", zap.Error(err))
 				break
