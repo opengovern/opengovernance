@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -35,10 +34,7 @@ import (
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/utils"
 
-	awsOrgTypes "github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
-	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	api4 "github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/onboard/api"
 	"gorm.io/gorm"
@@ -64,8 +60,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connector.GET("", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
-	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
-	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.AdminRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetConnectionHealth, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.AdminRole))
@@ -77,7 +71,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	credential.GET("", httpserver.AuthorizeHandler(h.ListCredentials, api3.ViewerRole))
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
 	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
-	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
 
 	credentialV2 := v2.Group("/credential")
 	credentialV2.POST("", httpserver.AuthorizeHandler(h.CreateCredential, api3.EditorRole))
@@ -85,7 +78,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections := v1.Group("/connections")
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
-	connections.POST("/aws", httpserver.AuthorizeHandler(h.PostConnectionAws, api3.EditorRole))
 
 	connectionGroups := v1.Group("/connection-groups")
 	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
@@ -204,228 +196,6 @@ func (h HttpHandler) CheckMaxConnections(additionCount int64) error {
 	return nil
 }
 
-// PostSourceAws godoc
-//
-//	@Summary		Create AWS source
-//	@Description	Creating AWS source
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	api.CreateSourceResponse
-//	@Param			request	body		api.SourceAwsRequest	true	"Request"
-//	@Router			/onboard/api/v1/source/aws [post]
-func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
-	var req api.SourceAwsRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	sdkCnf, err := opengovernanceAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
-	if err != nil {
-		return err
-	}
-	err = opengovernanceAws.CheckGetUserPermission(h.logger, sdkCnf)
-	if err != nil {
-		fmt.Printf("error in checking security audit permission: %v", err)
-		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
-	}
-
-	// Create source section
-	cfg, err := opengovernanceAws.GetConfig(ctx.Request().Context(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
-	if err != nil {
-		return err
-	}
-
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
-	}
-
-	acc, err := currentAwsAccount(ctx.Request().Context(), h.logger, cfg)
-	if err != nil {
-		return err
-	}
-	if req.Name != "" {
-		acc.AccountName = &req.Name
-	}
-
-	err = h.CheckMaxConnections(1)
-	if err != nil {
-		return err
-	}
-
-	src := NewAWSSource(ctx.Request().Context(), h.logger, connectors.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap())
-	if err != nil {
-		return err
-	}
-	src.Credential.Secret = string(secretBytes)
-
-	err = h.db.CreateSource(&src)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
-		ID: src.ID,
-	})
-}
-
-// PostConnectionAws godoc
-//
-//	@Summary		Create AWS connection
-//	@Description	Creating AWS connection
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	api.CreateConnectionResponse
-//	@Param			request	body		api.CreateAwsConnectionRequest	true	"Request"
-//	@Router			/onboard/api/v1/connections/aws [post]
-func (h HttpHandler) PostConnectionAws(ctx echo.Context) error {
-	var req api.CreateAwsConnectionRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	err := h.CheckMaxConnections(1)
-	if err != nil {
-		return err
-	}
-
-	sdkCnf, err := h.GetAWSSDKConfig(ctx.Request().Context(), generateRoleARN(req.AWSConfig.AccountID, req.AWSConfig.AssumeRoleName), req.AWSConfig.AccessKey, req.AWSConfig.SecretKey, req.AWSConfig.ExternalId)
-	if err != nil {
-		return err
-	}
-
-	acc, err := currentAwsAccount(ctx.Request().Context(), h.logger, sdkCnf)
-	if err != nil {
-		return err
-	}
-	if req.Name != "" {
-		acc.AccountName = &req.Name
-	}
-
-	aKey := h.masterAccessKey
-	sKey := h.masterSecretKey
-	if req.AWSConfig.AccessKey != nil {
-		aKey = *req.AWSConfig.AccessKey
-	}
-	if req.AWSConfig.SecretKey != nil {
-		sKey = *req.AWSConfig.SecretKey
-	}
-
-	src := NewAWSSource(ctx.Request().Context(), h.logger, connectors.AWSAccountConfig{
-		AccessKey: aKey,
-		SecretKey: sKey,
-	}, *acc, "")
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.AWSConfig.AsMap())
-	if err != nil {
-		return err
-	}
-	src.Credential.Version = 2
-	src.Credential.Secret = string(secretBytes)
-
-	err = h.db.CreateSource(&src)
-	if err != nil {
-		return err
-	}
-
-	src, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, api.CreateConnectionResponse{
-		ID: src.ID,
-	})
-}
-
-// PostSourceAzure godoc
-//
-//	@Summary		Create Azure source
-//	@Description	Creating Azure source
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200		{object}	api.CreateSourceResponse
-//	@Param			request	body		api.SourceAzureRequest	true	"Request"
-//	@Router			/onboard/api/v1/source/azure [post]
-func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
-	var req api.SourceAzureRequest
-
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	err := h.CheckMaxConnections(1)
-	if err != nil {
-		return err
-	}
-
-	isAttached, err := opengovernanceAzure.CheckRole(opengovernanceAzure.AuthConfig{
-		TenantID:     req.Config.TenantId,
-		ObjectID:     req.Config.ObjectId,
-		SecretID:     req.Config.SecretId,
-		ClientID:     req.Config.ClientId,
-		ClientSecret: req.Config.ClientSecret,
-	}, req.Config.SubscriptionId, opengovernanceAzure.DefaultReaderRoleDefinitionIDTemplate)
-	if err != nil {
-		fmt.Printf("error in checking reader role roleAssignment: %v", err)
-		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
-	}
-	if !isAttached {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Failed to find reader role roleAssignment")
-	}
-
-	cred, err := createAzureCredential(
-		ctx.Request().Context(),
-		fmt.Sprintf("%s - %s - default credentials", source.CloudAzure, req.Config.SubscriptionId),
-		model.CredentialTypeAutoAzure,
-		req.Config,
-	)
-	if err != nil {
-		return err
-	}
-
-	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, opengovernanceAzure.AuthConfig{
-		TenantID:     req.Config.TenantId,
-		ObjectID:     req.Config.ObjectId,
-		SecretID:     req.Config.SecretId,
-		ClientID:     req.Config.ClientId,
-		ClientSecret: req.Config.ClientSecret,
-	})
-	if err != nil {
-		return err
-	}
-
-	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred, req.Config.TenantId)
-
-	secretBytes, err := h.vaultSc.Encrypt(ctx.Request().Context(), req.Config.AsMap())
-	if err != nil {
-		return err
-	}
-	src.Credential.Secret = string(secretBytes)
-	// trace :
-	//_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-	//span2.SetName("new_CreateSource")
-
-	err = h.db.CreateSource(&src)
-	if err != nil {
-		//span2.RecordError(err)
-		//span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	//span2.AddEvent("information", trace.WithAttributes(
-	//	attribute.String("source name ", src.Name),
-	//))
-	//span2.End()
-
-	return ctx.JSON(http.StatusOK, api.CreateSourceResponse{
-		ID: src.ID,
-	})
-}
-
 func createAzureCredential(ctx context.Context, name string, credType model.CredentialType, config api.AzureCredentialConfig) (*model.Credential, error) {
 	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(config.AsMap())
 	if err != nil {
@@ -470,23 +240,6 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return err
 	}
 	cred.Secret = string(secretBytes)
-
-	// trace :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_Transaction And checkCredentialHealth")
-
-	err = h.db.CreateCredential(cred)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span.End()
-
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
-		return err
-	}
 
 	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
 }
@@ -556,11 +309,6 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	}
 	span.End()
 
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
-		return err
-	}
-
 	return ctx.JSON(http.StatusOK, api.CreateCredentialResponse{ID: cred.ID.String()})
 }
 
@@ -606,17 +354,6 @@ func (h HttpHandler) CreateCredential(ctx echo.Context) error {
 
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	switch req.Connector {
-	case source.CloudAzure:
-		return echo.NewHTTPError(http.StatusNotImplemented)
-	case source.CloudAWS:
-		resp, err := h.createAWSCredential(ctx.Request().Context(), req)
-		if err != nil {
-			return err
-		}
-		return ctx.JSON(http.StatusOK, *resp)
 	}
 
 	return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
@@ -854,503 +591,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
-func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
-	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret)
-	if err != nil {
-		return nil, err
-	}
-	azureCnf, err := connectors.AzureSubscriptionConfigFromMap(cnf)
-	if err != nil {
-		return nil, err
-	}
-	h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
-	subs, err := discoverAzureSubscriptions(ctx, h.logger, opengovernanceAzure.AuthConfig{
-		TenantID:     azureCnf.TenantID,
-		ObjectID:     azureCnf.ObjectID,
-		SecretID:     azureCnf.SecretID,
-		ClientID:     azureCnf.ClientID,
-		ClientSecret: azureCnf.ClientSecret,
-	})
-	if err != nil {
-		h.logger.Error("failed to discover subscriptions", zap.Error(err))
-		return nil, err
-	}
-	h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
-	// tracer :
-	outputS, span := tracer.Start(ctx, "new_GetSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetSourcesOfType")
-
-	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("connector type", string(credential.ConnectorType)),
-	))
-	span.End()
-
-	existingConnectionSubIDs := make([]string, 0, len(existingConnections))
-	subsToOnboard := make([]azureSubscription, 0)
-	for _, conn := range existingConnections {
-		existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
-	}
-	outputS2, span2 := tracer.Start(outputS, "new_UpdateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_UpdateSource(loop)")
-
-	for _, sub := range subs {
-		if sub.SubModel.State != nil && *sub.SubModel.State == armsubscription.SubscriptionStateEnabled && !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
-			subsToOnboard = append(subsToOnboard, sub)
-		} else {
-			for _, conn := range existingConnections {
-				if conn.SourceId == sub.SubscriptionID {
-					name := sub.SubscriptionID
-					if sub.SubModel.DisplayName != nil {
-						name = *sub.SubModel.DisplayName
-					}
-					localConn := conn
-					if conn.Name != name {
-						localConn.Name = name
-					}
-					if sub.SubModel.State != nil && *sub.SubModel.State != armsubscription.SubscriptionStateEnabled {
-						localConn.LifecycleState = model.ConnectionLifecycleStateDisabled
-					}
-					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
-						_, span3 := tracer.Start(outputS2, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
-						span3.SetName("new_UpdateSource")
-
-						_, err := h.db.UpdateSource(&localConn)
-						if err != nil {
-							span3.RecordError(err)
-							span3.SetStatus(codes.Error, err.Error())
-							h.logger.Error("failed to update source", zap.Error(err))
-							return nil, err
-						}
-						span3.AddEvent("information", trace.WithAttributes(
-							attribute.String("source name ", localConn.Name),
-						))
-						span3.End()
-					}
-				}
-			}
-		}
-	}
-	span2.End()
-
-	h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
-	// tracer :
-	outputS4, span4 := tracer.Start(outputS, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span4.SetName("new_CreateSource(loop)")
-
-	for _, sub := range subsToOnboard {
-		h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
-		// tracer :
-		_, span6 := tracer.Start(outputS4, "CountSources", trace.WithSpanKind(trace.SpanKindServer))
-		span6.SetName("CountSources")
-
-		count, err := h.db.CountSources()
-		if err != nil {
-			span6.RecordError(err)
-			span6.SetStatus(codes.Error, err.Error())
-			return nil, err
-		}
-		span6.End()
-		if count >= maxConnections {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-		}
-
-		isAttached, err := opengovernanceAzure.CheckRole(opengovernanceAzure.AuthConfig{
-			TenantID:     azureCnf.TenantID,
-			ObjectID:     azureCnf.ObjectID,
-			SecretID:     azureCnf.SecretID,
-			ClientID:     azureCnf.ClientID,
-			ClientSecret: azureCnf.ClientSecret,
-		}, sub.SubscriptionID, opengovernanceAzure.DefaultReaderRoleDefinitionIDTemplate)
-		if err != nil {
-			h.logger.Warn("failed to check role", zap.Error(err))
-			continue
-		}
-		if !isAttached {
-			h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
-			continue
-		}
-
-		src := NewAzureConnectionWithCredentials(
-			sub,
-			source.SourceCreationMethodAutoOnboard,
-			fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
-			credential,
-			azureCnf.TenantID,
-		)
-		//tracer :
-		_, span5 := tracer.Start(outputS4, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-		span5.SetName("new_CreateSource")
-
-		err = h.db.CreateSource(&src)
-		if err != nil {
-			span5.RecordError(err)
-			span5.SetStatus(codes.Error, err.Error())
-			return nil, err
-		}
-		span5.AddEvent("information", trace.WithAttributes(
-			attribute.String("source name", src.Name),
-		))
-		span5.End()
-
-		metadata := make(map[string]any)
-		if src.Metadata.String() != "" {
-			err := json.Unmarshal(src.Metadata, &metadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		onboardedSources = append(onboardedSources, api.Connection{
-			ID:                   src.ID,
-			ConnectionID:         src.SourceId,
-			ConnectionName:       src.Name,
-			Email:                src.Email,
-			Connector:            src.Type,
-			Description:          src.Description,
-			OnboardDate:          src.CreatedAt,
-			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-			CredentialID:         src.CredentialID.String(),
-			CredentialName:       src.Credential.Name,
-			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-			HealthState:          src.HealthState,
-			LastHealthCheckTime:  src.LastHealthCheckTime,
-			HealthReason:         src.HealthReason,
-			Metadata:             metadata,
-		})
-	}
-	span4.End()
-
-	return onboardedSources, nil
-}
-
-func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential model.Credential, maxConnections int64) ([]api.Connection, error) {
-	onboardedSources := make([]api.Connection, 0)
-	cnf, err := h.vaultSc.Decrypt(ctx, credential.Secret)
-	if err != nil {
-		return nil, err
-	}
-	awsCnf, err := connectors.AWSAccountConfigFromMap(cnf)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := opengovernanceAws.GetConfig(
-		ctx,
-		awsCnf.AccessKey,
-		awsCnf.SecretKey,
-		"",
-		awsCnf.AssumeAdminRoleName,
-		nil)
-	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
-	}
-	accounts, err := discoverAWSAccounts(ctx, cfg)
-	if err != nil {
-		h.logger.Error("failed to discover accounts", zap.Error(err))
-		return nil, err
-	}
-	h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
-	// tracer :
-	outputS, span := tracer.Start(ctx, "new_GetSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetSourcesOfType")
-
-	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential connector ", string(credential.ConnectorType)),
-	))
-	span.End()
-
-	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
-	for _, conn := range existingConnections {
-		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
-	}
-	accountsToOnboard := make([]awsAccount, 0)
-	// tracer :
-	outputS1, span1 := tracer.Start(outputS, "new_UpdateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_UpdateSource(loop)")
-
-	for _, account := range accounts {
-		if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
-			accountsToOnboard = append(accountsToOnboard, account)
-		} else {
-			for _, conn := range existingConnections {
-				if conn.LifecycleState == model.ConnectionLifecycleStateArchived {
-					h.logger.Info("Archived Connection",
-						zap.String("accountID", conn.SourceId))
-				}
-				if conn.SourceId == account.AccountID {
-					name := account.AccountID
-					if account.AccountName != nil {
-						name = *account.AccountName
-					}
-
-					if conn.CredentialID.String() != credential.ID.String() {
-						h.logger.Warn("organization account is onboarded as an standalone account",
-							zap.String("accountID", account.AccountID),
-							zap.String("connectionID", conn.ID.String()))
-					}
-
-					localConn := conn
-					if conn.Name != name {
-						localConn.Name = name
-					}
-					if account.Account.Status != awsOrgTypes.AccountStatusActive {
-						localConn.LifecycleState = model.ConnectionLifecycleStateArchived
-					} else if localConn.LifecycleState == model.ConnectionLifecycleStateArchived {
-						localConn.LifecycleState = model.ConnectionLifecycleStateDiscovered
-						if credential.AutoOnboardEnabled {
-							localConn.LifecycleState = model.ConnectionLifecycleStateOnboard
-						}
-					}
-					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
-						// tracer :
-						_, span2 := tracer.Start(outputS1, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
-						span2.SetName("new_UpdateSource")
-
-						_, err := h.db.UpdateSource(&localConn)
-						if err != nil {
-							span2.RecordError(err)
-							span2.SetStatus(codes.Error, err.Error())
-							h.logger.Error("failed to update source", zap.Error(err))
-							return nil, err
-						}
-						span1.AddEvent("information", trace.WithAttributes(
-							attribute.String("source name", localConn.Name),
-						))
-						span2.End()
-					}
-				}
-			}
-		}
-	}
-	span1.End()
-	// TODO add tag filter
-	// tracer :
-	outputS3, span3 := tracer.Start(outputS1, "new_CountSources(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span3.SetName("new_CountSources(loop)")
-
-	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
-	for _, account := range accountsToOnboard {
-		//assumeRoleArn := opengovernanceAws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
-		//sdkCnf, err := opengovernanceAws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
-		//if err != nil {
-		//	h.logger.Warn("failed to get config", zap.Error(err))
-		//	return err
-		//}
-		//isAttached, err := opengovernanceAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, opengovernanceAws.SecurityAuditPolicyARN)
-		//if err != nil {
-		//	h.logger.Warn("failed to check get user permission", zap.Error(err))
-		//	continue
-		//}
-		//if !isAttached {
-		//	h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
-		//	continue
-		//}
-		h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
-		_, span4 := tracer.Start(outputS3, "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
-		span4.SetName("new_CountSources")
-
-		count, err := h.db.CountSources()
-		if err != nil {
-			span4.RecordError(err)
-			span4.SetStatus(codes.Error, err.Error())
-			return nil, err
-		}
-		span4.End()
-
-		if count >= maxConnections {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("maximum number of connections reached: [%d/%d]", count, maxConnections))
-		}
-
-		src := NewAWSAutoOnboardedConnection(
-			ctx,
-			h.logger,
-			awsCnf,
-			account,
-			source.SourceCreationMethodAutoOnboard,
-			fmt.Sprintf("Auto onboarded account %s", account.AccountID),
-			credential,
-		)
-		// tracer :
-		outputS5, span5 := tracer.Start(outputS3, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
-		span5.SetName("new_Transaction")
-
-		err = h.db.Orm.Transaction(func(tx *gorm.DB) error {
-			_, span6 := tracer.Start(outputS5, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
-			span6.SetName("new_CreateSource")
-
-			err := h.db.CreateSource(&src)
-			if err != nil {
-				span6.RecordError(err)
-				span6.SetStatus(codes.Error, err.Error())
-				return err
-			}
-			span1.AddEvent("information", trace.WithAttributes(
-				attribute.String("source name", src.Name),
-			))
-			span6.End()
-
-			//TODO: add enable account
-
-			return nil
-		})
-		if err != nil {
-			span5.RecordError(err)
-			span5.SetStatus(codes.Error, err.Error())
-			return nil, err
-		}
-		span5.End()
-
-		metadata := make(map[string]any)
-		if src.Metadata.String() != "" {
-			err := json.Unmarshal(src.Metadata, &metadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		onboardedSources = append(onboardedSources, api.Connection{
-			ID:                   src.ID,
-			ConnectionID:         src.SourceId,
-			ConnectionName:       src.Name,
-			Email:                src.Email,
-			Connector:            src.Type,
-			Description:          src.Description,
-			CredentialID:         src.CredentialID.String(),
-			CredentialName:       src.Credential.Name,
-			OnboardDate:          src.CreatedAt,
-			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-			LastHealthCheckTime:  src.LastHealthCheckTime,
-			HealthReason:         src.HealthReason,
-			Metadata:             metadata,
-		})
-	}
-	span3.End()
-
-	return onboardedSources, nil
-}
-
-// AutoOnboardCredential godoc
-//
-//	@Summary		Onboard credential connections
-//	@Description	Onboard all available connections for a credential
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			credentialId	path		string	true	"CredentialID"
-//	@Success		200				{object}	[]api.Connection
-//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
-func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
-	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_GetCredentialByID")
-
-	credential, err := h.db.GetCredentialByID(credId)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	span.AddEvent("information", trace.WithAttributes(
-		attribute.String("credential id", credential.ID.String()),
-	))
-	span.End()
-
-	cnf, err := h.metadataClient.GetConfigMetadata(&httpclient.Context{UserRole: api3.AdminRole}, models.MetadataKeyConnectionLimit)
-	if err != nil {
-		return err
-	}
-
-	var maxConnections int64
-
-	if v, ok := cnf.GetValue().(int64); ok {
-		maxConnections = v
-	} else if v, ok := cnf.GetValue().(int); ok {
-		maxConnections = int64(v)
-	}
-
-	onboardedSources := make([]api.Connection, 0)
-	switch credential.ConnectorType {
-	case source.CloudAzure:
-		onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConnections)
-		if err != nil {
-			return err
-		}
-
-		for _, onboardedSrc := range onboardedSources {
-			src, err := h.db.GetSource(onboardedSrc.ID)
-			if err != nil {
-				return err
-			}
-
-			_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
-			if err != nil {
-				return err
-			}
-		}
-	case source.CloudAWS:
-		if credential.Version == 2 {
-			onboardedSources, err = h.autoOnboardAWSAccountsV2(ctx.Request().Context(), *credential, maxConnections)
-			if err != nil {
-				return err
-			}
-
-			for _, onboardedSrc := range onboardedSources {
-				src, err := h.db.GetSource(onboardedSrc.ID)
-				if err != nil {
-					return err
-				}
-
-				_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConnections)
-			if err != nil {
-				return err
-			}
-
-			for _, onboardedSrc := range onboardedSources {
-				src, err := h.db.GetSource(onboardedSrc.ID)
-				if err != nil {
-					return err
-				}
-
-				_, err = h.checkConnectionHealth(ctx.Request().Context(), src, true)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	default:
-		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
-	}
-
-	return ctx.JSON(http.StatusOK, onboardedSources)
-}
-
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
 	id, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
@@ -1461,11 +701,6 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		return err
 	}
 	span1.End()
-
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
-		return err
-	}
 
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
@@ -1586,11 +821,6 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		return err
 	}
 	span2.End()
-
-	_, err = h.checkCredentialHealth(outputS, *cred)
-	if err != nil {
-		return err
-	}
 
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
@@ -1829,10 +1059,6 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 		return err
 	}
 
-	updateMetadata := true
-	if strings.ToLower(ctx.QueryParam("updateMetadata")) == "false" {
-		updateMetadata = false
-	}
 	// trace :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetSource")
@@ -1858,28 +1084,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		isHealthy, err := h.checkCredentialHealth(outputS, connection.Credential)
-		if err != nil {
-			var herr *echo.HTTPError
-			if errors.As(err, &herr) {
-				if herr.Code == http.StatusInternalServerError {
-					h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", connection.SourceId))
-					return herr
-				}
-			}
-		}
-		if !isHealthy {
-			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"), aws.Bool(false), aws.Bool(false))
-			if err != nil {
-				h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
-				return err
-			}
-		} else {
-			connection, err = h.checkConnectionHealth(ctx.Request().Context(), connection, updateMetadata)
-			if err != nil {
-				h.logger.Error("failed to check connection health", zap.Error(err), zap.String("sourceId", connection.SourceId))
-			}
-		}
+
 	}
 	return ctx.JSON(http.StatusOK, entities.NewConnection(connection))
 }

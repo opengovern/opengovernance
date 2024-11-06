@@ -2,8 +2,8 @@ package azure_subscription
 
 import (
 	"fmt"
-	"github.com/opengovern/og-azure-describer/azure"
-	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
+	azure "github.com/opengovern/og-describer-azure/pkg/describer"
+	azureDescriberLocal "github.com/opengovern/og-describer-azure/provider/configs"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"

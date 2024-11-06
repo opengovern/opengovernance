@@ -3,8 +3,6 @@ package credential
 import (
 	"encoding/json"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"net/http"
@@ -520,23 +518,23 @@ func (h API) CreateAWS(c echo.Context) error {
 	}
 
 	if req.Config.AccountID == "" && req.Config.AccessKey != nil && req.Config.SecretKey != nil {
-		awsCred, err := opengovernanceAws.GetConfig(ctx, *req.Config.AccessKey, *req.Config.SecretKey, "", "", nil)
-		if err != nil {
-			h.logger.Error("cannot read aws credentials", zap.Error(err))
-
-			return echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
-		}
-		stsClient := sts.NewFromConfig(awsCred)
-		stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-		if err != nil {
-			h.logger.Error("cannot read aws account", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
-		}
-		if stsAccount.Account == nil {
-			h.logger.Error("cannot read aws account", zap.Error(err))
-			return echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
-		}
-		req.Config.AccountID = *stsAccount.Account
+		//awsCred, err := opengovernanceAws.GetConfig(ctx, *req.Config.AccessKey, *req.Config.SecretKey, "", "", nil)
+		//if err != nil {
+		//	h.logger.Error("cannot read aws credentials", zap.Error(err))
+		//
+		//	return echo.NewHTTPError(http.StatusBadRequest, "cannot read aws credentials")
+		//}
+		//stsClient := sts.NewFromConfig(awsCred)
+		//stsAccount, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		//if err != nil {
+		//	h.logger.Error("cannot read aws account", zap.Error(err))
+		//	return echo.NewHTTPError(http.StatusBadRequest, "cannot call GetCallerIdentity to read aws account")
+		//}
+		//if stsAccount.Account == nil {
+		//	h.logger.Error("cannot read aws account", zap.Error(err))
+		//	return echo.NewHTTPError(http.StatusBadRequest, "GetCallerIdentity returned empty account id")
+		//}
+		//req.Config.AccountID = *stsAccount.Account
 	}
 
 	// Account id is passed as a pointer, so if it is empty, it'll be filled in the function.
@@ -630,7 +628,7 @@ func (h API) AutoOnboardAWS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	credential, err := h.credentialSvc.Get(ctx, credID.String())
+	_, err = h.credentialSvc.Get(ctx, credID.String())
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -646,19 +644,19 @@ func (h API) AutoOnboardAWS(c echo.Context) error {
 		attribute.String("credential id", credID.String()),
 	))
 
-	connections, err := h.credentialSvc.AWSOnboard(ctx, *credential)
-	if err != nil {
-		return err
-	}
+	//connections, err := h.credentialSvc.AWSOnboard(ctx, *credential)
+	//if err != nil {
+	//	return err
+	//}
 
-	response := make([]entity.Connection, len(connections))
+	response := make([]entity.Connection, 0)
 
-	for i, connection := range connections {
-		// checking the connection health and update its metadata.
-		h.connectionSvc.AWSHealthCheck(ctx, connection, true)
-
-		response[i] = entity.NewConnection(connection)
-	}
+	//for i, connection := range connections {
+	//	// checking the connection health and update its metadata.
+	//	h.connectionSvc.AWSHealthCheck(ctx, connection, true)
+	//
+	//	response[i] = entity.NewConnection(connection)
+	//}
 
 	return c.JSON(http.StatusOK, response)
 }

@@ -7,24 +7,16 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
-	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/google/uuid"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
-	"github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/fp"
 	"github.com/opengovern/og-util/pkg/source"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/opengovern/opengovernance/services/integration/api/entity"
 	"github.com/opengovern/opengovernance/services/integration/model"
 	"go.opentelemetry.io/otel/attribute"
@@ -189,14 +181,14 @@ func (h Credential) AzureMetadata(ctx context.Context, config connectors.AzureSu
 		}
 	}
 
-	entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
-		TenantID:     config.TenantID,
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-	})
-	if err == nil {
-		metadata.DefaultDomain = entraExtraData.DefaultDomain
-	}
+	//entraExtraData, err := azure.CheckEntraIDPermission(azure.AuthConfig{
+	//	TenantID:     config.TenantID,
+	//	ClientID:     config.ClientID,
+	//	ClientSecret: config.ClientSecret,
+	//})
+	//if err == nil {
+	//	metadata.DefaultDomain = entraExtraData.DefaultDomain
+	//}
 
 	return &metadata, nil
 }
@@ -267,20 +259,20 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 
 	h.logger.Info("discovering azure subscriptions", zap.String("credential-id", credential.ID.String()))
 
-	subs, err := h.AzureDiscoverSubscriptions(ctx, azure.AuthConfig{
-		TenantID:     azureCnf.TenantID,
-		ObjectID:     azureCnf.ObjectID,
-		SecretID:     azureCnf.SecretID,
-		ClientID:     azureCnf.ClientID,
-		ClientSecret: azureCnf.ClientSecret,
-	})
-	if err != nil {
-		h.logger.Error("failed to discover subscriptions", zap.Error(err))
+	//subs, err := h.AzureDiscoverSubscriptions(ctx, azure.AuthConfig{
+	//	TenantID:     azureCnf.TenantID,
+	//	ObjectID:     azureCnf.ObjectID,
+	//	SecretID:     azureCnf.SecretID,
+	//	ClientID:     azureCnf.ClientID,
+	//	ClientSecret: azureCnf.ClientSecret,
+	//})
+	//if err != nil {
+	//	h.logger.Error("failed to discover subscriptions", zap.Error(err))
+	//
+	//	return nil, err
+	//}
 
-		return nil, err
-	}
-
-	h.logger.Info("discovered azure subscriptions", zap.Int("count", len(subs)))
+	//h.logger.Info("discovered azure subscriptions", zap.Int("count", len(subs)))
 
 	existingConnections, err := h.connSvc.List(ctx, []source.Type{credential.ConnectorType})
 	if err != nil {
@@ -293,33 +285,33 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 		existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
 	}
 
-	for _, sub := range subs {
-		if sub.SubModel.State != nil && *sub.SubModel.State == armsubscription.SubscriptionStateEnabled && !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
-			subsToOnboard = append(subsToOnboard, sub)
-		} else {
-			for _, conn := range existingConnections {
-				if conn.SourceId == sub.SubscriptionID {
-					name := sub.SubscriptionID
-					if sub.SubModel.DisplayName != nil {
-						name = *sub.SubModel.DisplayName
-					}
-					localConn := conn
-					if conn.Name != name {
-						localConn.Name = name
-					}
-					if sub.SubModel.State != nil && *sub.SubModel.State != armsubscription.SubscriptionStateEnabled {
-						localConn.LifecycleState = model.ConnectionLifecycleStateDisabled
-					}
-					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
-						if err := h.connSvc.Update(ctx, localConn); err != nil {
-							h.logger.Error("failed to update source", zap.Error(err))
-							return nil, err
-						}
-					}
-				}
-			}
-		}
-	}
+	//for _, sub := range subs {
+	//	if sub.SubModel.State != nil && *sub.SubModel.State == armsubscription.SubscriptionStateEnabled && !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
+	//		subsToOnboard = append(subsToOnboard, sub)
+	//	} else {
+	//		for _, conn := range existingConnections {
+	//			if conn.SourceId == sub.SubscriptionID {
+	//				name := sub.SubscriptionID
+	//				if sub.SubModel.DisplayName != nil {
+	//					name = *sub.SubModel.DisplayName
+	//				}
+	//				localConn := conn
+	//				if conn.Name != name {
+	//					localConn.Name = name
+	//				}
+	//				if sub.SubModel.State != nil && *sub.SubModel.State != armsubscription.SubscriptionStateEnabled {
+	//					localConn.LifecycleState = model.ConnectionLifecycleStateDisabled
+	//				}
+	//				if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
+	//					if err := h.connSvc.Update(ctx, localConn); err != nil {
+	//						h.logger.Error("failed to update source", zap.Error(err))
+	//						return nil, err
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
 
@@ -340,21 +332,21 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 			return nil, ErrMaxConnectionsExceeded
 		}
 
-		isAttached, err := azure.CheckRole(azure.AuthConfig{
-			TenantID:     azureCnf.TenantID,
-			ObjectID:     azureCnf.ObjectID,
-			SecretID:     azureCnf.SecretID,
-			ClientID:     azureCnf.ClientID,
-			ClientSecret: azureCnf.ClientSecret,
-		}, sub.SubscriptionID, azure.DefaultReaderRoleDefinitionIDTemplate)
-		if err != nil {
-			h.logger.Warn("failed to check role", zap.Error(err))
-			continue
-		}
-		if !isAttached {
-			h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
-			continue
-		}
+		//isAttached, err := azure.CheckRole(azure.AuthConfig{
+		//	TenantID:     azureCnf.TenantID,
+		//	ObjectID:     azureCnf.ObjectID,
+		//	SecretID:     azureCnf.SecretID,
+		//	ClientID:     azureCnf.ClientID,
+		//	ClientSecret: azureCnf.ClientSecret,
+		//}, sub.SubscriptionID, azure.DefaultReaderRoleDefinitionIDTemplate)
+		//if err != nil {
+		//	h.logger.Warn("failed to check role", zap.Error(err))
+		//	continue
+		//}
+		//if !isAttached {
+		//	h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
+		//	continue
+		//}
 
 		src := h.NewAzureConnection(
 			ctx,
@@ -383,61 +375,61 @@ func (h Credential) AzureOnboard(ctx context.Context, credential model.Credentia
 	return connections, nil
 }
 
-func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig azure.AuthConfig) ([]model.AzureSubscription, error) {
-	identity, err := azidentity.NewClientSecretCredential(
-		authConfig.TenantID,
-		authConfig.ClientID,
-		authConfig.ClientSecret,
-		nil)
-	if err != nil {
-		return nil, err
-	}
-	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
-	if err != nil {
-		return nil, err
-	}
+func (h Credential) AzureDiscoverSubscriptions(ctx context.Context, authConfig any) ([]model.AzureSubscription, error) {
+	//identity, err := azidentity.NewClientSecretCredential(
+	//	authConfig.TenantID,
+	//	authConfig.ClientID,
+	//	authConfig.ClientSecret,
+	//	nil)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//client, err := armsubscription.NewSubscriptionsClient(identity, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	it := client.NewListPager(nil)
-	subs := make([]model.AzureSubscription, 0)
-	for it.More() {
-		page, err := it.NextPage(ctx)
-		if err != nil {
-			h.logger.Error("failed to get subscription page", zap.Error(err))
-			return nil, err
-		}
-		for _, v := range page.Value {
-			if v == nil || v.State == nil {
-				continue
-			}
-			tagsClient, err := armresources.NewTagsClient(*v.SubscriptionID, identity, nil)
-			if err != nil {
-				h.logger.Error("failed to create tags client", zap.Error(err))
+	//it := client.NewListPager(nil)
+	//subs := make([]model.AzureSubscription, 0)
+	//for it.More() {
+	//	page, err := it.NextPage(ctx)
+	//	if err != nil {
+	//		h.logger.Error("failed to get subscription page", zap.Error(err))
+	//		return nil, err
+	//	}
+	//	for _, v := range page.Value {
+	//		if v == nil || v.State == nil {
+	//			continue
+	//		}
+	//		tagsClient, err := armresources.NewTagsClient(*v.SubscriptionID, identity, nil)
+	//		if err != nil {
+	//			h.logger.Error("failed to create tags client", zap.Error(err))
+	//
+	//			return nil, err
+	//		}
+	//		tagIt := tagsClient.NewListPager(nil)
+	//		tagList := make([]armresources.TagDetails, 0)
+	//		for tagIt.More() {
+	//			tagPage, err := tagIt.NextPage(ctx)
+	//			if err != nil {
+	//				h.logger.Error("failed to get tag page", zap.Error(err))
+	//
+	//				return nil, err
+	//			}
+	//			for _, tag := range tagPage.Value {
+	//				tagList = append(tagList, *tag)
+	//			}
+	//		}
+	//		localV := v
+	//		subs = append(subs, model.AzureSubscription{
+	//			SubscriptionID: *v.SubscriptionID,
+	//			SubModel:       *localV,
+	//			SubTags:        tagList,
+	//		})
+	//	}
+	//}
 
-				return nil, err
-			}
-			tagIt := tagsClient.NewListPager(nil)
-			tagList := make([]armresources.TagDetails, 0)
-			for tagIt.More() {
-				tagPage, err := tagIt.NextPage(ctx)
-				if err != nil {
-					h.logger.Error("failed to get tag page", zap.Error(err))
-
-					return nil, err
-				}
-				for _, tag := range tagPage.Value {
-					tagList = append(tagList, *tag)
-				}
-			}
-			localV := v
-			subs = append(subs, model.AzureSubscription{
-				SubscriptionID: *v.SubscriptionID,
-				SubModel:       *localV,
-				SubTags:        tagList,
-			})
-		}
-	}
-
-	return subs, nil
+	return nil, nil
 }
 
 func (h Credential) AzureUpdate(ctx context.Context, id string, req entity.UpdateAzureCredentialRequest) error {
@@ -534,9 +526,9 @@ func (h Credential) AzureCredentialConfig(ctx context.Context, credential model.
 }
 
 func (h Connection) AzureHealth(ctx context.Context, connection model.Connection, updateMetadata bool) (model.Connection, error) {
-	var cnf map[string]any
+	//var cnf map[string]any
 
-	cnf, err := h.vault.Decrypt(ctx, connection.Credential.Secret)
+	_, err := h.vault.Decrypt(ctx, connection.Credential.Secret)
 	if err != nil {
 		h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", connection.SourceId))
 		return connection, err
@@ -544,79 +536,79 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 
 	var assetDiscoveryAttached, spendAttached bool
 
-	subscriptionConfig, err := connectors.AzureSubscriptionConfigFromMap(cnf)
-	if err != nil {
-		h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
-		return connection, err
-	}
+	//subscriptionConfig, err := connectors.AzureSubscriptionConfigFromMap(cnf)
+	//if err != nil {
+	//	h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", connection.SourceId))
+	//	return connection, err
+	//}
 
-	authCnf := azure.AuthConfig{
-		TenantID:            subscriptionConfig.TenantID,
-		ClientID:            subscriptionConfig.ClientID,
-		ObjectID:            subscriptionConfig.ObjectID,
-		SecretID:            subscriptionConfig.SecretID,
-		ClientSecret:        subscriptionConfig.ClientSecret,
-		CertificatePath:     subscriptionConfig.CertificatePath,
-		CertificatePassword: subscriptionConfig.CertificatePass,
-		Username:            subscriptionConfig.Username,
-		Password:            subscriptionConfig.Password,
-	}
-
-	azureAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
-	if err != nil {
-		return connection, err
-	}
-
-	assetDiscoveryAttached = true
-	for _, ruleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
-		isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
-		if err != nil {
-			return connection, err
-		}
-
-		if !isAttached {
-			h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
-			assetDiscoveryAttached = false
-		}
-	}
-
-	azureSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
-	if err != nil {
-		return connection, err
-	}
-
-	spendAttached = true
-	for _, ruleID := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
-		isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
-		if err != nil {
-			return connection, err
-		}
-
-		if !isAttached {
-			h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
-			spendAttached = false
-		}
-	}
-
-	if (assetDiscoveryAttached || spendAttached) && updateMetadata {
-		var subscription *model.AzureSubscription
-
-		subscription, err = CurrentAzureSubscription(ctx, connection.SourceId, authCnf)
-		if err != nil {
-			h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("connectionId", connection.SourceId))
-
-			return connection, err
-		}
-
-		metadata := model.NewAzureConnectionMetadata(subscription, subscriptionConfig.TenantID)
-		var jsonMetadata []byte
-		jsonMetadata, err = json.Marshal(metadata)
-		if err != nil {
-			h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("connectionId", connection.SourceId))
-			return connection, err
-		}
-		connection.Metadata = jsonMetadata
-	}
+	//authCnf := azure.AuthConfig{
+	//	TenantID:            subscriptionConfig.TenantID,
+	//	ClientID:            subscriptionConfig.ClientID,
+	//	ObjectID:            subscriptionConfig.ObjectID,
+	//	SecretID:            subscriptionConfig.SecretID,
+	//	ClientSecret:        subscriptionConfig.ClientSecret,
+	//	CertificatePath:     subscriptionConfig.CertificatePath,
+	//	CertificatePassword: subscriptionConfig.CertificatePass,
+	//	Username:            subscriptionConfig.Username,
+	//	Password:            subscriptionConfig.Password,
+	//}
+	//
+	//azureAssetDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeyAssetDiscoveryAzureRoleIDs)
+	//if err != nil {
+	//	return connection, err
+	//}
+	//
+	//assetDiscoveryAttached = true
+	//for _, ruleID := range strings.Split(azureAssetDiscovery.GetValue().(string), ",") {
+	//	isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
+	//	if err != nil {
+	//		return connection, err
+	//	}
+	//
+	//	if !isAttached {
+	//		h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+	//		assetDiscoveryAttached = false
+	//	}
+	//}
+	//
+	//azureSpendDiscovery, err := h.meta.Client.GetConfigMetadata(&httpclient.Context{UserRole: api.AdminRole}, models.MetadataKeySpendDiscoveryAzureRoleIDs)
+	//if err != nil {
+	//	return connection, err
+	//}
+	//
+	//spendAttached = true
+	//for _, ruleID := range strings.Split(azureSpendDiscovery.GetValue().(string), ",") {
+	//	isAttached, err := azure.CheckRole(authCnf, connection.SourceId, ruleID)
+	//	if err != nil {
+	//		return connection, err
+	//	}
+	//
+	//	if !isAttached {
+	//		h.logger.Error("rule is not there", zap.String("ruleID", ruleID))
+	//		spendAttached = false
+	//	}
+	//}
+	//
+	//if (assetDiscoveryAttached || spendAttached) && updateMetadata {
+	//	var subscription *model.AzureSubscription
+	//
+	//	subscription, err = CurrentAzureSubscription(ctx, connection.SourceId, authCnf)
+	//	if err != nil {
+	//		h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//
+	//		return connection, err
+	//	}
+	//
+	//	metadata := model.NewAzureConnectionMetadata(subscription, subscriptionConfig.TenantID)
+	//	var jsonMetadata []byte
+	//	jsonMetadata, err = json.Marshal(metadata)
+	//	if err != nil {
+	//		h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("connectionId", connection.SourceId))
+	//		return connection, err
+	//	}
+	//	connection.Metadata = jsonMetadata
+	//}
 
 	assetDiscoveryAttached = true
 	spendAttached = connection.Credential.SpendDiscovery != nil && *connection.Credential.SpendDiscovery // LIKE AWS (CHECK LATER)
@@ -646,49 +638,50 @@ func (h Connection) AzureHealth(ctx context.Context, connection model.Connection
 	return connection, nil
 }
 
-func CurrentAzureSubscription(ctx context.Context, subId string, authConfig azure.AuthConfig) (*model.AzureSubscription, error) {
-	identity, err := azidentity.NewClientSecretCredential(
-		authConfig.TenantID,
-		authConfig.ClientID,
-		authConfig.ClientSecret,
-		nil)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	sub, err := client.Get(ctx, subId, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	tagsClient, err := armresources.NewTagsClient(*sub.SubscriptionID, identity, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	tagIt := tagsClient.NewListPager(nil)
-	tagList := make([]armresources.TagDetails, 0)
-	for tagIt.More() {
-		tagPage, err := tagIt.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, tag := range tagPage.Value {
-			tagList = append(tagList, *tag)
-		}
-	}
-
-	return &model.AzureSubscription{
-		SubscriptionID: subId,
-		SubModel:       sub.Subscription,
-		SubTags:        tagList,
-	}, nil
-}
+//
+//func CurrentAzureSubscription(ctx context.Context, subId string, authConfig azure.AuthConfig) (*model.AzureSubscription, error) {
+//	identity, err := azidentity.NewClientSecretCredential(
+//		authConfig.TenantID,
+//		authConfig.ClientID,
+//		authConfig.ClientSecret,
+//		nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	sub, err := client.Get(ctx, subId, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	tagsClient, err := armresources.NewTagsClient(*sub.SubscriptionID, identity, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	tagIt := tagsClient.NewListPager(nil)
+//	tagList := make([]armresources.TagDetails, 0)
+//	for tagIt.More() {
+//		tagPage, err := tagIt.NextPage(ctx)
+//		if err != nil {
+//			return nil, err
+//		}
+//		for _, tag := range tagPage.Value {
+//			tagList = append(tagList, *tag)
+//		}
+//	}
+//
+//	return &model.AzureSubscription{
+//		SubscriptionID: subId,
+//		SubModel:       sub.Subscription,
+//		SubTags:        tagList,
+//	}, nil
+//}
 
 func (h Credential) UpdateHealth(
 	ctx context.Context,

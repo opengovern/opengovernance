@@ -5,24 +5,17 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 
-	opengovernanceAws "github.com/opengovern/og-aws-describer/pkg/opengovernance-es-sdk"
-	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
-	opengovernanceAzure "github.com/opengovern/og-azure-describer/pkg/opengovernance-es-sdk"
-	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
 	client           opengovernance.Client
-	awsClient        opengovernanceAws.Client
-	azureClient      opengovernanceAzure.Client
 	db               Database
 	steampipeConn    *steampipe.Database
 	schedulerClient  describeClient.SchedulerServiceClient
@@ -31,8 +24,6 @@ type HttpHandler struct {
 	metadataClient   metadataClient.MetadataServiceClient
 
 	logger *zap.Logger
-
-	awsPlg, azurePlg, azureADPlg *plugin.Plugin
 }
 
 func InitializeHttpHandler(
@@ -95,12 +86,6 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.awsClient = opengovernanceAws.Client{
-		Client: h.client,
-	}
-	h.azureClient = opengovernanceAzure.Client{
-		Client: h.client,
-	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 
 	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl)
@@ -108,10 +93,6 @@ func InitializeHttpHandler(
 	h.metadataClient = metadataClient.NewMetadataServiceClient(metadataBaseUrl)
 
 	h.logger = logger
-
-	h.awsPlg = awsSteampipe.Plugin()
-	h.azurePlg = azureSteampipe.Plugin()
-	h.azureADPlg = azureSteampipe.ADPlugin()
 
 	return h, nil
 }

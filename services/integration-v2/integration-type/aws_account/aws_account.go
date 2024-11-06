@@ -3,8 +3,8 @@ package aws_account
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsDescriber "github.com/opengovern/og-aws-describer/aws"
-	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
+	//awsDescriber "github.com/opengovern/og-aws-describer/aws"
+	//awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration-v2/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration-v2/models"
@@ -32,9 +32,9 @@ var CredentialTypes = map[string]interfaces.CredentialCreator{
 
 func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
 	return interfaces.DescriberConfiguration{
-		NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         awsDescriberLocal.StreamName,
+		//NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
+		//NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
+		//NatsStreamName:         awsDescriberLocal.StreamName,
 	}
 }
 
@@ -109,7 +109,8 @@ func (i *AWSAccountIntegration) DiscoverIntegrations(credentialType string, json
 }
 
 func (i *AWSAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return awsDescriber.ListResourceTypes(), nil
+	//return awsDescriber.ListResourceTypes(), nil
+	return nil, nil
 }
 
 func getCredentials(credentialType string, jsonData []byte) (AWSCredentialType, error) {

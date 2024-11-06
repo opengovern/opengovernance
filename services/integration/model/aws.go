@@ -6,9 +6,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
-	"github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-util/pkg/fp"
 )
 
@@ -116,36 +114,36 @@ func NewAWSConnectionMetadata(ctx context.Context, cfg connectors.AWSAccountConf
 	}
 
 	if account.Organization != nil {
-		sdkCnf, err := aws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
-		if err != nil {
-			return metadata, err
-		}
-		organizationClient := organizations.NewFromConfig(sdkCnf)
+		//sdkCnf, err := aws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		//if err != nil {
+		//	return metadata, err
+		//}
+		//organizationClient := organizations.NewFromConfig(sdkCnf)
 
-		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
-			ResourceId: &metadata.AccountID,
-		})
-		if err != nil {
-			return metadata, err
-		}
-
-		metadata.OrganizationTags = make(map[string]string)
-		for _, tag := range tags.Tags {
-			if tag.Key == nil || tag.Value == nil {
-				continue
-			}
-			metadata.OrganizationTags[*tag.Key] = *tag.Value
-		}
-
-		if account.Account == nil {
-			orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
-				AccountId: &metadata.AccountID,
-			})
-			if err != nil {
-				return metadata, err
-			}
-			metadata.OrganizationAccount = orgAccount.Account
-		}
+		//tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
+		//	ResourceId: &metadata.AccountID,
+		//})
+		//if err != nil {
+		//	return metadata, err
+		//}
+		//
+		//metadata.OrganizationTags = make(map[string]string)
+		//for _, tag := range tags.Tags {
+		//	if tag.Key == nil || tag.Value == nil {
+		//		continue
+		//	}
+		//	metadata.OrganizationTags[*tag.Key] = *tag.Value
+		//}
+		//
+		//if account.Account == nil {
+		//	orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
+		//		AccountId: &metadata.AccountID,
+		//	})
+		//	if err != nil {
+		//		return metadata, err
+		//	}
+		//	metadata.OrganizationAccount = orgAccount.Account
+		//}
 	}
 
 	return metadata, nil

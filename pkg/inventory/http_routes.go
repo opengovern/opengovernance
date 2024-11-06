@@ -11,9 +11,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"github.com/opengovern/opengovernance/pkg/inventory/rego_runner"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"math"
 	"net/http"
@@ -26,8 +24,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/open-policy-agent/opa/rego"
-	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
-	opengovernanceAzure "github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/describe"
 	"github.com/opengovern/og-util/pkg/model"
 	esSdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
@@ -2461,14 +2457,15 @@ func (h *HttpHandler) RunRegoNamedQuery(ctx context.Context, title, query string
 	if req.AccountId != nil {
 		if len(*req.AccountId) > 0 && *req.AccountId != "all" {
 			var accountFieldName string
-			awsRTypes := onboardApi.GetAWSSupportedResourceTypeMap()
-			if _, ok := awsRTypes[strings.ToLower(resourceType)]; ok {
-				accountFieldName = "AccountID"
-			}
-			azureRTypes := onboardApi.GetAzureSupportedResourceTypeMap()
-			if _, ok := azureRTypes[strings.ToLower(resourceType)]; ok {
-				accountFieldName = "SubscriptionID"
-			}
+			// TODO: removed for integration dependencies
+			//awsRTypes := onboardApi.GetAWSSupportedResourceTypeMap()
+			//if _, ok := awsRTypes[strings.ToLower(resourceType)]; ok {
+			//	accountFieldName = "AccountID"
+			//}
+			//azureRTypes := onboardApi.GetAzureSupportedResourceTypeMap()
+			//if _, ok := azureRTypes[strings.ToLower(resourceType)]; ok {
+			//	accountFieldName = "SubscriptionID"
+			//}
 
 			filters = append(filters, esSdk.NewTermFilter("metadata."+accountFieldName, *req.AccountId))
 		}
@@ -2829,69 +2826,70 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 	}
 
 	includedResourceTypes := make(map[string]describe.ResourceType)
-	for metricID, countWithTime := range metricIndexed {
+	// TODO: removed for dependencies
+	for _, countWithTime := range metricIndexed {
 		if countWithTime.Count == 0 {
 			continue
 		}
-		metric := metricsMap[metricID]
+		//metric := metricsMap[metricID]
 
-		for _, table := range metric.Tables {
-			if awsResourceType, err := opengovernanceAws.GetResourceType(table); err == nil && awsResourceType != nil {
-				includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
-			} else if azureResourceType, err := opengovernanceAzure.GetResourceType(table); err == nil && azureResourceType != nil {
-				includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
-			}
-		}
+		//for _, table := range metric.Tables {
+		//if awsResourceType, err := opengovernanceAws.GetResourceType(table); err == nil && awsResourceType != nil {
+		//	includedResourceTypes[awsResourceType.ResourceName] = awsResourceType
+		//} else if azureResourceType, err := opengovernanceAzure.GetResourceType(table); err == nil && azureResourceType != nil {
+		//	includedResourceTypes[azureResourceType.ResourceName] = azureResourceType
+		//}
+		//}
 	}
 
 	awsLandscapesSubcategories := make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
 	azureLandscapesSubcategories := make(map[string]inventoryApi.ResourceCollectionLandscapeSubcategory)
 	for _, resourceType := range includedResourceTypes {
-		category := "Other"
-		if resourceType.GetTags() != nil && len(resourceType.GetTags()["category"]) > 0 {
-			category = resourceType.GetTags()["category"][0]
-		}
+		//category := "Other"
+		//if resourceType.GetTags() != nil && len(resourceType.GetTags()["category"]) > 0 {
+		//	category = resourceType.GetTags()["category"][0]
+		//}
 		item := inventoryApi.ResourceCollectionLandscapeItem{
 			ID:          resourceType.GetResourceName(),
-			Name:        resourceType.GetResourceLabel(),
 			Description: "", // TODO
 			LogoURI:     "", // TODO
 		}
 		if resourceType.GetTags() != nil && len(resourceType.GetTags()["logo_uri"]) > 0 {
 			item.LogoURI = resourceType.GetTags()["logo_uri"][0]
 		}
-		switch resourceType.GetConnector() {
-		case integration_type.IntegrationTypeAWSAccount:
-			subcategory, ok := awsLandscapesSubcategories[category]
-			if !ok {
-				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
-					ID:          fmt.Sprintf("%s-%s", source.CloudAWS.String(), category),
-					Name:        category,
-					Description: "",
-					Items:       nil,
-				}
-			}
-			if item.LogoURI == "" {
-				item.LogoURI = AWSLogoURI
-			}
-			subcategory.Items = append(subcategory.Items, item)
-			awsLandscapesSubcategories[category] = subcategory
-		case integration_type.IntegrationTypeAzureSubscription:
-			subcategory, ok := azureLandscapesSubcategories[category]
-			if !ok {
-				subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
-					ID:          fmt.Sprintf("%s-%s", source.CloudAzure.String(), category),
-					Name:        category,
-					Description: "",
-					Items:       nil,
-				}
-			}
-			if item.LogoURI == "" {
-				item.LogoURI = AzureLogoURI
-			}
-			subcategory.Items = append(subcategory.Items, item)
-			azureLandscapesSubcategories[category] = subcategory
-		}
+		// TODO: removed for integration dependencies
+		//switch resourceType.GetConnector() {
+		//case integration_type.IntegrationTypeAWSAccount:
+		//	subcategory, ok := awsLandscapesSubcategories[category]
+		//	if !ok {
+		//		subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
+		//			ID:          fmt.Sprintf("%s-%s", source.CloudAWS.String(), category),
+		//			Name:        category,
+		//			Description: "",
+		//			Items:       nil,
+		//		}
+		//	}
+		//	if item.LogoURI == "" {
+		//		item.LogoURI = AWSLogoURI
+		//	}
+		//	subcategory.Items = append(subcategory.Items, item)
+		//	awsLandscapesSubcategories[category] = subcategory
+		//case integration_type.IntegrationTypeAzureSubscription:
+		//	subcategory, ok := azureLandscapesSubcategories[category]
+		//	if !ok {
+		//		subcategory = inventoryApi.ResourceCollectionLandscapeSubcategory{
+		//			ID:          fmt.Sprintf("%s-%s", source.CloudAzure.String(), category),
+		//			Name:        category,
+		//			Description: "",
+		//			Items:       nil,
+		//		}
+		//	}
+		//	if item.LogoURI == "" {
+		//		item.LogoURI = AzureLogoURI
+		//	}
+		//	subcategory.Items = append(subcategory.Items, item)
+		//	azureLandscapesSubcategories[category] = subcategory
+		//}
 	}
 
 	awsLandscapesCategory := inventoryApi.ResourceCollectionLandscapeCategory{

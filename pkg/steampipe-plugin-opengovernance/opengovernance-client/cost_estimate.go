@@ -15,7 +15,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -157,133 +156,133 @@ func ResourceTypeConversion(resourceType string) string {
 }
 
 func GetValues(resource Resource, resourceType string) (map[string]interface{}, error) {
-	switch strings.ToLower(resourceType) {
-	// AWS
-	case "aws::elasticloadbalancing::loadbalancer":
-		return getAwsLoadBalancerValues(resource)
-	case "aws::elasticloadbalancingv2::loadbalancer":
-		return getAwsLoadBalancer2Values(resource)
-	case "aws::ec2::instance":
-		return getAwsEc2InstanceValues(resource)
-	case "aws::autoscaling::autoscalinggroup":
-		return nil, nil
-	case "aws::rds::dbinstance":
-		return getAwsRdsDbInstanceValues(resource)
-	case "aws::ec2::volume":
-		return getAwsEbsVolumeValues(resource)
-	case "aws::ec2::volumegp3":
-		return getAwsEbsVolumeGp3Values(resource)
-	case "aws::ec2::volumesnapshot":
-		return getAwsEbsSnapshotValues(resource)
-	case "aws::efs::filesystem":
-		return getAwsEfsFileSystemValues(resource)
-	case "aws::elasticache::cluster":
-		return getAwsElastiCacheClusterValues(resource)
-	case "aws::elasticache::replicationgroup":
-		return getAwsElastiCacheReplicationGroupValues(resource)
-	case "aws::ec2::eip":
-		return getAwsEc2EipValues(resource)
-	case "aws::eks::cluster":
-		return getAwsEksClusterValues(resource)
-	case "aws::eks::nodegroup":
-		return getAwsEksNodeGroupValues(resource)
-	case "aws::fsx::filesystem":
-		return getAwsFSXFileSystemValues(resource)
-	case "aws::ec2::natgateway":
-		return getAwsNatGatewayValues(resource)
-	case "aws::ec2::host":
-		return getAwsEc2HostValues(resource)
-	case "aws::lambda::function":
-		return getAwsLambdaFunctionValues(resource)
-	case "aws::elasticsearch::domain":
-		return getAwsEsDomainValues(resource)
-	case "aws::opensearch::domain":
-		return getAwsOpenSearchDomainValues(resource)
-	case "aws::dynamodb::table":
-		return getAwsDynamoDbTableValues(resource)
-
-	// Azure
-	case "microsoft.compute/virtualmachines":
-		return nil, nil
-	case "microsoft.compute/disks":
-		return getAzureComputeDiskValues(resource)
-	case "microsoft.compute/images":
-		return nil, nil
-	case "microsoft.compute/snapshots":
-		return getAzureComputeSnapshotValues(resource)
-	case "microsoft.compute/virtualmachinescalesets":
-		return nil, nil
-	case "microsoft.network/loadbalancers":
-		return getAzureLoadBalancerValues(resource)
-	case "microsoft.network/loadbalancers/loadbalancingeules":
-		return nil, nil
-	case "microsoft.network/loadbalancers/outboundrules":
-		return nil, nil
-	case "microsoft.network/applicationgateways":
-		return getAzureApplicationGatewayValues(resource)
-	case "microsoft.network/natgateways":
-		return nil, nil
-	case "microsoft.network/publicipaddresses":
-		return nil, nil
-	case "microsoft.network/publicipprefixes":
-		return nil, nil
-	case "microsoft.containerregistry/registries":
-		return nil, nil
-	case "microsoft.network/privateendpoints":
-		return nil, nil
-	case "microsoft.storage/queues":
-		return nil, nil
-	case "microsoft.storage/fileshares":
-		return nil, nil
-	case "microsoft.storage/storageaccounts":
-		return nil, nil
-	case "microsoft.network/virtualnetworkgateways":
-		return nil, nil
-	case "microsoft.keyvault/vaults/keys":
-		return nil, nil
-	case "microsoft.keyvault/managedhsms":
-		return nil, nil
-	case "microsoft.cdn/profiles/endpoints":
-		return nil, nil
-	case "microsoft.network/dnszones":
-		return nil, nil
-	case "microsoft.network/privatednszones":
-		return nil, nil
-	case "microsoft.documentdb/sqldatabases":
-		return nil, nil
-	case "microsoft.documentdb/mongodatabases":
-		return nil, nil
-	case "microsoft.documentdb/mongocollection":
-		return nil, nil
-	case "microsoft.dbformariadb/servers":
-		return nil, nil
-	case "microsoft.sql/servers/databases":
-		return nil, nil
-	case "microsoft.sql/managedInstances":
-		return nil, nil
-	case "microsoft.dbformysql/servers":
-		return nil, nil
-	case "microsoft.dbforpostgresql/servers":
-		return nil, nil
-	case "microsoft.dbforpostgresql/flexibleservers":
-		return nil, nil
-	case "microsoft.dbformysql/flexibleservers":
-		return nil, nil
-	case "microsoft.containerservice/managedclusters":
-		return nil, nil
-	case "microsoft.web/hostingenvironments":
-		return nil, nil
-	case "microsoft.web/plan":
-		return nil, nil
-	case "microsoft.apimanagement/service":
-		return nil, nil
-	case "microsoft.web/sites":
-		return nil, nil
-	case "microsoft.search/searchservices":
-		return nil, nil
-	case "microsoft.automation/automationaccounts":
-		return nil, nil
-	}
+	//switch strings.ToLower(resourceType) {
+	//// AWS
+	//case "aws::elasticloadbalancing::loadbalancer":
+	//	return getAwsLoadBalancerValues(resource)
+	//case "aws::elasticloadbalancingv2::loadbalancer":
+	//	return getAwsLoadBalancer2Values(resource)
+	//case "aws::ec2::instance":
+	//	return getAwsEc2InstanceValues(resource)
+	//case "aws::autoscaling::autoscalinggroup":
+	//	return nil, nil
+	//case "aws::rds::dbinstance":
+	//	return getAwsRdsDbInstanceValues(resource)
+	//case "aws::ec2::volume":
+	//	return getAwsEbsVolumeValues(resource)
+	//case "aws::ec2::volumegp3":
+	//	return getAwsEbsVolumeGp3Values(resource)
+	//case "aws::ec2::volumesnapshot":
+	//	return getAwsEbsSnapshotValues(resource)
+	//case "aws::efs::filesystem":
+	//	return getAwsEfsFileSystemValues(resource)
+	//case "aws::elasticache::cluster":
+	//	return getAwsElastiCacheClusterValues(resource)
+	//case "aws::elasticache::replicationgroup":
+	//	return getAwsElastiCacheReplicationGroupValues(resource)
+	//case "aws::ec2::eip":
+	//	return getAwsEc2EipValues(resource)
+	//case "aws::eks::cluster":
+	//	return getAwsEksClusterValues(resource)
+	//case "aws::eks::nodegroup":
+	//	return getAwsEksNodeGroupValues(resource)
+	//case "aws::fsx::filesystem":
+	//	return getAwsFSXFileSystemValues(resource)
+	//case "aws::ec2::natgateway":
+	//	return getAwsNatGatewayValues(resource)
+	//case "aws::ec2::host":
+	//	return getAwsEc2HostValues(resource)
+	//case "aws::lambda::function":
+	//	return getAwsLambdaFunctionValues(resource)
+	//case "aws::elasticsearch::domain":
+	//	return getAwsEsDomainValues(resource)
+	//case "aws::opensearch::domain":
+	//	return getAwsOpenSearchDomainValues(resource)
+	//case "aws::dynamodb::table":
+	//	return getAwsDynamoDbTableValues(resource)
+	//
+	//// Azure
+	//case "microsoft.compute/virtualmachines":
+	//	return nil, nil
+	//case "microsoft.compute/disks":
+	//	return getAzureComputeDiskValues(resource)
+	//case "microsoft.compute/images":
+	//	return nil, nil
+	//case "microsoft.compute/snapshots":
+	//	return getAzureComputeSnapshotValues(resource)
+	//case "microsoft.compute/virtualmachinescalesets":
+	//	return nil, nil
+	//case "microsoft.network/loadbalancers":
+	//	return getAzureLoadBalancerValues(resource)
+	//case "microsoft.network/loadbalancers/loadbalancingeules":
+	//	return nil, nil
+	//case "microsoft.network/loadbalancers/outboundrules":
+	//	return nil, nil
+	//case "microsoft.network/applicationgateways":
+	//	return getAzureApplicationGatewayValues(resource)
+	//case "microsoft.network/natgateways":
+	//	return nil, nil
+	//case "microsoft.network/publicipaddresses":
+	//	return nil, nil
+	//case "microsoft.network/publicipprefixes":
+	//	return nil, nil
+	//case "microsoft.containerregistry/registries":
+	//	return nil, nil
+	//case "microsoft.network/privateendpoints":
+	//	return nil, nil
+	//case "microsoft.storage/queues":
+	//	return nil, nil
+	//case "microsoft.storage/fileshares":
+	//	return nil, nil
+	//case "microsoft.storage/storageaccounts":
+	//	return nil, nil
+	//case "microsoft.network/virtualnetworkgateways":
+	//	return nil, nil
+	//case "microsoft.keyvault/vaults/keys":
+	//	return nil, nil
+	//case "microsoft.keyvault/managedhsms":
+	//	return nil, nil
+	//case "microsoft.cdn/profiles/endpoints":
+	//	return nil, nil
+	//case "microsoft.network/dnszones":
+	//	return nil, nil
+	//case "microsoft.network/privatednszones":
+	//	return nil, nil
+	//case "microsoft.documentdb/sqldatabases":
+	//	return nil, nil
+	//case "microsoft.documentdb/mongodatabases":
+	//	return nil, nil
+	//case "microsoft.documentdb/mongocollection":
+	//	return nil, nil
+	//case "microsoft.dbformariadb/servers":
+	//	return nil, nil
+	//case "microsoft.sql/servers/databases":
+	//	return nil, nil
+	//case "microsoft.sql/managedInstances":
+	//	return nil, nil
+	//case "microsoft.dbformysql/servers":
+	//	return nil, nil
+	//case "microsoft.dbforpostgresql/servers":
+	//	return nil, nil
+	//case "microsoft.dbforpostgresql/flexibleservers":
+	//	return nil, nil
+	//case "microsoft.dbformysql/flexibleservers":
+	//	return nil, nil
+	//case "microsoft.containerservice/managedclusters":
+	//	return nil, nil
+	//case "microsoft.web/hostingenvironments":
+	//	return nil, nil
+	//case "microsoft.web/plan":
+	//	return nil, nil
+	//case "microsoft.apimanagement/service":
+	//	return nil, nil
+	//case "microsoft.web/sites":
+	//	return nil, nil
+	//case "microsoft.search/searchservices":
+	//	return nil, nil
+	//case "microsoft.automation/automationaccounts":
+	//	return nil, nil
+	//}
 	return map[string]interface{}{}, nil
 }
 

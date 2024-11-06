@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	opengovernanceAws "github.com/opengovern/og-aws-describer/aws"
 	"github.com/opengovern/og-util/pkg/source"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
@@ -58,36 +57,36 @@ func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg conne
 		metadata.AccountType = AWSAccountTypeOrganizationManager
 	}
 	if account.Organization != nil {
-		sdkCnf, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
-		if err != nil {
-			logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
-			return metadata, err
-		}
-		organizationClient := organizations.NewFromConfig(sdkCnf)
+		//sdkCnf, err := opengovernanceAws.GetConfig(ctx, cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		//if err != nil {
+		//	logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
+		//	return metadata, err
+		//}
+		//organizationClient := organizations.NewFromConfig(sdkCnf)
 
-		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
-			ResourceId: &metadata.AccountID,
-		})
-		if err != nil {
-			logger.Error("failed to get organization tags", zap.Error(err), zap.String("account_id", metadata.AccountID))
-			return metadata, err
-		}
-		metadata.OrganizationTags = make(map[string]string)
-		for _, tag := range tags.Tags {
-			if tag.Key == nil || tag.Value == nil {
-				continue
-			}
-			metadata.OrganizationTags[*tag.Key] = *tag.Value
-		}
-		if account.Account == nil {
-			orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
-				AccountId: &metadata.AccountID,
-			})
-			if err != nil {
-				return metadata, err
-			}
-			metadata.OrganizationAccount = orgAccount.Account
-		}
+		//tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
+		//	ResourceId: &metadata.AccountID,
+		//})
+		//if err != nil {
+		//	logger.Error("failed to get organization tags", zap.Error(err), zap.String("account_id", metadata.AccountID))
+		//	return metadata, err
+		//}
+		//metadata.OrganizationTags = make(map[string]string)
+		//for _, tag := range tags.Tags {
+		//	if tag.Key == nil || tag.Value == nil {
+		//		continue
+		//	}
+		//	metadata.OrganizationTags[*tag.Key] = *tag.Value
+		//}
+		//if account.Account == nil {
+		//	orgAccount, err := organizationClient.DescribeAccount(ctx, &organizations.DescribeAccountInput{
+		//		AccountId: &metadata.AccountID,
+		//	})
+		//	if err != nil {
+		//		return metadata, err
+		//	}
+		//	metadata.OrganizationAccount = orgAccount.Account
+		//}
 	}
 
 	return metadata, nil
