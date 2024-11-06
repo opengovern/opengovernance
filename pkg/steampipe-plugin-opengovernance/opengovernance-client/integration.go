@@ -17,7 +17,7 @@ type IntegrationRow struct {
 	ProviderID      string            `json:"provider_id"`
 	Name            string            `json:"name"`
 	IntegrationType string            `json:"integration_type"`
-	State           string            `json:"health_state"`
+	State           string            `json:"state"`
 	Annotations     map[string]string `json:"annotations"`
 	Labels          map[string]string `json:"labels"`
 }
