@@ -383,8 +383,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 			}
 		}
 		if lookupResource != nil {
-			response.Findings[i].ResourceName = lookupResource.Name
-			response.Findings[i].ResourceLocation = lookupResource.Location
+			response.Findings[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
@@ -541,8 +540,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 	for _, controlFinding := range controlFindings {
 		findingsIDs = append(findingsIDs, controlFinding.EsID)
 		controlFinding := controlFinding
-		controlFinding.ResourceName = lookupResource.Name
-		controlFinding.ResourceLocation = lookupResource.Location
+		controlFinding.ResourceName = lookupResource.ResourceName
 		finding := api.GetAPIFindingFromESFinding(controlFinding)
 
 		for _, parentBenchmark := range finding.ParentBenchmarks {
@@ -1845,8 +1843,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		}
 
 		if lookupResource != nil {
-			response.FindingEvents[i].ResourceName = lookupResource.Name
-			response.FindingEvents[i].ResourceLocation = lookupResource.Location
+			response.FindingEvents[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", findingEvent.OpenGovernanceResourceID),
@@ -5962,8 +5959,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			}
 		}
 		if lookupResource != nil {
-			response.Findings[i].ResourceName = lookupResource.Name
-			response.Findings[i].ResourceLocation = lookupResource.Location
+			response.Findings[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
