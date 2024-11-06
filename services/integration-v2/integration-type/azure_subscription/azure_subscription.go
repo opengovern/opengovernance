@@ -58,7 +58,7 @@ func (i *AzureSubscriptionIntegration) GetLabels(credentialType string, jsonData
 }
 
 func (i *AzureSubscriptionIntegration) HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error) {
-	var configs azureDescriberLocal.AccountCredentials
+	var configs azureDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {
 		return false, err
@@ -190,7 +190,7 @@ func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]strin
 }
 
 func getCredentials(credentialType string, jsonData []byte) (azcore.TokenCredential, error) {
-	var configs azureDescriberLocal.AccountCredentials
+	var configs azureDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {
 		return nil, err
