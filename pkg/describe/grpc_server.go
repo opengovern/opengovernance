@@ -12,7 +12,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )

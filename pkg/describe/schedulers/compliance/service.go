@@ -11,7 +11,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	integrationClient "github.com/opengovern/opengovernance/services/integration-v2/client"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 )
 

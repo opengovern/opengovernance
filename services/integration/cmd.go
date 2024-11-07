@@ -6,14 +6,12 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
+	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/vault"
-	describe "github.com/opengovern/opengovernance/pkg/describe/client"
-	inventory "github.com/opengovern/opengovernance/pkg/inventory/client"
 	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration/api"
 	"github.com/opengovern/opengovernance/services/integration/config"
 	"github.com/opengovern/opengovernance/services/integration/db"
-	"github.com/opengovern/opengovernance/services/integration/meta"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -31,23 +29,29 @@ func Command() *cobra.Command {
 			}
 
 			logger = logger.Named("integration")
-
-			db, err := db.New(cnf.Postgres, logger)
+			cfg := postgres.Config{
+				Host:    cnf.Postgres.Host,
+				Port:    cnf.Postgres.Port,
+				User:    cnf.Postgres.Username,
+				Passwd:  cnf.Postgres.Password,
+				DB:      cnf.Postgres.DB,
+				SSLMode: cnf.Postgres.SSLMode,
+			}
+			gorm, err := postgres.NewClient(&cfg, logger.Named("postgres"))
+			db := db.NewDatabase(gorm)
 			if err != nil {
 				return err
 			}
 
-			i := inventory.NewInventoryServiceClient(cnf.Inventory.BaseURL)
-			d := describe.NewSchedulerServiceClient(cnf.Describe.BaseURL)
+			err = db.Initialize()
+			if err != nil {
+				return err
+			}
+
 			mClient := metadata.NewMetadataServiceClient(cnf.Metadata.BaseURL)
 
 			_, err = mClient.VaultConfigured(&httpclient.Context{UserRole: api3.AdminRole})
 			if err != nil && errors.Is(err, metadata.ErrConfigNotFound) {
-				return err
-			}
-
-			m, err := meta.New(cnf.Metadata)
-			if err != nil {
 				return err
 			}
 
@@ -79,7 +83,7 @@ func Command() *cobra.Command {
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, d, i, mClient, m, db, vaultSc, cnf.Vault.KeyId, cnf.MasterAccessKey, cnf.MasterSecretKey),
+				api.New(logger, db, vaultSc),
 			)
 		},
 	}

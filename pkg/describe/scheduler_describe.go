@@ -7,7 +7,7 @@ import (
 	"fmt"
 	apiAuth "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	"github.com/opengovern/opengovernance/services/integration/integration-type"
 	"math/rand"
 	"time"
 
@@ -20,7 +20,7 @@ import (
 	apiDescribe "github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )

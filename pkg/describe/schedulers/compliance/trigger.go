@@ -5,7 +5,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/integration"
 	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"time"
 
 	"github.com/opengovern/opengovernance/pkg/compliance/runner"

@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
-	integration "github.com/opengovern/opengovernance/services/integration-v2/models"
+	integration "github.com/opengovern/opengovernance/services/integration/models"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"runtime"
 	"strings"

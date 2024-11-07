@@ -6,7 +6,7 @@ import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"golang.org/x/net/context"
 
 	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"

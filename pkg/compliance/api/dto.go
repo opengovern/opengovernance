@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/opengovern/og-util/pkg/integration"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	integrationapi "github.com/opengovern/opengovernance/services/integration-v2/api/models"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"time"
 )
 

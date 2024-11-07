@@ -8,7 +8,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.uber.org/zap"
 	"net/http"
 	"reflect"

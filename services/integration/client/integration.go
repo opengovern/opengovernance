@@ -4,14 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/integration/api/entity"
+	"github.com/opengovern/opengovernance/services/integration/api/models"
 	"net/http"
 )
 
 type IntegrationServiceClient interface {
-	CreateAzure(ctx *httpclient.Context, request entity.CreateAzureCredentialRequest) (*entity.CreateCredentialResponse, error)
-	CreateAws(ctx *httpclient.Context, request entity.CreateAWSCredentialRequest) (*entity.CreateCredentialResponse, error)
+	GetIntegration(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
+	ListIntegrations(ctx *httpclient.Context, integrationTypes []string) (*models.ListIntegrationsResponse, error)
+	ListIntegrationsByFilters(ctx *httpclient.Context, req models.ListIntegrationsRequest) (*models.ListIntegrationsResponse, error)
+	IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
+	GetCredential(ctx *httpclient.Context, credentialID string) (*models.Credential, error)
 }
 
 type integrationClient struct {
@@ -22,20 +26,11 @@ func NewIntegrationServiceClient(baseURL string) IntegrationServiceClient {
 	return &integrationClient{baseURL: baseURL}
 }
 
-func (c *integrationClient) CreateAzure(ctx *httpclient.Context, request entity.CreateAzureCredentialRequest) (*entity.CreateCredentialResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/credentials/azure", c.baseURL)
-	var response *entity.CreateCredentialResponse
+func (c *integrationClient) GetIntegration(ctx *httpclient.Context, integrationID string) (*models.Integration, error) {
+	url := fmt.Sprintf("%s/api/v1/integrations/%s", c.baseURL, integrationID)
+	var response *models.Integration
 
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("json marshal: %w", err)
-	}
-
-	//headers := map[string]string{
-	//	httpserver.XPlatformUserIDHeader:        ctx.UserID,
-	//	httpserver.XPlatformUserRoleHeader:      string(ctx.UserRole),
-	//}
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -44,20 +39,65 @@ func (c *integrationClient) CreateAzure(ctx *httpclient.Context, request entity.
 	return response, nil
 }
 
-func (c *integrationClient) CreateAws(ctx *httpclient.Context, request entity.CreateAWSCredentialRequest) (*entity.CreateCredentialResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/credentials/aws", c.baseURL)
-	var response *entity.CreateCredentialResponse
-
-	payload, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("json marshal: %w", err)
+func (c *integrationClient) ListIntegrations(ctx *httpclient.Context, integrationTypes []string) (*models.ListIntegrationsResponse, error) {
+	ctx.UserRole = authApi.AdminRole
+	url := fmt.Sprintf("%s/api/v1/integrations", c.baseURL)
+	for i, v := range integrationTypes {
+		if i == 0 {
+			url += "?"
+		} else {
+			url += "&"
+		}
+		url += "integration_type=" + v
 	}
 
-	//headers := map[string]string{
-	//	httpserver.XPlatformUserIDHeader:        ctx.UserID,
-	//	httpserver.XPlatformUserRoleHeader:      string(ctx.UserRole),
-	//}
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	var response models.ListIntegrationsResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (c *integrationClient) ListIntegrationsByFilters(ctx *httpclient.Context, req models.ListIntegrationsRequest) (*models.ListIntegrationsResponse, error) {
+	ctx.UserRole = authApi.AdminRole
+	url := fmt.Sprintf("%s/api/v1/integrations/list", c.baseURL)
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.ListIntegrationsResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (c *integrationClient) GetCredential(ctx *httpclient.Context, credentialID string) (*models.Credential, error) {
+	url := fmt.Sprintf("%s/api/v1/credentials/%s", c.baseURL, credentialID)
+	var response *models.Credential
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
+}
+
+func (c *integrationClient) IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error) {
+	url := fmt.Sprintf("%s/api/v1/integrations/%s/healthcheck", c.baseURL, integrationID)
+	var response *models.Integration
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opengovernance/pkg/utils"
-	integration_type "github.com/opengovern/opengovernance/services/integration-v2/integration-type"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
