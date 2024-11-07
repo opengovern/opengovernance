@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/services/integration/model"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
 	"go.uber.org/zap"
@@ -40,43 +39,43 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 }
 
 func OnboardMigration(conf config.MigratorConfig, logger *zap.Logger, onboardFilePath string) error {
-	orm, err := postgres.NewClient(&postgres.Config{
-		Host:    conf.PostgreSQL.Host,
-		Port:    conf.PostgreSQL.Port,
-		User:    conf.PostgreSQL.Username,
-		Passwd:  conf.PostgreSQL.Password,
-		DB:      "onboard",
-		SSLMode: conf.PostgreSQL.SSLMode,
-	}, logger)
-	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
-	}
-	dbm := db.Database{ORM: orm}
+	//orm, err := postgres.NewClient(&postgres.Config{
+	//	Host:    conf.PostgreSQL.Host,
+	//	Port:    conf.PostgreSQL.Port,
+	//	User:    conf.PostgreSQL.Username,
+	//	Passwd:  conf.PostgreSQL.Password,
+	//	DB:      "onboard",
+	//	SSLMode: conf.PostgreSQL.SSLMode,
+	//}, logger)
+	//if err != nil {
+	//	return fmt.Errorf("new postgres client: %w", err)
+	//}
+	//dbm := db.Database{ORM: orm}
 
-	content, err := os.ReadFile(onboardFilePath)
-	if err != nil {
-		return err
-	}
+	//content, err := os.ReadFile(onboardFilePath)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//logger.Info("connectors json:", zap.String("json", string(content)))
 
-	logger.Info("connectors json:", zap.String("json", string(content)))
-
-	var connectors []model.Connector
-	err = json.Unmarshal(content, &connectors)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range connectors {
-		logger.Info("connector", zap.Any("obj", obj))
-		err := dbm.ORM.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "name"}}, // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"id", "label", "short_description", "description", "direction",
-				"status", "logo", "auto_onboard_support", "allow_new_connections", "max_connection_limit", "tags", "tier"}),
-		}).Create(&obj).Error
-		if err != nil {
-			return err
-		}
-	}
+	//var connectors []model.Connector
+	//err = json.Unmarshal(content, &connectors)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, obj := range connectors {
+	//	logger.Info("connector", zap.Any("obj", obj))
+	//	err := dbm.ORM.Clauses(clause.OnConflict{
+	//		Columns: []clause.Column{{Name: "name"}}, // key colume
+	//		DoUpdates: clause.AssignmentColumns([]string{"id", "label", "short_description", "description", "direction",
+	//			"status", "logo", "auto_onboard_support", "allow_new_connections", "max_connection_limit", "tags", "tier"}),
+	//	}).Create(&obj).Error
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 
 	return nil
 }

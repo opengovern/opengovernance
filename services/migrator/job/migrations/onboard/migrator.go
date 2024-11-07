@@ -3,7 +3,6 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"github.com/opengovern/opengovernance/services/integration/model"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
 
@@ -44,11 +43,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&model.ConnectionGroup{}).Where("1 = 1").Unscoped().Delete(&model.ConnectionGroup{}).Error
-		if err != nil {
-			logger.Error("failed to delete connection groups", zap.Error(err))
-			return err
-		}
+		//err := tx.Model(&model.ConnectionGroup{}).Where("1 = 1").Unscoped().Delete(&model.ConnectionGroup{}).Error
+		//if err != nil {
+		//	logger.Error("failed to delete connection groups", zap.Error(err))
+		//	return err
+		//}
 
 		for _, connectionGroup := range parser.connectionGroups {
 			err = tx.Clauses(clause.OnConflict{
