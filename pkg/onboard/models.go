@@ -4,19 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/opengovern/opengovernance/pkg/describe/connectors"
 	"github.com/opengovern/opengovernance/services/integration/model"
 	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
 	"github.com/opengovern/og-util/pkg/source"
 	"go.uber.org/zap"
-	"gorm.io/datatypes"
 )
 
 type AWSAccountType string
@@ -36,15 +33,9 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg connectors.AWSAccountConfig, connection model.Connection, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg connectors.AWSAccountConfig, connection any, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
-	}
-
-	if connection.Credential.CredentialType == model.CredentialTypeAutoAws {
-		metadata.AccountType = AWSAccountTypeStandalone
-	} else {
-		metadata.AccountType = AWSAccountTypeOrganizationMember
 	}
 
 	if account.AccountName != nil {
@@ -92,61 +83,6 @@ func NewAWSConnectionMetadata(ctx context.Context, logger *zap.Logger, cfg conne
 	return metadata, nil
 }
 
-func NewAWSSource(ctx context.Context, logger *zap.Logger, cfg connectors.AWSAccountConfig, account awsAccount, description string) model.Connection {
-	id := uuid.New()
-	provider := source.CloudAWS
-
-	credName := fmt.Sprintf("%s - %s - default credentials", provider, account.AccountID)
-	creds := model.Credential{
-		ID:             uuid.New(),
-		Name:           &credName,
-		ConnectorType:  provider,
-		Secret:         "",
-		CredentialType: model.CredentialTypeAutoAws,
-	}
-
-	accountName := account.AccountID
-	if account.AccountName != nil {
-		accountName = *account.AccountName
-	}
-	accountEmail := ""
-	if account.Account != nil && account.Account.Email != nil {
-		accountEmail = *account.Account.Email
-	}
-
-	s := model.Connection{
-		ID:                   id,
-		SourceId:             account.AccountID,
-		Name:                 accountName,
-		Email:                accountEmail,
-		Type:                 provider,
-		Description:          description,
-		CredentialID:         creds.ID,
-		Credential:           creds,
-		LifecycleState:       model.ConnectionLifecycleStateInProgress,
-		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		LastHealthCheckTime:  time.Now(),
-		CreationMethod:       source.SourceCreationMethodManual,
-	}
-
-	if len(strings.TrimSpace(s.Name)) == 0 {
-		s.Name = s.SourceId
-	}
-
-	metadata, err := NewAWSConnectionMetadata(ctx, logger, cfg, s, account)
-	if err != nil {
-		// TODO: log error
-	}
-
-	marshalMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		marshalMetadata = []byte("{}")
-	}
-	s.Metadata = marshalMetadata
-
-	return s
-}
-
 type AzureConnectionMetadata struct {
 	TenantID       string                       `json:"tenant_id"`
 	SubscriptionID string                       `json:"subscription_id"`
@@ -177,164 +113,7 @@ func NewAzureConnectionMetadata(sub azureSubscription, tenantID string) AzureCon
 	return metadata
 }
 
-func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds model.Credential, tenantID string) model.Connection {
-	id := uuid.New()
-
-	name := sub.SubscriptionID
-	if sub.SubModel.DisplayName != nil {
-		name = *sub.SubModel.DisplayName
-	}
-
-	metadata := NewAzureConnectionMetadata(sub, tenantID)
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		jsonMetadata = []byte("{}")
-	}
-
-	s := model.Connection{
-		ID:                   id,
-		SourceId:             sub.SubscriptionID,
-		Name:                 name,
-		Description:          description,
-		Type:                 source.CloudAzure,
-		CredentialID:         creds.ID,
-		Credential:           creds,
-		LifecycleState:       model.ConnectionLifecycleStateInProgress,
-		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		CreationMethod:       creationMethod,
-		Metadata:             datatypes.JSON(jsonMetadata),
-	}
-
-	return s
-}
-
-func NewAWSAutoOnboardedConnection(ctx context.Context, logger *zap.Logger, cfg connectors.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds model.Credential) model.Connection {
-	id := uuid.New()
-
-	name := account.AccountID
-	if account.AccountName != nil {
-		name = *account.AccountName
-	}
-
-	lifecycleState := model.ConnectionLifecycleStateDiscovered
-	if creds.AutoOnboardEnabled {
-		lifecycleState = model.ConnectionLifecycleStateInProgress
-	}
-
-	if account.Account.Status != types.AccountStatusActive {
-		lifecycleState = model.ConnectionLifecycleStateArchived
-	}
-
-	s := model.Connection{
-		ID:                   id,
-		SourceId:             account.AccountID,
-		Name:                 name,
-		Description:          description,
-		Type:                 source.CloudAWS,
-		CredentialID:         creds.ID,
-		Credential:           creds,
-		LifecycleState:       lifecycleState,
-		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		LastHealthCheckTime:  time.Now(),
-		CreationMethod:       creationMethod,
-	}
-
-	metadata, err := NewAWSConnectionMetadata(ctx, logger, cfg, s, account)
-	if err != nil {
-		// TODO: log error
-	}
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		jsonMetadata = []byte("{}")
-	}
-	s.Metadata = jsonMetadata
-
-	return s
-}
-
-func NewAWSAutoOnboardedConnectionV2(ctx context.Context, org *types.Organization, logger *zap.Logger, account types.Account, creationMethod source.SourceCreationMethod, description string, creds model.Credential, awsConfig aws.Config) (*model.Connection, error) {
-	id := uuid.New()
-
-	name := *account.Id
-	if account.Name != nil {
-		name = *account.Name
-	}
-
-	lifecycleState := model.ConnectionLifecycleStateDiscovered
-	if creds.AutoOnboardEnabled {
-		lifecycleState = model.ConnectionLifecycleStateInProgress
-	}
-
-	if account.Status != types.AccountStatusActive {
-		lifecycleState = model.ConnectionLifecycleStateArchived
-	}
-
-	s := model.Connection{
-		ID:                   id,
-		SourceId:             *account.Id,
-		Name:                 name,
-		Description:          description,
-		Type:                 source.CloudAWS,
-		CredentialID:         creds.ID,
-		Credential:           creds,
-		LifecycleState:       lifecycleState,
-		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		LastHealthCheckTime:  time.Now(),
-		CreationMethod:       creationMethod,
-	}
-	metadata := AWSConnectionMetadata{
-		AccountID:           *account.Id,
-		AccountName:         name,
-		Organization:        nil,
-		OrganizationAccount: &account,
-		OrganizationTags:    nil,
-	}
-	if creds.CredentialType == model.CredentialTypeAutoAws {
-		metadata.AccountType = AWSAccountTypeStandalone
-	} else {
-		metadata.AccountType = AWSAccountTypeOrganizationMember
-	}
-
-	metadata.Organization = org
-	if org != nil {
-		if org.MasterAccountId != nil &&
-			*metadata.Organization.MasterAccountId == *account.Id {
-			metadata.AccountType = AWSAccountTypeOrganizationManager
-		}
-
-		organizationClient := organizations.NewFromConfig(awsConfig)
-		tags, err := organizationClient.ListTagsForResource(ctx, &organizations.ListTagsForResourceInput{
-			ResourceId: &metadata.AccountID,
-		})
-		if err != nil {
-			logger.Error("failed to get organization tags", zap.Error(err), zap.String("account_id", metadata.AccountID))
-			return nil, err
-		}
-		metadata.OrganizationTags = make(map[string]string)
-		for _, tag := range tags.Tags {
-			if tag.Key == nil || tag.Value == nil {
-				continue
-			}
-			metadata.OrganizationTags[*tag.Key] = *tag.Value
-		}
-	}
-
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, err
-	}
-	s.Metadata = jsonMetadata
-	return &s, nil
-}
-
-//
-//func (s Source) ToSourceResponse() *api.CreateSourceResponse {
-//	return &api.CreateSourceResponse{
-//		ID: s.ID,
-//	}
-//}
-
-func NewAzureCredential(name string, credentialType model.CredentialType, metadata *model.AzureCredentialMetadata) (*model.Credential, error) {
+func NewAzureCredential(name string, credentialType any, metadata any) (any, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {

@@ -23,9 +23,6 @@ import (
 
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
-	GetSourceBySourceId(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
-	ListSourcesByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) ([]api.Connection, error)
-	GetSourceByFilters(ctx *httpclient.Context, req api.GetSourceByFiltersRequest) (api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
@@ -41,7 +38,6 @@ type OnboardServiceClient interface {
 	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
 	PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error)
 	PurgeSampleData(ctx *httpclient.Context) error
-	ListIntegrations(ctx *httpclient.Context, healthState string) (*api.ListIntegrationsResponse, error)
 }
 
 type onboardClient struct {
