@@ -217,6 +217,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapp
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.2.0/go.mod h1:S7Ss6Rm0nlKDRHKrO9eL2Be5EnX29Z09CNPWgK7o4+I=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/appservice/armappservice v1.0.0 h1:kRX8I0dWAcpW6Vq0m90CgV+qw4O1vXodgwrhoPr1RWs=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/appservice/armappservice v1.0.0/go.mod h1:avvc5/7qR4taCvAhOM7KFXuEHhAU0Wek9YX7sh9H3EM=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization v1.0.0 h1:qtRcg5Y7jNJ4jEzPq4GpWLfTspHdNe2ZK6LjwGcjgmU=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization v1.0.0/go.mod h1:lPneRe3TwsoDRKY4O6YDLXHhEWrD+TIRa8XrV/3/fqw=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0 h1:Hp+EScFOu9HeCbeW8WU2yQPJd4gGwhMgKxWe+G6jNzw=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0/go.mod h1:/pz8dyNQe+Ey3yBp/XuYz7oqX8YDNWVpPB0hH3XWfbc=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/automation/armautomation v0.9.0 h1:pzgp0VZDAnmgAkUPeedW1dTd7v3kSrwxFNabFAzB158=
@@ -516,8 +518,6 @@ github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.38.0 h1:vAfGwYFCcPDS9Bg7ckfMB
 github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.38.0/go.mod h1:U12sr6Lt14X96f16t+rR52+2BdqtydwN7DjEEHRMjO0=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1 h1:194kHl9h0FnIZ9PTWeBiAYVX8lKYJ9OT3rZXFM79X2M=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.167.1/go.mod h1:CtLD6CPq9z9dyMxV+H6/M5d9+/ea3dO80um029GXqV0=
-github.com/aws/aws-sdk-go-v2/service/iam v1.28.5 h1:Ts2eDDuMLrrmd0ARlg5zSoBQUvhdthgiNnPdiykTJs0=
-github.com/aws/aws-sdk-go-v2/service/iam v1.28.5/go.mod h1:kKI0gdVsf+Ev9knh/3lBJbchtX5LLNH25lAzx3KDj3Q=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.4 h1:KypMCbLPPHEmf9DgMGw51jMj77VfGPAN2Kv4cfhlfgI=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.4/go.mod h1:Vz1JQXliGcQktFTN/LN6uGppAIRoLBR2bMvIMP0gOjc=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.27/go.mod h1:EOwBD4J4S5qYszS5/3DpkejfuK+Z5/1uzICfPaZLtqw=
@@ -1260,12 +1260,6 @@ github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQ
 github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
 github.com/opencontainers/runc v1.1.14 h1:rgSuzbmgz5DUJjeSnw337TxDbRuqjs6iqQck/2weR6w=
 github.com/opencontainers/runc v1.1.14/go.mod h1:E4C2z+7BxR7GHXp0hAY53mek+x49X1LjPNeMTfRGvOA=
-github.com/opengovern/og-describer-azure v0.0.28 h1:34DfL/f85fKsITw9XCYfg+wBlcOlL402dQIaPm76mcg=
-github.com/opengovern/og-describer-azure v0.0.28/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
-github.com/opengovern/og-describer-azure v0.0.31 h1:jCtjzl1MjbWqtHnEd9RrDU9KunNWHsh7Eg9TCF0EX3o=
-github.com/opengovern/og-describer-azure v0.0.31/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
-github.com/opengovern/og-describer-azure v0.0.35 h1:awzCqlJqRpaDiYLFvuqJ6s5DJ7ztUYaEofHzQ4tKz6w=
-github.com/opengovern/og-describer-azure v0.0.35/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
 github.com/opengovern/og-describer-azure v0.0.36 h1:tdtA+8NYc3+WDnxKxGpYAg95RZXDX7OS80P9+eNkqtw=
 github.com/opengovern/og-describer-azure v0.0.36/go.mod h1:AYg77/lXXe9TWJvRP6cbPeYcYPXjPttQBxt4U1OfWJo=
 github.com/opengovern/og-util v1.0.6-0.20241105222646-0d15ca2bc5c5 h1:rfIElwBZ3EdvKX6gV/luUAdbrILVKyNpWP/VXHWb5ik=

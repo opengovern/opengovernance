@@ -134,9 +134,10 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 		healthy, err := integration.HealthCheck(req.CredentialType, jsonData, integrationAPI.ProviderID, integrationAPI.Labels)
 		if err != nil || !healthy {
-			integrationAPI.State = models.IntegrationStateInactive
+			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
+			i.State = models2.IntegrationStateInactive
 		} else {
-			integrationAPI.State = models.IntegrationStateActive
+			i.State = models2.IntegrationStateActive
 		}
 
 		integrationsAPI = append(integrationsAPI, *integrationAPI)
@@ -244,6 +245,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		healthy, err := integration.HealthCheck(req.CredentialType, jsonData, i.ProviderID, labels)
 		if err != nil || !healthy {
+			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			i.State = models2.IntegrationStateInactive
 		} else {
 			i.State = models2.IntegrationStateActive
