@@ -1,6 +1,8 @@
 package compliance
 
-import "github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
+import (
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
+)
 
 type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
@@ -29,6 +31,7 @@ type Control struct {
 }
 
 type QueryView struct {
-	ID    string `json:"id" yaml:"ID"`
-	Query string `json:"query" yaml:"Query"`
+	ID           string   `json:"id" yaml:"ID"`
+	Query        string   `json:"query" yaml:"Query"`
+	Dependencies []string `json:"dependencies" yaml:"Dependencies"`
 }
