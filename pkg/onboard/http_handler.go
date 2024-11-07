@@ -6,7 +6,6 @@ import (
 	"github.com/opengovern/og-util/pkg/vault"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/onboard/db"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
@@ -15,7 +14,6 @@ import (
 )
 
 type HttpHandler struct {
-	db                               db.Database
 	steampipeConn                    *steampipe.Database
 	vaultSc                          vault.VaultSourceConfig
 	inventoryClient                  inventory.InventoryServiceClient
@@ -28,7 +26,6 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	onboardDB db.Database,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	logger *zap.Logger,
 	vaultSc vault.VaultSourceConfig,
@@ -59,7 +56,6 @@ func InitializeHttpHandler(
 	meta := metadataClient.NewMetadataServiceClient(metadataBaseURL)
 
 	return &HttpHandler{
-		db:              onboardDB,
 		steampipeConn:   steampipeConn,
 		vaultSc:         vaultSc,
 		inventoryClient: inventoryClient,
