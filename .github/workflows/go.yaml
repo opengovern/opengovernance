@@ -954,3 +954,29 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/dex-login:${{ needs.tag.outputs.latest_tag }}
           file: docker/DexLoginDockerfile
           context: .
+
+  deploy-postgres:
+    runs-on: ubuntu-latest
+    needs:
+      - tag
+    permissions:
+      id-token: write
+      contents: read
+    environment: docker
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/postgres:${{ needs.tag.outputs.latest_tag }}
+          file: docker/PostgresDockerfile
+          context: .
