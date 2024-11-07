@@ -3,10 +3,9 @@ package entra_id_directory
 import (
 	"encoding/json"
 	"github.com/opengovern/og-util/pkg/integration"
-	azureDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/healthcheck"
 	entraidDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/discovery"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/healthcheck"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration/models"
 )
@@ -48,26 +47,25 @@ func (i *EntraIdDirectoryIntegration) HealthCheck(credentialType string, jsonDat
 		return false, err
 	}
 
-	return healthcheck.AzureIntegrationHealthcheck(healthcheck.Config{
-		TenantID:       configs.TenantID,
-		ClientID:       configs.ClientID,
-		ClientSecret:   configs.ClientSecret,
-		CertPath:       configs.CertificatePath,
-		CertContent:    configs.CertificatePath,
-		CertPassword:   configs.CertificatePass,
-		SubscriptionID: providerId,
+	return healthcheck.EntraidIntegrationHealthcheck(healthcheck.Config{
+		TenantID:     providerId,
+		ClientID:     configs.ClientID,
+		ClientSecret: configs.ClientSecret,
+		CertPath:     configs.CertificatePath,
+		CertContent:  configs.CertificatePath,
+		CertPassword: configs.CertificatePass,
 	})
 }
 
 func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
-	var configs azureDescriberLocal.IntegrationCredentials
+	var configs entraidDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {
 		return nil, err
 	}
 
 	var integrations []models.Integration
-	subscriptions, err := discovery.AzureIntegrationDiscovery(discovery.Config{
+	directories, err := discovery.EntraidIntegrationDiscovery(discovery.Config{
 		TenantID:     configs.TenantID,
 		ClientID:     configs.ClientID,
 		ClientSecret: configs.ClientSecret,
@@ -78,10 +76,10 @@ func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(credentialType string
 	if err != nil {
 		return nil, err
 	}
-	for _, s := range subscriptions {
+	for _, s := range directories {
 		integrations = append(integrations, models.Integration{
-			ProviderID: s.SubscriptionID,
-			Name:       s.DisplayName,
+			ProviderID: s.TenantID,
+			Name:       s.Name,
 		})
 	}
 

@@ -69,7 +69,7 @@ func (s *Subscription) IsHealthy(ctx context.Context, cred azcore.TokenCredentia
 
 // getSubscriptionsWithLimit retrieves a limited number of subscriptions the SPN has access to.
 // It returns the subscriptions in a slice.
-func getSubscriptionsWithLimit(cred azcore.TokenCredential, spnObjectID string, limit int, includeStates ...armsubscription.SubscriptionState) ([]*Subscription, error) {
+func getSubscriptionsWithLimit(cred azcore.TokenCredential, limit int, includeStates ...armsubscription.SubscriptionState) ([]*Subscription, error) {
 	// Create a SubscriptionsClient
 	client, err := armsubscription.NewSubscriptionsClient(cred, nil)
 	if err != nil {
@@ -187,8 +187,8 @@ func shouldRetry(err error, retries, maxRetries int) bool {
 // supporting optional filters on subscription states.
 // If no states are specified, it excludes Deleted, Disabled, and Expired subscriptions.
 // It returns the subscriptions in a slice.
-func getSubscriptions(cred azcore.TokenCredential, spnObjectID string, includeStates ...armsubscription.SubscriptionState) ([]*Subscription, error) {
-	subscriptions, err := getSubscriptionsWithLimit(cred, spnObjectID, MAX_SUBSCRIPTIONS, includeStates...)
+func getSubscriptions(cred azcore.TokenCredential, includeStates ...armsubscription.SubscriptionState) ([]*Subscription, error) {
+	subscriptions, err := getSubscriptionsWithLimit(cred, MAX_SUBSCRIPTIONS, includeStates...)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +349,6 @@ func AzureIntegrationDiscovery(config Config) ([]SubscriptionOutput, error) {
 	// Get subscriptions
 	subscriptions, err := getSubscriptions(
 		cred,
-		config.ObjectID,
 	)
 	if err != nil {
 		log.Fatalf("Failed to get subscriptions: %v", err)
