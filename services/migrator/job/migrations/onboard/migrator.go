@@ -9,7 +9,6 @@ import (
 	"github.com/opengovern/og-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type Migration struct {
@@ -49,15 +48,15 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		//	return err
 		//}
 
-		for _, connectionGroup := range parser.connectionGroups {
-			err = tx.Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).Create(&connectionGroup).Error
-			if err != nil {
-				logger.Error("failed to create connection group", zap.Error(err))
-				return err
-			}
-		}
+		//for _, connectionGroup := range parser.connectionGroups {
+		//	err = tx.Clauses(clause.OnConflict{
+		//		DoNothing: true,
+		//	}).Create(&connectionGroup).Error
+		//	if err != nil {
+		//		logger.Error("failed to create connection group", zap.Error(err))
+		//		return err
+		//	}
+		//}
 		return nil
 	})
 	if err != nil {
