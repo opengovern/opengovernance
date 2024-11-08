@@ -10,5 +10,5 @@ const (
 	ComplianceGitPath         = ConfigzGitPath + "/compliance"
 	QueryViewsGitPath         = ConfigzGitPath + "/views"
 	ResourceCollectionGitPath = ConfigzGitPath + "/resource-collections"
-	IntegrationGroupsGitPath  = ConfigzGitPath + "/integration_groups"
+	IntegrationsGitPath       = ConfigzGitPath + "/integrations"
 )

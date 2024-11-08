@@ -22,7 +22,7 @@ func (m Migration) IsGitBased() bool {
 	return true
 }
 func (m Migration) AttachmentFolderPath() string {
-	return config.IntegrationGroupsGitPath
+	return config.IntegrationsGitPath
 }
 
 func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *zap.Logger) error {
@@ -40,7 +40,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	dbm := db.Database{ORM: orm}
 
 	if err := IntegrationTypesMigration(conf, logger, dbm, m.AttachmentFolderPath()+"/integration_types.json"); err != nil {
-		logger.Fatal("onboard migration failed", zap.Error(err))
+		logger.Fatal("integration migration failed", zap.Error(err))
 		return err
 	}
 
