@@ -38,6 +38,7 @@ func (it *IntegrationType) ToApi() (*models.IntegrationType, error) {
 	return &models.IntegrationType{
 		ID:               it.ID,
 		Name:             it.Name,
+		IntegrationType:  it.IntegrationType,
 		Label:            it.Label,
 		Description:      it.Description,
 		ShortDescription: it.ShortDescription,
