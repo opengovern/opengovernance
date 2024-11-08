@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgtype"
 	integrationModels "github.com/opengovern/opengovernance/services/integration/models"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
@@ -96,19 +97,45 @@ func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, d
 
 	logger.Info("connectors json:", zap.String("json", string(content)))
 
-	var integrationTypes []integrationModels.IntegrationType
+	var integrationTypes []IntegrationType
 	err = json.Unmarshal(content, &integrationTypes)
 	if err != nil {
 		return err
 	}
 
 	for _, obj := range integrationTypes {
+		integrationType := integrationModels.IntegrationType{
+			ID:               obj.ID,
+			Name:             obj.Name,
+			Label:            obj.Label,
+			Tier:             obj.Tier,
+			ShortDescription: obj.ShortDescription,
+			Description:      obj.Description,
+			Logo:             obj.Logo,
+			Enabled:          obj.Enabled,
+		}
+		annotationsJsonData, err := json.Marshal(obj.Annotations)
+		if err != nil {
+			return err
+		}
+		integrationAnnotationsJsonb := pgtype.JSONB{}
+		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
+		integrationType.Annotations = integrationAnnotationsJsonb
+
+		labelsJsonData, err := json.Marshal(obj.Labels)
+		if err != nil {
+			return err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		integrationType.Labels = integrationLabelsJsonb
+
 		logger.Info("integrationType", zap.Any("obj", obj))
-		err := dbm.ORM.Clauses(clause.OnConflict{
+		err = dbm.ORM.Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "name"}}, // key colume
 			DoUpdates: clause.AssignmentColumns([]string{"id", "label", "short_description", "description",
 				"enabled", "logo", "labels", "annotations", "tier"}),
-		}).Create(&obj).Error
+		}).Create(&integrationType).Error
 		if err != nil {
 			return err
 		}
