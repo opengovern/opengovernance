@@ -743,7 +743,7 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 			h.logger.Error("failed to convert integration types to API model", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration types to API model")
 		}
-		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(item.IntegrationType)]; ok {
+		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
 			item.Enabled = true
 		} else {
 			if enabled == "true" {
