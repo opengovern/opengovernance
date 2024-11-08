@@ -134,8 +134,8 @@ func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, d
 
 		logger.Info("integrationType", zap.Any("obj", obj))
 		err = dbm.ORM.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "integration_type"}}, // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"id", "name", "label", "short_description", "description",
+			Columns: []clause.Column{{Name: "name"}}, // key colume
+			DoUpdates: clause.AssignmentColumns([]string{"id", "integration_type", "label", "short_description", "description",
 				"enabled", "logo", "labels", "annotations", "tier"}),
 		}).Create(&integrationType).Error
 		if err != nil {
