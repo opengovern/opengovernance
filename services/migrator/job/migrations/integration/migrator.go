@@ -104,43 +104,53 @@ func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, d
 		return err
 	}
 
-	for _, obj := range integrationTypes {
-		integrationType := integrationModels.IntegrationType{
-			ID:               obj.ID,
-			IntegrationType:  obj.IntegrationType,
-			Name:             obj.Name,
-			Label:            obj.Label,
-			Tier:             obj.Tier,
-			ShortDescription: obj.ShortDescription,
-			Description:      obj.Description,
-			Logo:             obj.Logo,
-			Enabled:          obj.Enabled,
-		}
-		annotationsJsonData, err := json.Marshal(obj.Annotations)
+	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
+		err := tx.Model(&integrationModels.IntegrationType{}).Where("1 = 1").Unscoped().Delete(&integrationModels.IntegrationType{}).Error
 		if err != nil {
+			logger.Error("failed to delete integration types", zap.Error(err))
 			return err
 		}
-		integrationAnnotationsJsonb := pgtype.JSONB{}
-		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
-		integrationType.Annotations = integrationAnnotationsJsonb
 
-		labelsJsonData, err := json.Marshal(obj.Labels)
-		if err != nil {
-			return err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		integrationType.Labels = integrationLabelsJsonb
+		for _, obj := range integrationTypes {
+			integrationType := integrationModels.IntegrationType{
+				ID:               obj.ID,
+				IntegrationType:  obj.IntegrationType,
+				Name:             obj.Name,
+				Label:            obj.Label,
+				Tier:             obj.Tier,
+				ShortDescription: obj.ShortDescription,
+				Description:      obj.Description,
+				Logo:             obj.Logo,
+				Enabled:          obj.Enabled,
+			}
+			annotationsJsonData, err := json.Marshal(obj.Annotations)
+			if err != nil {
+				return err
+			}
+			integrationAnnotationsJsonb := pgtype.JSONB{}
+			err = integrationAnnotationsJsonb.Set(annotationsJsonData)
+			integrationType.Annotations = integrationAnnotationsJsonb
 
-		logger.Info("integrationType", zap.Any("obj", obj))
-		err = dbm.ORM.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "name"}}, // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"id", "integration_type", "label", "short_description", "description",
-				"enabled", "logo", "labels", "annotations", "tier"}),
-		}).Create(&integrationType).Error
-		if err != nil {
-			return err
+			labelsJsonData, err := json.Marshal(obj.Labels)
+			if err != nil {
+				return err
+			}
+			integrationLabelsJsonb := pgtype.JSONB{}
+			err = integrationLabelsJsonb.Set(labelsJsonData)
+			integrationType.Labels = integrationLabelsJsonb
+
+			logger.Info("integrationType", zap.Any("obj", obj))
+			err = tx.Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).Create(&integrationType).Error
+			if err != nil {
+				return err
+			}
 		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failure in integration types transaction: %w", err)
 	}
 
 	return nil
