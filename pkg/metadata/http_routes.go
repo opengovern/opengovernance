@@ -879,15 +879,15 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 		return false, nil
 	}
 
-	//for _, c := range integrations.Integrations {
-	//	if _, ok := integrationsMap[c.IntegrationID]; !ok {
-	//		return false, nil
-	//	} else {
-	//		if _, ok2 := credentialsMap[c.CredentialID]; ok2 {
-	//			return false, nil
-	//		}
-	//	}
-	//}
+	for _, c := range integrations.Integrations {
+		if _, ok := integrationsMap[c.IntegrationID]; !ok {
+			return false, nil
+		} else {
+			if _, ok2 := credentialsMap[c.CredentialID]; ok2 {
+				return false, nil
+			}
+		}
+	}
 
 	return true, nil
 }
