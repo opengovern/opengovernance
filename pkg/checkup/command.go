@@ -10,7 +10,7 @@ import (
 
 var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
-	OnboardBaseURL        = os.Getenv("ONBOARD_BASE_URL")
+	IntegrationBaseUrl    = os.Getenv("INTEGRATION_BASE_URL")
 	NATSAddress           = os.Getenv("NATS_URL")
 )
 
@@ -38,7 +38,7 @@ func WorkerCommand() *cobra.Command {
 				NATSAddress,
 				logger,
 				PrometheusPushAddress,
-				OnboardBaseURL,
+				IntegrationBaseUrl,
 				cmd.Context(),
 			)
 			if err != nil {

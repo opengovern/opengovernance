@@ -6,8 +6,8 @@ import (
 
 	"github.com/opengovern/og-util/pkg/es"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +20,7 @@ type JobDocs struct {
 	LastResourceIdType      string          `json:"-"`
 	// caches, these are not marshalled and only used
 	ResourceCollectionCache map[string]inventoryApi.ResourceCollection `json:"-"`
-	ConnectionCache         map[string]onboardApi.Connection           `json:"-"`
+	IntegrationCache        map[string]integrationApi.Integration      `json:"-"`
 }
 
 func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
@@ -113,8 +113,8 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 
 			found = false
 			for _, accountId := range filter.AccountIDs {
-				if conn, ok := jd.ConnectionCache[strings.ToLower(accountId)]; ok {
-					if strings.ToLower(conn.ID.String()) == strings.ToLower(finding.ConnectionID) {
+				if integration, ok := jd.IntegrationCache[strings.ToLower(accountId)]; ok {
+					if strings.ToLower(integration.IntegrationID) == strings.ToLower(finding.ConnectionID) {
 						found = true
 						break
 					}

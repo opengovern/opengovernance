@@ -67,7 +67,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ResourcesFindingsIsDone: make(map[string]bool),
 
 		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
-		ConnectionCache:         map[string]onboardApi.Connection{},
+		IntegrationCache:        map[string]onboardApi.Connection{},
 	}
 
 	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
@@ -80,15 +80,15 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
+	integrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
 	if err != nil {
 		w.logger.Error("failed to list connections", zap.Error(err))
 		return err
 	}
-	for _, c := range connections {
+	for _, c := range integrations.Integrations {
 		c := c
 		// use provider id instead of opengovernance id because we need that to check resource collections
-		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
+		jd.IntegrationCache[strings.ToLower(c.ProviderID)] = c
 	}
 
 	for page := 1; paginator.HasNext(); page++ {
