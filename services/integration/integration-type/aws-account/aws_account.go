@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	IntegrationTypeAWSAccount integration.Type = "AWS_ACCOUNT"
+	IntegrationTypeAWSAccount integration.Type = "aws_cloud_account"
 )
 
 type AWSCredentialType interface {

@@ -4,10 +4,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/opengovern/opengovernance/services/integration/api/models"
 	"github.com/opengovern/opengovernance/services/integration/db"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.uber.org/zap"
 	"net/http"
+	"sort"
+	strconv "strconv"
 )
 
 type API struct {
@@ -23,6 +27,12 @@ func New(
 		database: database,
 		logger:   logger.Named("integration_types"),
 	}
+}
+
+func (h API) Register(g *echo.Group) {
+	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
+	g.DELETE("/:integrationTypeId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
+	g.GET("/:integrationTypeId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
 }
 
 // Delete godoc
@@ -49,14 +59,26 @@ func (h API) Delete(c echo.Context) error {
 
 // List godoc
 //
-//	@Summary		List credentials
-//	@Description	List credentials
+//	@Summary		List integration types
+//	@Description	List integration types
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Success		200				{object}	models.ListResponse
+//	@Param			per_page	query		int		false	"PerPage"
+//	@Param			cursor		query		int		false	"Cursor"
+//	@Success		200				{object}	models.ListIntegrationTypesResponse
 //	@Router			/integration/api/v1/integration-types [get]
 func (h API) List(c echo.Context) error {
+	perPageStr := c.QueryParam("per_page")
+	cursorStr := c.QueryParam("cursor")
+	var perPage, cursor int64
+	if perPageStr != "" {
+		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
+	}
+	if cursorStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+	}
+
 	integrationTypes, err := h.database.ListIntegrationTypes()
 	if err != nil {
 		h.logger.Error("failed to list integration types", zap.Error(err))
@@ -70,12 +92,29 @@ func (h API) List(c echo.Context) error {
 			h.logger.Error("failed to convert integration types to API model", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration types to API model")
 		}
+		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(item.IntegrationType)]; ok {
+			item.Enabled = true
+		} else {
+			item.Enabled = false
+		}
 		items = append(items, *item)
+	}
+
+	totalCount := len(items)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ID < items[j].ID
+	})
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
 	}
 
 	return c.JSON(http.StatusOK, models.ListIntegrationTypesResponse{
 		IntegrationTypes: items,
-		TotalCount:       len(items),
+		TotalCount:       totalCount,
 	})
 }
 
@@ -104,10 +143,4 @@ func (h API) Get(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 	}
 	return c.JSON(http.StatusOK, item)
-}
-
-func (h API) Register(g *echo.Group) {
-	g.GET("", httpserver.AuthorizeHandler(h.List, api.ViewerRole))
-	g.DELETE("/:integrationTypeId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
-	g.GET("/:integrationTypeId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
 }

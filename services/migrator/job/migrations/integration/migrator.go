@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	integrationModels "github.com/opengovern/opengovernance/services/integration/models"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
@@ -122,6 +123,11 @@ func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, d
 				Description:      obj.Description,
 				Logo:             obj.Logo,
 				Enabled:          obj.Enabled,
+			}
+			if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
+				integrationType.Enabled = true
+			} else {
+				integrationType.Enabled = false
 			}
 			annotationsJsonData, err := json.Marshal(obj.Annotations)
 			if err != nil {

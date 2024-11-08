@@ -1,8 +1,9 @@
 package models
 
 type IntegrationType struct {
-	ID               int64             `json:"id"`
-	Name             string            `json:"name"`
+	ID               int64  `json:"id"`
+	Name             string `json:"name"`
+	IntegrationType  string
 	Label            string            `json:"label"`
 	Tier             string            `json:"tier"`
 	Annotations      map[string]string `json:"annotations"`

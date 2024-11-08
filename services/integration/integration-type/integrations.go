@@ -13,8 +13,8 @@ import (
 
 const (
 	IntegrationTypeAWSAccount        = aws_account.IntegrationTypeAWSAccount
-	IntegrationTypeAzureSubscription = azureConfigs.IntegrationName
-	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationName
+	IntegrationTypeAzureSubscription = azureConfigs.IntegrationTypeAzureSubscription
+	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
 )
 
 var AllIntegrationTypes = []integration.Type{

@@ -3,5 +3,5 @@ package configs
 import "github.com/opengovern/og-util/pkg/integration"
 
 const (
-	IntegrationName = integration.Type("ENTRA_ID_DIRECTORY") // example: AWS_ACCOUNT, AZURE_SUBSCRIPTION
+	IntegrationTypeEntraidDirectory = integration.Type("entraid_directory") // example: AWS_ACCOUNT, AZURE_SUBSCRIPTION
 )
