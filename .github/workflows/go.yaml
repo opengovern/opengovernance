@@ -958,6 +958,7 @@ jobs:
   deploy-postgres:
     runs-on: ubuntu-latest
     needs:
+      - build
       - tag
     permissions:
       id-token: write
