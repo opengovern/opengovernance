@@ -64,13 +64,15 @@ func (h API) Delete(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Param			per_page	query		int		false	"PerPage"
-//	@Param			cursor		query		int		false	"Cursor"
+//	@Param			per_page	query		int			false	"PerPage"
+//	@Param			cursor		query		int			false	"Cursor"
+//	@Param			enabled		query		bool		false	"Enabled"
 //	@Success		200				{object}	models.ListIntegrationTypesResponse
 //	@Router			/integration/api/v1/integration-types [get]
 func (h API) List(c echo.Context) error {
 	perPageStr := c.QueryParam("per_page")
 	cursorStr := c.QueryParam("cursor")
+	enabled := c.QueryParam("enabled")
 	var perPage, cursor int64
 	if perPageStr != "" {
 		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
@@ -95,6 +97,9 @@ func (h API) List(c echo.Context) error {
 		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(item.IntegrationType)]; ok {
 			item.Enabled = true
 		} else {
+			if enabled == "true" {
+				continue
+			}
 			item.Enabled = false
 		}
 		items = append(items, *item)
