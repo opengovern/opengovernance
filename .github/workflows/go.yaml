@@ -81,6 +81,7 @@ jobs:
       information-service: ${{ steps.build_services.outputs.information-service }}
       query-runner-worker: ${{ steps.build_services.outputs.query-runner-worker }}
       demo-importer-worker: ${{ steps.build_services.outputs.demo-importer-worker }}
+      
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
