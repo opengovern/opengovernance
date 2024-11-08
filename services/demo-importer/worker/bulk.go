@@ -159,3 +159,5 @@ func ReadIndexConfigs(dir string) (map[string]IndexConfig, error) {
 
 	return indexConfigs, nil
 }
+
+

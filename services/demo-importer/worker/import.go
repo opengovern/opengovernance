@@ -4,16 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/services/demo-importer/db"
-	"github.com/opengovern/opengovernance/services/demo-importer/db/model"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
-	"go.uber.org/zap"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/jackc/pgtype"
+	"github.com/opengovern/opengovernance/services/demo-importer/db"
+	"github.com/opengovern/opengovernance/services/demo-importer/db/model"
+	"github.com/opengovern/opengovernance/services/demo-importer/types"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"go.uber.org/zap"
 )
 
 func ImportJob(ctx context.Context, logger *zap.Logger, migratorDb db.Database, client *opensearchapi.Client, dir string) error {
@@ -153,5 +157,46 @@ func updateJob(migratorDb db.Database, m *model.Migration, status string, jobsSt
 	if err != nil {
 		return err
 	}
+	return nil
+}
+// execute psql command with configs
+func ImportSQLFiles(config types.DemoImporterConfig,path string) error {
+
+	cmd := exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "describe", "-f", path+"/describe.sql")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", config.PostgreSQL.Password))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error executing psql command: %s", string(out))
+	}
+	cmd = exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "onboard", "-f", path+"/onboard.sql")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", config.PostgreSQL.Password))
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error executing psql command: %s", string(out))
+	}
+	cmd = exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "metadata", "-f", path+"/metadata.sql")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", config.PostgreSQL.Password))
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error executing psql command: %s", string(out))
+	}
+	cmd = exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "metadata", "-f", path+"/metadata.sql")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", config.PostgreSQL.Password))
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error executing psql command: %s", string(out))
+	}
+	cmd = exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "onboard", "-c", "DELETE FROM credentials;")
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", config.PostgreSQL.Password))
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error executing psql command: %s", string(out))
+	}
+	
 	return nil
 }
