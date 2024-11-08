@@ -39,7 +39,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	dbm := db.Database{ORM: orm}
 
-	if err := IntegrationTypesMigration(conf, logger, dbm, m.AttachmentFolderPath()+"/integration_types.json"); err != nil {
+	if err := IntegrationTypesMigration(conf, logger, dbm, "/integrations/integration_types.json"); err != nil {
 		logger.Fatal("integration migration failed", zap.Error(err))
 		return err
 	}
