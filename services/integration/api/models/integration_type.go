@@ -1,12 +1,13 @@
 package models
 
 type IntegrationType struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	Label   string `json:"label"`
-	Tier    string `json:"tier"`
-	Logo    string `json:"logo"`
-	Enabled bool   `json:"enabled"`
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	PlatformName string `json:"platform_name"`
+	Label        string `json:"label"`
+	Tier         string `json:"tier"`
+	Logo         string `json:"logo"`
+	Enabled      bool   `json:"enabled"`
 }
 
 type ListIntegrationTypesResponse struct {

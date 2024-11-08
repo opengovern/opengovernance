@@ -21,11 +21,12 @@ type IntegrationType struct {
 
 func (it *IntegrationType) ToApi() (*models.IntegrationType, error) {
 	return &models.IntegrationType{
-		ID:      it.ID,
-		Name:    it.Name,
-		Label:   it.Label,
-		Tier:    it.Tier,
-		Logo:    it.Logo,
-		Enabled: it.Enabled,
+		ID:           it.ID,
+		Name:         it.Name,
+		PlatformName: it.IntegrationType,
+		Label:        it.Label,
+		Tier:         it.Tier,
+		Logo:         it.Logo,
+		Enabled:      it.Enabled,
 	}, nil
 }
