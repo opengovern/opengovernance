@@ -14,8 +14,8 @@ import (
 	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
 	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +67,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ResourcesFindingsIsDone: make(map[string]bool),
 
 		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
-		IntegrationCache:        map[string]onboardApi.Connection{},
+		IntegrationCache:        map[string]integrationApi.Integration{},
 	}
 
 	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
