@@ -42,5 +42,5 @@ func (api *API) Register(e *echo.Echo) {
 
 	integrationsApi.Register(e.Group("/api/v1/integrations"))
 	cred.Register(e.Group("/api/v1/credentials"))
-	integrationTypes.Register(e.Group("/api/v1/integration-type"))
+	integrationTypes.Register(e.Group("/api/v1/integration-types"))
 }
