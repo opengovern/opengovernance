@@ -56,7 +56,7 @@ func (db Database) ListIntegration(types []integration.Type) ([]models.Integrati
 }
 
 // ListIntegrationsByFilters list Integrations by filters
-func (db Database) ListIntegrationsByFilters(IntegrationIDs, types []string, NameRegex, providerIDRegex *string) ([]models.Integration, error) {
+func (db Database) ListIntegrationsByFilters(IntegrationIDs []string, types []string, NameRegex, providerIDRegex *string) ([]models.Integration, error) {
 	var integrations []models.Integration
 	tx := db.Orm.
 		Model(&models.Integration{})

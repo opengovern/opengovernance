@@ -57,4 +57,6 @@ type ListIntegrationsRequest struct {
 	IntegrationType []string `json:"integration_type"`
 	ProviderIDRegex *string  `json:"provider_id_regex"`
 	NameRegex       *string  `json:"integration_name_regex"`
+	Cursor          *int64   `json:"cursor"`
+	PerPage         *int64   `json:"per_page"`
 }

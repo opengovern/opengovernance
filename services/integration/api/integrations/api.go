@@ -160,9 +160,9 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		healthy, err := integration.HealthCheck(jsonData, integrationAPI.ProviderID, integrationAPI.Labels)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
-			i.State = models2.IntegrationStateInactive
+			integrationAPI.State = models.IntegrationStateInactive
 		} else {
-			i.State = models2.IntegrationStateActive
+			integrationAPI.State = models.IntegrationStateActive
 		}
 
 		integrationsAPI = append(integrationsAPI, *integrationAPI)
@@ -238,6 +238,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 		if _, ok := providerIDs[i.ProviderID]; !ok {
 			continue
 		}
+		i.IntegrationType = req.IntegrationType
 
 		i.CredentialID = credentialID
 
@@ -477,9 +478,21 @@ func (h API) ListByFilters(c echo.Context) error {
 		items = append(items, *item)
 	}
 
+	totalCount := len(items)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name < items[j].Name
+	})
+	if req.PerPage != nil {
+		if req.Cursor == nil {
+			items = utils.Paginate(1, *req.PerPage, items)
+		} else {
+			items = utils.Paginate(*req.Cursor, *req.PerPage, items)
+		}
+	}
+
 	return c.JSON(http.StatusOK, models.ListIntegrationsResponse{
 		Integrations: items,
-		TotalCount:   len(items),
+		TotalCount:   totalCount,
 	})
 }
 
