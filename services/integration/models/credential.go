@@ -11,10 +11,9 @@ import (
 )
 
 type Credential struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	CredentialType string
-	Secret         string
-	Metadata       pgtype.JSONB
+	ID       uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	Secret   string
+	Metadata pgtype.JSONB
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -30,11 +29,10 @@ func (c *Credential) ToApi() (*models.Credential, error) {
 	}
 
 	return &models.Credential{
-		ID:             c.ID.String(),
-		CredentialType: c.CredentialType,
-		Secret:         c.Secret,
-		Metadata:       metadata,
-		CreatedAt:      c.CreatedAt,
-		UpdatedAt:      c.UpdatedAt,
+		ID:        c.ID.String(),
+		Secret:    c.Secret,
+		Metadata:  metadata,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
 	}, nil
 }

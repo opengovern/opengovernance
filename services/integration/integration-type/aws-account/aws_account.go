@@ -38,15 +38,15 @@ func (i *AWSAccountIntegration) GetDescriberConfiguration() interfaces.Describer
 	}
 }
 
-func (i *AWSAccountIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *AWSAccountIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *AWSAccountIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
 	labels := make(map[string]string)
-
+	credentialType := "aws_simple_iam_credentials"
 	awsCredential, err := getCredentials(credentialType, jsonData)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,9 @@ func (i *AWSAccountIntegration) GetLabels(credentialType string, jsonData []byte
 	return labels, nil
 }
 
-func (i *AWSAccountIntegration) HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *AWSAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+	credentialType := "aws_simple_iam_credentials"
+
 	awsCredential, err := getCredentials(credentialType, jsonData)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse AWS credentials of type %s: %s", credentialType, err.Error())
@@ -99,7 +101,9 @@ func (i *AWSAccountIntegration) HealthCheck(credentialType string, jsonData []by
 	return awsCredential.HealthCheck()
 }
 
-func (i *AWSAccountIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
+func (i *AWSAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
+	credentialType := "aws_simple_iam_credentials"
+
 	awsCredential, err := getCredentials(credentialType, jsonData)
 	if err != nil {
 		return nil, err

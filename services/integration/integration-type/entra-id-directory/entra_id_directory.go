@@ -28,19 +28,19 @@ func (i *EntraIdDirectoryIntegration) GetDescriberConfiguration() interfaces.Des
 	}
 }
 
-func (i *EntraIdDirectoryIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *EntraIdDirectoryIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *EntraIdDirectoryIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *EntraIdDirectoryIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *EntraIdDirectoryIntegration) HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *EntraIdDirectoryIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
 	var configs entraidDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {
@@ -57,7 +57,7 @@ func (i *EntraIdDirectoryIntegration) HealthCheck(credentialType string, jsonDat
 	})
 }
 
-func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
+func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
 	var configs entraidDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {

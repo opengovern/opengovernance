@@ -24,19 +24,19 @@ func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.De
 	}
 }
 
-func (i *AzureSubscriptionIntegration) GetAnnotations(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *AzureSubscriptionIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) GetLabels(credentialType string, jsonData []byte) (map[string]string, error) {
+func (i *AzureSubscriptionIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
 	annotations := make(map[string]string)
 
 	return annotations, nil
 }
 
-func (i *AzureSubscriptionIntegration) HealthCheck(credentialType string, jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *AzureSubscriptionIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
 	var credentials configs.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -54,7 +54,7 @@ func (i *AzureSubscriptionIntegration) HealthCheck(credentialType string, jsonDa
 	})
 }
 
-func (i *AzureSubscriptionIntegration) DiscoverIntegrations(credentialType string, jsonData []byte) ([]models.Integration, error) {
+func (i *AzureSubscriptionIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
 	var credentials configs.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
