@@ -2,10 +2,10 @@ package azure_subscription
 
 import (
 	"encoding/json"
-	azureDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/configs"
+	azureDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/discovery"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/healthcheck"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration/models"
 )

@@ -1,7 +1,7 @@
 package spend
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 )
 
 const (
@@ -9,12 +9,12 @@ const (
 )
 
 type PerConnectionMetricTrendSummary struct {
-	DateEpoch       int64       `json:"date_epoch"`
-	ConnectionID    string      `json:"connection_id"`
-	ConnectionName  string      `json:"connection_name"`
-	Connector       source.Type `json:"connector"`
-	CostValue       float64     `json:"cost_value"`
-	IsJobSuccessful bool        `json:"is_job_successful"`
+	DateEpoch       int64            `json:"date_epoch"`
+	IntegrationID   string           `json:"integration_id"`
+	IntegrationName string           `json:"integration_name"`
+	IntegrationType integration.Type `json:"integration_type"`
+	CostValue       float64          `json:"cost_value"`
+	IsJobSuccessful bool             `json:"is_job_successful"`
 }
 
 type ConnectionMetricTrendSummary struct {
@@ -33,8 +33,8 @@ type ConnectionMetricTrendSummary struct {
 	PeriodStart int64  `json:"period_start"`
 	PeriodEnd   int64  `json:"period_end"`
 
-	Connections    []PerConnectionMetricTrendSummary          `json:"connections"`
-	ConnectionsMap map[string]PerConnectionMetricTrendSummary `json:"-"`
+	Integrations    []PerConnectionMetricTrendSummary          `json:"integrations"`
+	IntegrationsMap map[string]PerConnectionMetricTrendSummary `json:"-"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {

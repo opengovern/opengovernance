@@ -1,7 +1,7 @@
 package spend
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 )
 
 const (
@@ -9,11 +9,11 @@ const (
 )
 
 type PerConnectorMetricTrendSummary struct {
-	DateEpoch                  int64       `json:"date_epoch"`
-	Connector                  source.Type `json:"connector"`
-	CostValue                  float64     `json:"cost_value"`
-	TotalConnections           int64       `json:"total_connections"`
-	TotalSuccessfulConnections int64       `json:"total_successful_connections"`
+	DateEpoch                  int64            `json:"date_epoch"`
+	Connector                  integration.Type `json:"connector"`
+	CostValue                  float64          `json:"cost_value"`
+	TotalConnections           int64            `json:"total_connections"`
+	TotalSuccessfulConnections int64            `json:"total_successful_connections"`
 }
 
 type ConnectorMetricTrendSummary struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/integration"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"github.com/opengovern/opengovernance/pkg/inventory/rego_runner"
 	"github.com/opengovern/opengovernance/pkg/types"
@@ -33,6 +34,7 @@ import (
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/inventory/es"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -173,28 +175,30 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
-func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, connectorTypes []source.Type, connectionIDs []string) ([]source.Type, error) {
-	if len(connectionIDs) == 0 {
-		return connectorTypes, nil
+func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, integrationTypes []integration.Type, integrationIDs []string) ([]integration.Type, error) {
+	if len(integrationIDs) == 0 {
+		return integrationTypes, nil
 	}
-	if len(connectorTypes) != 0 {
-		return connectorTypes, nil
+	if len(integrationTypes) != 0 {
+		return integrationTypes, nil
 	}
-	connections, err := h.onboardClient.GetSources(&httpclient.Context{UserRole: api.AdminRole}, connectionIDs)
+	integrations, err := h.integrationClient.ListIntegrationsByFilters(&httpclient.Context{UserRole: api.AdminRole}, integrationApi.ListIntegrationsRequest{
+		IntegrationID: integrationIDs,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	enabledConnectors := make(map[source.Type]bool)
-	for _, connection := range connections {
-		enabledConnectors[connection.Connector] = true
+	enabledIntegrations := make(map[integration.Type]bool)
+	for _, integration := range integrations.Integrations {
+		enabledIntegrations[integration.IntegrationType] = true
 	}
-	connectorTypes = make([]source.Type, 0, len(enabledConnectors))
-	for connectorType := range enabledConnectors {
-		connectorTypes = append(connectorTypes, connectorType)
+	integrationTypes = make([]integration.Type, 0, len(enabledIntegrations))
+	for connectorType := range enabledIntegrations {
+		integrationTypes = append(integrationTypes, connectorType)
 	}
 
-	return connectorTypes, nil
+	return integrationTypes, nil
 }
 
 func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
@@ -1086,7 +1090,7 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		table = append(table, inventoryApi.AssetTableRow{
 			DimensionID:   m.DimensionID,
 			DimensionName: m.DimensionName,
-			Connector:     m.Connector,
+			Connector:     m.IntegrationType,
 			ResourceCount: resourceCount,
 		})
 	}
@@ -1870,7 +1874,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		table = append(table, inventoryApi.SpendTableRow{
 			DimensionID:   m.DimensionID,
 			AccountID:     accountID,
-			Connector:     m.Connector,
+			Connector:     m.IntegrationType,
 			Category:      category,
 			DimensionName: dimensionName,
 			CostValue:     costValue,

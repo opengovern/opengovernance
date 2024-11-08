@@ -123,8 +123,8 @@ func FetchConnectionAnalyticMetricCountAtTime(ctx context.Context, logger *zap.L
 		for _, hit := range metricBucket.Latest.Hits.Hits {
 			handleConnResults := func(connResults resource.ConnectionMetricTrendSummaryResult) {
 				for _, connectionResults := range connResults.Connections {
-					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
-						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.IntegrationID]) ||
+						(len(connectors) > 0 && !includeConnectorMap[connectionResults.IntegrationType.String()]) {
 						continue
 					}
 					v := result[hit.Source.MetricID]
@@ -143,8 +143,8 @@ func FetchConnectionAnalyticMetricCountAtTime(ctx context.Context, logger *zap.L
 					}
 					handleConnResults(rcResult)
 				}
-			} else if hit.Source.Connections != nil {
-				handleConnResults(*hit.Source.Connections)
+			} else if hit.Source.Integrations != nil {
+				handleConnResults(*hit.Source.Integrations)
 			} else {
 				logger.Warn("FetchConnectionAnalyticMetricCountAtTime", zap.String("error", "no connections or resource collections found"))
 				return nil, errors.New("no connections or resource collections found")
@@ -248,7 +248,7 @@ func FetchConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Lo
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
 			handleConnResults := func(connResults resource.ConnectorMetricTrendSummaryResult) {
-				for _, connectorResults := range connResults.Connectors {
+				for _, connectorResults := range connResults.IntegrationTypes {
 					if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
 						continue
 					}
@@ -268,8 +268,8 @@ func FetchConnectorAnalyticMetricCountAtTime(ctx context.Context, logger *zap.Lo
 					}
 					handleConnResults(rcResult)
 				}
-			} else if hit.Source.Connectors != nil {
-				handleConnResults(*hit.Source.Connectors)
+			} else if hit.Source.IntegrationTypes != nil {
+				handleConnResults(*hit.Source.IntegrationTypes)
 			} else {
 				logger.Warn("FetchConnectorAnalyticMetricCountAtTime", zap.String("error", "no connectors or resource collections found"))
 				return nil, errors.New("no connectors or resource collections found")
@@ -362,7 +362,7 @@ func FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx context.Co
 				if _, ok := result[rcId]; !ok {
 					result[rcId] = make(map[string]CountWithTime)
 				}
-				for _, connectorResults := range rcResult.Connectors {
+				for _, connectorResults := range rcResult.IntegrationTypes {
 					if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
 						continue
 					}
@@ -523,16 +523,16 @@ func FetchConnectionMetricTrendSummaryPage(ctx context.Context, logger *zap.Logg
 
 				handleConnResults := func(connResults resource.ConnectionMetricTrendSummaryResult) {
 					for _, connectionResults := range connResults.Connections {
-						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
-							(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.IntegrationID]) ||
+							(len(connectors) > 0 && !includeConnectorMap[connectionResults.IntegrationType.String()]) {
 							continue
 						}
 						v.Count += connectionResults.ResourceCount
 						v.CountStacked[metricBucket.Key] += connectionResults.ResourceCount
-						if _, ok := v.connectionSuccess[connectionResults.ConnectionID]; !ok {
-							v.connectionSuccess[connectionResults.ConnectionID] = connectionResults.IsJobSuccessful
+						if _, ok := v.connectionSuccess[connectionResults.IntegrationID]; !ok {
+							v.connectionSuccess[connectionResults.IntegrationID] = connectionResults.IsJobSuccessful
 						} else {
-							v.connectionSuccess[connectionResults.ConnectionID] = v.connectionSuccess[connectionResults.ConnectionID] && connectionResults.IsJobSuccessful
+							v.connectionSuccess[connectionResults.IntegrationID] = v.connectionSuccess[connectionResults.IntegrationID] && connectionResults.IsJobSuccessful
 						}
 					}
 				}
@@ -544,8 +544,8 @@ func FetchConnectionMetricTrendSummaryPage(ctx context.Context, logger *zap.Logg
 						}
 						handleConnResults(rcResult)
 					}
-				} else if hit.Source.Connections != nil {
-					handleConnResults(*hit.Source.Connections)
+				} else if hit.Source.Integrations != nil {
+					handleConnResults(*hit.Source.Integrations)
 				} else {
 					return nil, errors.New("no connections or resource collections found")
 				}
@@ -695,7 +695,7 @@ func FetchConnectorMetricTrendSummaryPage(ctx context.Context, logger *zap.Logge
 				}
 
 				handleConnResults := func(connResults resource.ConnectorMetricTrendSummaryResult) {
-					for _, connectorResults := range connResults.Connectors {
+					for _, connectorResults := range connResults.IntegrationTypes {
 						if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
 							continue
 						}
@@ -717,8 +717,8 @@ func FetchConnectorMetricTrendSummaryPage(ctx context.Context, logger *zap.Logge
 						}
 						handleConnResults(rcResult)
 					}
-				} else if hit.Source.Connectors != nil {
-					handleConnResults(*hit.Source.Connectors)
+				} else if hit.Source.IntegrationTypes != nil {
+					handleConnResults(*hit.Source.IntegrationTypes)
 				} else {
 					return nil, errors.New("no connectors or resource collections found")
 				}
@@ -857,26 +857,26 @@ func FetchConnectionAnalyticsResourcesCountAtTime(ctx context.Context, logger *z
 						continue
 					}
 					for _, connectionResults := range rcResult.Connections {
-						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
-							(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.IntegrationID]) ||
+							(len(connectors) > 0 && !includeConnectorMap[connectionResults.IntegrationType.String()]) {
 							continue
 						}
-						v := result[connectionResults.ConnectionID]
+						v := result[connectionResults.IntegrationID]
 						v.ResourceCountsSum += connectionResults.ResourceCount
 						v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
-						result[connectionResults.ConnectionID] = v
+						result[connectionResults.IntegrationID] = v
 					}
 				}
 			} else {
-				for _, connectionResults := range hit.Source.Connections.Connections {
-					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
-						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+				for _, connectionResults := range hit.Source.Integrations.Connections {
+					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.IntegrationID]) ||
+						(len(connectors) > 0 && !includeConnectorMap[connectionResults.IntegrationType.String()]) {
 						continue
 					}
-					v := result[connectionResults.ConnectionID]
+					v := result[connectionResults.IntegrationID]
 					v.ResourceCountsSum += connectionResults.ResourceCount
 					v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
-					result[connectionResults.ConnectionID] = v
+					result[connectionResults.IntegrationID] = v
 				}
 			}
 		}
@@ -996,18 +996,18 @@ func FetchAssetTableByDimension(ctx context.Context, logger *zap.Logger, client 
 			for _, hit := range dateBucket.Latest.Hits.Hits {
 				switch dimension {
 				case inventoryApi.DimensionTypeConnection:
-					for _, connectionResults := range hit.Source.Connections.Connections {
-						mt, ok := resultMap[connectionResults.ConnectionID]
+					for _, connectionResults := range hit.Source.Integrations.Connections {
+						mt, ok := resultMap[connectionResults.IntegrationID]
 						if !ok {
 							mt = DimensionTrend{
-								DimensionID:   connectionResults.ConnectionID,
-								DimensionName: connectionResults.ConnectionName,
-								Connector:     connectionResults.Connector,
-								Trend:         make(map[string]float64),
+								DimensionID:     connectionResults.IntegrationID,
+								DimensionName:   connectionResults.IntegrationName,
+								IntegrationType: connectionResults.IntegrationType,
+								Trend:           make(map[string]float64),
 							}
 						}
 						mt.Trend[dateBucket.Key] += float64(connectionResults.ResourceCount)
-						resultMap[connectionResults.ConnectionID] = mt
+						resultMap[connectionResults.IntegrationID] = mt
 					}
 				case inventoryApi.DimensionTypeMetric:
 					mt, ok := resultMap[hit.Source.MetricID]
@@ -1018,7 +1018,7 @@ func FetchAssetTableByDimension(ctx context.Context, logger *zap.Logger, client 
 							Trend:         make(map[string]float64),
 						}
 					}
-					mt.Trend[dateBucket.Key] += float64(hit.Source.Connections.TotalResourceCount)
+					mt.Trend[dateBucket.Key] += float64(hit.Source.Integrations.TotalResourceCount)
 					resultMap[hit.Source.MetricID] = mt
 				}
 			}

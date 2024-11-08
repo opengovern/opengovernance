@@ -2,11 +2,11 @@ package integration_type
 
 import (
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/aws_account"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription"
-	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure_subscription/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory"
-	entraidConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription"
+	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory"
+	entraidConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"strings"
 )

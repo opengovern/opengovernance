@@ -1,9 +1,10 @@
-package onboard
+package integration
 
 import (
 	"errors"
 	"fmt"
 	"github.com/goccy/go-yaml"
+	"github.com/opengovern/opengovernance/services/integration/models"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -16,11 +17,11 @@ type ConnectionGroup struct {
 }
 
 type GitParser struct {
-	//connectionGroups []model.ConnectionGroup
+	integrationGroups []models.IntegrationGroup
 }
 
 func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
-	//g.connectionGroups = append(g.connectionGroups, defaultConnectionGroups...)
+	g.integrationGroups = append(g.integrationGroups, defaultIntegrationGroups...)
 	err := filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
@@ -39,10 +40,10 @@ func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
 				fileName = fileName[:len(fileName)-len(".yaml")]
 			}
 
-			//g.connectionGroups = append(g.connectionGroups, model.ConnectionGroup{
-			//	Name:  fileName,
-			//	Query: cg.Query,
-			//})
+			g.integrationGroups = append(g.integrationGroups, models.IntegrationGroup{
+				Name:  fileName,
+				Query: cg.Query,
+			})
 		}
 
 		return nil

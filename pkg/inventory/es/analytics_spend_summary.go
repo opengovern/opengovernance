@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"strconv"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 const EsFetchPageSize = 10000
 
 type ConnectionDailySpendHistoryByMetric struct {
-	Connector     source.Type
+	Connector     integration.Type
 	MetricID      string
 	MetricName    string
 	TotalCost     float64
@@ -43,7 +44,7 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
+func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []integration.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -94,7 +95,7 @@ func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengo
 		includeConnectionMap[connectionID] = true
 	}
 
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -110,7 +111,7 @@ func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengo
 	hits := make([]ConnectionDailySpendHistoryByMetric, 0, len(response.Aggregations.MetricIDGroup.Buckets))
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		hit := ConnectionDailySpendHistoryByMetric{
-			Connector: source.Nil,
+			Connector: "",
 		}
 		for _, v := range metricBucket.HitSelect.Hits.Hits {
 			if hit.MetricID == "" {
@@ -119,13 +120,13 @@ func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengo
 			if hit.MetricName == "" {
 				hit.MetricName = v.Source.MetricName
 			}
-			for _, connectionResult := range v.Source.Connections {
-				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
+			for _, connectionResult := range v.Source.Integrations {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.IntegrationID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResult.IntegrationType]) {
 					continue
 				}
-				if hit.Connector == source.Nil {
-					hit.Connector = connectionResult.Connector
+				if hit.Connector == "" {
+					hit.Connector = connectionResult.IntegrationType
 				}
 				hit.TotalCost += connectionResult.CostValue
 				if v.Source.Date == startTime.Format("2006-01-02") {
@@ -158,7 +159,7 @@ type FetchConnectionDailySpendHistoryQueryResponse struct {
 	} `json:"hits"`
 }
 
-func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
+func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []integration.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
 	filterPaths := make([]string, 0)
 	filterPaths = append(filterPaths, "hits.hits.sort")
 	filterPaths = append(filterPaths, "hits.hits._source.connections.connection_id")
@@ -194,7 +195,7 @@ func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance
 	for _, connectionID := range connectionIDs {
 		includeConnectionMap[connectionID] = true
 	}
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -227,15 +228,15 @@ func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance
 		}
 
 		for _, v := range response.Hits.Hits {
-			for _, connectionResult := range v.Source.Connections {
-				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
+			for _, connectionResult := range v.Source.Integrations {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.IntegrationID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResult.IntegrationType]) {
 					continue
 				}
-				connHit, ok := hitsMap[connectionResult.ConnectionID]
+				connHit, ok := hitsMap[connectionResult.IntegrationID]
 				if !ok {
 					connHit = ConnectionDailySpendHistory{
-						ConnectionID: connectionResult.ConnectionID,
+						ConnectionID: connectionResult.IntegrationID,
 					}
 				}
 				connHit.TotalCost += connectionResult.CostValue
@@ -245,7 +246,7 @@ func FetchConnectionDailySpendHistory(ctx context.Context, client opengovernance
 				if v.Source.Date == endTime.Format("2006-01-02") {
 					connHit.EndDateCost += connectionResult.CostValue
 				}
-				hitsMap[connectionResult.ConnectionID] = connHit
+				hitsMap[connectionResult.IntegrationID] = connHit
 			}
 			searchAfter = v.Sort
 		}
@@ -398,7 +399,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectionSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectionIDs []string, connectors []integration.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -451,7 +452,7 @@ func FetchConnectionSpendTrend(ctx context.Context, client opengovernance.Client
 		includeConnectionMap[connectionID] = true
 	}
 
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -474,9 +475,9 @@ func FetchConnectionSpendTrend(ctx context.Context, client opengovernance.Client
 			CostStacked: map[string]float64{},
 		}
 		for _, hit := range bucket.HitSelect.Hits.Hits {
-			for _, connection := range hit.Source.Connections {
-				if (len(connectionIDs) > 0 && !includeConnectionMap[connection.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connection.Connector]) {
+			for _, connection := range hit.Source.Integrations {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connection.IntegrationID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connection.IntegrationType]) {
 					continue
 				}
 				res.TotalConnections++
@@ -510,7 +511,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectorSpendTrend(ctx context.Context, client opengovernance.Client, granularity inventoryAPI.TableGranularityType, metricIds []string, connectors []integration.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -557,7 +558,7 @@ func FetchConnectorSpendTrend(ctx context.Context, client opengovernance.Client,
 		},
 	}
 
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -579,8 +580,8 @@ func FetchConnectorSpendTrend(ctx context.Context, client opengovernance.Client,
 		res := DatapointWithFailures{
 			CostStacked: map[string]float64{},
 		}
-		perConnectorTotalConnections := make(map[source.Type]int64)
-		perConnectorTotalSuccessfulConnections := make(map[source.Type]int64)
+		perConnectorTotalConnections := make(map[integration.Type]int64)
+		perConnectorTotalSuccessfulConnections := make(map[integration.Type]int64)
 		for _, hit := range bucket.HitSelect.Hits.Hits {
 			for _, connector := range hit.Source.Connectors {
 				if len(connectors) > 0 && !includeConnectorMap[connector.Connector] {
@@ -624,7 +625,7 @@ type SpendMetricResp struct {
 	CostValue  float64
 }
 
-func FetchSpendByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetric(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []integration.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	if len(connectionIDs) > 0 {
 		return FetchSpendByMetricConnection(ctx, client, connectionIDs, connectors, metricIDs, startTime, endTime, size)
 	} else {
@@ -632,7 +633,7 @@ func FetchSpendByMetric(ctx context.Context, client opengovernance.Client, conne
 	}
 }
 
-func FetchSpendByMetricConnection(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnection(ctx context.Context, client opengovernance.Client, connectionIDs []string, connectors []integration.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -677,7 +678,7 @@ func FetchSpendByMetricConnection(ctx context.Context, client opengovernance.Cli
 	for _, connectionID := range connectionIDs {
 		includeConnectionMap[connectionID] = true
 	}
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -705,9 +706,9 @@ func FetchSpendByMetricConnection(ctx context.Context, client opengovernance.Cli
 				resp[metricBucket.Key] = metricResp
 				continue
 			}
-			for _, connectionResult := range v.Source.Connections {
-				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
+			for _, connectionResult := range v.Source.Integrations {
+				if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResult.IntegrationID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResult.IntegrationType]) {
 					continue
 				}
 				metricResp := resp[metricBucket.Key]
@@ -737,7 +738,7 @@ type FetchSpendByMetricConnectorQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendByMetricConnector(ctx context.Context, client opengovernance.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
+func FetchSpendByMetricConnector(ctx context.Context, client opengovernance.Client, connectors []integration.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -778,7 +779,7 @@ func FetchSpendByMetricConnector(ctx context.Context, client opengovernance.Clie
 		},
 	}
 
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -821,10 +822,10 @@ func FetchSpendByMetricConnector(ctx context.Context, client opengovernance.Clie
 }
 
 type DimensionTrend struct {
-	DimensionID   string
-	Connector     source.Type
-	DimensionName string
-	Trend         map[string]float64
+	DimensionID     string
+	IntegrationType integration.Type
+	DimensionName   string
+	Trend           map[string]float64
 }
 
 type SpendTableByDimensionQueryResponse struct {
@@ -844,7 +845,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(ctx context.Context, client opengovernance.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(ctx context.Context, client opengovernance.Client, dimension inventoryAPI.DimensionType, connectionIds []string, connectors []integration.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -890,7 +891,7 @@ func FetchSpendTableByDimension(ctx context.Context, client opengovernance.Clien
 		includeConnectionMap[connectionID] = true
 	}
 
-	includeConnectorMap := make(map[source.Type]bool)
+	includeConnectorMap := make(map[integration.Type]bool)
 	for _, connector := range connectors {
 		includeConnectorMap[connector] = true
 	}
@@ -912,28 +913,28 @@ func FetchSpendTableByDimension(ctx context.Context, client opengovernance.Clien
 
 	for _, dateBucket := range response.Aggregations.DateGroup.Buckets {
 		for _, hit := range dateBucket.HitSelect.Hits.Hits {
-			for _, connectionResult := range hit.Source.Connections {
-				if (len(connectionIds) > 0 && !includeConnectionMap[connectionResult.ConnectionID]) ||
-					(len(connectors) > 0 && !includeConnectorMap[connectionResult.Connector]) {
+			for _, connectionResult := range hit.Source.Integrations {
+				if (len(connectionIds) > 0 && !includeConnectionMap[connectionResult.IntegrationID]) ||
+					(len(connectors) > 0 && !includeConnectorMap[connectionResult.IntegrationType]) {
 					continue
 				}
 				key := ""
 				switch dimension {
 				case inventoryAPI.DimensionTypeConnection:
-					key = connectionResult.ConnectionID
+					key = connectionResult.IntegrationID
 				case inventoryAPI.DimensionTypeMetric:
 					key = hit.Source.MetricID
 				}
 				mt, ok := result[key]
 				if !ok {
 					mt = DimensionTrend{
-						DimensionID: key,
-						Connector:   connectionResult.Connector,
-						Trend:       make(map[string]float64),
+						DimensionID:     key,
+						IntegrationType: connectionResult.IntegrationType,
+						Trend:           make(map[string]float64),
 					}
 					switch dimension {
 					case inventoryAPI.DimensionTypeConnection:
-						mt.DimensionName = connectionResult.ConnectionName
+						mt.DimensionName = connectionResult.IntegrationName
 					case inventoryAPI.DimensionTypeMetric:
 						mt.DimensionName = hit.Source.MetricName
 					default:

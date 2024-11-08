@@ -3,9 +3,9 @@ package entra_id_directory
 import (
 	"encoding/json"
 	"github.com/opengovern/og-util/pkg/integration"
-	entraidDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra_id_directory/healthcheck"
+	entraidDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/discovery"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/healthcheck"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration/models"
 )

@@ -41,7 +41,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connector.GET("", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
-	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.AdminRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetConnectionHealth, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.AdminRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))

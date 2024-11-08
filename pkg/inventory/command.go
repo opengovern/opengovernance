@@ -26,10 +26,10 @@ var (
 	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
-	SchedulerBaseUrl  = os.Getenv("SCHEDULER_BASE_URL")
-	OnboardBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
-	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
-	MetadataBaseUrl   = os.Getenv("METADATA_BASE_URL")
+	SchedulerBaseUrl   = os.Getenv("SCHEDULER_BASE_URL")
+	IntegrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
+	ComplianceBaseUrl  = os.Getenv("COMPLIANCE_BASE_URL")
+	MetadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -55,7 +55,7 @@ func start(ctx context.Context, cnf config3.InventoryConfig) error {
 		cnf.ElasticSearch,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
-		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl, MetadataBaseUrl,
+		SchedulerBaseUrl, IntegrationBaseUrl, ComplianceBaseUrl, MetadataBaseUrl,
 		logger,
 	)
 	if err != nil {

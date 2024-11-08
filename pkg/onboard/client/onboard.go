@@ -22,7 +22,6 @@ import (
 )
 
 type OnboardServiceClient interface {
-	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)

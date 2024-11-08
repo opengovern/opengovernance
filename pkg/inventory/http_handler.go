@@ -4,24 +4,24 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client           opengovernance.Client
-	db               Database
-	steampipeConn    *steampipe.Database
-	schedulerClient  describeClient.SchedulerServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	complianceClient complianceClient.ComplianceServiceClient
-	metadataClient   metadataClient.MetadataServiceClient
+	client            opengovernance.Client
+	db                Database
+	steampipeConn     *steampipe.Database
+	schedulerClient   describeClient.SchedulerServiceClient
+	integrationClient integrationClient.IntegrationServiceClient
+	complianceClient  complianceClient.ComplianceServiceClient
+	metadataClient    metadataClient.MetadataServiceClient
 
 	logger *zap.Logger
 }
@@ -30,7 +30,7 @@ func InitializeHttpHandler(
 	esConf config.ElasticSearch,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
-	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string, metadataBaseUrl string,
+	schedulerBaseUrl string, integrationBaseUrl string, complianceBaseUrl string, metadataBaseUrl string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
@@ -88,7 +88,7 @@ func InitializeHttpHandler(
 	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 
-	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl)
+	h.integrationClient = integrationClient.NewIntegrationServiceClient(integrationBaseUrl)
 	h.complianceClient = complianceClient.NewComplianceClient(complianceBaseUrl)
 	h.metadataClient = metadataClient.NewMetadataServiceClient(metadataBaseUrl)
 
