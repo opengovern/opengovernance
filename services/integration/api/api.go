@@ -5,7 +5,6 @@ import (
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration/api/credentials"
-	"github.com/opengovern/opengovernance/services/integration/api/integration-types"
 	"github.com/opengovern/opengovernance/services/integration/api/integrations"
 	"github.com/opengovern/opengovernance/services/integration/db"
 	"go.uber.org/zap"
@@ -38,9 +37,7 @@ func New(
 func (api *API) Register(e *echo.Echo) {
 	integrationsApi := integrations.New(api.vault, api.database, api.logger, api.steampipeConn)
 	cred := credentials.New(api.database, api.logger)
-	integrationTypes := integration_types.New(api.database, api.logger)
 
 	integrationsApi.Register(e.Group("/api/v1/integrations"))
 	cred.Register(e.Group("/api/v1/credentials"))
-	integrationTypes.Register(e.Group("/api/v1/integration-types"))
 }
