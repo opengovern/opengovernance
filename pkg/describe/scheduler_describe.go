@@ -202,7 +202,11 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	}
 
 	for _, integration := range integrations.Integrations {
-		s.logger.Info("running describe job scheduler for connection", zap.String("IntegrationID", integration.IntegrationID))
+		s.logger.Info("running describe job scheduler for integration", zap.String("IntegrationID", integration.IntegrationID))
+		if _, ok := integration_type.IntegrationTypes[integration.IntegrationType]; !ok {
+			s.logger.Error("integration type not found", zap.String("integrationType", string(integration.IntegrationType)))
+			continue
+		}
 		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
 		if err != nil {
 			s.logger.Error("failed to get integration type", zap.String("integrationType", string(integration.IntegrationType)),
