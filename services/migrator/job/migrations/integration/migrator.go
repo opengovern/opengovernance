@@ -75,6 +75,19 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	return nil
 }
 
+type IntegrationType struct {
+	ID               int64               `json:"id"`
+	Name             string              `json:"name"`
+	Label            string              `json:"label"`
+	Tier             string              `json:"tier"`
+	Annotations      map[string][]string `json:"annotations"`
+	Labels           map[string][]string `json:"labels"`
+	ShortDescription string              `json:"short_description"`
+	Description      string              `json:"description"`
+	Logo             string              `json:"logo"`
+	Enabled          bool                `json:"enabled"`
+}
+
 func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, dbm db.Database, onboardFilePath string) error {
 	content, err := os.ReadFile(onboardFilePath)
 	if err != nil {
