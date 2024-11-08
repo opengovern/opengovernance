@@ -84,7 +84,7 @@ func (i *AzureSubscriptionIntegration) DiscoverIntegrations(jsonData []byte) ([]
 }
 
 func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return configs.ResourceTypesList, nil
+	return azureDescriberLocal.ResourceTypesList, nil
 }
 
 func (i *AzureSubscriptionIntegration) GetResourceTypeFromTableName(tableName string) string {
