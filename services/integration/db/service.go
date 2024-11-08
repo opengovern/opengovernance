@@ -20,6 +20,7 @@ func (db Database) Initialize() error {
 		&models.Integration{},
 		&models.Credential{},
 		&models.IntegrationType{},
+		&models.IntegrationGroup{},
 	)
 	if err != nil {
 		return err

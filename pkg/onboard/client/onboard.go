@@ -25,18 +25,14 @@ type OnboardServiceClient interface {
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
-	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	PostCredentials(ctx *httpclient.Context, req api.CreateCredentialRequest) (*api.CreateCredentialResponse, error)
 	AutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, connection string, updateMetadata bool) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
-	GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error)
-	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
 	CreateCredentialV2(ctx *httpclient.Context, req apiv2.CreateCredentialV2Request) (*apiv2.CreateCredentialV2Response, error)
 	PostConnectionAws(ctx *httpclient.Context, req api.CreateAwsConnectionRequest) (*api.CreateConnectionResponse, error)
-	PurgeSampleData(ctx *httpclient.Context) error
 }
 
 type onboardClient struct {
@@ -247,19 +243,6 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 	return response, nil
 }
 
-func (s *onboardClient) PurgeSampleData(ctx *httpclient.Context) error {
-	ctx.UserRole = authApi.AdminRole
-	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
-
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
-		}
-		return err
-	}
-	return nil
-}
-
 func (s *onboardClient) PostCredentials(ctx *httpclient.Context, req api.CreateCredentialRequest) (*api.CreateCredentialResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/credential", s.baseURL)
 	var response *api.CreateCredentialResponse
@@ -307,24 +290,6 @@ func (s *onboardClient) AutoOnboard(ctx *httpclient.Context, credentialId string
 		return nil, err
 	}
 	return response, nil
-}
-
-func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Type) (int64, error) {
-	var url string
-	if !provider.IsNull() {
-		url = fmt.Sprintf("%s/api/v1/sources/count?connector=%s", s.baseURL, provider.String())
-	} else {
-		url = fmt.Sprintf("%s/api/v1/sources/count", s.baseURL)
-	}
-
-	var count int64
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return 0, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return 0, err
-	}
-	return count, nil
 }
 
 func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, connectionId string, updateMetadata bool) (*api.Connection, error) {
@@ -439,34 +404,6 @@ func (s *onboardClient) TriggerAutoOnboard(ctx *httpclient.Context, credentialId
 	}
 
 	return response, nil
-}
-
-func (s *onboardClient) GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/connection-groups/%s", s.baseURL, connectionGroupName)
-
-	var connectionGroup api.ConnectionGroup
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-
-	return &connectionGroup, nil
-}
-
-func (s *onboardClient) ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/connection-groups", s.baseURL)
-
-	var connectionGroup []api.ConnectionGroup
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-
-	return connectionGroup, nil
 }
 
 func (s *onboardClient) ListIntegrations(ctx *httpclient.Context, healthState string) (*api.ListIntegrationsResponse, error) {

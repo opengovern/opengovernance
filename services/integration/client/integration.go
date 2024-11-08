@@ -16,6 +16,8 @@ type IntegrationServiceClient interface {
 	ListIntegrationsByFilters(ctx *httpclient.Context, req models.ListIntegrationsRequest) (*models.ListIntegrationsResponse, error)
 	IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
 	GetCredential(ctx *httpclient.Context, credentialID string) (*models.Credential, error)
+	GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error)
+	ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error)
 }
 
 type integrationClient struct {
@@ -104,4 +106,32 @@ func (c *integrationClient) IntegrationHealthcheck(ctx *httpclient.Context, inte
 		return nil, err
 	}
 	return response, nil
+}
+
+func (c *integrationClient) GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/integration-groups/%s", c.baseURL, integrationGroupName)
+
+	var integrationGroup models.IntegrationGroup
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &integrationGroup); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return &integrationGroup, nil
+}
+
+func (c *integrationClient) ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/connection-groups", c.baseURL)
+
+	var integrationGroup []models.IntegrationGroup
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &integrationGroup); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return integrationGroup, nil
 }

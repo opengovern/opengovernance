@@ -2,11 +2,13 @@ package integration
 
 import (
 	"errors"
+	"fmt"
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
 	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration/api"
@@ -79,11 +81,23 @@ func Command() *cobra.Command {
 
 			cmd.SilenceUsage = true
 
+			steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+				Host: cnf.Steampipe.Host,
+				Port: cnf.Steampipe.Port,
+				User: cnf.Steampipe.Username,
+				Pass: cnf.Steampipe.Password,
+				Db:   cnf.Steampipe.DB,
+			})
+			if err != nil {
+				return fmt.Errorf("new steampipe client: %w", err)
+			}
+			logger.Info("Connected to the steampipe database", zap.String("database", cnf.Steampipe.DB))
+
 			return httpserver.RegisterAndStart(
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, db, vaultSc),
+				api.New(logger, db, vaultSc, steampipeConn),
 			)
 		},
 	}

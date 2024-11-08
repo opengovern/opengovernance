@@ -279,7 +279,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	integrationClient integrationClient.IntegrationServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient) (
 	*resource.ConnectionMetricTrendSummaryResult,
-	*resource.ConnectorMetricTrendSummaryResult,
+	*resource.IntegrationTypeMetricTrendSummaryResult,
 	error,
 ) {
 	var res *steampipe.Result
@@ -317,7 +317,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 
 	totalCount := 0
 	perConnection := make(map[string]resource.PerConnectionMetricTrendSummary)
-	perConnector := make(map[string]resource.PerConnectorMetricTrendSummary)
+	perConnector := make(map[string]resource.PerIntegrationTypeMetricTrendSummary)
 
 	connectorCount := map[string]int64{}
 	connectorSuccessCount := map[string]int64{}
@@ -390,11 +390,11 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 			v.ResourceCount += int(count)
 			perConnector[integration.IntegrationType.String()] = v
 		} else {
-			vn := resource.PerConnectorMetricTrendSummary{
-				IntegrationType:            integration.IntegrationType,
-				ResourceCount:              int(count),
-				TotalConnections:           connectorCount[integration.IntegrationType.String()],
-				TotalSuccessfulConnections: connectorSuccessCount[integration.IntegrationType.String()],
+			vn := resource.PerIntegrationTypeMetricTrendSummary{
+				IntegrationType:                 integration.IntegrationType,
+				ResourceCount:                   int(count),
+				TotalIntegrationTypes:           connectorCount[integration.IntegrationType.String()],
+				TotalSuccessfulIntegrationTypes: connectorSuccessCount[integration.IntegrationType.String()],
 			}
 			perConnector[integration.IntegrationType.String()] = vn
 		}
@@ -404,7 +404,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	for _, v := range perConnection {
 		perConnectionArray = append(perConnectionArray, v)
 	}
-	perConnectorArray := make([]resource.PerConnectorMetricTrendSummary, 0, len(perConnector))
+	perConnectorArray := make([]resource.PerIntegrationTypeMetricTrendSummary, 0, len(perConnector))
 	for _, v := range perConnector {
 		perConnectorArray = append(perConnectorArray, v)
 	}
@@ -413,7 +413,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	return &resource.ConnectionMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
 			Connections:        perConnectionArray,
-		}, &resource.ConnectorMetricTrendSummaryResult{
+		}, &resource.IntegrationTypeMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
 			IntegrationTypes:   perConnectorArray,
 		}, nil
@@ -430,7 +430,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		Integrations:        nil,
 		ResourceCollections: nil,
 	}
-	connectorMetricTrendSummary := resource.ConnectorMetricTrendSummary{
+	connectorMetricTrendSummary := resource.IntegrationTypeMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
 		Month:               startTime.Format("2006-01"),
@@ -442,7 +442,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	}
 	if len(encodedResourceCollectionFilters) > 0 {
 		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectionMetricTrendSummaryResult)
-		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
+		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.IntegrationTypeMetricTrendSummaryResult)
 
 		for rcId, encodedFilter := range encodedResourceCollectionFilters {
 			err := steampipeDB.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters, encodedFilter)
@@ -702,7 +702,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	}
 	for _, item := range connectorResultMap {
 		for _, v := range item.ConnectorsMap {
-			item.Connectors = append(item.Connectors, v)
+			item.IntegrationTypes = append(item.IntegrationTypes, v)
 		}
 		keys, idx := item.KeysAndIndex()
 		item.EsID = es.HashOf(keys...)

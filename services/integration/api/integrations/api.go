@@ -8,31 +8,37 @@ import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/integration"
+	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration/api/models"
 	"github.com/opengovern/opengovernance/services/integration/db"
+	"github.com/opengovern/opengovernance/services/integration/entities"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	models2 "github.com/opengovern/opengovernance/services/integration/models"
 	"go.uber.org/zap"
 	"net/http"
+	strconv "strconv"
 	"time"
 )
 
 type API struct {
-	vault    vault.VaultSourceConfig
-	logger   *zap.Logger
-	database db.Database
+	vault         vault.VaultSourceConfig
+	logger        *zap.Logger
+	database      db.Database
+	steampipeConn *steampipe.Database
 }
 
 func New(
 	vault vault.VaultSourceConfig,
 	database db.Database,
 	logger *zap.Logger,
+	steampipeConn *steampipe.Database,
 ) API {
 	return API{
-		vault:    vault,
-		database: database,
-		logger:   logger.Named("integrations"),
+		vault:         vault,
+		database:      database,
+		logger:        logger.Named("integrations"),
+		steampipeConn: steampipeConn,
 	}
 }
 
@@ -458,6 +464,117 @@ func (h API) ListByFilters(c echo.Context) error {
 	})
 }
 
+// ListIntegrationGroups godoc
+//
+//	@Summary		List integration groups and their integrations
+//	@Description	List integration groups and their integrations
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			populateIntegrations	query		bool	false	"Populate connections"	default(false)
+//	@Success		200				{object}	[]models.IntegrationGroup
+//	@Router			/integration/api/v1/integrations/integration-groups [get]
+func (h API) ListIntegrationGroups(c echo.Context) error {
+	populateIntegrations := false
+	var err error
+	if populateIntegrationsStr := c.QueryParam("populateIntegrations"); populateIntegrationsStr != "" {
+		populateIntegrations, err = strconv.ParseBool(populateIntegrationsStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
+		}
+	}
+
+	integrationGroups, err := h.database.ListIntegrationGroups()
+	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
+	}
+
+	var items []models.IntegrationGroup
+	for _, integrationGroup := range integrationGroups {
+		integrationGroupApi, err := entities.NewIntegrationGroup(c.Request().Context(), h.steampipeConn, integrationGroup)
+		if err != nil {
+			h.logger.Error("failed to convert integration group to API model", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration group to API model")
+		}
+		if populateIntegrations {
+			integrations, err := h.database.ListIntegrationsByFilters(integrationGroupApi.IntegrationIds, nil, nil, nil)
+			if err != nil {
+				h.logger.Error("failed to list integrations", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
+			}
+			var apiIntegrations []models.Integration
+			for _, integration := range integrations {
+				apiIntegration, err := integration.ToApi()
+				if err != nil {
+					h.logger.Error("failed to convert integration to API model", zap.Error(err))
+					return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+				}
+				apiIntegrations = append(apiIntegrations, *apiIntegration)
+			}
+			integrationGroupApi.Integrations = apiIntegrations
+		}
+		items = append(items, *integrationGroupApi)
+	}
+
+	return c.JSON(http.StatusOK, items)
+}
+
+// GetIntegrationGroup godoc
+//
+//	@Summary		Get integration group and the integrations
+//	@Description	Get integration group and the integrations
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			populateIntegrations	query		bool	false	"Populate connections"	default(false)
+//	@Param			integrationGroupName	path		string	true	"integrationGroupName"
+//	@Success		200				{object}	models.IntegrationGroup
+//	@Router			/integration/api/v1/integrations/integration-groups/{integrationGroupName} [get]
+func (h API) GetIntegrationGroup(c echo.Context) error {
+	integrationGroupName := c.Param("integrationGroupName")
+
+	populateIntegrations := false
+	var err error
+	if populateIntegrationsStr := c.QueryParam("populateIntegrations"); populateIntegrationsStr != "" {
+		populateIntegrations, err = strconv.ParseBool(populateIntegrationsStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
+		}
+	}
+
+	integrationGroup, err := h.database.GetIntegrationGroup(integrationGroupName)
+	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
+	}
+
+	integrationGroupApi, err := entities.NewIntegrationGroup(c.Request().Context(), h.steampipeConn, *integrationGroup)
+	if err != nil {
+		h.logger.Error("failed to convert integration group to API model", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration group to API model")
+	}
+	if populateIntegrations {
+		integrations, err := h.database.ListIntegrationsByFilters(integrationGroupApi.IntegrationIds, nil, nil, nil)
+		if err != nil {
+			h.logger.Error("failed to list integrations", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
+		}
+		var apiIntegrations []models.Integration
+		for _, integration := range integrations {
+			apiIntegration, err := integration.ToApi()
+			if err != nil {
+				h.logger.Error("failed to convert integration to API model", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
+			}
+			apiIntegrations = append(apiIntegrations, *apiIntegration)
+		}
+		integrationGroupApi.Integrations = apiIntegrations
+	}
+
+	return c.JSON(http.StatusOK, integrationGroupApi)
+}
+
 // Get godoc
 //
 //	@Summary		Get credential
@@ -557,4 +674,6 @@ func (h API) Register(g *echo.Group) {
 	g.DELETE("/:IntegrationID", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
 	g.GET("/:IntegrationID", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
 	g.POST("/:IntegrationID", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
+	g.GET("/integration-groups", httpserver.AuthorizeHandler(h.ListIntegrationGroups, api.ViewerRole))
+	g.GET("/integration-groups/:integrationGroupName", httpserver.AuthorizeHandler(h.GetIntegrationGroup, api.ViewerRole))
 }

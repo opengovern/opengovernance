@@ -163,43 +163,42 @@ func bindValidate(ctx echo.Context, i any) error {
 	return nil
 }
 
-func (h *HttpHandler) getConnectionIdFilterFromInputs(ctx context.Context, connectionIds []string, connectionGroup []string) ([]string, error) {
-	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
+func (h *HttpHandler) getConnectionIdFilterFromInputs(ctx context.Context, integrationIds []string, integrationGroup []string) ([]string, error) {
+	if len(integrationIds) == 0 && len(integrationGroup) == 0 {
 		return nil, nil
 	}
 
-	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
+	if len(integrationIds) > 0 && len(integrationGroup) > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
-	if len(connectionIds) > 0 {
-		return connectionIds, nil
+	if len(integrationIds) > 0 {
+		return integrationIds, nil
 	}
 
-	// TODO (before push to main will mess up things)
-	//check := make(map[string]bool)
-	//var connectionIDSChecked []string
-	//
-	//for i := 0; i < len(connectionGroup); i++ {
-	//	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, connectionGroup[i])
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	if len(connectionGroupObj.ConnectionIds) == 0 {
-	//		return nil, err
-	//	}
-	//
-	//	// Check for duplicate connection groups
-	//	for _, entry := range connectionGroupObj.ConnectionIds {
-	//		if _, value := check[entry]; !value {
-	//			check[entry] = true
-	//			connectionIDSChecked = append(connectionIDSChecked, entry)
-	//		}
-	//	}
-	//}
-	//connectionIds = connectionIDSChecked
+	check := make(map[string]bool)
+	var integrationIDSChecked []string
 
-	return connectionIds, nil
+	for i := 0; i < len(integrationGroup); i++ {
+		integrationGroupObj, err := h.integrationClient.GetIntegrationGroup(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, integrationGroup[i])
+		if err != nil {
+			return nil, err
+		}
+		if len(integrationGroupObj.IntegrationIds) == 0 {
+			return nil, err
+		}
+
+		// Check for duplicate connection groups
+		for _, entry := range integrationGroupObj.IntegrationIds {
+			if _, value := check[entry]; !value {
+				check[entry] = true
+				integrationIDSChecked = append(integrationIDSChecked, entry)
+			}
+		}
+	}
+	integrationIds = integrationIDSChecked
+
+	return integrationIds, nil
 }
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]string, error) {

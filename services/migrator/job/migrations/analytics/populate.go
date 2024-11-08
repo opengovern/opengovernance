@@ -181,7 +181,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 
 	dbMetric := analyticsDB.AnalyticMetric{
 		ID:                       id,
-		Connectors:               connectors,
+		IntegrationTypes:         connectors,
 		Type:                     metricType,
 		Name:                     metric.Name,
 		Query:                    metric.Query,

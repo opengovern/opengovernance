@@ -26,7 +26,7 @@ func MetricToAPI(metric analyticsDB.AnalyticMetric) Metric {
 		ID:                       metric.ID,
 		FinderQuery:              metric.FinderQuery,
 		FinderPerConnectionQuery: metric.FinderPerConnectionQuery,
-		Connectors:               source.ParseTypes(metric.Connectors),
+		Connectors:               source.ParseTypes(metric.IntegrationTypes),
 		Name:                     metric.Name,
 		Tags:                     model.TrimPrivateTags(GetTagsMap(metric)),
 	}

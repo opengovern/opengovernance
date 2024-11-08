@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	AnalyticsSpendConnectorSummaryIndex = "analytics_spend_connector_summary"
+	AnalyticsSpendIntegrationTypeSummaryIndex = "analytics_spend_integration_type_summary"
 )
 
 type PerConnectorMetricTrendSummary struct {
@@ -32,8 +32,8 @@ type ConnectorMetricTrendSummary struct {
 	PeriodEnd   int64  `json:"period_end"`
 	EvaluatedAt int64  `json:"evaluated_at"`
 
-	Connectors    []PerConnectorMetricTrendSummary          `json:"connectors"`
-	ConnectorsMap map[string]PerConnectorMetricTrendSummary `json:"-"`
+	IntegrationTypes []PerConnectorMetricTrendSummary          `json:"integration_types"`
+	ConnectorsMap    map[string]PerConnectorMetricTrendSummary `json:"-"`
 }
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {
@@ -41,5 +41,5 @@ func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {
 		r.Date,
 		r.MetricID,
 	}
-	return keys, AnalyticsSpendConnectorSummaryIndex
+	return keys, AnalyticsSpendIntegrationTypeSummaryIndex
 }

@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 
@@ -57,10 +56,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections := v1.Group("/connections")
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
-
-	connectionGroups := v1.Group("/connection-groups")
-	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
-	connectionGroups.GET("/:connectionGroupName", httpserver.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
 
 	v3 := r.Group("/api/v3")
 	v3.GET("/connector", httpserver.AuthorizeHandler(h.ListConnectorsV2, api3.ViewerRole))
@@ -365,45 +360,6 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
-}
-
-// ListConnectionGroups godoc
-//
-//	@Summary		List connection groups
-//	@Description	Retrieving a list of connection groups
-//	@Security		BearerToken
-//	@Tags			connection-groups
-//	@Accept			json
-//	@Produce		json
-//	@Param			populateConnections	query		bool	false	"Populate connections"	default(false)
-//	@Success		200					{object}	[]api.ConnectionGroup
-//	@Router			/onboard/api/v1/connection-groups [get]
-func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
-	result := make([]api.ConnectionGroup, 0, 0)
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetConnectionGroup godoc
-//
-//	@Summary		Get connection group
-//	@Description	Retrieving a connection group
-//	@Security		BearerToken
-//	@Tags			connection-groups
-//	@Accept			json
-//	@Produce		json
-//	@Param			populateConnections	query		bool	false	"Populate connections"	default(false)
-//	@Param			connectionGroupName	path		string	true	"ConnectionGroupName"
-//	@Success		200					{object}	api.ConnectionGroup
-//	@Router			/onboard/api/v1/connection-groups/{connectionGroupName} [get]
-func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
-	apiCg, err := entities.NewConnectionGroup(ctx.Request().Context(), h.steampipeConn, nil)
-	if err != nil {
-		h.logger.Error("error populating connection group", zap.Error(err))
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, apiCg)
 }
 
 // PurgeSampleData godoc

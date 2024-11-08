@@ -321,9 +321,6 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := client4.NewComplianceClient(complianceURL)
 
-	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	onboardClient := client.NewOnboardServiceClient(onboardURL)
-
 	err = schedulerClient.PurgeSampleData(ctx)
 	if err != nil {
 		h.logger.Error("failed to purge scheduler data", zap.Error(err))
@@ -333,11 +330,6 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to purge compliance data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge compliance data")
-	}
-	err = onboardClient.PurgeSampleData(ctx)
-	if err != nil {
-		h.logger.Error("failed to purge onboard data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
 	}
 
 	return c.NoContent(http.StatusOK)
