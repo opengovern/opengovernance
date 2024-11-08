@@ -866,14 +866,14 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 		integrationsMap[c] = true
 	}
 
-	//credentials, err := integrationClient.GetCredential(ctx, nil, nil, nil, 0, 0)
-	//if err != nil {
-	//	return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
-	//}
-	//credentialsMap := make(map[string]bool)
-	//for _, c := range credentials.Credentials {
-	//	credentialsMap[c.ID] = true
-	//}
+	credentials, err := integrationClient.ListCredentials(ctx)
+	if err != nil {
+		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
+	}
+	credentialsMap := make(map[string]bool)
+	for _, c := range credentials {
+		credentialsMap[c.ID] = true
+	}
 
 	if len(integrations.Integrations) == 0 {
 		return false, nil
