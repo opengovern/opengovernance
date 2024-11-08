@@ -273,5 +273,4 @@ pg_restore -h localhost -p 5432 -U postgres -d $complianceDatabaseName -v "$comp
 pg_restore -h localhost -p 5432 -U postgres -d $metadataDatabaseName -v "$metadataDatabaseName.bak";
 pg_restore -h localhost -p 5432 -U postgres -d $dexDatabaseName -v "$dexDatabaseName.bak";
 
-
 echo "$dt - Restore is completed";  
