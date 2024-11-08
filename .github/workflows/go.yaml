@@ -6,6 +6,13 @@ name: Go
 on:
   workflow_dispatch:
     inputs:
+      buildImportDemo:
+        type: choice
+        description: "build demo import images and dex image"
+        options:
+          - "true"
+          - "false"
+        default: "false"
       servicesList:
         type: string
         description: "List of services to build"
@@ -844,6 +851,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -871,6 +879,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -931,6 +940,7 @@ jobs:
           context: .
   deploy-dex-login:
     runs-on: ubuntu-latest
+    if: github.event.inputs.buildImportDemo == 'true'
     needs:
       - tag
     permissions:
