@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+	"github.com/jackc/pgtype"
 	"github.com/opengovern/opengovernance/services/integration/api/models"
 )
 
@@ -9,8 +11,8 @@ type IntegrationType struct {
 	Name             string
 	Label            string
 	Tier             string
-	Annotations      map[string]string
-	Labels           map[string]string
+	Annotations      pgtype.JSONB
+	Labels           pgtype.JSONB
 	ShortDescription string
 	Description      string
 	Logo             string
@@ -18,6 +20,20 @@ type IntegrationType struct {
 }
 
 func (it *IntegrationType) ToApi() (*models.IntegrationType, error) {
+	var labels map[string]string
+	if it.Labels.Status == pgtype.Present {
+		if err := json.Unmarshal(it.Labels.Bytes, &labels); err != nil {
+			return nil, err
+		}
+	}
+
+	var annotations map[string]string
+	if it.Annotations.Status == pgtype.Present {
+		if err := json.Unmarshal(it.Annotations.Bytes, &annotations); err != nil {
+			return nil, err
+		}
+	}
+
 	return &models.IntegrationType{
 		ID:               it.ID,
 		Name:             it.Name,
@@ -27,7 +43,7 @@ func (it *IntegrationType) ToApi() (*models.IntegrationType, error) {
 		Tier:             it.Tier,
 		Logo:             it.Logo,
 		Enabled:          it.Enabled,
-		Labels:           it.Labels,
-		Annotations:      it.Annotations,
+		Labels:           labels,
+		Annotations:      annotations,
 	}, nil
 }

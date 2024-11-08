@@ -4,17 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	apiv2 "github.com/opengovern/opengovernance/pkg/onboard/api/v2"
 	"go.opentelemetry.io/otel"
-	"io"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/labstack/echo/v4"
 
 	"github.com/opengovern/og-util/pkg/source"
 
@@ -22,8 +19,6 @@ import (
 )
 
 type OnboardServiceClient interface {
-	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
-	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	PostCredentials(ctx *httpclient.Context, req api.CreateCredentialRequest) (*api.CreateCredentialResponse, error)
 	AutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
@@ -136,89 +131,6 @@ func (s *onboardClient) GetSourceByFilters(ctx *httpclient.Context, req api.GetS
 		return api.Connection{}, err
 	}
 	return response, nil
-}
-
-func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error) {
-	if ctx.Ctx == nil {
-		ctx.Ctx = context.Background()
-	}
-	_, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx.Ctx, opengovernanceTrace.GetCurrentFuncName())
-	defer span.End()
-	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
-
-	var awsCred api.AWSCredentialConfig
-	var azureCred api.AzureCredentialConfig
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, nil, fmt.Errorf("new request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	for k, v := range ctx.ToHeaders() {
-		req.Header.Add(k, v)
-	}
-	t := http.DefaultTransport.(*http.Transport)
-	t.MaxIdleConns = 100
-	t.MaxConnsPerHost = 100
-	t.MaxIdleConnsPerHost = 100
-	client := http.Client{
-		Timeout:   15 * time.Second,
-		Transport: t,
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, nil, fmt.Errorf("do request: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		d, err := io.ReadAll(res.Body)
-		if err != nil {
-			return nil, nil, fmt.Errorf("read body: %w", err)
-		}
-		return nil, nil, fmt.Errorf("http status: %d: %s", res.StatusCode, d)
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err = json.Unmarshal(body, &awsCred); err == nil && awsCred.AccessKey != "" {
-		return &awsCred, nil, nil
-	}
-	if err = json.Unmarshal(body, &azureCred); err == nil && azureCred.ClientId != "" {
-		return nil, &azureCred, nil
-	}
-	return nil, nil, err
-}
-
-func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Connection, error) {
-	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
-
-	var req api.GetSourcesRequest
-	var res []api.Connection
-
-	for _, sourceID := range sourceIDs {
-		req.SourceIDs = append(req.SourceIDs, sourceID)
-	}
-
-	if len(req.SourceIDs) > 0 {
-		payload, err := json.Marshal(req)
-		if err != nil {
-			return nil, err
-		}
-
-		var response []api.Connection
-		if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
-			if 400 <= statusCode && statusCode < 500 {
-				return nil, echo.NewHTTPError(statusCode, err.Error())
-			}
-			return nil, err
-		}
-		res = append(res, response...)
-	}
-
-	return res, nil
 }
 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error) {
