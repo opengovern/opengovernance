@@ -7,8 +7,9 @@ import (
 )
 
 type IntegrationType struct {
-	ID               int64
+	ID               int64 `gorm:"primaryKey"`
 	Name             string
+	IntegrationType  string `gorm:"unique;not null"`
 	Label            string
 	Tier             string
 	Annotations      pgtype.JSONB
