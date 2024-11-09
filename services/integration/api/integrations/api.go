@@ -116,9 +116,10 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 	credentialMetadataJsonb := pgtype.JSONB{}
 	err = credentialMetadataJsonb.Set(metadataJsonData)
 	err = h.database.CreateCredential(&models2.Credential{
-		ID:       credentialID,
-		Secret:   secret,
-		Metadata: credentialMetadataJsonb,
+		ID:              credentialID,
+		IntegrationType: req.IntegrationType,
+		Secret:          secret,
+		Metadata:        credentialMetadataJsonb,
 	})
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
@@ -448,13 +449,13 @@ func (h API) List(c echo.Context) error {
 
 // ListByFilters godoc
 //
-//	@Summary		List integrations with given filters
-//	@Description	List integrations with given filters
+//	@Summary		List credentials with given filters
+//	@Description	List credentials with given filters
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200				{object}	models.ListResponse
-//	@Router			/integration/api/v1/integrations/list [post]
+//	@Router			/integration/api/v1/credentials/list [post]
 func (h API) ListByFilters(c echo.Context) error {
 	var req models.ListIntegrationsRequest
 

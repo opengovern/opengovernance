@@ -1,13 +1,22 @@
 package models
 
-import "time"
+import (
+	"github.com/opengovern/og-util/pkg/integration"
+	"time"
+)
 
 type Credential struct {
-	ID        string            `json:"id"`
-	Secret    string            `json:"secret"`
-	Metadata  map[string]string `json:"metadata"`
-	CreatedAt time.Time         `json:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at"`
+	ID              string            `json:"id"`
+	Secret          string            `json:"secret"`
+	IntegrationType integration.Type  `json:"integration_type"`
+	Metadata        map[string]string `json:"metadata"`
+	CreatedAt       time.Time         `json:"created_at"`
+	UpdatedAt       time.Time         `json:"updated_at"`
+}
+
+type ListCredentialsRequest struct {
+	CredentialID    []string `json:"credential_id"`
+	IntegrationType []string `json:"integration_type"`
 }
 
 type ListCredentialsResponse struct {

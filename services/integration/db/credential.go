@@ -48,6 +48,27 @@ func (db Database) ListCredentials() ([]models.Credential, error) {
 	return credentials, nil
 }
 
+// ListCredentialsFiltered list credentials filtered
+func (db Database) ListCredentialsFiltered(ids []string, integrationTypes []string) ([]models.Credential, error) {
+	var credentials []models.Credential
+	tx := db.Orm.
+		Model(&models.Credential{})
+
+	if len(ids) > 0 {
+		tx = tx.Where("id IN ?", ids)
+	}
+	if len(integrationTypes) > 0 {
+		tx = tx.Where("integration_type IN ?", integrationTypes)
+	}
+
+	tx = tx.Find(&credentials)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return credentials, nil
+}
+
 // GetCredential get a credential
 func (db Database) GetCredential(id string) (*models.Credential, error) {
 	var credential models.Credential

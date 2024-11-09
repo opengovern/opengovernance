@@ -16,7 +16,7 @@ const (
 
 type EntraIdDirectoryIntegration struct{}
 
-func CreateAzureSubscriptionIntegration() (interfaces.IntegrationType, error) {
+func CreateEntraidSubscriptionIntegration() (interfaces.IntegrationType, error) {
 	return &EntraIdDirectoryIntegration{}, nil
 }
 

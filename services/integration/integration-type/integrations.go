@@ -26,7 +26,7 @@ var AllIntegrationTypes = []integration.Type{
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationCreator{
 	IntegrationTypeAWSAccount:        aws_account.CreateAWSAccountIntegration,
 	IntegrationTypeAzureSubscription: azure_subscription.CreateAzureSubscriptionIntegration,
-	IntegrationTypeEntraIdDirectory:  entra_id_directory.CreateAzureSubscriptionIntegration,
+	IntegrationTypeEntraIdDirectory:  entra_id_directory.CreateEntraidSubscriptionIntegration,
 }
 
 func ParseType(str string) integration.Type {
