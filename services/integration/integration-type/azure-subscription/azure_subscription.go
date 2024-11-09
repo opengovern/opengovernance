@@ -5,7 +5,6 @@ import (
 	azureDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/discovery"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration/models"
 )
@@ -37,7 +36,7 @@ func (i *AzureSubscriptionIntegration) GetLabels(jsonData []byte) (map[string]st
 }
 
 func (i *AzureSubscriptionIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
-	var credentials configs.IntegrationCredentials
+	var credentials azureDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
 		return false, err
@@ -46,16 +45,16 @@ func (i *AzureSubscriptionIntegration) HealthCheck(jsonData []byte, providerId s
 	return healthcheck.AzureIntegrationHealthcheck(healthcheck.Config{
 		TenantID:       credentials.TenantID,
 		ClientID:       credentials.ClientID,
-		ClientSecret:   credentials.ClientSecret,
-		CertPath:       credentials.CertificatePath,
-		CertContent:    credentials.CertificatePath,
-		CertPassword:   credentials.CertificatePass,
+		ClientSecret:   credentials.ClientPassword,
+		CertPath:       "",
+		CertContent:    credentials.Certificate,
+		CertPassword:   credentials.CertificatePassword,
 		SubscriptionID: providerId,
 	})
 }
 
 func (i *AzureSubscriptionIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
-	var credentials configs.IntegrationCredentials
+	var credentials azureDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
 		return nil, err
@@ -65,10 +64,10 @@ func (i *AzureSubscriptionIntegration) DiscoverIntegrations(jsonData []byte) ([]
 	subscriptions, err := discovery.AzureIntegrationDiscovery(discovery.Config{
 		TenantID:     credentials.TenantID,
 		ClientID:     credentials.ClientID,
-		ClientSecret: credentials.ClientSecret,
-		CertPath:     credentials.CertificatePath,
-		CertContent:  credentials.CertificatePath,
-		CertPassword: credentials.CertificatePass,
+		ClientSecret: credentials.ClientPassword,
+		CertPath:     "",
+		CertContent:  credentials.Certificate,
+		CertPassword: credentials.CertificatePassword,
 	})
 	if err != nil {
 		return nil, err

@@ -50,10 +50,10 @@ func (i *EntraIdDirectoryIntegration) HealthCheck(jsonData []byte, providerId st
 	return healthcheck.EntraidIntegrationHealthcheck(healthcheck.Config{
 		TenantID:     providerId,
 		ClientID:     configs.ClientID,
-		ClientSecret: configs.ClientSecret,
-		CertPath:     configs.CertificatePath,
-		CertContent:  configs.CertificatePath,
-		CertPassword: configs.CertificatePass,
+		ClientSecret: configs.ClientPassword,
+		CertPath:     "",
+		CertContent:  configs.Certificate,
+		CertPassword: configs.CertificatePassword,
 	})
 }
 
@@ -68,10 +68,10 @@ func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(jsonData []byte) ([]m
 	directories, err := discovery.EntraidIntegrationDiscovery(discovery.Config{
 		TenantID:     configs.TenantID,
 		ClientID:     configs.ClientID,
-		ClientSecret: configs.ClientSecret,
-		CertPath:     configs.CertificatePath,
-		CertContent:  configs.CertificatePath,
-		CertPassword: configs.CertificatePass,
+		ClientSecret: configs.ClientPassword,
+		CertPath:     "",
+		CertContent:  configs.Certificate,
+		CertPassword: configs.CertificatePassword,
 	})
 	if err != nil {
 		return nil, err
