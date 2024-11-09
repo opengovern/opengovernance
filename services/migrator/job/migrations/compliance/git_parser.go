@@ -504,8 +504,9 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 		}
 
 		g.queryViews = append(g.queryViews, models.QueryView{
-			ID:    obj.ID,
-			Query: obj.Query,
+			ID:           obj.ID,
+			Query:        obj.Query,
+			Dependencies: obj.Dependencies,
 		})
 
 		return nil

@@ -26,9 +26,9 @@ on:
           - "prod"
         default: "dev"
   push:
-    branches: ["main","dev","feat-integrations-service"]
+    branches: ["main","dev"]
   pull_request:
-    branches: ["main","dev","feat-integrations-service"]
+    branches: ["main","dev"]
 
 jobs:
   tag:
@@ -36,7 +36,7 @@ jobs:
     environment: golang
     outputs:
       latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/feat-integrations-service')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -55,12 +55,14 @@ jobs:
           else
             echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
           fi
+
   build:
     runs-on: ubuntu-latest
     needs:
       - tag
     environment: golang
     outputs:
+      service_count: ${{ steps.build_services.outputs.service_count }}
       steampipe: ${{ steps.build_services.outputs.steampipe }}
       auth-service: ${{ steps.build_services.outputs.auth-service }}
       checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
@@ -86,13 +88,14 @@ jobs:
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
     steps:
       - name: Free Disk Space (Ubuntu)
+        if: ${{ steps.build_services.outputs.service_count > 3 }}
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
+          # This might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
 
-          # all of these default to true, but feel free to set to
+          # All of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
           dotnet: true
@@ -100,18 +103,23 @@ jobs:
           large-packages: false
           docker-images: true
           swap-storage: true
+
       - name: Install musl cc
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: musl-tools musl-dev musl
-      - uses: actions/checkout@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version-file: "./go.mod"
           cache: false
+
       - name: Go Cache
         uses: actions/cache@v3
         with:
@@ -121,27 +129,52 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
+      - name: Configure Git
+        run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
       - name: Build services
         id: build_services
         run: |
           set -x
           ./scripts/list_services > ./service-list
           cat ./service-list
-          cat ./service-list | sed 's/\s\+/\n/g' | sed 's/^\<steampipe\>$//g' | sed '/^$/d' > ./build_services
+          # Process the service list to determine services to build
+          cat ./service-list | tr ' ' '\n' | grep -v '^steampipe$' || true | grep -v '^$' || true > ./build_services
           cat ./build_services
           mkdir -p ./build
-          if [ ! -z "$(cat ./build_services)" ]; then
+          service_count=0
+          if [ -s ./build_services ]; then
             for f in $(cat ./build_services); do
-              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
+              if [ -d "./cmd/$f" ]; then
+                echo "Building service: $f"
+                CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v \
+                  -ldflags "-linkmode external -extldflags '-static' -s -w" \
+                  -tags musl -o ./build/$f ./cmd/$f
+                if [ $? -ne 0 ]; then
+                  echo "Build failed for service: $f"
+                  exit 1
+                fi
+                service_count=$((service_count + 1))
+              else
+                echo "Warning: Directory ./cmd/$f does not exist. Skipping build for $f."
+              fi
             done
             chmod +x ./build/*
+          else
+            echo "No services to build."
           fi
-          for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
+          echo "service_count=${service_count}" >> "$GITHUB_OUTPUT"
+          # Set outputs for each service
+          for f in $(cat ./service-list); do
+            echo "$f=true" >> "$GITHUB_OUTPUT"
+          done
+
       - name: Pack build
         if: github.event_name != 'pull_request'
         run: |
           tar -czvf build.tar.gz build
+
       - name: Upload artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v3
@@ -149,6 +182,7 @@ jobs:
           name: build
           path: build.tar.gz
           retention-days: 1
+
   deploy-steampipe:
     runs-on: ubuntu-latest
     needs:
@@ -187,6 +221,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-auth-service:
     runs-on: ubuntu-latest
     needs:
@@ -222,6 +257,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/AuthServiceDockerfile
           context: .
+
   deploy-checkup-worker:
     runs-on: ubuntu-latest
     needs:
@@ -257,6 +293,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/CheckupWorkerDockerfile
           context: .
+
   deploy-compliance-report-worker:
     runs-on: ubuntu-latest
     needs:
@@ -296,6 +333,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
     needs:
@@ -333,6 +371,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-compliance-service:
     runs-on: ubuntu-latest
     needs:
@@ -368,6 +407,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceServiceDockerfile
           context: .
+
   deploy-describe-scheduler:
     runs-on: ubuntu-latest
     needs:
@@ -403,6 +443,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
           file: docker/DescribeSchedulerDockerfile
           context: .
+
   deploy-integration-service:
     runs-on: ubuntu-latest
     needs:
@@ -473,6 +514,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
           file: docker/EsSinkServiceDockerfile
           context: .
+
   deploy-inventory-service:
     runs-on: ubuntu-latest
     needs:
@@ -508,6 +550,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InventoryServiceDockerfile
           context: .
+
   deploy-metadata-service:
     runs-on: ubuntu-latest
     needs:
@@ -543,6 +586,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/MetadataServiceDockerfile
           context: .
+
   deploy-migrator-worker:
     runs-on: ubuntu-latest
     needs:
@@ -578,6 +622,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
           context: .
+
   deploy-onboard-service:
     runs-on: ubuntu-latest
     needs:
@@ -613,6 +658,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/OnboardServiceDockerfile
           context: .
+
   deploy-swagger-ui:
     runs-on: ubuntu-latest
     needs:
@@ -648,6 +694,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
           context: .
+
   deploy-analytics-worker:
     runs-on: ubuntu-latest
     needs:
@@ -687,6 +734,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
     needs:
@@ -738,6 +786,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginOpengovernanceDockerfile
           context: .
+
   deploy-wastage-service:
     runs-on: ubuntu-latest
     needs:
@@ -773,6 +822,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WastageServiceDockerfile
           context: .
+
   deploy-information-service:
     runs-on: ubuntu-latest
     needs:
@@ -808,6 +858,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InformationServiceDockerfile
           context: .
+
   deploy-query-runner-worker:
     runs-on: ubuntu-latest
     needs:
@@ -847,6 +898,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-import-data-script:
     runs-on: ubuntu-latest
     needs:
@@ -938,6 +990,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
           file: docker/DemoImporterDockerfile
           context: .
+
   deploy-dex-login:
     runs-on: ubuntu-latest
     if: github.event.inputs.buildImportDemo == 'true'
