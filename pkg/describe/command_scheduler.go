@@ -29,7 +29,6 @@ var (
 	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
 
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
-	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	CostDiscoveryIntervalHours = os.Getenv("COST_DISCOVERY_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
@@ -38,6 +37,7 @@ var (
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
+	IntegrationBaseURL         = os.Getenv("INTEGRATION_BASE_URL")
 	InventoryBaseURL           = os.Getenv("INVENTORY_BASE_URL")
 	EsSinkBaseURL              = os.Getenv("ESSINK_BASEURL")
 	AuthGRPCURI                = os.Getenv("AUTH_GRPC_URI")

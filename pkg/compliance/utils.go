@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	opengovernanceTypes "github.com/opengovern/opengovernance/pkg/types"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.uber.org/zap"
 	"regexp"
 	"time"
@@ -43,8 +43,8 @@ func (h *HttpHandler) getBenchmarkTree(ctx context.Context, benchmarkId string) 
 		Tags:              b.GetTagsMap(),
 		Children:          children,
 	}
-	if b.Connector != nil {
-		nb.Connectors = source.ParseTypes(b.Connector)
+	if b.IntegrationType != nil {
+		nb.IntegrationTypes = integration_type.ParseTypes(b.IntegrationType)
 	}
 	for _, control := range b.Controls {
 		nb.Controls = append(nb.Controls, control.ID)

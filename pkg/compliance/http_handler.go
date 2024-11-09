@@ -5,6 +5,7 @@ import (
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"github.com/sashabaranov/go-openai"
 	v1 "k8s.io/api/batch/v1"
@@ -13,13 +14,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/pkg/compliance/db"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
-
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/compliance/db"
 
 	"go.uber.org/zap"
 )
@@ -33,12 +32,12 @@ type HttpHandler struct {
 
 	//s3Client *s3.Client
 
-	schedulerClient describeClient.SchedulerServiceClient
-	onboardClient   onboardClient.OnboardServiceClient
-	inventoryClient inventoryClient.InventoryServiceClient
-	metadataClient  metadataClient.MetadataServiceClient
-	openAIClient    *openai.Client
-	kubeClient      client.Client
+	schedulerClient   describeClient.SchedulerServiceClient
+	integrationClient integrationClient.IntegrationServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	metadataClient    metadataClient.MetadataServiceClient
+	openAIClient      *openai.Client
+	kubeClient        client.Client
 }
 
 func NewKubeClient() (client.Client, error) {
@@ -142,7 +141,7 @@ func InitializeHttpHandler(
 	//h.s3Client = s3.NewFromConfig(awsConfig)
 
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
-	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
+	h.integrationClient = integrationClient.NewIntegrationServiceClient(conf.Integration.BaseURL)
 	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	h.metadataClient = metadataClient.NewMetadataServiceClient(conf.Metadata.BaseURL)
 	h.openAIClient = openai.NewClient(conf.OpenAI.Token)

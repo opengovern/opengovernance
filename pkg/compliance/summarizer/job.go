@@ -14,8 +14,8 @@ import (
 	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
 	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +67,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ResourcesFindingsIsDone: make(map[string]bool),
 
 		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
-		ConnectionCache:         map[string]onboardApi.Connection{},
+		IntegrationCache:        map[string]integrationApi.Integration{},
 	}
 
 	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
@@ -80,15 +80,15 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		jd.ResourceCollectionCache[rc.ID] = rc
 	}
 
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
+	integrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
 	if err != nil {
 		w.logger.Error("failed to list connections", zap.Error(err))
 		return err
 	}
-	for _, c := range connections {
+	for _, c := range integrations.Integrations {
 		c := c
 		// use provider id instead of opengovernance id because we need that to check resource collections
-		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
+		jd.IntegrationCache[strings.ToLower(c.ProviderID)] = c
 	}
 
 	for page := 1; paginator.HasNext(); page++ {
@@ -217,7 +217,7 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 
 	task := es3.DeleteTask{
 		DiscoveryJobID: j.ID,
-		ConnectionID:   j.BenchmarkID,
+		IntegrationID:  j.BenchmarkID,
 		ResourceType:   "resource-finding",
 		TaskType:       es3.DeleteTaskTypeQuery,
 		Query:          string(rootJson),

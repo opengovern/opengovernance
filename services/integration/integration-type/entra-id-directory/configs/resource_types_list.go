@@ -1,0 +1,26 @@
+package configs
+
+var ResourceTypesList = []string{
+  "Microsoft.Entra/groups",
+  "Microsoft.Entra/groupMemberships",
+  "Microsoft.Entra/devices",
+  "Microsoft.Entra/signInReports",
+  "Microsoft.Entra/applications",
+  "Microsoft.Entra/appRegistrations",
+  "Microsoft.Entra/enterpriseApplication",
+  "Microsoft.Entra/managedIdentity",
+  "Microsoft.Entra/microsoftApplication",
+  "Microsoft.Entra/domains",
+  "Microsoft.Entra/tenant",
+  "Microsoft.Entra/identityproviders",
+  "Microsoft.Entra/securitydefaultspolicy",
+  "Microsoft.Entra/authorizationpolicy",
+  "Microsoft.Entra/conditionalaccesspolicy",
+  "Microsoft.Entra/adminconsentrequestpolicy",
+  "Microsoft.Entra/userregistrationdetails",
+  "Microsoft.Entra/serviceprincipals",
+  "Microsoft.Entra/users",
+  "Microsoft.Entra/directoryroles",
+  "Microsoft.Entra/directorysettings",
+  "Microsoft.Entra/directoryauditreport",
+}

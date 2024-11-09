@@ -8,11 +8,9 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
-	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/vault"
 	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/onboard/config"
-	"github.com/opengovern/opengovernance/pkg/onboard/db"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -33,25 +31,6 @@ func start(ctx context.Context) error {
 
 	cfg := koanf.Provide("onboard", config.OnboardConfig{})
 
-	psqlCfg := postgres.Config{
-		Host:    cfg.Postgres.Host,
-		Port:    cfg.Postgres.Port,
-		User:    cfg.Postgres.Username,
-		Passwd:  cfg.Postgres.Password,
-		DB:      cfg.Postgres.DB,
-		SSLMode: cfg.Postgres.SSLMode,
-	}
-	orm, err := postgres.NewClient(&psqlCfg, logger)
-	if err != nil {
-		return fmt.Errorf("new postgres client: %w", err)
-	}
-	logger.Info("Connected to the postgres database", zap.String("database", cfg.Postgres.DB))
-
-	onboardDB := db.NewDatabase(orm)
-	err = onboardDB.Initialize()
-	if err != nil {
-		return err
-	}
 	logger.Info("Initialized postgres database: ", zap.String("database", cfg.Postgres.DB))
 
 	mClient := metadata.NewMetadataServiceClient(cfg.Metadata.BaseURL)
@@ -84,7 +63,6 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		onboardDB,
 		cfg.Steampipe.Host, cfg.Steampipe.Port, cfg.Steampipe.DB, cfg.Steampipe.Username, cfg.Steampipe.Password,
 		logger,
 		vaultSc,

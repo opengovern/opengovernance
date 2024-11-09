@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/describe/enums"
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"gorm.io/gorm"
 	"time"
@@ -34,7 +34,7 @@ type IntegrationDiscovery struct {
 	ResourceTypes pq.StringArray `gorm:"type:text[]" json:"resourceTypes"`
 }
 
-type DescribeConnectionJob struct {
+type DescribeIntegrationJob struct {
 	ID             uint `gorm:"primarykey"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time      `gorm:"index:,sort:desc"`
@@ -44,13 +44,12 @@ type DescribeConnectionJob struct {
 	CreatedBy      string
 	ParentID       *uint `gorm:"index:,sort:desc"`
 
-	ConnectionID string `gorm:"index:idx_source_id_full_discovery;index"`
-	Connector    source.Type
-	AccountID    string
-	TriggerType  enums.DescribeTriggerType
+	IntegrationID   string `gorm:"index:idx_source_id_full_discovery;index"`
+	IntegrationType integration.Type
+	ProviderID      string
+	TriggerType     enums.DescribeTriggerType
 
-	ResourceType           string `gorm:"index:idx_resource_type_status;index"`
-	DiscoveryType          DiscoveryType
+	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
 	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING

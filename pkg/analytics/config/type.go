@@ -7,7 +7,7 @@ type WorkerConfig struct {
 	PostgreSQL       config.Postgres
 	ElasticSearch    config.ElasticSearch
 	Steampipe        config.Postgres
-	Onboard          config.OpenGovernanceService
+	Integration      config.OpenGovernanceService
 	Scheduler        config.OpenGovernanceService
 	Inventory        config.OpenGovernanceService
 	EsSink           config.OpenGovernanceService

@@ -208,7 +208,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
-				Connector:          control.Connector,
+				IntegrationType:    control.Connector,
 				Enabled:            true,
 				Benchmarks:         nil,
 				Severity:           types.ParseFindingSeverity(control.Severity),
@@ -218,13 +218,13 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 
 			if control.Query != nil {
 				q := db.Query{
-					ID:             control.ID,
-					QueryToExecute: control.Query.QueryToExecute,
-					Connector:      control.Connector,
-					PrimaryTable:   control.Query.PrimaryTable,
-					ListOfTables:   control.Query.ListOfTables,
-					Engine:         control.Query.Engine,
-					Global:         control.Query.Global,
+					ID:              control.ID,
+					QueryToExecute:  control.Query.QueryToExecute,
+					IntegrationType: control.Connector,
+					PrimaryTable:    control.Query.PrimaryTable,
+					ListOfTables:    control.Query.ListOfTables,
+					Engine:          control.Query.Engine,
+					Global:          control.Query.Global,
 				}
 				g.controlsQueries[control.ID] = q
 				for _, parameter := range control.Query.Parameters {
@@ -307,7 +307,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
-			Connector:         connectors,
+			IntegrationType:   connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
@@ -363,11 +363,11 @@ func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []stri
 	connectorMap := make(map[string]bool)
 
 	for idx, benchmark := range benchmarks {
-		if benchmark.Connector == nil {
-			benchmark.Children, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
+		if benchmark.IntegrationType == nil {
+			benchmark.Children, benchmark.IntegrationType = fillBenchmarksConnectors(benchmark.Children)
 			benchmarks[idx] = benchmark
 		}
-		for _, c := range benchmark.Connector {
+		for _, c := range benchmark.IntegrationType {
 			if _, ok := connectorMap[c]; !ok {
 				connectors = append(connectors, c)
 				connectorMap[c] = true

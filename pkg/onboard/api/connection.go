@@ -1,12 +1,7 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
-	ogAws "github.com/opengovern/og-aws-describer/aws"
-	ogAzure "github.com/opengovern/og-azure-describer/azure"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,8 +34,8 @@ type ConnectionCountRequest struct {
 
 type Connection struct {
 	ID                   uuid.UUID                       `json:"id" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionID         string                          `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionName       string                          `json:"providerConnectionName" example:"example-connection"`
+	ConnectionID         string                          `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ConnectionName       string                          `json:"integrationName" example:"example-connection"`
 	Email                string                          `json:"email" example:"johndoe@example.com"`
 	Connector            source.Type                     `json:"connector" example:"Azure"`
 	Description          string                          `json:"description" example:"This is an example connection"`
@@ -81,75 +76,6 @@ func (c *Connection) TenantID() string {
 		}
 	}
 	return TenantID
-}
-
-func GetAWSSupportedResourceTypeMap() map[string]bool {
-	supportedMap := make(map[string]bool)
-	rts := ogAws.GetResourceTypesMap()
-	for rt := range rts {
-		supportedMap[strings.ToLower(rt)] = true
-	}
-	return supportedMap
-}
-
-func GetAzureSupportedResourceTypeMap() map[string]bool {
-	supportedMap := make(map[string]bool)
-	rts := ogAzure.GetResourceTypesMap()
-	for rt := range rts {
-		supportedMap[strings.ToLower(rt)] = true
-	}
-	return supportedMap
-}
-
-func (c *Connection) GetSupportedResourceTypeMap() map[string]bool {
-	if c.supportedResourceTypes != nil {
-		return c.supportedResourceTypes
-	} else {
-		c.supportedResourceTypes = make(map[string]bool)
-	}
-	switch c.Connector {
-	case source.CloudAWS:
-		rts := ogAws.GetResourceTypesMap()
-		for rt := range rts {
-			c.supportedResourceTypes[strings.ToLower(rt)] = true
-		}
-		return c.supportedResourceTypes
-	case source.CloudAzure:
-		rts := ogAzure.GetResourceTypesMap()
-		jsonC, _ := json.Marshal(c)
-		// Remove cost resources if quota is not supported so we don't describe em
-		if subscriptionModel, ok := c.Metadata["subscription_model"]; ok {
-			jsonSubModel, _ := json.Marshal(subscriptionModel)
-			var subscriptionModelObj armsubscription.Subscription
-			err := json.Unmarshal(jsonSubModel, &subscriptionModelObj)
-			if err == nil {
-				if subscriptionModelObj.SubscriptionPolicies != nil && subscriptionModelObj.SubscriptionPolicies.QuotaID != nil {
-					quotaId := *subscriptionModelObj.SubscriptionPolicies.QuotaID
-					unsupportedQuotas := ogAzure.GetUnsupportedCostQuotaIds()
-					for _, unsupportedQuota := range unsupportedQuotas {
-						if strings.ToLower(quotaId) == strings.ToLower(unsupportedQuota) {
-							delete(rts, "Microsoft.CostManagement/CostBySubscription")
-							delete(rts, "Microsoft.CostManagement/CostByResourceType")
-						}
-					}
-				} else {
-					fmt.Printf("subscription model obj quota id not found for connection: %v\n", string(jsonC))
-				}
-			} else {
-				fmt.Printf("subscription model obj not found for connection: %v\n", string(jsonC))
-			}
-		} else {
-			fmt.Printf("subscription model not found for connection: %v\n", string(jsonC))
-		}
-
-		for rt := range rts {
-			c.supportedResourceTypes[strings.ToLower(rt)] = true
-		}
-
-		return c.supportedResourceTypes
-	}
-
-	return nil
 }
 
 func (c Connection) IsEnabled() bool {

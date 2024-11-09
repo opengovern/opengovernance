@@ -131,11 +131,11 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 		plugin.Logger(ctx).Warn("ListCostSummary: Stream", d)
 		for _, v := range page {
 			plugin.Logger(ctx).Warn("ListCostSummary: Page", v)
-			for _, connRes := range v.Connections {
+			for _, connRes := range v.Integrations {
 				row := OpenGovernanceCostTableRow{
-					ConnectionID:   connRes.ConnectionID,
-					ConnectionName: connRes.ConnectionName,
-					Connector:      connRes.Connector.String(),
+					ConnectionID:   connRes.IntegrationID,
+					ConnectionName: connRes.IntegrationName,
+					Connector:      connRes.IntegrationType.String(),
 					Date:           v.Date,
 					DateEpoch:      v.DateEpoch,
 					Month:          v.Month,

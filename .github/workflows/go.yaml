@@ -6,6 +6,13 @@ name: Go
 on:
   workflow_dispatch:
     inputs:
+      buildImportDemo:
+        type: choice
+        description: "build demo import images and dex image"
+        options:
+          - "true"
+          - "false"
+        default: "false"
       servicesList:
         type: string
         description: "List of services to build"
@@ -19,9 +26,9 @@ on:
           - "prod"
         default: "dev"
   push:
-    branches: ["main","dev","feat-integrations-service"]
+    branches: ["main","dev"]
   pull_request:
-    branches: ["main","dev","feat-integrations-service"]
+    branches: ["main","dev"]
 
 jobs:
   tag:
@@ -29,7 +36,7 @@ jobs:
     environment: golang
     outputs:
       latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/feat-integrations-service')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -71,7 +78,6 @@ jobs:
       analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
       steampipe-plugin-opengovernance: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
-      integration-v2-service: ${{ steps.build_services.outputs.integration-v2-service }}
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
       wastage-service: ${{ steps.build_services.outputs.wastage-service }}
       information-service: ${{ steps.build_services.outputs.information-service }}
@@ -473,43 +479,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationServiceDockerfile
           context: .
-
-  deploy-integration-v2-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.integration-v2-service == 'true' && github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
-          file: docker/IntegrationV2ServiceDockerfile
-          context: .
-
   deploy-es-sink-service:
     runs-on: ubuntu-latest
     needs:
@@ -934,6 +903,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -957,11 +927,11 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
-
   deploy-export-data-script:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -985,7 +955,6 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
-
   deploy-demo-importer-worker:
     runs-on: ubuntu-latest
     needs:
@@ -1024,6 +993,7 @@ jobs:
 
   deploy-dex-login:
     runs-on: ubuntu-latest
+    if: github.event.inputs.buildImportDemo == 'true'
     needs:
       - tag
     permissions:

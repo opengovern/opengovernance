@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
@@ -22,7 +22,7 @@ type Control struct {
 	GuardrailRemediation    string `json:"guardrailRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 	ProgrammaticRemediation string `json:"programmaticRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 
-	Connector          []source.Type         `json:"connector" example:"Azure"`
+	IntegrationType    []string              `json:"connector" example:"Azure"`
 	Enabled            bool                  `json:"enabled" example:"true"`
 	DocumentURI        string                `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
 	Query              *Query                `json:"query"`
@@ -93,13 +93,13 @@ type ListControlsFilterResponse struct {
 }
 
 type ListControlsFilterResultControl struct {
-	ID          string                `json:"id"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	Connector   []source.Type         `json:"connector"`
-	Severity    types.FindingSeverity `json:"severity"`
-	Tags        map[string][]string   `json:"tags"`
-	Query       struct {
+	ID              string                `json:"id"`
+	Title           string                `json:"title"`
+	Description     string                `json:"description"`
+	IntegrationType []integration.Type    `json:"connector"`
+	Severity        types.FindingSeverity `json:"severity"`
+	Tags            map[string][]string   `json:"tags"`
+	Query           struct {
 		PrimaryTable *string          `json:"primary_table"`
 		ListOfTables []string         `json:"list_of_tables"`
 		Parameters   []QueryParameter `json:"parameters"`
@@ -145,12 +145,12 @@ type BenchmarkTagsResult struct {
 }
 
 type GetControlDetailsResponse struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Connector   []string `json:"connector"`
-	Severity    string   `json:"severity"`
-	Query       struct {
+	ID              string             `json:"id"`
+	Title           string             `json:"title"`
+	Description     string             `json:"description"`
+	IntegrationType []integration.Type `json:"integrationType"`
+	Severity        string             `json:"severity"`
+	Query           struct {
 		Engine         string           `json:"engine"`
 		QueryToExecute string           `json:"queryToExecute"`
 		PrimaryTable   *string          `json:"primaryTable"`

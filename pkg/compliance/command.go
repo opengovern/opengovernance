@@ -24,7 +24,7 @@ type ServerConfig struct {
 	ElasticSearch config.ElasticSearch
 	PostgreSQL    config.Postgres
 	Scheduler     config.OpenGovernanceService
-	Onboard       config.OpenGovernanceService
+	Integration   config.OpenGovernanceService
 	Inventory     config.OpenGovernanceService
 	Metadata      config.OpenGovernanceService
 	OpenAI        OpenAI

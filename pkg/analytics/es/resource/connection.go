@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 )
 
 const (
@@ -10,11 +10,11 @@ const (
 )
 
 type PerConnectionMetricTrendSummary struct {
-	Connector       source.Type `json:"connector"`
-	ConnectionID    string      `json:"connection_id"`
-	ConnectionName  string      `json:"connection_name"`
-	ResourceCount   int         `json:"resource_count"`
-	IsJobSuccessful bool        `json:"is_job_successful"`
+	IntegrationType integration.Type `json:"integration_type"`
+	IntegrationID   string           `json:"integration_id"`
+	IntegrationName string           `json:"integration_name"`
+	ResourceCount   int              `json:"resource_count"`
+	IsJobSuccessful bool             `json:"is_job_successful"`
 }
 
 type ConnectionMetricTrendSummaryResult struct {
@@ -33,7 +33,7 @@ type ConnectionMetricTrendSummary struct {
 	MetricID    string `json:"metric_id"`
 	MetricName  string `json:"metric_name"`
 
-	Connections         *ConnectionMetricTrendSummaryResult           `json:"connections,omitempty"`
+	Integrations        *ConnectionMetricTrendSummaryResult           `json:"integrations,omitempty"`
 	ResourceCollections map[string]ConnectionMetricTrendSummaryResult `json:"resource_collections,omitempty"`
 }
 

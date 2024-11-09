@@ -21,23 +21,23 @@ type ResourceTypeCountsResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetResourceTypeCounts(ctx context.Context, client opengovernance.Client, connectors []source.Type, connectionIDs []string, resourceTypes []string, size int) (map[string]int, error) {
+func GetResourceTypeCounts(ctx context.Context, client opengovernance.Client, integrationTypes []source.Type, integrationIDs []string, resourceTypes []string, size int) (map[string]int, error) {
 	var filters []any
-	if len(connectors) > 0 {
-		connectorsStr := make([]string, 0, len(connectors))
-		for _, connector := range connectors {
+	if len(integrationTypes) > 0 {
+		connectorsStr := make([]string, 0, len(integrationTypes))
+		for _, connector := range integrationTypes {
 			connectorsStr = append(connectorsStr, connector.String())
 		}
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
-				"source_type": connectorsStr,
+				"integration_type": connectorsStr,
 			},
 		})
 	}
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
-				"source_id": connectionIDs,
+				"integration_id": integrationIDs,
 			},
 		})
 	}

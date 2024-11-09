@@ -156,7 +156,7 @@ func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) erro
 				runnerJob := model.ComplianceRunner{
 					BenchmarkID:    parameters.BenchmarkID,
 					QueryID:        control.Query.ID,
-					ConnectionID:   &connectionID,
+					IntegrationID:  &connectionID,
 					StartedAt:      time.Time{},
 					RetryCount:     0,
 					Status:         runner.ComplianceRunnerCreated,
@@ -243,7 +243,7 @@ type ResourceCountResponse struct {
 func (s *Scheduler) resolveDescribeDependency(ctx context.Context, job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
-		describeConnectionJob, err := s.db.GetDescribeConnectionJobByID(uint(id))
+		describeConnectionJob, err := s.db.GetDescribeIntegrationJobByID(uint(id))
 		if err != nil {
 			return err
 		}

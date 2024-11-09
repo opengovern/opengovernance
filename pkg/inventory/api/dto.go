@@ -71,42 +71,42 @@ type NamedQuerySortItem struct {
 }
 
 type AllResource struct {
-	ResourceName           string      `json:"resourceName"`           // Resource Name
-	ResourceID             string      `json:"resourceID"`             // Resource Id
-	ResourceType           string      `json:"resourceType"`           // Resource Type
-	ResourceTypeLabel      string      `json:"resourceTypeLabel"`      // Resource Type Label
-	Connector              source.Type `json:"connector"`              // Resource Provider
-	Location               string      `json:"location"`               // The Region of the resource
-	ConnectionID           string      `json:"connectionID"`           // Platform Connection Id of the resource
-	ProviderConnectionID   string      `json:"providerConnectionID"`   // Platform Connection Id
-	ProviderConnectionName string      `json:"providerConnectionName"` // Provider Connection Name
+	ResourceName         string      `json:"resourceName"`      // Resource Name
+	ResourceID           string      `json:"resourceID"`        // Resource Id
+	ResourceType         string      `json:"resourceType"`      // Resource Type
+	ResourceTypeLabel    string      `json:"resourceTypeLabel"` // Resource Type Label
+	Connector            source.Type `json:"connector"`         // Resource Provider
+	Location             string      `json:"location"`          // The Region of the resource
+	ConnectionID         string      `json:"connectionID"`      // Platform Connection Id of the resource
+	ProviderConnectionID string      `json:"providerID"`        // Platform Connection Id
+	IntegrationName      string      `json:"integrationName"`   // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
 }
 
 type AzureResource struct {
-	ResourceName           string `json:"resourceName"`           // Resource Name
-	ResourceID             string `json:"resourceID"`             // Resource Id
-	ResourceType           string `json:"resourceType"`           // Resource Type
-	ResourceTypeLabel      string `json:"resourceTypeLabel"`      // Resource Type Label
-	ResourceGroup          string `json:"resourceGroup"`          // Resource Group
-	Location               string `json:"location"`               // The Region of the resource
-	ConnectionID           string `json:"connectionID"`           // Platform Connection Id of the resource
-	ProviderConnectionID   string `json:"providerConnectionID"`   // Provider Connection Id
-	ProviderConnectionName string `json:"providerConnectionName"` // Provider Connection Name
+	ResourceName         string `json:"resourceName"`      // Resource Name
+	ResourceID           string `json:"resourceID"`        // Resource Id
+	ResourceType         string `json:"resourceType"`      // Resource Type
+	ResourceTypeLabel    string `json:"resourceTypeLabel"` // Resource Type Label
+	ResourceGroup        string `json:"resourceGroup"`     // Resource Group
+	Location             string `json:"location"`          // The Region of the resource
+	ConnectionID         string `json:"connectionID"`      // Platform Connection Id of the resource
+	ProviderConnectionID string `json:"providerID"`        // Provider Connection Id
+	IntegrationName      string `json:"integrationName"`   // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
 }
 
 type AWSResource struct {
-	ResourceName           string `json:"resourceName"`
-	ResourceID             string `json:"resourceID"`
-	ResourceType           string `json:"resourceType"`
-	ResourceTypeLabel      string `json:"resourceTypeLabel"`
-	Location               string `json:"location"`
-	ConnectionID           string `json:"connectionID"`
-	ProviderConnectionID   string `json:"ProviderConnectionID"`
-	ProviderConnectionName string `json:"providerConnectionName"`
+	ResourceName         string `json:"resourceName"`
+	ResourceID           string `json:"resourceID"`
+	ResourceType         string `json:"resourceType"`
+	ResourceTypeLabel    string `json:"resourceTypeLabel"`
+	Location             string `json:"location"`
+	ConnectionID         string `json:"connectionID"`
+	ProviderConnectionID string `json:"ProviderConnectionID"`
+	IntegrationName      string `json:"integrationName"`
 
 	Attributes map[string]string `json:"attributes"`
 }

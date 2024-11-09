@@ -35,8 +35,8 @@ type ExecutionPlan struct {
 	Callers []Caller
 	Query   complianceApi.Query
 
-	ConnectionID         *string
-	ProviderConnectionID *string
+	ConnectionID *string
+	ProviderID   *string
 }
 
 type Job struct {
@@ -57,9 +57,9 @@ type JobConfig struct {
 
 func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	providerAccountID := "all"
-	if j.ExecutionPlan.ProviderConnectionID != nil &&
-		*j.ExecutionPlan.ProviderConnectionID != "" {
-		providerAccountID = *j.ExecutionPlan.ProviderConnectionID
+	if j.ExecutionPlan.ProviderID != nil &&
+		*j.ExecutionPlan.ProviderID != "" {
+		providerAccountID = *j.ExecutionPlan.ProviderID
 	}
 
 	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, providerAccountID)
@@ -88,7 +88,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
-		zap.Stringp("provider_connection_id", j.ExecutionPlan.ProviderConnectionID),
+		zap.Stringp("provider_connection_id", j.ExecutionPlan.ProviderID),
 	)
 
 	if err := w.Initialize(ctx, j); err != nil {
@@ -239,7 +239,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 						BenchmarkID:               f.BenchmarkID,
 						ControlID:                 f.ControlID,
 						ConnectionID:              f.ConnectionID,
-						Connector:                 f.Connector,
+						IntegrationType:           f.IntegrationType,
 						Severity:                  f.Severity,
 						OpenGovernanceResourceID:  f.OpenGovernanceResourceID,
 						ResourceID:                f.ResourceID,
@@ -280,7 +280,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					BenchmarkID:               newFinding.BenchmarkID,
 					ControlID:                 newFinding.ControlID,
 					ConnectionID:              newFinding.ConnectionID,
-					Connector:                 newFinding.Connector,
+					IntegrationType:           newFinding.IntegrationType,
 					Severity:                  newFinding.Severity,
 					OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
 					ResourceID:                newFinding.ResourceID,
@@ -324,7 +324,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			BenchmarkID:               newFinding.BenchmarkID,
 			ControlID:                 newFinding.ControlID,
 			ConnectionID:              newFinding.ConnectionID,
-			Connector:                 newFinding.Connector,
+			IntegrationType:           newFinding.IntegrationType,
 			Severity:                  newFinding.Severity,
 			OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
 			ResourceID:                newFinding.ResourceID,

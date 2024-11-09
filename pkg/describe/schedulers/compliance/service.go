@@ -10,8 +10,8 @@ import (
 	"github.com/opengovern/opengovernance/pkg/compliance/client"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +22,7 @@ type JobScheduler struct {
 	conf                    config.SchedulerConfig
 	logger                  *zap.Logger
 	complianceClient        client.ComplianceServiceClient
-	onboardClient           onboardClient.OnboardServiceClient
+	integrationClient       integrationClient.IntegrationServiceClient
 	db                      db.Database
 	jq                      *jq.JobQueue
 	esClient                opengovernance.Client
@@ -34,7 +34,7 @@ func New(
 	conf config.SchedulerConfig,
 	logger *zap.Logger,
 	complianceClient client.ComplianceServiceClient,
-	onboardClient onboardClient.OnboardServiceClient,
+	integrationClient integrationClient.IntegrationServiceClient,
 	db db.Database,
 	jq *jq.JobQueue,
 	esClient opengovernance.Client,
@@ -45,7 +45,7 @@ func New(
 		conf:                    conf,
 		logger:                  logger,
 		complianceClient:        complianceClient,
-		onboardClient:           onboardClient,
+		integrationClient:       integrationClient,
 		db:                      db,
 		jq:                      jq,
 		esClient:                esClient,

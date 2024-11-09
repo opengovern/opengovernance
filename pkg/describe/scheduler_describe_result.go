@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
@@ -12,66 +11,12 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/opengovern/og-aws-describer/aws"
-	"github.com/opengovern/og-azure-describer/azure"
 	es2 "github.com/opengovern/og-util/pkg/es"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/ticker"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
 	"go.uber.org/zap"
 )
-
-func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
-	s.logger.Info("DescribedResourceCount update scheduler started")
-
-	t := ticker.NewTicker(1*time.Minute, time.Second*10)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		s.UpdateDescribedResourceCount()
-	}
-}
-
-func (s *Scheduler) UpdateDescribedResourceCount() {
-	s.logger.Info("Updating DescribedResourceCount")
-	AwsFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobFailed)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "AWS"),
-			zap.String("status", "failed"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
-	AzureFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobFailed)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "Azure"),
-			zap.String("status", "failed"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
-	AwsSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobSucceeded)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "AWS"),
-			zap.String("status", "successful"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
-	AzureSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobSucceeded)
-	if err != nil {
-		s.logger.Error("Failed to count described resources",
-			zap.String("connector", "Azure"),
-			zap.String("status", "successful"),
-			zap.Error(err))
-		return
-	}
-	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
-}
 
 func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 	s.logger.Info("Consuming messages from the JobResults queue")
@@ -108,7 +53,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 
 				dlc, err := s.cleanupOldResources(ctx, result)
 				if err != nil {
-					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
+					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
 
 					if err := msg.Nak(); err != nil {
@@ -135,8 +80,8 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 			}
 
 			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
-			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
-				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
+			if err := s.db.UpdateDescribeIntegrationJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)), deletedCount); err != nil {
+				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "failure").Inc()
 
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 
@@ -147,7 +92,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 				return
 			}
 
-			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
+			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.IntegrationType), "successful").Inc()
 
 			if err := msg.Ack(); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
@@ -175,67 +120,22 @@ func (s *Scheduler) RunDescribeJobResultsConsumer(ctx context.Context) error {
 }
 
 func (s *Scheduler) handleTimeoutForDiscoveryJobs() {
-	awsResources := aws.ListResourceTypes()
-	for _, r := range awsResources {
-		var interval time.Duration
-		resourceType, err := aws.GetResourceType(r)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
-		}
-		if resourceType.FastDiscovery {
-			interval = s.describeIntervalHours
-		} else if resourceType.CostDiscovery {
-			interval = s.costDiscoveryIntervalHours
-		} else {
-			interval = s.fullDiscoveryIntervalHours
-		}
-
-		if _, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval); err != nil {
-			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
-		}
-	}
-	azureResources := azure.ListResourceTypes()
-	for _, r := range azureResources {
-		var interval time.Duration
-		resourceType, err := azure.GetResourceType(r)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
-		}
-		if resourceType.FastDiscovery {
-			interval = s.describeIntervalHours
-		} else if resourceType.CostDiscovery {
-			interval = s.costDiscoveryIntervalHours
-		} else {
-			interval = s.fullDiscoveryIntervalHours
-		}
-
-		if _, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval); err != nil {
-			s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
-		}
+	err := s.db.UpdateDescribeIntegrationJobsTimedOut(int64(s.discoveryIntervalHours.Hours()))
+	if err != nil {
+		s.logger.Error("failed to UpdateDescribeConnectionJobsTimedOut", zap.Error(err))
 	}
 }
 
 func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResult) (int64, error) {
 	var searchAfter []any
 
-	isCostResourceType := false
-	if strings.ToLower(res.DescribeJob.ResourceType) == "microsoft.costmanagement/costbyresourcetype" ||
-		strings.ToLower(res.DescribeJob.ResourceType) == "aws::costexplorer::byservicedaily" {
-		isCostResourceType = true
-	}
-
 	var additionalFilters []map[string]any
-	if isCostResourceType {
-		additionalFilters = append(additionalFilters, map[string]any{
-			"range": map[string]any{"cost_date": map[string]any{"lt": time.Now().AddDate(0, -2, -1).UnixMilli()}},
-		})
-	}
 
 	deletedCount := 0
 
 	s.logger.Info("starting to schedule deleting old resources",
 		zap.Uint("jobId", res.JobID),
-		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("integration_id", res.DescribeJob.IntegrationID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
 	)
 
@@ -243,7 +143,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(
 			ctx,
 			s.es,
-			res.DescribeJob.SourceID,
+			res.DescribeJob.IntegrationID,
 			res.DescribeJob.ResourceType,
 			additionalFilters,
 			searchAfter,
@@ -259,11 +159,11 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 			break
 		}
 		task := es.DeleteTask{
-			DiscoveryJobID: res.JobID,
-			ConnectionID:   res.DescribeJob.SourceID,
-			ResourceType:   res.DescribeJob.ResourceType,
-			Connector:      res.DescribeJob.SourceType,
-			TaskType:       es.DeleteTaskTypeResource,
+			DiscoveryJobID:  res.JobID,
+			IntegrationID:   res.DescribeJob.IntegrationID,
+			ResourceType:    res.DescribeJob.ResourceType,
+			IntegrationType: res.DescribeJob.IntegrationType,
+			TaskType:        es.DeleteTaskTypeResource,
 		}
 
 		for _, hit := range esResp.Hits.Hits {
@@ -278,13 +178,13 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				}
 			}
 
-			if !exists || isCostResourceType {
-				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
+			if !exists {
+				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.IntegrationType)).Inc()
 				resource := es2.Resource{
-					ID:           esResourceID,
-					SourceID:     res.DescribeJob.SourceID,
-					ResourceType: res.DescribeJob.ResourceType,
-					SourceType:   res.DescribeJob.SourceType,
+					ResourceID:      esResourceID,
+					IntegrationID:   res.DescribeJob.IntegrationID,
+					ResourceType:    res.DescribeJob.ResourceType,
+					IntegrationType: res.DescribeJob.IntegrationType,
 				}
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
@@ -295,10 +195,10 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				})
 
 				lookupResource := es2.LookupResource{
-					ResourceID:   esResourceID,
-					SourceID:     res.DescribeJob.SourceID,
-					ResourceType: res.DescribeJob.ResourceType,
-					SourceType:   res.DescribeJob.SourceType,
+					ResourceID:      esResourceID,
+					IntegrationID:   res.DescribeJob.IntegrationID,
+					ResourceType:    res.DescribeJob.ResourceType,
+					IntegrationType: res.DescribeJob.IntegrationType,
 				}
 				lookUpKeys, lookUpIdx := lookupResource.KeysAndIndex()
 				deletedCount += 1
@@ -327,7 +227,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 				if _, err := s.sinkClient.Ingest(&httpclient.Context{UserRole: authApi.AdminRole}, []es2.Doc{task}); err != nil {
 					s.logger.Error("failed to send delete message to elastic",
 						zap.Uint("jobId", res.JobID),
-						zap.String("connection_id", res.DescribeJob.SourceID),
+						zap.String("integration_id", res.DescribeJob.IntegrationID),
 						zap.String("resource_type", res.DescribeJob.ResourceType),
 						zap.Error(err))
 					if i > 10 {
@@ -344,7 +244,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 
 	s.logger.Info("scheduled deleting old resources",
 		zap.Uint("jobId", res.JobID),
-		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("connection_id", res.DescribeJob.IntegrationID),
 		zap.String("resource_type", res.DescribeJob.ResourceType),
 		zap.Int("deleted_count", deletedCount))
 
@@ -352,11 +252,70 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 	return int64(deletedCount), nil
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, connectionIds []string) {
+func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Context, integrationIDs []string) {
+	var searchAfter []any
+	totalDeletedCount := 0
+	deletedIntegrationIDs := make(map[string]bool)
+	for {
+		esResp, err := es.GetResourceIDsNotInIntegrationsFromES(ctx, s.es, integrationIDs, searchAfter, 1000)
+		if err != nil {
+			s.logger.Error("failed to get resource ids from es", zap.Error(err))
+			break
+		}
+		totalDeletedCount += len(esResp.Hits.Hits)
+		if len(esResp.Hits.Hits) == 0 {
+			break
+		}
+		deletedCount := 0
+		for _, hit := range esResp.Hits.Hits {
+			deletedIntegrationIDs[hit.Source.IntegrationID] = true
+			searchAfter = hit.Sort
+
+			resource := es2.Resource{
+				ResourceID:      hit.Source.ResourceID,
+				IntegrationID:   hit.Source.IntegrationID,
+				ResourceType:    strings.ToLower(hit.Source.ResourceType),
+				IntegrationType: hit.Source.IntegrationType,
+			}
+			keys, idx := resource.KeysAndIndex()
+			deletedCount += 1
+			key := es2.HashOf(keys...)
+			resource.EsID = key
+			resource.EsIndex = idx
+			err = s.es.Delete(key, idx)
+			if err != nil {
+				s.logger.Error("failed to delete resource from open-search", zap.Error(err))
+				return
+			}
+
+			lookupResource := es2.LookupResource{
+				ResourceID:      hit.Source.ResourceID,
+				IntegrationID:   hit.Source.IntegrationID,
+				ResourceType:    strings.ToLower(hit.Source.ResourceType),
+				IntegrationType: hit.Source.IntegrationType,
+			}
+			deletedCount += 1
+			keys, idx = lookupResource.KeysAndIndex()
+			key = es2.HashOf(keys...)
+			lookupResource.EsID = key
+			lookupResource.EsIndex = idx
+			err = s.es.Delete(key, idx)
+			if err != nil {
+				s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+				return
+			}
+		}
+	}
+	s.logger.Info("total deleted resource count", zap.Int("count", totalDeletedCount),
+		zap.Any("deleted integrations", deletedIntegrationIDs))
+	return
+}
+
+func (s *Scheduler) cleanupDescribeResourcesForIntegrations(ctx context.Context, connectionIds []string) {
 	for _, connectionId := range connectionIds {
 		var searchAfter []any
 		for {
-			esResp, err := es.GetResourceIDsForAccountFromES(ctx, s.es, connectionId, searchAfter, 1000)
+			esResp, err := es.GetResourceIDsForIntegrationFromES(ctx, s.es, connectionId, searchAfter, 1000)
 			if err != nil {
 				s.logger.Error("failed to get resource ids from es", zap.Error(err))
 				break
@@ -370,10 +329,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 				searchAfter = hit.Sort
 
 				resource := es2.Resource{
-					ID:           hit.Source.ResourceID,
-					SourceID:     hit.Source.SourceID,
-					ResourceType: strings.ToLower(hit.Source.ResourceType),
-					SourceType:   hit.Source.SourceType,
+					ResourceID:      hit.Source.ResourceID,
+					IntegrationID:   hit.Source.IntegrationID,
+					ResourceType:    strings.ToLower(hit.Source.ResourceType),
+					IntegrationType: hit.Source.IntegrationType,
 				}
 				keys, idx := resource.KeysAndIndex()
 				deletedCount += 1
@@ -387,10 +346,10 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 				}
 
 				lookupResource := es2.LookupResource{
-					ResourceID:   hit.Source.ResourceID,
-					SourceID:     hit.Source.SourceID,
-					ResourceType: strings.ToLower(hit.Source.ResourceType),
-					SourceType:   hit.Source.SourceType,
+					ResourceID:      hit.Source.ResourceID,
+					IntegrationID:   hit.Source.IntegrationID,
+					ResourceType:    strings.ToLower(hit.Source.ResourceType),
+					IntegrationType: hit.Source.IntegrationType,
 				}
 				deletedCount += 1
 				keys, idx = lookupResource.KeysAndIndex()
@@ -411,14 +370,14 @@ func (s *Scheduler) cleanupDescribeResourcesForConnections(ctx context.Context, 
 	return
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(connectionId, resourceType string) error {
+func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(IntegrationID, resourceType string) error {
 	root := make(map[string]any)
 	root["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": []any{
 				map[string]any{
 					"term": map[string]any{
-						"source_id": connectionId,
+						"integration_id": IntegrationID,
 					},
 				},
 				map[string]any{

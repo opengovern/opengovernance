@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
@@ -28,7 +29,7 @@ type FindingEvent struct {
 	BenchmarkID               string                `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string                `json:"controlID" example:"azure_cis_v140_7_5"`
 	ConnectionID              string                `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	Connector                 source.Type           `json:"connector" example:"Azure"`
+	IntegrationType           integration.Type      `json:"integrationType" example:"Azure"`
 	Severity                  types.FindingSeverity `json:"severity" example:"low"`
 	OpenGovernanceResourceID  string                `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID                string                `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
@@ -36,11 +37,11 @@ type FindingEvent struct {
 	ParentBenchmarkReferences []string              `json:"parentBenchmarkReferences"`
 
 	// Fake fields (won't be stored in ES)
-	ResourceTypeName       string `json:"resourceTypeName" example:"Virtual Machine"`
-	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ResourceName           string `json:"resourceName" example:"vm-1"`
-	ResourceLocation       string `json:"resourceLocation" example:"eastus"`
+	ResourceTypeName     string `json:"resourceTypeName" example:"Virtual Machine"`
+	ProviderConnectionID string `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationName      string `json:"integrationName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ResourceName         string `json:"resourceName" example:"vm-1"`
+	ResourceLocation     string `json:"resourceLocation" example:"eastus"`
 
 	SortKey []any `json:"sortKey"`
 }
@@ -61,7 +62,7 @@ func GetAPIFindingEventFromESFindingEvent(findingEvent types.FindingEvent) Findi
 		BenchmarkID:               findingEvent.BenchmarkID,
 		ControlID:                 findingEvent.ControlID,
 		ConnectionID:              findingEvent.ConnectionID,
-		Connector:                 findingEvent.Connector,
+		IntegrationType:           findingEvent.IntegrationType,
 		Severity:                  findingEvent.Severity,
 		OpenGovernanceResourceID:  findingEvent.OpenGovernanceResourceID,
 		ResourceID:                findingEvent.ResourceID,
