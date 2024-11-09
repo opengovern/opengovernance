@@ -3,6 +3,7 @@ package integration_type
 import (
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account"
+	awsConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription"
 	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory"
@@ -12,7 +13,7 @@ import (
 )
 
 const (
-	IntegrationTypeAWSAccount        = aws_account.IntegrationTypeAWSAccount
+	IntegrationTypeAWSAccount        = awsConfigs.IntegrationTypeAwsCloudAccount
 	IntegrationTypeAzureSubscription = azureConfigs.IntegrationTypeAzureSubscription
 	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
 )
@@ -24,7 +25,7 @@ var AllIntegrationTypes = []integration.Type{
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationCreator{
-	IntegrationTypeAWSAccount:        aws_account.CreateAWSAccountIntegration,
+	IntegrationTypeAWSAccount:        aws_account.CreateAwsCloudAccountIntegration,
 	IntegrationTypeAzureSubscription: azure_subscription.CreateAzureSubscriptionIntegration,
 	IntegrationTypeEntraIdDirectory:  entra_id_directory.CreateEntraidSubscriptionIntegration,
 }
