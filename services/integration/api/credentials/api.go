@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/og-util/pkg/vault"
 	"github.com/opengovern/opengovernance/services/integration/api/models"
 	"github.com/opengovern/opengovernance/services/integration/db"
 	"go.uber.org/zap"
@@ -11,15 +12,18 @@ import (
 )
 
 type API struct {
+	vault    vault.VaultSourceConfig
 	logger   *zap.Logger
 	database db.Database
 }
 
 func New(
+	vault vault.VaultSourceConfig,
 	database db.Database,
 	logger *zap.Logger,
 ) API {
 	return API{
+		vault:    vault,
 		database: database,
 		logger:   logger.Named("credentials"),
 	}
@@ -30,6 +34,7 @@ func (h API) Register(g *echo.Group) {
 	g.POST("/list", httpserver.AuthorizeHandler(h.CredentialsFilteredList, api.ViewerRole))
 	g.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.Delete, api.EditorRole))
 	g.GET("/:credentialId", httpserver.AuthorizeHandler(h.Get, api.ViewerRole))
+	g.PUT("/:credentialId", httpserver.AuthorizeHandler(h.UpdateCredential, api.ViewerRole))
 }
 
 // Delete godoc
@@ -86,6 +91,54 @@ func (h API) List(c echo.Context) error {
 	})
 }
 
+// UpdateCredential godoc
+//
+//	@Summary		List credentials
+//	@Description	List credentials
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			credentialId	path	string	true	"credentialId"
+//	@Param			request	body	models.UpdateCredentialRequest	true	"Request"
+//	@Success		200				{object}	models.ListResponse
+//	@Router			/integration/api/v1/credentials/{credentialId} [put]
+func (h API) UpdateCredential(c echo.Context) error {
+	credentialId := c.Param("credentialId")
+
+	var req models.UpdateCredentialRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	credential, err := h.database.GetCredential(credentialId)
+	if err != nil {
+		h.logger.Error("failed to get credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
+
+	mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
+	if err != nil {
+		h.logger.Error("failed to decrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt config")
+	}
+	for k, v := range req.Credentials {
+		mapData[k] = v
+	}
+	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
+	if err != nil {
+		h.logger.Error("failed to encrypt secret", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+	}
+	err = h.database.UpdateCredential(credentialId, secret)
+	if err != nil {
+		h.logger.Error("failed to update credential", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update credential")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 // CredentialsFilteredList godoc
 //
 //	@Summary		List credentials
@@ -93,6 +146,7 @@ func (h API) List(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
+//	@Param			request	body	models.ListCredentialsRequest	true	"Request"
 //	@Success		200				{object}	models.ListResponse
 //	@Router			/integration/api/v1/credentials/list [post]
 func (h API) CredentialsFilteredList(c echo.Context) error {

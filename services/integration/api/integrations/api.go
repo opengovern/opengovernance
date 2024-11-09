@@ -79,22 +79,76 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	jsonData, err := json.Marshal(req.Credentials)
-	if err != nil {
-		h.logger.Error("failed to marshal json data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+	var jsonData []byte
+	var err error
+	var integrationType integration.Type
+	var credentialIDStr string
+
+	if req.CredentialID != nil {
+		credentialIDStr = *req.CredentialID
+		credential, err := h.database.GetCredential(*req.CredentialID)
+		if err != nil {
+			h.logger.Error("failed to get credential", zap.Error(err))
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		integrationType = credential.IntegrationType
+
+		mapData, err := h.vault.Decrypt(c.Request().Context(), credential.Secret)
+		if err != nil {
+			h.logger.Error("failed to decrypt secret", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt config")
+		}
+
+		if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+		}
+
+		jsonData, err = json.Marshal(mapData)
+		if err != nil {
+			h.logger.Error("failed to marshal json data", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
+		}
+	} else {
+		integrationType = req.IntegrationType
+		jsonData, err = json.Marshal(req.Credentials)
+		if err != nil {
+			h.logger.Error("failed to marshal json data", zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
+		}
+		var mapData map[string]any
+		err = json.Unmarshal(jsonData, &mapData)
+		if err != nil {
+			h.logger.Error("failed to unmarshal json data", zap.Error(err))
+		}
+		secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
+		if err != nil {
+			h.logger.Error("failed to encrypt secret", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
+		}
+
+		credentialID := uuid.New()
+
+		metadata := make(map[string]string)
+		metadataJsonData, err := json.Marshal(metadata)
+		credentialMetadataJsonb := pgtype.JSONB{}
+		err = credentialMetadataJsonb.Set(metadataJsonData)
+		err = h.database.CreateCredential(&models2.Credential{
+			ID:              credentialID,
+			IntegrationType: req.IntegrationType,
+			Secret:          secret,
+			Metadata:        credentialMetadataJsonb,
+		})
+		if err != nil {
+			h.logger.Error("failed to create credential", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+		}
+		credentialIDStr = credentialID.String()
 	}
 
-	var mapData map[string]any
-	err = json.Unmarshal(jsonData, &mapData)
-	if err != nil {
-		h.logger.Error("failed to unmarshal json data", zap.Error(err))
-	}
-
-	if _, ok := integration_type.IntegrationTypes[req.IntegrationType]; !ok {
+	if _, ok := integration_type.IntegrationTypes[integrationType]; !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
 	}
-	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
+	createCredentialFunction := integration_type.IntegrationTypes[integrationType]
 	integration, err := createCredentialFunction()
 
 	if integration == nil {
@@ -102,29 +156,6 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 	}
 
 	integrations, err := integration.DiscoverIntegrations(jsonData)
-
-	secret, err := h.vault.Encrypt(c.Request().Context(), mapData)
-	if err != nil {
-		h.logger.Error("failed to encrypt secret", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
-	}
-
-	credentialID := uuid.New()
-
-	metadata := make(map[string]string)
-	metadataJsonData, err := json.Marshal(metadata)
-	credentialMetadataJsonb := pgtype.JSONB{}
-	err = credentialMetadataJsonb.Set(metadataJsonData)
-	err = h.database.CreateCredential(&models2.Credential{
-		ID:              credentialID,
-		IntegrationType: req.IntegrationType,
-		Secret:          secret,
-		Metadata:        credentialMetadataJsonb,
-	})
-	if err != nil {
-		h.logger.Error("failed to create credential", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
-	}
 
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
@@ -170,7 +201,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, models.DiscoverIntegrationResponse{
-		CredentialID: credentialID.String(),
+		CredentialID: credentialIDStr,
 		Integrations: integrationsAPI,
 	})
 }

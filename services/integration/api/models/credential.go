@@ -19,6 +19,10 @@ type ListCredentialsRequest struct {
 	IntegrationType []string `json:"integration_type"`
 }
 
+type UpdateCredentialRequest struct {
+	Credentials map[string]any `json:"credentials"`
+}
+
 type ListCredentialsResponse struct {
 	Credentials []Credential `json:"credentials"`
 	TotalCount  int          `json:"total_count"`
