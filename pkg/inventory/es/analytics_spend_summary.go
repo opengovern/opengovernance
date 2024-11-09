@@ -19,12 +19,12 @@ import (
 const EsFetchPageSize = 10000
 
 type ConnectionDailySpendHistoryByMetric struct {
-	Connector     integration.Type
-	MetricID      string
-	MetricName    string
-	TotalCost     float64
-	StartDateCost float64
-	EndDateCost   float64
+	IntegrationType integration.Type
+	MetricID        string
+	MetricName      string
+	TotalCost       float64
+	StartDateCost   float64
+	EndDateCost     float64
 }
 
 type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
@@ -111,7 +111,7 @@ func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengo
 	hits := make([]ConnectionDailySpendHistoryByMetric, 0, len(response.Aggregations.MetricIDGroup.Buckets))
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		hit := ConnectionDailySpendHistoryByMetric{
-			Connector: "",
+			IntegrationType: "",
 		}
 		for _, v := range metricBucket.HitSelect.Hits.Hits {
 			if hit.MetricID == "" {
@@ -125,8 +125,8 @@ func FetchConnectionDailySpendHistoryByMetric(ctx context.Context, client opengo
 					(len(connectors) > 0 && !includeConnectorMap[connectionResult.IntegrationType]) {
 					continue
 				}
-				if hit.Connector == "" {
-					hit.Connector = connectionResult.IntegrationType
+				if hit.IntegrationType == "" {
+					hit.IntegrationType = connectionResult.IntegrationType
 				}
 				hit.TotalCost += connectionResult.CostValue
 				if v.Source.Date == startTime.Format("2006-01-02") {
