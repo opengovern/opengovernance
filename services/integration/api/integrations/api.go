@@ -17,9 +17,11 @@ import (
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	models2 "github.com/opengovern/opengovernance/services/integration/models"
 	"go.uber.org/zap"
+	ioutil "io/ioutil"
 	"net/http"
 	"sort"
 	strconv "strconv"
+	strings "strings"
 	"time"
 )
 
@@ -75,8 +77,46 @@ func (h API) Register(g *echo.Group) {
 func (h API) DiscoverIntegrations(c echo.Context) error {
 	var req models.DiscoverIntegrationRequest
 
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	contentType := c.Request().Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		err := c.Request().ParseMultipartForm(10 << 20) // 10 MB max memory
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to parse multipart form")
+		}
+
+		formData := make(map[string]any)
+
+		for key, values := range c.Request().MultipartForm.Value {
+			if len(values) > 0 {
+				if key == "integrationType" || key == "integration_type" {
+					req.IntegrationType = integration_type.ParseType(values[0])
+				} else {
+					formData[key] = values[0]
+				}
+			}
+		}
+
+		for key, fileHeaders := range c.Request().MultipartForm.File {
+			if len(fileHeaders) > 0 {
+				file, err := fileHeaders[0].Open()
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to open uploaded file")
+				}
+				defer file.Close()
+
+				content, err := ioutil.ReadAll(file)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read uploaded file")
+				}
+
+				formData[key] = string(content)
+			}
+		}
+		req.Credentials = formData
+	} else {
+		if err := c.Bind(&req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		}
 	}
 
 	var jsonData []byte
