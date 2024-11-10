@@ -65,7 +65,7 @@ type BenchmarkRemediation struct {
 	Remediation string `json:"remediation"`
 }
 
-type AccountsFindingsSummary struct {
+type AccountsComplianceResultsSummary struct {
 	AccountName     string  `json:"accountName"`
 	AccountId       string  `json:"accountId"`
 	SecurityScore   float64 `json:"securityScore"`
@@ -86,8 +86,8 @@ type AccountsFindingsSummary struct {
 	LastCheckTime time.Time `json:"lastCheckTime"`
 }
 
-type GetAccountsFindingsSummaryResponse struct {
-	Accounts []AccountsFindingsSummary `json:"accounts"`
+type GetAccountsComplianceResultsSummaryResponse struct {
+	Accounts []AccountsComplianceResultsSummary `json:"accounts"`
 }
 
 type SortDirection string

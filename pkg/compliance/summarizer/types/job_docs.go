@@ -23,31 +23,31 @@ type JobDocs struct {
 	IntegrationCache        map[string]integrationApi.Integration      `json:"-"`
 }
 
-func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
-	finding types.Finding, resource *es.LookupResource,
+func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
+	complianceResult types.ComplianceResult, resource *es.LookupResource,
 ) {
-	if finding.Severity == "" {
-		finding.Severity = types.FindingSeverityNone
+	if complianceResult.Severity == "" {
+		complianceResult.Severity = types.ComplianceResultSeverityNone
 	}
-	if finding.ConformanceStatus == "" {
-		finding.ConformanceStatus = types.ConformanceStatusERROR
+	if complianceResult.ConformanceStatus == "" {
+		complianceResult.ConformanceStatus = types.ConformanceStatusERROR
 	}
-	if finding.ResourceType == "" {
-		finding.ResourceType = "-"
+	if complianceResult.ResourceType == "" {
+		complianceResult.ResourceType = "-"
 	}
 
-	if job.BenchmarkID == finding.BenchmarkID {
-		jd.BenchmarkSummary.Connections.addFinding(finding)
+	if job.BenchmarkID == complianceResult.BenchmarkID {
+		jd.BenchmarkSummary.Connections.addComplianceResult(complianceResult)
 	}
 
 	if resource == nil {
-		logger.Warn("no resource found ignoring resource collection population for this finding",
-			zap.String("opengovernanceResourceId", finding.OpenGovernanceResourceID),
-			zap.String("resourceId", finding.ResourceID),
-			zap.String("resourceType", finding.ResourceType),
-			zap.String("connectionId", finding.ConnectionID),
-			zap.String("benchmarkId", finding.BenchmarkID),
-			zap.String("controlId", finding.ControlID),
+		logger.Warn("no resource found ignoring resource collection population for this complianceResult",
+			zap.String("opengovernanceResourceId", complianceResult.OpenGovernanceResourceID),
+			zap.String("resourceId", complianceResult.ResourceID),
+			zap.String("resourceType", complianceResult.ResourceType),
+			zap.String("connectionId", complianceResult.ConnectionID),
+			zap.String("benchmarkId", complianceResult.BenchmarkID),
+			zap.String("controlId", complianceResult.ControlID),
 		)
 		return
 	}
@@ -65,7 +65,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			ResourceType:             resource.ResourceType,
 			ResourceName:             resource.ResourceName,
 			IntegrationType:          resource.IntegrationType,
-			Findings:                 nil,
+			ComplianceResults:        nil,
 			ResourceCollection:       nil,
 			ResourceCollectionMap:    make(map[string]bool),
 			JobId:                    job.ID,
@@ -82,7 +82,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 	if resourceFinding.ResourceType == "" {
 		resourceFinding.ResourceType = resource.ResourceType
 	}
-	resourceFinding.Findings = append(resourceFinding.Findings, finding)
+	resourceFinding.ComplianceResults = append(resourceFinding.ComplianceResults, complianceResult)
 
 	for rcId, rc := range jd.ResourceCollectionCache {
 		// check if resource is in this resource collection
@@ -91,7 +91,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			found := false
 
 			for _, connector := range filter.Connectors {
-				if strings.ToLower(connector) == strings.ToLower(finding.IntegrationType.String()) {
+				if strings.ToLower(connector) == strings.ToLower(complianceResult.IntegrationType.String()) {
 					found = true
 					break
 				}
@@ -102,7 +102,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 
 			found = false
 			for _, resourceType := range filter.ResourceTypes {
-				if strings.ToLower(resourceType) == strings.ToLower(finding.ResourceType) {
+				if strings.ToLower(resourceType) == strings.ToLower(complianceResult.ResourceType) {
 					found = true
 					break
 				}
@@ -114,7 +114,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 			found = false
 			for _, accountId := range filter.AccountIDs {
 				if integration, ok := jd.IntegrationCache[strings.ToLower(accountId)]; ok {
-					if strings.ToLower(integration.IntegrationID) == strings.ToLower(finding.ConnectionID) {
+					if strings.ToLower(integration.IntegrationID) == strings.ToLower(complianceResult.ConnectionID) {
 						found = true
 						break
 					}
@@ -157,14 +157,14 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 		}
 
 		resourceFinding.ResourceCollectionMap[rcId] = true
-		if job.BenchmarkID == finding.BenchmarkID {
+		if job.BenchmarkID == complianceResult.BenchmarkID {
 			benchmarkSummaryRc, ok := jd.BenchmarkSummary.ResourceCollections[rcId]
 			if !ok {
 				benchmarkSummaryRc = BenchmarkSummaryResult{
 					BenchmarkResult: ResultGroup{
 						Result: Result{
 							QueryResult:    map[types.ConformanceStatus]int{},
-							SeverityResult: map[types.FindingSeverity]int{},
+							SeverityResult: map[types.ComplianceResultSeverity]int{},
 							SecurityScore:  0,
 						},
 						ResourceTypes: map[string]Result{},
@@ -173,7 +173,7 @@ func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
 					Connections: map[string]ResultGroup{},
 				}
 			}
-			benchmarkSummaryRc.addFinding(finding)
+			benchmarkSummaryRc.addComplianceResult(complianceResult)
 			jd.BenchmarkSummary.ResourceCollections[rcId] = benchmarkSummaryRc
 		}
 	}

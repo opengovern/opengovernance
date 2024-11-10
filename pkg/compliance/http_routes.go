@@ -96,24 +96,24 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata := v1.Group("/metadata")
 	metadata.GET("/tag/compliance", httpserver2.AuthorizeHandler(h.ListComplianceTags, authApi.ViewerRole))
 
-	findings := v1.Group("/findings")
-	findings.POST("", httpserver2.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
-	findings.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
-	findings.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleFindingByFindingID, authApi.ViewerRole))
-	findings.GET("/events/:id", httpserver2.AuthorizeHandler(h.GetFindingEventsByFindingID, authApi.ViewerRole))
-	findings.GET("/count", httpserver2.AuthorizeHandler(h.CountFindings, authApi.ViewerRole))
-	findings.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingFilterValues, authApi.ViewerRole))
-	findings.GET("/kpi", httpserver2.AuthorizeHandler(h.GetFindingKPIs, authApi.ViewerRole))
-	findings.GET("/top/:field/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetFindingsFieldCountByControls, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
+	complianceResults := v1.Group("/compliance_result")
+	complianceResults.POST("", httpserver2.AuthorizeHandler(h.GetComplianceResults, authApi.ViewerRole))
+	complianceResults.POST("/resource", httpserver2.AuthorizeHandler(h.GetSingleResourceFinding, authApi.ViewerRole))
+	complianceResults.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleComplianceResultByComplianceResultID, authApi.ViewerRole))
+	complianceResults.GET("/events/:id", httpserver2.AuthorizeHandler(h.GetComplianceResultEventsByComplianceResultID, authApi.ViewerRole))
+	complianceResults.GET("/count", httpserver2.AuthorizeHandler(h.CountComplianceResults, authApi.ViewerRole))
+	complianceResults.POST("/filters", httpserver2.AuthorizeHandler(h.GetComplianceResultFilterValues, authApi.ViewerRole))
+	complianceResults.GET("/kpi", httpserver2.AuthorizeHandler(h.GetComplianceResultKPIs, authApi.ViewerRole))
+	complianceResults.GET("/top/:field/:count", httpserver2.AuthorizeHandler(h.GetTopFieldByComplianceResultCount, authApi.ViewerRole))
+	complianceResults.GET("/:benchmarkId/:field/count", httpserver2.AuthorizeHandler(h.GetComplianceResultsFieldCountByControls, authApi.ViewerRole))
+	complianceResults.GET("/:benchmarkId/accounts", httpserver2.AuthorizeHandler(h.GetAccountsComplianceResultsSummary, authApi.ViewerRole))
+	complianceResults.GET("/:benchmarkId/services", httpserver2.AuthorizeHandler(h.GetServicesComplianceResultsSummary, authApi.ViewerRole))
 
-	findingEvents := v1.Group("/finding_events")
-	findingEvents.POST("", httpserver2.AuthorizeHandler(h.GetFindingEvents, authApi.ViewerRole))
-	findingEvents.POST("/filters", httpserver2.AuthorizeHandler(h.GetFindingEventFilterValues, authApi.ViewerRole))
-	findingEvents.GET("/count", httpserver2.AuthorizeHandler(h.CountFindingEvents, authApi.ViewerRole))
-	findingEvents.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleFindingEvent, authApi.ViewerRole))
+	complianceResultEvents := v1.Group("/compliance_result_events")
+	complianceResultEvents.POST("", httpserver2.AuthorizeHandler(h.GetComplianceResultDriftEvents, authApi.ViewerRole))
+	complianceResultEvents.POST("/filters", httpserver2.AuthorizeHandler(h.GetComplianceResultDriftEventFilterValues, authApi.ViewerRole))
+	complianceResultEvents.GET("/count", httpserver2.AuthorizeHandler(h.CountComplianceResultDriftEvents, authApi.ViewerRole))
+	complianceResultEvents.GET("/single/:id", httpserver2.AuthorizeHandler(h.GetSingleComplianceResultDriftEvent, authApi.ViewerRole))
 
 	resourceFindings := v1.Group("/resource_findings")
 	resourceFindings.POST("", httpserver2.AuthorizeHandler(h.ListResourceFindings, authApi.ViewerRole))
@@ -143,7 +143,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
 	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
-	v3.POST("/findings", httpserver2.AuthorizeHandler(h.GetFindingsV2, authApi.ViewerRole))
+	v3.POST("/compliance_result", httpserver2.AuthorizeHandler(h.GetComplianceResultV2, authApi.ViewerRole))
 
 	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(h.PurgeSampleData, authApi.AdminRole))
 	v3.GET("/jobs/history", httpserver2.AuthorizeHandler(h.ListComplianceJobsHistory, authApi.ViewerRole))
@@ -213,22 +213,22 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(echoCtx echo.Context) ([]s
 
 var tracer = otel.Tracer("new_compliance")
 
-// GetFindings godoc
+// GetComplianceResults godoc
 //
-//	@Summary		Get findings
-//	@Description	Retrieving all compliance run findings with respect to filters.
+//	@Summary		Get compliacne results
+//	@Description	Retrieving all compliance run compliacne results with respect to filters.
 //	@Tags			compliance
 //	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.GetFindingsRequest	true	"Request Body"
-//	@Success		200		{object}	api.GetFindingsResponse
-//	@Router			/compliance/api/v1/findings [post]
-func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
+//	@Param			request	body		api.GetComplianceResultsRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetComplianceResultsResponse
+//	@Router			/compliance/api/v1/compliance_result [post]
+func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 	var err error
 	ctx := echoCtx.Request().Context()
 
-	var req api.GetFindingsRequest
+	var req api.GetComplianceResultsRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -242,7 +242,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	//	return err
 	//}
 
-	var response api.GetFindingsResponse
+	var response api.GetComplianceResultsResponse
 
 	if len(req.Filters.ConformanceStatus) == 0 {
 		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
@@ -254,7 +254,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	}
 
 	if len(req.Sort) == 0 {
-		req.Sort = []api.FindingsSort{
+		req.Sort = []api.ComplianceResultsSort{
 			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
@@ -294,12 +294,12 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		allSourcesMap[src.IntegrationID] = &src
 	}
 
-	res, totalCount, err := es.FindingsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.IntegrationType,
+	res, totalCount, err := es.ComplianceResultsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.IntegrationType,
 		req.Filters.ConnectionID, req.Filters.NotConnectionID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
 		req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, req.Filters.JobID)
 	if err != nil {
-		h.logger.Error("failed to get findings", zap.Error(err))
+		h.logger.Error("failed to get compliacne results", zap.Error(err))
 		return err
 	}
 
@@ -338,7 +338,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	}
 
 	for _, h := range res {
-		finding := api.GetAPIFindingFromESFinding(h.Source)
+		finding := api.GetAPIComplianceResultFromESComplianceResult(h.Source)
 
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
@@ -356,12 +356,12 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 
 		finding.SortKey = h.Sort
 
-		response.Findings = append(response.Findings, finding)
+		response.ComplianceResults = append(response.ComplianceResults, finding)
 	}
 	response.TotalCount = totalCount
 
-	opengovernanceResourceIds := make([]string, 0, len(response.Findings))
-	for _, finding := range response.Findings {
+	opengovernanceResourceIds := make([]string, 0, len(response.ComplianceResults))
+	for _, finding := range response.ComplianceResults {
 		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
 	}
 
@@ -371,7 +371,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 		return err
 	}
 
-	for i, finding := range response.Findings {
+	for i, finding := range response.ComplianceResults {
 		var lookupResource *es2.LookupResource
 		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
@@ -382,7 +382,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 			}
 		}
 		if lookupResource != nil {
-			response.Findings[i].ResourceName = lookupResource.ResourceName
+			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
@@ -395,7 +395,7 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetFindingEventsByFindingID godoc
+// GetComplianceResultEventsByComplianceResultID godoc
 //
 //	@Summary		Get finding events by finding ID
 //	@Description	Retrieving all compliance run finding events with respect to filters.
@@ -403,25 +403,25 @@ func (h *HttpHandler) GetFindings(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Finding ID"
-//	@Success		200	{object}	api.GetFindingEventsByFindingIDResponse
-//	@Router			/compliance/api/v1/findings/events/{id} [get]
-func (h *HttpHandler) GetFindingEventsByFindingID(echoCtx echo.Context) error {
+//	@Param			id	path		string	true	"ComplianceResult ID"
+//	@Success		200	{object}	api.GetComplianceResultDriftEventsByComplianceResultIDResponse
+//	@Router			/compliance/api/v1/compliance_result/events/{id} [get]
+func (h *HttpHandler) GetComplianceResultEventsByComplianceResultID(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	findingID := echoCtx.Param("id")
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx, h.logger, h.client, []string{findingID})
+	findingEvents, err := es.FetchComplianceResultDriftEventsByComplianceResultIDs(ctx, h.logger, h.client, []string{findingID})
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
 	}
 
-	response := api.GetFindingEventsByFindingIDResponse{
-		FindingEvents: make([]api.FindingEvent, 0, len(findingEvents)),
+	response := api.GetComplianceResultDriftEventsByComplianceResultIDResponse{
+		ComplianceResultDriftEvents: make([]api.ComplianceResultDriftEvent, 0, len(findingEvents)),
 	}
 	for _, findingEvent := range findingEvents {
-		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
+		response.ComplianceResultDriftEvents = append(response.ComplianceResultDriftEvents, api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(findingEvent))
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -437,7 +437,7 @@ func (h *HttpHandler) GetFindingEventsByFindingID(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body		api.GetSingleResourceFindingRequest	true	"Request Body"
 //	@Success		200		{object}	api.GetSingleResourceFindingResponse
-//	@Router			/compliance/api/v1/findings/resource [post]
+//	@Router			/compliance/api/v1/compliance_result/resource [post]
 func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -484,9 +484,9 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		Resource: *resource,
 	}
 
-	controlFindings, err := es.FetchFindingsPerControlForResourceId(ctx, h.logger, h.client, lookupResource.ResourceID)
+	controlComplianceResults, err := es.FetchComplianceResultsPerControlForResourceId(ctx, h.logger, h.client, lookupResource.ResourceID)
 	if err != nil {
-		h.logger.Error("failed to fetch control findings", zap.Error(err))
+		h.logger.Error("failed to fetch control complianceResults", zap.Error(err))
 		return err
 	}
 
@@ -535,45 +535,45 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	findingsIDs := make([]string, 0, len(controlFindings))
-	for _, controlFinding := range controlFindings {
-		findingsIDs = append(findingsIDs, controlFinding.EsID)
+	complianceResultIDs := make([]string, 0, len(controlComplianceResults))
+	for _, controlFinding := range controlComplianceResults {
+		complianceResultIDs = append(complianceResultIDs, controlFinding.EsID)
 		controlFinding := controlFinding
 		controlFinding.ResourceName = lookupResource.ResourceName
-		finding := api.GetAPIFindingFromESFinding(controlFinding)
+		complianceResult := api.GetAPIComplianceResultFromESComplianceResult(controlFinding)
 
-		for _, parentBenchmark := range finding.ParentBenchmarks {
+		for _, parentBenchmark := range complianceResult.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
-				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+				complianceResult.ParentBenchmarkNames = append(complianceResult.ParentBenchmarkNames, benchmark.Title)
 			}
 		}
 
-		if control, ok := controlsMap[finding.ControlID]; ok {
-			finding.ControlTitle = control.Title
+		if control, ok := controlsMap[complianceResult.ControlID]; ok {
+			complianceResult.ControlTitle = control.Title
 		}
 
-		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
-			finding.ResourceTypeName = rtMetadata.ResourceLabel
+		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(complianceResult.ResourceType)]; ok {
+			complianceResult.ResourceTypeName = rtMetadata.ResourceLabel
 		}
 
-		response.ControlFindings = append(response.ControlFindings, finding)
+		response.ControlComplianceResults = append(response.ControlComplianceResults, complianceResult)
 	}
 
-	findingEvents, err := es.FetchFindingEventsByFindingIDs(ctx, h.logger, h.client, findingsIDs)
+	findingEvents, err := es.FetchComplianceResultDriftEventsByComplianceResultIDs(ctx, h.logger, h.client, complianceResultIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch finding events", zap.Error(err))
 		return err
 	}
 
-	response.FindingEvents = make([]api.FindingEvent, 0, len(findingEvents))
+	response.ComplianceResultDriftEvents = make([]api.ComplianceResultDriftEvent, 0, len(findingEvents))
 	for _, findingEvent := range findingEvents {
-		response.FindingEvents = append(response.FindingEvents, api.GetAPIFindingEventFromESFindingEvent(findingEvent))
+		response.ComplianceResultDriftEvents = append(response.ComplianceResultDriftEvents, api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(findingEvent))
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetSingleFindingByFindingID
+// GetSingleComplianceResultByComplianceResultID
 //
 //	@Summary		Get single finding by finding ID
 //	@Description	Retrieving a single finding by finding ID
@@ -581,15 +581,15 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Finding ID"
-//	@Success		200	{object}	api.Finding
-//	@Router			/compliance/api/v1/findings/single/{id} [get]
-func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
+//	@Param			id	path		string	true	"ComplianceResult ID"
+//	@Success		200	{object}	api.ComplianceResult
+//	@Router			/compliance/api/v1/compliance_result/single/{id} [get]
+func (h *HttpHandler) GetSingleComplianceResultByComplianceResultID(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	findingID := echoCtx.Param("id")
 
-	finding, err := es.FetchFindingByID(ctx, h.logger, h.client, findingID)
+	finding, err := es.FetchComplianceResultByID(ctx, h.logger, h.client, findingID)
 	if err != nil {
 		h.logger.Error("failed to fetch finding by id", zap.Error(err))
 		return err
@@ -598,7 +598,7 @@ func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "finding not found")
 	}
 
-	apiFinding := api.GetAPIFindingFromESFinding(*finding)
+	apiFinding := api.GetAPIComplianceResultFromESComplianceResult(*finding)
 
 	integration, err := h.integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, finding.ConnectionID)
 	if err != nil {
@@ -646,19 +646,19 @@ func (h *HttpHandler) GetSingleFindingByFindingID(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, apiFinding)
 }
 
-// CountFindings godoc
+// CountComplianceResults godoc
 //
-//	@Summary		Get findings count
-//	@Description	Retrieving all compliance run findings count with respect to filters.
+//	@Summary		Get complianceResult count
+//	@Description	Retrieving all compliance run complianceResult count with respect to filters.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
 //	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to true"
-//	@Success		200					{object}	api.CountFindingsResponse
-//	@Router			/compliance/api/v1/findings/count [get]
-func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
+//	@Success		200					{object}	api.CountComplianceResultsResponse
+//	@Router			/compliance/api/v1/compliance_result/count [get]
+func (h *HttpHandler) CountComplianceResults(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
@@ -684,19 +684,19 @@ func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
 		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 	}
 
-	totalCount, err := es.FindingsCount(ctx, h.client, esConformanceStatuses, boolStateActives)
+	totalCount, err := es.ComplianceResultsCount(ctx, h.client, esConformanceStatuses, boolStateActives)
 	if err != nil {
 		return err
 	}
 
-	response := api.CountFindingsResponse{
+	response := api.CountComplianceResultsResponse{
 		Count: totalCount,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetFindingFilterValues godoc
+// GetComplianceResultFilterValues godoc
 //
 //	@Summary		Get possible values for finding filters
 //	@Description	Retrieving possible values for finding filters.
@@ -704,14 +704,14 @@ func (h *HttpHandler) CountFindings(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.FindingFilters	true	"Request Body"
-//	@Success		200		{object}	api.FindingFiltersWithMetadata
-//	@Router			/compliance/api/v1/findings/filters [post]
-func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
+//	@Param			request	body		api.ComplianceResultFilters	true	"Request Body"
+//	@Success		200		{object}	api.ComplianceResultFiltersWithMetadata
+//	@Router			/compliance/api/v1/compliance_result/filters [post]
+func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) error {
 	var err error
 	ctx := echoCtx.Request().Context()
 
-	var req api.FindingFilters
+	var req api.ComplianceResultFilters
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -805,7 +805,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.EvaluatedAt.To, 0))
 	}
 
-	possibleFilters, err := es.FindingsFiltersQuery(ctx, h.logger, h.client,
+	possibleFilters, err := es.ComplianceResultsFiltersQuery(ctx, h.logger, h.client,
 		req.ResourceID, req.IntegrationType, req.ConnectionID, req.NotConnectionID,
 		req.ResourceTypeID,
 		req.BenchmarkID, req.ControlID,
@@ -817,7 +817,7 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
 	}
-	response := api.FindingFiltersWithMetadata{}
+	response := api.ComplianceResultFiltersWithMetadata{}
 	for _, item := range possibleFilters.Aggregations.BenchmarkIDFilter.Buckets {
 		if benchmark, ok := benchmarkMetadataMap[item.Key]; ok {
 			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
@@ -947,34 +947,34 @@ func (h *HttpHandler) GetFindingFilterValues(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetFindingKPIs godoc
+// GetComplianceResultKPIs godoc
 //
 //	@Summary		Get finding KPIs
-//	@Description	Retrieving KPIs for findings.
+//	@Description	Retrieving KPIs for complianceResults.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	api.FindingKPIResponse
-//	@Router			/compliance/api/v1/findings/kpi [get]
-func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
+//	@Success		200	{object}	api.ComplianceResultKPIResponse
+//	@Router			/compliance/api/v1/compliance_result/kpi [get]
+func (h *HttpHandler) GetComplianceResultKPIs(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	kpiRes, err := es.FindingKPIQuery(ctx, h.logger, h.client)
+	kpiRes, err := es.ComplianceResultKPIQuery(ctx, h.logger, h.client)
 	if err != nil {
 		h.logger.Error("failed to get finding kpis", zap.Error(err))
 		return err
 	}
-	response := api.FindingKPIResponse{
-		FailedFindingsCount:   kpiRes.Hits.Total.Value,
-		FailedResourceCount:   kpiRes.Aggregations.ResourceCount.Value,
-		FailedControlCount:    kpiRes.Aggregations.ControlCount.Value,
-		FailedConnectionCount: kpiRes.Aggregations.ConnectionCount.Value,
+	response := api.ComplianceResultKPIResponse{
+		FailedComplianceResultsCount: kpiRes.Hits.Total.Value,
+		FailedResourceCount:          kpiRes.Aggregations.ResourceCount.Value,
+		FailedControlCount:           kpiRes.Aggregations.ControlCount.Value,
+		FailedConnectionCount:        kpiRes.Aggregations.ConnectionCount.Value,
 	}
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetTopFieldByFindingCount godoc
+// GetTopFieldByComplianceResultCount godoc
 //
 //	@Summary		Get top field by finding count
 //	@Description	Retrieving the top field by finding count.
@@ -982,24 +982,24 @@ func (h *HttpHandler) GetFindingKPIs(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
-//	@Param			count				path		int										true	"Count"
-//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by (inclusive)"
-//	@Param			notConnectionId		query		[]string								false	"Connection IDs to filter by (exclusive)"
-//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
-//	@Param			benchmarkId			query		[]string								false	"BenchmarkID"
-//	@Param			controlId			query		[]string								false	"ControlID"
-//	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
-//	@Param			stateActive			query		[]bool									false	"StateActive to filter by defaults to true"
-//	@Param			jobId				query		[]string								false	"Job ID to filter"
-//	@Param			startTime			query		int64									false	"Start time to filter by"
-//	@Param			endTime				query		int64									false	"End time to filter by"
-//	@Param			interval			query		string									false	"Time interval to filter by"
+//	@Param			field				path		string											true	"Field"	Enums(resourceType,connectionID,resourceID,service,controlID)
+//	@Param			count				path		int												true	"Count"
+//	@Param			connectionId		query		[]string										false	"Connection IDs to filter by (inclusive)"
+//	@Param			notConnectionId		query		[]string										false	"Connection IDs to filter by (exclusive)"
+//	@Param			connectionGroup		query		[]string										false	"Connection groups to filter by "
+//	@Param			connector			query		[]source.Type									false	"Connector type to filter by"
+//	@Param			benchmarkId			query		[]string										false	"BenchmarkID"
+//	@Param			controlId			query		[]string										false	"ControlID"
+//	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus							false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			stateActive			query		[]bool											false	"StateActive to filter by defaults to true"
+//	@Param			jobId				query		[]string										false	"Job ID to filter"
+//	@Param			startTime			query		int64											false	"Start time to filter by"
+//	@Param			endTime				query		int64											false	"End time to filter by"
+//	@Param			interval			query		string											false	"Time interval to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
-//	@Router			/compliance/api/v1/findings/top/{field}/{count} [get]
-func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
+//	@Router			/compliance/api/v1/compliance_result/top/{field}/{count} [get]
+func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	field := echoCtx.Param("field")
@@ -1025,7 +1025,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	benchmarkIDs := httpserver2.QueryArrayParam(echoCtx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(echoCtx, "controlId")
 	jobIDs := httpserver2.QueryArrayParam(echoCtx, "jobId")
-	severities := opengovernanceTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
+	severities := opengovernanceTypes.ParseComplianceResultSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
@@ -1078,14 +1078,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
+	topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount), startTime, endTime)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
+	topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, connectionIDs, notConnectionIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000, startTime, endTime)
 	if err != nil {
@@ -1254,7 +1254,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 			recordMap[item.Key] = record
 		}
 
-		controlsResult, err := es.FindingsConformanceStatusCountByControlPerConnection(
+		controlsResult, err := es.ComplianceResultsConformanceStatusCountByControlPerConnection(
 			ctx, h.logger, h.client, connectors, nil, resConnectionIDs, benchmarkIDs, controlIDs, severities, nil,
 			startTime, endTime)
 		if err != nil {
@@ -1432,25 +1432,25 @@ func (h *HttpHandler) GetTopFieldByFindingCount(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetFindingsFieldCountByControls godoc
+// GetComplianceResultsFieldCountByControls godoc
 //
-//	@Summary		Get findings field count by controls
-//	@Description	Retrieving the number of findings field count by controls.
+//	@Summary		Get complianceResults field count by controls
+//	@Description	Retrieving the number of complianceResults field count by controls.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string									true	"BenchmarkID"
-//	@Param			field				path		string									true	"Field"	Enums(resourceType,connectionID,resourceID,service)
-//	@Param			connectionId		query		[]string								false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string								false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string								false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type							false	"Connector type to filter by"
-//	@Param			severities			query		[]opengovernanceTypes.FindingSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus					false	"ConformanceStatus to filter by defaults to failed"
+//	@Param			benchmarkId			path		string											true	"BenchmarkID"
+//	@Param			field				path		string											true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			connectionId		query		[]string										false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string										false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string										false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type									false	"Connector type to filter by"
+//	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
+//	@Param			conformanceStatus	query		[]api.ConformanceStatus							false	"ConformanceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
-//	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
-func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) error {
+//	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/{field}/count [get]
+func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	benchmarkID := echoCtx.Param("benchmarkId")
@@ -1468,7 +1468,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) erro
 	}
 
 	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
-	severities := opengovernanceTypes.ParseFindingSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
+	severities := opengovernanceTypes.ParseComplianceResultSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
 	if len(conformanceStatuses) == 0 {
 		conformanceStatuses = []api.ConformanceStatus{
@@ -1496,7 +1496,7 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) erro
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByControl(ctx, h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
+	res, err := es.ComplianceResultsFieldCountByControl(ctx, h.logger, h.client, esField, connectors, nil, connectionIDs, benchmarkIDs, nil, severities,
 		esConformanceStatuses)
 	if err != nil {
 		return err
@@ -1516,10 +1516,10 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) erro
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetAccountsFindingsSummary godoc
+// GetAccountsComplianceResultsSummary godoc
 //
-//	@Summary		Get accounts findings summaries
-//	@Description	Retrieving list of accounts with their security score and severities findings count
+//	@Summary		Get accounts complianceResults summaries
+//	@Description	Retrieving list of accounts with their security score and severities complianceResults count
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -1527,9 +1527,9 @@ func (h *HttpHandler) GetFindingsFieldCountByControls(echoCtx echo.Context) erro
 //	@Param			benchmarkId		path		string		true	"BenchmarkID"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
-//	@Success		200				{object}	api.GetAccountsFindingsSummaryResponse
-//	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
-func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
+//	@Success		200				{object}	api.GetAccountsComplianceResultsSummaryResponse
+//	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/accounts [get]
+func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	benchmarkID := echoCtx.Param("benchmarkId")
@@ -1538,7 +1538,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	var response api.GetAccountsFindingsSummaryResponse
+	var response api.GetAccountsComplianceResultsSummaryResponse
 	res, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
@@ -1567,11 +1567,11 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 	for _, src := range srcs.Integrations {
 		summary, ok := res[src.IntegrationID]
 		if !ok {
-			summary.Result.SeverityResult = map[opengovernanceTypes.FindingSeverity]int{}
+			summary.Result.SeverityResult = map[opengovernanceTypes.ComplianceResultSeverity]int{}
 			summary.Result.QueryResult = map[opengovernanceTypes.ConformanceStatus]int{}
 		}
 
-		account := api.AccountsFindingsSummary{
+		account := api.AccountsComplianceResultsSummary{
 			AccountName:   src.Name,
 			AccountId:     src.ProviderID,
 			SecurityScore: summary.Result.SecurityScore,
@@ -1582,11 +1582,11 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 				Low      int `json:"low"`
 				None     int `json:"none"`
 			}{
-				Critical: summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityCritical],
-				High:     summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityHigh],
-				Medium:   summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityMedium],
-				Low:      summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityLow],
-				None:     summary.Result.SeverityResult[opengovernanceTypes.FindingSeverityNone],
+				Critical: summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityCritical],
+				High:     summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityHigh],
+				Medium:   summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityMedium],
+				Low:      summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityLow],
+				None:     summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityNone],
 			},
 			ConformanceStatusesCount: struct {
 				Passed int `json:"passed"`
@@ -1615,10 +1615,10 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetServicesFindingsSummary godoc
+// GetServicesComplianceResultsSummary godoc
 //
-//	@Summary		Get services findings summary
-//	@Description	Retrieving list of services with their security score and severities findings count
+//	@Summary		Get services complianceResults summary
+//	@Description	Retrieving list of services with their security score and severities complianceResults count
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -1626,9 +1626,9 @@ func (h *HttpHandler) GetAccountsFindingsSummary(echoCtx echo.Context) error {
 //	@Param			benchmarkId		path		string		true	"BenchmarkID"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
-//	@Success		200				{object}	api.GetServicesFindingsSummaryResponse
-//	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
-func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
+//	@Success		200				{object}	api.GetServicesComplianceResultsSummaryResponse
+//	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/services [get]
+func (h *HttpHandler) GetServicesComplianceResultsSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	benchmarkID := echoCtx.Param("benchmarkId")
@@ -1637,8 +1637,8 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	var response api.GetServicesFindingsSummaryResponse
-	resp, err := es.ResourceTypesFindingsSummary(ctx, h.logger, h.client, connectionIDs, benchmarkID)
+	var response api.GetServicesComplianceResultsSummaryResponse
+	resp, err := es.ResourceTypesComplianceResultsSummary(ctx, h.logger, h.client, connectionIDs, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -1677,7 +1677,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 				resourceTypeMetadata.ResourceLabel = "Unknown"
 			}
 		}
-		service := api.ServiceFindingsSummary{
+		service := api.ServiceComplianceResultsSummary{
 			ServiceName:   resourceTypeMetadata.ResourceType,
 			ServiceLabel:  resourceTypeMetadata.ResourceLabel,
 			SecurityScore: securityScore,
@@ -1688,11 +1688,11 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 				Low      int `json:"low"`
 				None     int `json:"none"`
 			}{
-				Critical: sevMap[string(opengovernanceTypes.FindingSeverityCritical)],
-				High:     sevMap[string(opengovernanceTypes.FindingSeverityHigh)],
-				Medium:   sevMap[string(opengovernanceTypes.FindingSeverityMedium)],
-				Low:      sevMap[string(opengovernanceTypes.FindingSeverityLow)],
-				None:     sevMap[string(opengovernanceTypes.FindingSeverityNone)],
+				Critical: sevMap[string(opengovernanceTypes.ComplianceResultSeverityCritical)],
+				High:     sevMap[string(opengovernanceTypes.ComplianceResultSeverityHigh)],
+				Medium:   sevMap[string(opengovernanceTypes.ComplianceResultSeverityMedium)],
+				Low:      sevMap[string(opengovernanceTypes.ComplianceResultSeverityLow)],
+				None:     sevMap[string(opengovernanceTypes.ComplianceResultSeverityNone)],
 			},
 			ConformanceStatusesCount: struct {
 				Passed int `json:"passed"`
@@ -1711,7 +1711,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetFindingEvents godoc
+// GetComplianceResultDriftEvents godoc
 //
 //	@Summary		Get finding events
 //	@Description	Retrieving all compliance finding events with respect to filters.
@@ -1719,14 +1719,14 @@ func (h *HttpHandler) GetServicesFindingsSummary(echoCtx echo.Context) error {
 //	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.GetFindingEventsRequest	true	"Request Body"
-//	@Success		200		{object}	api.GetFindingEventsResponse
-//	@Router			/compliance/api/v1/finding_events [post]
-func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
+//	@Param			request	body		api.GetComplianceResultDriftEventsRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetComplianceResultDriftEventsResponse
+//	@Router			/compliance/api/v1/compliance_result_events [post]
+func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error {
 	var err error
 	ctx := echoCtx.Request().Context()
 
-	var req api.GetFindingEventsRequest
+	var req api.GetComplianceResultDriftEventsRequest
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -1741,7 +1741,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		return err
 	}
 
-	var response api.GetFindingEventsResponse
+	var response api.GetComplianceResultDriftEventsResponse
 
 	if len(req.Filters.ConformanceStatus) == 0 {
 		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
@@ -1753,7 +1753,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 	}
 
 	if len(req.Sort) == 0 {
-		req.Sort = []api.FindingEventsSort{
+		req.Sort = []api.ComplianceResultDriftEventsSort{
 			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
@@ -1773,15 +1773,15 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		evaluatedAtTo = utils.GetPointer(time.Unix(*req.Filters.EvaluatedAt.To, 0))
 	}
 
-	res, totalCount, err := es.FindingEventsQuery(ctx, h.logger, h.client,
-		req.Filters.FindingID, req.Filters.OpenGovernanceResourceID,
+	res, totalCount, err := es.ComplianceResultDriftEventsQuery(ctx, h.logger, h.client,
+		req.Filters.ComplianceResultID, req.Filters.OpenGovernanceResourceID,
 		req.Filters.Connector, req.Filters.ConnectionID, req.Filters.NotConnectionID,
 		req.Filters.ResourceType,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
 		evaluatedAtFrom, evaluatedAtTo,
 		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
-		h.logger.Error("failed to get findings", zap.Error(err))
+		h.logger.Error("failed to get complianceResults", zap.Error(err))
 		return err
 	}
 
@@ -1810,7 +1810,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 
 	var opengovernanceResourceIds []string
 	for _, h := range res {
-		findingEvent := api.GetAPIFindingEventFromESFindingEvent(h.Source)
+		findingEvent := api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(h.Source)
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
 			findingEvent.ResourceType = rtMetadata.ResourceLabel
 		}
@@ -1820,7 +1820,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		}
 		findingEvent.SortKey = h.Sort
 		opengovernanceResourceIds = append(opengovernanceResourceIds, h.Source.OpenGovernanceResourceID)
-		response.FindingEvents = append(response.FindingEvents, findingEvent)
+		response.ComplianceResultDriftEvents = append(response.ComplianceResultDriftEvents, findingEvent)
 	}
 	response.TotalCount = totalCount
 
@@ -1830,7 +1830,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		return err
 	}
 
-	for i, findingEvent := range response.FindingEvents {
+	for i, findingEvent := range response.ComplianceResultDriftEvents {
 		var lookupResource *es2.LookupResource
 		potentialResources := lookupResourcesMap[findingEvent.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
@@ -1842,7 +1842,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 		}
 
 		if lookupResource != nil {
-			response.FindingEvents[i].ResourceName = lookupResource.ResourceName
+			response.ComplianceResultDriftEvents[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", findingEvent.OpenGovernanceResourceID),
@@ -1855,7 +1855,7 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// CountFindingEvents godoc
+// CountComplianceResultDriftEvents godoc
 //
 //	@Summary		Get finding events count
 //	@Description	Retrieving all compliance run finding events count with respect to filters.
@@ -1868,9 +1868,9 @@ func (h *HttpHandler) GetFindingEvents(echoCtx echo.Context) error {
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to all stateActives"
 //	@Param			startTime			query		int64					false	"Start time to filter by"
 //	@Param			endTime				query		int64					false	"End time to filter by"
-//	@Success		200					{object}	api.CountFindingEventsResponse
-//	@Router			/compliance/api/v1/finding_events/count [get]
-func (h *HttpHandler) CountFindingEvents(echoCtx echo.Context) error {
+//	@Success		200					{object}	api.CountComplianceResultDriftEventsResponse
+//	@Router			/compliance/api/v1/compliance_result_events/count [get]
+func (h *HttpHandler) CountComplianceResultDriftEvents(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
@@ -1912,12 +1912,12 @@ func (h *HttpHandler) CountFindingEvents(echoCtx echo.Context) error {
 		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
 	}
 
-	totalCount, err := es.FindingEventsCount(ctx, h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
+	totalCount, err := es.ComplianceResultDriftEventsCount(ctx, h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
-	response := api.CountFindingEventsResponse{
+	response := api.CountComplianceResultDriftEventsResponse{
 		Count: totalCount,
 	}
 
@@ -1951,7 +1951,7 @@ func (h *HttpHandler) ChangeBenchmarkSettings(echoCtx echo.Context) error {
 	return echoCtx.NoContent(http.StatusOK)
 }
 
-// GetFindingEventFilterValues godoc
+// GetComplianceResultDriftEventFilterValues godoc
 //
 //	@Summary		Get possible values for finding event filters
 //	@Description	Retrieving possible values for finding event filters.
@@ -1959,14 +1959,14 @@ func (h *HttpHandler) ChangeBenchmarkSettings(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.FindingEventFilters	true	"Request Body"
-//	@Success		200		{object}	api.FindingEventFiltersWithMetadata
-//	@Router			/compliance/api/v1/finding_events/filters [post]
-func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
+//	@Param			request	body		api.ComplianceResultDriftEventFilters	true	"Request Body"
+//	@Success		200		{object}	api.ComplianceResultDriftEventFiltersWithMetadata
+//	@Router			/compliance/api/v1/compliance_result_events/filters [post]
+func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Context) error {
 	var err error
 	ctx := echoCtx.Request().Context()
 
-	var req api.FindingEventFilters
+	var req api.ComplianceResultDriftEventFilters
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -2054,8 +2054,8 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		controlMetadataMap[item.ID] = &item
 	}
 
-	possibleFilters, err := es.FindingEventsFiltersQuery(ctx, h.logger, h.client,
-		req.FindingID, req.OpenGovernanceResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
+	possibleFilters, err := es.ComplianceResultDriftEventsFiltersQuery(ctx, h.logger, h.client,
+		req.ComplianceResultID, req.OpenGovernanceResourceID, req.Connector, req.ConnectionID, req.NotConnectionID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
@@ -2065,7 +2065,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
 	}
-	response := api.FindingFiltersWithMetadata{}
+	response := api.ComplianceResultFiltersWithMetadata{}
 	for _, item := range possibleFilters.Aggregations.BenchmarkIDFilter.Buckets {
 		if benchmark, ok := benchmarkMetadataMap[item.Key]; ok {
 			response.BenchmarkID = append(response.BenchmarkID, api.FilterWithMetadata{
@@ -2195,7 +2195,7 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// GetSingleFindingEvent
+// GetSingleComplianceResultDriftEvent
 //
 //	@Summary		Get single finding event
 //	@Description	Retrieving single finding event
@@ -2203,15 +2203,15 @@ func (h *HttpHandler) GetFindingEventFilterValues(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			findingID	path		string	true	"FindingID"
-//	@Success		200			{object}	api.FindingEvent
-//	@Router			/compliance/api/v1/finding_events/single/{id} [get]
-func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
+//	@Param			findingID	path		string	true	"ComplianceResultID"
+//	@Success		200			{object}	api.ComplianceResultDriftEvent
+//	@Router			/compliance/api/v1/compliance_result_events/single/{id} [get]
+func (h *HttpHandler) GetSingleComplianceResultDriftEvent(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
 	findingEventID := echoCtx.Param("id")
 
-	findingEvent, err := es.FetchFindingEventByID(ctx, h.logger, h.client, findingEventID)
+	findingEvent, err := es.FetchComplianceResultDriftEventByID(ctx, h.logger, h.client, findingEventID)
 	if err != nil {
 		h.logger.Error("failed to fetch findingEvent by id", zap.Error(err))
 		return err
@@ -2220,7 +2220,7 @@ func (h *HttpHandler) GetSingleFindingEvent(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "findingEvent not found")
 	}
 
-	apiFindingEvent := api.GetAPIFindingEventFromESFindingEvent(*findingEvent)
+	apiFindingEvent := api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(*findingEvent)
 
 	connection, err := h.integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, findingEvent.ConnectionID)
 	if err != nil {
@@ -2416,39 +2416,39 @@ func (h *HttpHandler) GetControlRemediation(echoCtx echo.Context) error {
 func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSeverityStatus, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatus {
 	if control == nil {
 		control = &db.Control{
-			Severity: opengovernanceTypes.FindingSeverityNone,
+			Severity: opengovernanceTypes.ComplianceResultSeverityNone,
 		}
 	}
 	switch control.Severity {
-	case opengovernanceTypes.FindingSeverityCritical:
+	case opengovernanceTypes.ComplianceResultSeverityCritical:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Critical.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Critical.PassedCount++
 		}
-	case opengovernanceTypes.FindingSeverityHigh:
+	case opengovernanceTypes.ComplianceResultSeverityHigh:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.High.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.High.PassedCount++
 		}
-	case opengovernanceTypes.FindingSeverityMedium:
+	case opengovernanceTypes.ComplianceResultSeverityMedium:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Medium.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Medium.PassedCount++
 		}
-	case opengovernanceTypes.FindingSeverityLow:
+	case opengovernanceTypes.ComplianceResultSeverityLow:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Low.TotalCount++
 		if controlResult.Passed {
 			controlSeverityResult.Total.PassedCount++
 			controlSeverityResult.Low.PassedCount++
 		}
-	case opengovernanceTypes.FindingSeverityNone, "":
+	case opengovernanceTypes.ComplianceResultSeverityNone, "":
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.None.TotalCount++
 		if controlResult.Passed {
@@ -2462,11 +2462,11 @@ func addToControlSeverityResult(controlSeverityResult api.BenchmarkControlsSever
 func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSeverityStatusV2, control *db.Control, controlResult types.ControlResult) api.BenchmarkControlsSeverityStatusV2 {
 	if control == nil {
 		control = &db.Control{
-			Severity: opengovernanceTypes.FindingSeverityNone,
+			Severity: opengovernanceTypes.ComplianceResultSeverityNone,
 		}
 	}
 	switch control.Severity {
-	case opengovernanceTypes.FindingSeverityCritical:
+	case opengovernanceTypes.ComplianceResultSeverityCritical:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Critical.TotalCount++
 		if controlResult.Passed {
@@ -2476,7 +2476,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Critical.FailedCount++
 		}
-	case opengovernanceTypes.FindingSeverityHigh:
+	case opengovernanceTypes.ComplianceResultSeverityHigh:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.High.TotalCount++
 		if controlResult.Passed {
@@ -2486,7 +2486,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.High.FailedCount++
 		}
-	case opengovernanceTypes.FindingSeverityMedium:
+	case opengovernanceTypes.ComplianceResultSeverityMedium:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Medium.TotalCount++
 		if controlResult.Passed {
@@ -2496,7 +2496,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Medium.FailedCount++
 		}
-	case opengovernanceTypes.FindingSeverityLow:
+	case opengovernanceTypes.ComplianceResultSeverityLow:
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.Low.TotalCount++
 		if controlResult.Passed {
@@ -2506,7 +2506,7 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 			controlSeverityResult.Total.FailedCount++
 			controlSeverityResult.Low.FailedCount++
 		}
-	case opengovernanceTypes.FindingSeverityNone, "":
+	case opengovernanceTypes.ComplianceResultSeverityNone, "":
 		controlSeverityResult.Total.TotalCount++
 		controlSeverityResult.None.TotalCount++
 		if controlResult.Passed {
@@ -2661,18 +2661,18 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
-			topFieldResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
+			topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 				nil, connectionIDs, nil, nil, []string{b.ID}, nil, nil,
 				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 			if err != nil {
-				h.logger.Error("failed to fetch findings top field", zap.Error(err))
+				h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil,
+			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors, nil,
 				connectionIDs, nil, nil, []string{b.ID}, nil, nil, opengovernanceTypes.GetConformanceStatuses(),
 				[]bool{true}, topAccountCount, nil, nil)
 			if err != nil {
-				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+				h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 				return err
 			}
 			totalCountMap := make(map[string]int)
@@ -2909,19 +2909,19 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
+		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
 			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
-			h.logger.Error("failed to fetch findings top field", zap.Error(err))
+			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
+		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", connectors,
 			nil, connectionIDs, nil, nil, []string{benchmark.ID}, nil, nil,
 			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
-			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 			return err
 		}
 		totalCountMap := make(map[string]int)
@@ -3414,8 +3414,8 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	}
 
 	var integrationIDs []string
-	if req.FindingFilters != nil {
-		integrationIDs = req.FindingFilters.ConnectionID
+	if req.ComplianceResultFilters != nil {
+		integrationIDs = req.ComplianceResultFilters.ConnectionID
 	}
 	if len(integrationIDs) == 0 {
 		// TODO (before push to main will mess up things)
@@ -3436,27 +3436,27 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 
 	var fRes map[string]map[string]int64
 
-	if req.FindingFilters != nil || req.FindingSummary {
+	if req.ComplianceResultFilters != nil || req.ComplianceResultSummary {
 		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
-		if req.FindingFilters != nil {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
-			for _, status := range req.FindingFilters.ConformanceStatus {
+		if req.ComplianceResultFilters != nil {
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ComplianceResultFilters.ConformanceStatus))
+			for _, status := range req.ComplianceResultFilters.ConformanceStatus {
 				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 			}
 
-			if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
-				lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+			if req.ComplianceResultFilters.LastEvent.From != nil && *req.ComplianceResultFilters.LastEvent.From != 0 {
+				lastEventFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.From, 0))
 			}
-			if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
-				lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+			if req.ComplianceResultFilters.LastEvent.To != nil && *req.ComplianceResultFilters.LastEvent.To != 0 {
+				lastEventTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.To, 0))
 			}
-			if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
-				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+			if req.ComplianceResultFilters.EvaluatedAt.From != nil && *req.ComplianceResultFilters.EvaluatedAt.From != 0 {
+				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.From, 0))
 			}
-			if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
-				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+			if req.ComplianceResultFilters.EvaluatedAt.To != nil && *req.ComplianceResultFilters.EvaluatedAt.To != 0 {
+				evaluatedAtTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.To, 0))
 			}
 		} else {
 			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
@@ -3466,25 +3466,25 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		for _, c := range controls {
 			controlIDs = append(controlIDs, c.ID)
 		}
-		if req.FindingFilters != nil {
+		if req.ComplianceResultFilters != nil {
 			benchmarksFilter := benchmarks
-			if len(req.FindingFilters.BenchmarkID) > 0 {
-				benchmarksFilter = req.FindingFilters.BenchmarkID
+			if len(req.ComplianceResultFilters.BenchmarkID) > 0 {
+				benchmarksFilter = req.ComplianceResultFilters.BenchmarkID
 			}
-			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
-				req.FindingFilters.IntegrationType, integrationIDs, req.FindingFilters.NotConnectionID,
-				req.FindingFilters.ResourceTypeID, benchmarksFilter, controlIDs, req.FindingFilters.Severity,
-				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, req.ComplianceResultFilters.ResourceID,
+				req.ComplianceResultFilters.IntegrationType, integrationIDs, req.ComplianceResultFilters.NotConnectionID,
+				req.ComplianceResultFilters.ResourceTypeID, benchmarksFilter, controlIDs, req.ComplianceResultFilters.Severity,
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esConformanceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
-			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, integrationIDs, nil,
+			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, nil, nil, integrationIDs, nil,
 				nil, benchmarks, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
 				evaluatedAtTo, nil, esConformanceStatuses)
 		}
 
-		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+		h.logger.Info("ComplianceResult Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("ComplianceResults Count", fRes))
 	}
 
 	var resultControls []api.ListControlsFilterResultControl
@@ -3494,7 +3494,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	uniqueListOfTables := make(map[string]bool)
 	uniqueTags := make(map[string]map[string]bool)
 	for _, control := range controls {
-		if req.FindingFilters != nil {
+		if req.ComplianceResultFilters != nil {
 			if count, ok := fRes[control.ID]; ok {
 				if len(count) == 0 {
 					continue
@@ -3530,24 +3530,24 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", control.ID), zap.Any("benchmarkID", benchmarks))
 		}
 
-		if req.FindingSummary {
-			var incidentCount, passingFindingsCount int64
+		if req.ComplianceResultSummary {
+			var incidentCount, passingComplianceResultCount int64
 			if c, ok := fRes[control.ID]["ok"]; ok {
-				passingFindingsCount = passingFindingsCount + c
+				passingComplianceResultCount = passingComplianceResultCount + c
 			}
 			if c, ok := fRes[control.ID]["alarm"]; ok {
 				incidentCount = incidentCount + c
 			}
 			if c, ok := fRes[control.ID]["info"]; ok {
-				passingFindingsCount = passingFindingsCount + c
+				passingComplianceResultCount = passingComplianceResultCount + c
 			}
 			if c, ok := fRes[control.ID]["skip"]; ok {
-				passingFindingsCount = passingFindingsCount + c
+				passingComplianceResultCount = passingComplianceResultCount + c
 			}
 			if c, ok := fRes[control.ID]["error"]; ok {
 				incidentCount = incidentCount + c
 			}
-			apiControl.FindingsSummary = struct {
+			apiControl.ComplianceResultsSummary = struct {
 				IncidentCount         int64    `json:"incident_count"`
 				NonIncidentCount      int64    `json:"non_incident_count"`
 				NonCompliantResources int      `json:"noncompliant_resources"`
@@ -3556,7 +3556,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				CostOptimization      *float64 `json:"cost_optimization"`
 			}{
 				IncidentCount:         incidentCount,
-				NonIncidentCount:      passingFindingsCount,
+				NonIncidentCount:      passingComplianceResultCount,
 				CompliantResources:    controlResult[control.ID].TotalResourcesCount - controlResult[control.ID].FailedResourcesCount,
 				NonCompliantResources: controlResult[control.ID].FailedResourcesCount,
 				ImpactedResources:     controlResult[control.ID].TotalResourcesCount,
@@ -3609,23 +3609,23 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			})
 		case "incidents":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.IncidentCount < resultControls[j].FindingsSummary.IncidentCount
+				return resultControls[i].ComplianceResultsSummary.IncidentCount < resultControls[j].ComplianceResultsSummary.IncidentCount
 			})
 		case "non-incidents", "nonincidents":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.NonIncidentCount < resultControls[j].FindingsSummary.NonIncidentCount
+				return resultControls[i].ComplianceResultsSummary.NonIncidentCount < resultControls[j].ComplianceResultsSummary.NonIncidentCount
 			})
 		case "noncompliant_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.NonCompliantResources < resultControls[j].FindingsSummary.NonCompliantResources
+				return resultControls[i].ComplianceResultsSummary.NonCompliantResources < resultControls[j].ComplianceResultsSummary.NonCompliantResources
 			})
 		case "compliant_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.CompliantResources < resultControls[j].FindingsSummary.CompliantResources
+				return resultControls[i].ComplianceResultsSummary.CompliantResources < resultControls[j].ComplianceResultsSummary.CompliantResources
 			})
 		case "impacted_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.ImpactedResources < resultControls[j].FindingsSummary.ImpactedResources
+				return resultControls[i].ComplianceResultsSummary.ImpactedResources < resultControls[j].ComplianceResultsSummary.ImpactedResources
 			})
 		default:
 			sort.Slice(resultControls, func(i, j int) bool {
@@ -3648,23 +3648,23 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			})
 		case "incidents":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.IncidentCount > resultControls[j].FindingsSummary.IncidentCount
+				return resultControls[i].ComplianceResultsSummary.IncidentCount > resultControls[j].ComplianceResultsSummary.IncidentCount
 			})
 		case "non-incidents", "nonincidents":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.NonIncidentCount > resultControls[j].FindingsSummary.NonIncidentCount
+				return resultControls[i].ComplianceResultsSummary.NonIncidentCount > resultControls[j].ComplianceResultsSummary.NonIncidentCount
 			})
 		case "noncompliant_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.NonCompliantResources > resultControls[j].FindingsSummary.NonCompliantResources
+				return resultControls[i].ComplianceResultsSummary.NonCompliantResources > resultControls[j].ComplianceResultsSummary.NonCompliantResources
 			})
 		case "compliant_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.CompliantResources > resultControls[j].FindingsSummary.CompliantResources
+				return resultControls[i].ComplianceResultsSummary.CompliantResources > resultControls[j].ComplianceResultsSummary.CompliantResources
 			})
 		case "impacted_resources":
 			sort.Slice(resultControls, func(i, j int) bool {
-				return resultControls[i].FindingsSummary.ImpactedResources > resultControls[j].FindingsSummary.ImpactedResources
+				return resultControls[i].ComplianceResultsSummary.ImpactedResources > resultControls[j].ComplianceResultsSummary.ImpactedResources
 			})
 		default:
 			sort.Slice(resultControls, func(i, j int) bool {
@@ -3745,27 +3745,27 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 
 	var fRes map[string]map[string]int64
 
-	if req.FindingFilters != nil {
+	if req.ComplianceResultFilters != nil {
 		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
-		if req.FindingFilters != nil {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.FindingFilters.ConformanceStatus))
-			for _, status := range req.FindingFilters.ConformanceStatus {
+		if req.ComplianceResultFilters != nil {
+			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ComplianceResultFilters.ConformanceStatus))
+			for _, status := range req.ComplianceResultFilters.ConformanceStatus {
 				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
 			}
 
-			if req.FindingFilters.LastEvent.From != nil && *req.FindingFilters.LastEvent.From != 0 {
-				lastEventFrom = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.From, 0))
+			if req.ComplianceResultFilters.LastEvent.From != nil && *req.ComplianceResultFilters.LastEvent.From != 0 {
+				lastEventFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.From, 0))
 			}
-			if req.FindingFilters.LastEvent.To != nil && *req.FindingFilters.LastEvent.To != 0 {
-				lastEventTo = utils.GetPointer(time.Unix(*req.FindingFilters.LastEvent.To, 0))
+			if req.ComplianceResultFilters.LastEvent.To != nil && *req.ComplianceResultFilters.LastEvent.To != 0 {
+				lastEventTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.To, 0))
 			}
-			if req.FindingFilters.EvaluatedAt.From != nil && *req.FindingFilters.EvaluatedAt.From != 0 {
-				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.From, 0))
+			if req.ComplianceResultFilters.EvaluatedAt.From != nil && *req.ComplianceResultFilters.EvaluatedAt.From != 0 {
+				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.From, 0))
 			}
-			if req.FindingFilters.EvaluatedAt.To != nil && *req.FindingFilters.EvaluatedAt.To != 0 {
-				evaluatedAtTo = utils.GetPointer(time.Unix(*req.FindingFilters.EvaluatedAt.To, 0))
+			if req.ComplianceResultFilters.EvaluatedAt.To != nil && *req.ComplianceResultFilters.EvaluatedAt.To != 0 {
+				evaluatedAtTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.To, 0))
 			}
 		} else {
 			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
@@ -3775,21 +3775,21 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		for _, c := range controls {
 			controlIDs = append(controlIDs, c.ID)
 		}
-		if req.FindingFilters != nil {
-			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, req.FindingFilters.ResourceID,
-				req.FindingFilters.IntegrationType, req.FindingFilters.ConnectionID, req.FindingFilters.NotConnectionID,
-				req.FindingFilters.ResourceTypeID, req.FindingFilters.BenchmarkID, controlIDs, req.FindingFilters.Severity,
-				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.FindingFilters.StateActive, esConformanceStatuses)
+		if req.ComplianceResultFilters != nil {
+			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, req.ComplianceResultFilters.ResourceID,
+				req.ComplianceResultFilters.IntegrationType, req.ComplianceResultFilters.ConnectionID, req.ComplianceResultFilters.NotConnectionID,
+				req.ComplianceResultFilters.ResourceTypeID, req.ComplianceResultFilters.BenchmarkID, controlIDs, req.ComplianceResultFilters.Severity,
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esConformanceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
-			fRes, err = es.FindingsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
+			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
 				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
 				evaluatedAtTo, nil, esConformanceStatuses)
 		}
 
-		h.logger.Info("Finding Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("Findings Count", fRes))
+		h.logger.Info("ComplianceResult Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("ComplianceResults Count", fRes))
 	}
 
 	var resultControls []api.ListControlsFilterResultControl
@@ -3799,7 +3799,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	uniqueListOfTables := make(map[string]bool)
 	uniqueTags := make(map[string]map[string]bool)
 	for _, control := range controls {
-		if req.FindingFilters != nil {
+		if req.ComplianceResultFilters != nil {
 			if count, ok := fRes[control.ID]; ok {
 				if len(count) == 0 {
 					continue
@@ -4963,16 +4963,16 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 	var items []api.GetBenchmarkListItem
 	for _, b := range benchmarks {
 		var incidentCount int
-		findings, err := h.getBenchmarkFindingSummary(ctx, b.ID, req.FindingFilters)
+		complianceResults, err := h.getBenchmarkComplianceResultSummary(ctx, b.ID, req.ComplianceResultFilters)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		if req.FindingFilters != nil {
-			if findings == nil || findings.Results == nil || len(findings.Results) == 0 {
+		if req.ComplianceResultFilters != nil {
+			if complianceResults == nil || complianceResults.Results == nil || len(complianceResults.Results) == 0 {
 				continue
 			}
 		}
-		if c, ok := findings.Results[types2.ConformanceStatusALARM]; ok {
+		if c, ok := complianceResults.Results[types2.ConformanceStatusALARM]; ok {
 			incidentCount = c
 		}
 
@@ -5114,9 +5114,9 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	))
 	span1.End()
 
-	findingsResult, err := h.getBenchmarkFindingSummary(ctx, benchmark.ID, req.FindingFilters)
+	complianceResultsResult, err := h.getBenchmarkComplianceResultSummary(ctx, benchmark.ID, req.ComplianceResultFilters)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "findings not found")
+		return echo.NewHTTPError(http.StatusNotFound, "complianceResults not found")
 	}
 
 	metadata := db.BenchmarkMetadata{}
@@ -5152,9 +5152,9 @@ func (h *HttpHandler) GetBenchmarkDetails(echoCtx echo.Context) error {
 	children, err := h.getChildBenchmarksWithDetails(ctx, benchmark.ID, req)
 
 	return echoCtx.JSON(http.StatusOK, api.GetBenchmarkDetailsResponse{
-		Metadata: benchmarkMetadata,
-		Findings: *findingsResult,
-		Children: children,
+		Metadata:          benchmarkMetadata,
+		ComplianceResults: *complianceResultsResult,
+		Children:          children,
 	})
 }
 
@@ -5745,23 +5745,23 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	})
 }
 
-// GetFindingsV2 godoc
+// GetComplianceResultV2 godoc
 //
-//	@Summary		Get findings
-//	@Description	Retrieving all compliance run findings with respect to filters.
+//	@Summary		Get complianceResults
+//	@Description	Retrieving all compliance run complianceResults with respect to filters.
 //	@Tags			compliance
 //	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.GetFindingsRequestV2	true	"Request Body"
-//	@Success		200		{object}	api.GetFindingsResponse
-//	@Router			/compliance/api/v3/findings [post]
-func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
+//	@Param			request	body		api.GetComplianceResultsRequestV2	true	"Request Body"
+//	@Success		200		{object}	api.GetComplianceResultsResponse
+//	@Router			/compliance/api/v3/compliance_result [post]
+func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
 	ctx := echoCtx.Request().Context()
 
-	var req api.GetFindingsRequestV2
+	var req api.GetComplianceResultsRequestV2
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -5810,7 +5810,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		return err
 	}
 
-	var response api.GetFindingsResponse
+	var response api.GetComplianceResultsResponse
 
 	var conformanceStatuses []api.ConformanceStatus
 	if len(req.Filters.IsCompliant) == 0 {
@@ -5831,7 +5831,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	}
 
 	if len(req.Sort) == 0 {
-		req.Sort = []api.FindingsSortV2{
+		req.Sort = []api.ComplianceResultsSortV2{
 			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
@@ -5858,13 +5858,13 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		notLastEventTo = utils.GetPointer(time.Unix(*req.Filters.NotLastUpdated.To, 0))
 	}
 
-	res, totalCount, err := es.FindingsQueryV2(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.NotResourceID, nil,
+	res, totalCount, err := es.ComplianceResultsQueryV2(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.NotResourceID, nil,
 		integrationIds, nil, req.Filters.ResourceType, req.Filters.NotResourceType, req.Filters.BenchmarkID,
 		req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
 		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo, notLastEventFrom, notLastEventTo,
 		evaluatedAtFrom, evaluatedAtTo, req.Filters.IsActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
-		h.logger.Error("failed to get findings", zap.Error(err))
+		h.logger.Error("failed to get complianceResults", zap.Error(err))
 		return err
 	}
 
@@ -5914,7 +5914,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 	}
 
 	for _, h := range res {
-		finding := api.GetAPIFindingFromESFinding(h.Source)
+		finding := api.GetAPIComplianceResultFromESComplianceResult(h.Source)
 
 		for _, parentBenchmark := range h.Source.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
@@ -5932,12 +5932,12 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 
 		finding.SortKey = h.Sort
 
-		response.Findings = append(response.Findings, finding)
+		response.ComplianceResults = append(response.ComplianceResults, finding)
 	}
 	response.TotalCount = totalCount
 
-	opengovernanceResourceIds := make([]string, 0, len(response.Findings))
-	for _, finding := range response.Findings {
+	opengovernanceResourceIds := make([]string, 0, len(response.ComplianceResults))
+	for _, finding := range response.ComplianceResults {
 		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
 	}
 
@@ -5947,7 +5947,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 		return err
 	}
 
-	for i, finding := range response.Findings {
+	for i, finding := range response.ComplianceResults {
 		var lookupResource *es2.LookupResource
 		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
 		for _, r := range potentialResources {
@@ -5958,7 +5958,7 @@ func (h *HttpHandler) GetFindingsV2(echoCtx echo.Context) error {
 			}
 		}
 		if lookupResource != nil {
-			response.Findings[i].ResourceName = lookupResource.ResourceName
+			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
 				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
@@ -6341,7 +6341,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		ComplianceScore:            complianceScore,
 		SeveritySummaryByControl:   controlSeverityResult,
 		SeveritySummaryByResource:  resourcesSeverityResult,
-		FindingsSummary:            csResult,
+		ComplianceResultsSummary:   csResult,
 		IssuesCount:                csResult.FailedCount,
 		TopControlsWithIssues:      topControls,
 		TopResourcesWithIssues:     topResources,
@@ -6472,19 +6472,19 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		topConnections := make([]api.TopFieldRecord, 0, req.ShowTop)
 		if req.ShowTop > 0 {
-			res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
+			res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
 				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
-				h.logger.Error("failed to fetch findings top field", zap.Error(err))
+				h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 				return err
 			}
 
-			topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
+			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
 				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
-				h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+				h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 				return err
 			}
 			totalCountMap := make(map[string]int)
@@ -6642,7 +6642,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			TopResourceTypesWithIssues: topResourceTypes,
 			TopResourcesWithIssues:     topResources,
 			TopControlsWithIssues:      topControls,
-			FindingsSummary:            csResult,
+			ComplianceResultsSummary:   csResult,
 			IssuesCount:                csResult.FailedCount,
 			LastEvaluatedAt:            utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:              lastJobStatus,
@@ -6750,19 +6750,19 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 	topConnections := make([]api.TopFieldRecord, 0, showTop)
 	if showTop > 0 {
-		res, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil,
+		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil, nil,
 			nil, nil, nil, []string{benchmarkId}, nil, nil, opengovernanceTypes.GetFailedConformanceStatuses(),
 			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
-			h.logger.Error("failed to fetch findings top field", zap.Error(err))
+			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 			return err
 		}
 
-		topFieldTotalResponse, err := es.FindingsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
+		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "connectionID", nil,
 			nil, nil, nil, nil, []string{benchmarkId}, nil, nil,
 			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
-			h.logger.Error("failed to fetch findings top field total", zap.Error(err))
+			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 			return err
 		}
 		totalCountMap := make(map[string]int)
@@ -6930,7 +6930,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		TopResourceTypesWithIssues: topResourceTypes,
 		TopResourcesWithIssues:     topResources,
 		TopControlsWithIssues:      topControls,
-		FindingsSummary:            csResult,
+		ComplianceResultsSummary:   csResult,
 		IssuesCount:                csResult.FailedCount,
 		LastEvaluatedAt:            utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 	}
@@ -7120,8 +7120,8 @@ func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
 	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
 		Indices: []string{"*,-.*"},
 	}); err != nil {
-		s.logger.Error("failed to delete findings indices", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete findings indices")
+		s.logger.Error("failed to delete complianceResults indices", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete complianceResults indices")
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -7380,7 +7380,7 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 			} else {
 				complianceScore = 0
 			}
-			item.FindingsSummary = csResult
+			item.ComplianceResultsSummary = csResult
 			item.ComplianceScore = complianceScore
 		}
 
@@ -7536,25 +7536,25 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 		if conformanceSummary.FailedCount == 0 && conformanceSummary.PassedCount == 0 {
 			apiDataPoint.IncidentsSeverityBreakdown = nil
 		} else {
-			apiDataPoint.FindingsSummary = &struct {
+			apiDataPoint.ComplianceResultsSummary = &struct {
 				Incidents    int `json:"incidents"`
 				NonIncidents int `json:"non_incidents"`
 			}{Incidents: conformanceSummary.FailedCount, NonIncidents: conformanceSummary.PassedCount}
 		}
 
-		if apiDataPoint.FindingsSummary != nil {
-			if maximumIncidents < apiDataPoint.FindingsSummary.Incidents {
-				maximumIncidents = apiDataPoint.FindingsSummary.Incidents
+		if apiDataPoint.ComplianceResultsSummary != nil {
+			if maximumIncidents < apiDataPoint.ComplianceResultsSummary.Incidents {
+				maximumIncidents = apiDataPoint.ComplianceResultsSummary.Incidents
 			}
-			if maximumNonIncidents < apiDataPoint.FindingsSummary.NonIncidents {
-				maximumNonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+			if maximumNonIncidents < apiDataPoint.ComplianceResultsSummary.NonIncidents {
+				maximumNonIncidents = apiDataPoint.ComplianceResultsSummary.NonIncidents
 			}
 
-			if minimumIncidents > apiDataPoint.FindingsSummary.Incidents {
-				minimumIncidents = apiDataPoint.FindingsSummary.Incidents
+			if minimumIncidents > apiDataPoint.ComplianceResultsSummary.Incidents {
+				minimumIncidents = apiDataPoint.ComplianceResultsSummary.Incidents
 			}
-			if minimumNonIncidents > apiDataPoint.FindingsSummary.NonIncidents {
-				minimumNonIncidents = apiDataPoint.FindingsSummary.NonIncidents
+			if minimumNonIncidents > apiDataPoint.ComplianceResultsSummary.NonIncidents {
+				minimumNonIncidents = apiDataPoint.ComplianceResultsSummary.NonIncidents
 			}
 		}
 		if apiDataPoint.IncidentsSeverityBreakdown != nil {
@@ -7601,7 +7601,7 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 	response := api.GetBenchmarkTrendV3Response{
 		Datapoints: datapoints,
 		MaximumValues: api.BenchmarkTrendDatapointV3{
-			FindingsSummary: &struct {
+			ComplianceResultsSummary: &struct {
 				Incidents    int `json:"incidents"`
 				NonIncidents int `json:"non_incidents"`
 			}{Incidents: maximumIncidents, NonIncidents: maximumNonIncidents},
@@ -7614,7 +7614,7 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 			},
 		},
 		MinimumValues: api.BenchmarkTrendDatapointV3{
-			FindingsSummary: &struct {
+			ComplianceResultsSummary: &struct {
 				Incidents    int `json:"incidents"`
 				NonIncidents int `json:"non_incidents"`
 			}{Incidents: minimumIncidents, NonIncidents: minimumNonIncidents},

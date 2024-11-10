@@ -28,7 +28,7 @@ type Caller struct {
 	TracksDriftEvents  bool
 	ParentBenchmarkIDs []string
 	ControlID          string
-	ControlSeverity    types.FindingSeverity
+	ControlSeverity    types.ComplianceResultSeverity
 }
 
 type ExecutionPlan struct {
@@ -78,9 +78,9 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 
 func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	//cutOff := time.Now().AddDate(0, -3, 0)
-	//w.logger.Info("Deleting old findings", zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
-	//if err := w.handleOldFindingsStateByTime(ctx, cutOff, false); err != nil {
-	//	w.logger.Error("failed to delete old findings", zap.Error(err), zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
+	//w.logger.Info("Deleting old complianceResults", zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
+	//if err := w.handleOldComplianceResultsStateByTime(ctx, cutOff, false); err != nil {
+	//	w.logger.Error("failed to delete old complianceResults", zap.Error(err), zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
 	//	return 0, err
 	//}
 
@@ -148,24 +148,24 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Int("res_count", len(res.Data)),
 		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
 	)
-	totalFindingCountMap := make(map[string]int)
+	totalComplianceResultCountMap := make(map[string]int)
 
-	findings, err := j.ExtractFindings(w.logger, w.benchmarkCache, j.ExecutionPlan.Callers[0], res, j.ExecutionPlan.Query)
+	complianceResults, err := j.ExtractComplianceResults(w.logger, w.benchmarkCache, j.ExecutionPlan.Callers[0], res, j.ExecutionPlan.Query)
 	if err != nil {
 		return 0, err
 	}
-	w.logger.Info("Extracted findings", zap.Int("count", len(findings)),
+	w.logger.Info("Extracted complianceResults", zap.Int("count", len(complianceResults)),
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmarkID", j.ExecutionPlan.Callers[0].RootBenchmark))
 
-	findingsMap := make(map[string]types.Finding)
-	for i, f := range findings {
+	complianceResultsMap := make(map[string]types.ComplianceResult)
+	for i, f := range complianceResults {
 		f := f
 		keys, idx := f.KeysAndIndex()
 		f.EsID = es.HashOf(keys...)
 		f.EsIndex = idx
-		findings[i] = f
-		findingsMap[f.EsID] = f
+		complianceResults[i] = f
+		complianceResultsMap[f.EsID] = f
 	}
 
 	filters := make([]opengovernance.BoolFilter, 0)
@@ -179,8 +179,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		filters = append(filters, opengovernance.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
 	}
 
-	newFindings := make([]types.Finding, 0, len(findings))
-	findingsEvents := make([]types.FindingEvent, 0, len(findings))
+	newComplianceResults := make([]types.ComplianceResult, 0, len(complianceResults))
+	complianceResultDriftEvents := make([]types.ComplianceResultDriftEvent, 0, len(complianceResults))
 
 	trackDrifts := false
 	for _, f := range j.ExecutionPlan.Callers {
@@ -191,8 +191,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 
 	filtersJSON, _ := json.Marshal(filters)
-	w.logger.Info("Old finding query", zap.Int("length", len(findings)), zap.String("filters", string(filtersJSON)))
-	paginator, err := es2.NewFindingPaginator(w.esClient, types.FindingsIndex, filters, nil, nil)
+	w.logger.Info("Old complianceResult query", zap.Int("length", len(complianceResults)), zap.String("filters", string(filtersJSON)))
+	paginator, err := es2.NewComplianceResultPaginator(w.esClient, types.ComplianceResultsIndex, filters, nil, nil)
 	if err != nil {
 		w.logger.Error("failed to create paginator", zap.Error(err))
 		return 0, err
@@ -204,17 +204,17 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 
 	for paginator.HasNext() {
-		oldFindings, err := paginator.NextPage(ctx)
+		oldComplianceResults, err := paginator.NextPage(ctx)
 		if err != nil {
 			w.logger.Error("failed to get next page", zap.Error(err))
 			closePaginator()
 			return 0, err
 		}
 
-		w.logger.Info("Old finding", zap.Int("length", len(oldFindings)))
-		for _, f := range oldFindings {
+		w.logger.Info("Old complianceResult", zap.Int("length", len(oldComplianceResults)))
+		for _, f := range oldComplianceResults {
 			f := f
-			newFinding, ok := findingsMap[f.EsID]
+			newComplianceResult, ok := complianceResultsMap[f.EsID]
 			if !ok {
 				if f.StateActive {
 					f := f
@@ -225,8 +225,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					f.EvaluatedAt = j.CreatedAt.UnixMilli()
 					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.OpenGovernanceResourceID)
 					f.Reason = reason
-					fs := types.FindingEvent{
-						FindingEsID:               f.EsID,
+					fs := types.ComplianceResultDriftEvent{
+						ComplianceResultEsID:      f.EsID,
 						ParentComplianceJobID:     j.ParentJobID,
 						ComplianceJobID:           j.ID,
 						PreviousConformanceStatus: f.ConformanceStatus,
@@ -250,101 +250,101 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					fs.EsID = es.HashOf(keys...)
 					fs.EsIndex = idx
 
-					w.logger.Info("Finding is not found in the query result setting it to inactive", zap.Any("finding", f), zap.Any("event", fs))
+					w.logger.Info("ComplianceResult is not found in the query result setting it to inactive", zap.Any("complianceResult", f), zap.Any("event", fs))
 					if trackDrifts {
-						findingsEvents = append(findingsEvents, fs)
+						complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
 					}
-					newFindings = append(newFindings, f)
+					newComplianceResults = append(newComplianceResults, f)
 				} else {
-					w.logger.Info("Old finding found, it's inactive. doing nothing", zap.Any("finding", f))
+					w.logger.Info("Old complianceResult found, it's inactive. doing nothing", zap.Any("complianceResult", f))
 				}
 				continue
 			}
 
-			if (f.ConformanceStatus != newFinding.ConformanceStatus) ||
-				(f.StateActive != newFinding.StateActive) {
-				newFinding.LastTransition = j.CreatedAt.UnixMilli()
-				newFinding.ComplianceJobID = j.ID
-				newFinding.ParentComplianceJobID = j.ParentJobID
-				fs := types.FindingEvent{
-					FindingEsID:               f.EsID,
+			if (f.ConformanceStatus != newComplianceResult.ConformanceStatus) ||
+				(f.StateActive != newComplianceResult.StateActive) {
+				newComplianceResult.LastTransition = j.CreatedAt.UnixMilli()
+				newComplianceResult.ComplianceJobID = j.ID
+				newComplianceResult.ParentComplianceJobID = j.ParentJobID
+				fs := types.ComplianceResultDriftEvent{
+					ComplianceResultEsID:      f.EsID,
 					ParentComplianceJobID:     j.ParentJobID,
 					ComplianceJobID:           j.ID,
 					PreviousConformanceStatus: f.ConformanceStatus,
-					ConformanceStatus:         newFinding.ConformanceStatus,
+					ConformanceStatus:         newComplianceResult.ConformanceStatus,
 					PreviousStateActive:       f.StateActive,
-					StateActive:               newFinding.StateActive,
+					StateActive:               newComplianceResult.StateActive,
 					EvaluatedAt:               j.CreatedAt.UnixMilli(),
-					Reason:                    newFinding.Reason,
+					Reason:                    newComplianceResult.Reason,
 
-					BenchmarkID:               newFinding.BenchmarkID,
-					ControlID:                 newFinding.ControlID,
-					ConnectionID:              newFinding.ConnectionID,
-					IntegrationType:           newFinding.IntegrationType,
-					Severity:                  newFinding.Severity,
-					OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
-					ResourceID:                newFinding.ResourceID,
-					ResourceType:              newFinding.ResourceType,
-					ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
+					BenchmarkID:               newComplianceResult.BenchmarkID,
+					ControlID:                 newComplianceResult.ControlID,
+					ConnectionID:              newComplianceResult.ConnectionID,
+					IntegrationType:           newComplianceResult.IntegrationType,
+					Severity:                  newComplianceResult.Severity,
+					OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
+					ResourceID:                newComplianceResult.ResourceID,
+					ResourceType:              newComplianceResult.ResourceType,
+					ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,
 				}
 				keys, idx := fs.KeysAndIndex()
 				fs.EsID = es.HashOf(keys...)
 				fs.EsIndex = idx
 
-				w.logger.Info("Finding status changed", zap.Any("old", f), zap.Any("new", newFinding), zap.Any("event", fs))
+				w.logger.Info("ComplianceResult status changed", zap.Any("old", f), zap.Any("new", newComplianceResult), zap.Any("event", fs))
 				if trackDrifts {
-					findingsEvents = append(findingsEvents, fs)
+					complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
 				}
 			} else {
-				w.logger.Info("Finding status didn't change. doing nothing", zap.Any("finding", newFinding))
-				newFinding.LastTransition = f.LastTransition
-				newFinding.ComplianceJobID = j.ID
-				newFinding.ParentComplianceJobID = j.ParentJobID
+				w.logger.Info("ComplianceResult status didn't change. doing nothing", zap.Any("complianceResult", newComplianceResult))
+				newComplianceResult.LastTransition = f.LastTransition
+				newComplianceResult.ComplianceJobID = j.ID
+				newComplianceResult.ParentComplianceJobID = j.ParentJobID
 			}
 
-			newFindings = append(newFindings, newFinding)
-			delete(findingsMap, f.EsID)
-			delete(findingsMap, newFinding.EsID)
+			newComplianceResults = append(newComplianceResults, newComplianceResult)
+			delete(complianceResultsMap, f.EsID)
+			delete(complianceResultsMap, newComplianceResult.EsID)
 		}
 	}
 	closePaginator()
-	for _, newFinding := range findingsMap {
-		newFinding.LastTransition = j.CreatedAt.UnixMilli()
-		newFinding.ComplianceJobID = j.ID
-		newFinding.ParentComplianceJobID = j.ParentJobID
-		fs := types.FindingEvent{
-			FindingEsID:           newFinding.EsID,
+	for _, newComplianceResult := range complianceResultsMap {
+		newComplianceResult.LastTransition = j.CreatedAt.UnixMilli()
+		newComplianceResult.ComplianceJobID = j.ID
+		newComplianceResult.ParentComplianceJobID = j.ParentJobID
+		fs := types.ComplianceResultDriftEvent{
+			ComplianceResultEsID:  newComplianceResult.EsID,
 			ParentComplianceJobID: j.ParentJobID,
 			ComplianceJobID:       j.ID,
-			ConformanceStatus:     newFinding.ConformanceStatus,
-			StateActive:           newFinding.StateActive,
+			ConformanceStatus:     newComplianceResult.ConformanceStatus,
+			StateActive:           newComplianceResult.StateActive,
 			EvaluatedAt:           j.CreatedAt.UnixMilli(),
-			Reason:                newFinding.Reason,
+			Reason:                newComplianceResult.Reason,
 
-			BenchmarkID:               newFinding.BenchmarkID,
-			ControlID:                 newFinding.ControlID,
-			ConnectionID:              newFinding.ConnectionID,
-			IntegrationType:           newFinding.IntegrationType,
-			Severity:                  newFinding.Severity,
-			OpenGovernanceResourceID:  newFinding.OpenGovernanceResourceID,
-			ResourceID:                newFinding.ResourceID,
-			ResourceType:              newFinding.ResourceType,
-			ParentBenchmarkReferences: newFinding.ParentBenchmarkReferences,
+			BenchmarkID:               newComplianceResult.BenchmarkID,
+			ControlID:                 newComplianceResult.ControlID,
+			ConnectionID:              newComplianceResult.ConnectionID,
+			IntegrationType:           newComplianceResult.IntegrationType,
+			Severity:                  newComplianceResult.Severity,
+			OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
+			ResourceID:                newComplianceResult.ResourceID,
+			ResourceType:              newComplianceResult.ResourceType,
+			ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,
 		}
 		keys, idx := fs.KeysAndIndex()
 		fs.EsID = es.HashOf(keys...)
 		fs.EsIndex = idx
 
-		w.logger.Info("New finding", zap.Any("finding", newFinding), zap.Any("event", fs))
+		w.logger.Info("New complianceResult", zap.Any("complianceResult", newComplianceResult), zap.Any("event", fs))
 		if trackDrifts {
-			findingsEvents = append(findingsEvents, fs)
+			complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
 		}
-		newFindings = append(newFindings, newFinding)
+		newComplianceResults = append(newComplianceResults, newComplianceResult)
 	}
 
 	var docs []es.Doc
 	if trackDrifts {
-		for _, fs := range findingsEvents {
+		for _, fs := range complianceResultDriftEvents {
 			keys, idx := fs.KeysAndIndex()
 			fs.EsID = es.HashOf(keys...)
 			fs.EsIndex = idx
@@ -352,7 +352,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			docs = append(docs, fs)
 		}
 	}
-	for _, f := range newFindings {
+	for _, f := range newComplianceResults {
 		keys, idx := f.KeysAndIndex()
 		f.EsID = es.HashOf(keys...)
 		f.EsIndex = idx
@@ -366,19 +366,19 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		mapKey.WriteString("$$")
 		mapKey.WriteString(parentBenchmarkID)
 	}
-	if _, ok := totalFindingCountMap[mapKey.String()]; !ok {
-		totalFindingCountMap[mapKey.String()] = len(newFindings)
+	if _, ok := totalComplianceResultCountMap[mapKey.String()]; !ok {
+		totalComplianceResultCountMap[mapKey.String()] = len(newComplianceResults)
 	}
 
 	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, docs); err != nil {
-		w.logger.Error("failed to send findings", zap.Error(err), zap.String("benchmark_id", j.ExecutionPlan.Callers[0].RootBenchmark),
+		w.logger.Error("failed to send complianceResults", zap.Error(err), zap.String("benchmark_id", j.ExecutionPlan.Callers[0].RootBenchmark),
 			zap.String("control_id", j.ExecutionPlan.Callers[0].ControlID))
 		return 0, err
 	}
 
-	totalFindingCount := 0
-	for _, v := range totalFindingCountMap {
-		totalFindingCount += v
+	totalComplianceResultCount := 0
+	for _, v := range totalComplianceResultCountMap {
+		totalComplianceResultCount += v
 	}
 
 	w.logger.Info("Finished job",
@@ -386,7 +386,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
 	)
-	return totalFindingCount, nil
+	return totalComplianceResultCount, nil
 }
 
 func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
@@ -440,14 +440,14 @@ func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[
 	return results, nil
 }
 
-type FindingsMultiGetResponse struct {
+type ComplianceResultsMultiGetResponse struct {
 	Docs []struct {
-		Source types.Finding `json:"_source"`
+		Source types.ComplianceResult `json:"_source"`
 	} `json:"docs"`
 }
 
-func (w *Worker) handleOldFindingsStateByTime(ctx context.Context, cutThreshold time.Time, doDelete bool) error {
-	idx := types.FindingsIndex
+func (w *Worker) handleOldComplianceResultsStateByTime(ctx context.Context, cutThreshold time.Time, doDelete bool) error {
+	idx := types.ComplianceResultsIndex
 	var filters []map[string]any
 	mustFilters := make([]map[string]any, 0, 4)
 	mustFilters = append(mustFilters, map[string]any{

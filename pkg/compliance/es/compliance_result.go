@@ -12,57 +12,57 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 )
 
-type FindingsQueryResponse struct {
+type ComplianceResultsQueryResponse struct {
 	Hits struct {
-		Total opengovernance.SearchTotal `json:"total"`
-		Hits  []FindingsQueryHit         `json:"hits"`
+		Total opengovernance.SearchTotal  `json:"total"`
+		Hits  []ComplianceResultsQueryHit `json:"hits"`
 	} `json:"hits"`
 	PitID string `json:"pit_id"`
 }
 
-type FindingsQueryHit struct {
-	ID      string        `json:"_id"`
-	Score   float64       `json:"_score"`
-	Index   string        `json:"_index"`
-	Type    string        `json:"_type"`
-	Version int64         `json:"_version,omitempty"`
-	Source  types.Finding `json:"_source"`
-	Sort    []any         `json:"sort"`
+type ComplianceResultsQueryHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  types.ComplianceResult `json:"_source"`
+	Sort    []any                  `json:"sort"`
 }
 
-type FindingPaginator struct {
+type ComplianceResultPaginator struct {
 	paginator *opengovernance.BaseESPaginator
 }
 
-func NewFindingPaginator(client opengovernance.Client, idx string, filters []opengovernance.BoolFilter, limit *int64, sort []map[string]any) (FindingPaginator, error) {
+func NewComplianceResultPaginator(client opengovernance.Client, idx string, filters []opengovernance.BoolFilter, limit *int64, sort []map[string]any) (ComplianceResultPaginator, error) {
 	paginator, err := opengovernance.NewPaginatorWithSort(client.ES(), idx, filters, limit, sort)
 	if err != nil {
-		return FindingPaginator{}, err
+		return ComplianceResultPaginator{}, err
 	}
 
-	p := FindingPaginator{
+	p := ComplianceResultPaginator{
 		paginator: paginator,
 	}
 
 	return p, nil
 }
 
-func (p FindingPaginator) HasNext() bool {
+func (p ComplianceResultPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
-func (p FindingPaginator) Close(ctx context.Context) error {
+func (p ComplianceResultPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
-	var response FindingsQueryResponse
+func (p ComplianceResultPaginator) NextPage(ctx context.Context) ([]types.ComplianceResult, error) {
+	var response ComplianceResultsQueryResponse
 	err := p.paginator.SearchWithLog(ctx, &response, true)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []types.Finding
+	var values []types.ComplianceResult
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}
@@ -77,7 +77,7 @@ func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error)
 	return values, nil
 }
 
-type FindingsCountQueryHit struct {
+type ComplianceResultsCountQueryHit struct {
 	Aggregations struct {
 		ControlIDCount struct {
 			Buckets []struct {
@@ -94,8 +94,8 @@ type FindingsCountQueryHit struct {
 	} `json:"aggregations"`
 }
 
-func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
-	idx := types.FindingsIndex
+func ComplianceResultsCountByControlID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string, connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus) (map[string]map[string]int64, error) {
+	idx := types.ComplianceResultsIndex
 	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("resourceID", resourceIDs))
@@ -196,9 +196,9 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client op
 		return nil, err
 	}
 
-	logger.Info("FindingsCountByControlID", zap.String("query", string(queryJson)), zap.String("index", idx))
+	logger.Info("ComplianceResultsCountByControlID", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-	var response FindingsCountQueryHit
+	var response ComplianceResultsCountQueryHit
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, err
@@ -215,12 +215,12 @@ func FindingsCountByControlID(ctx context.Context, logger *zap.Logger, client op
 	return controlIDCount, nil
 }
 
-func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string,
+func ComplianceResultsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, integrationTypes []string,
 	connectionID []string, notConnectionID []string, resourceTypes []string, benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
+	severity []types.ComplianceResultSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-	sorts []api.FindingsSort, pageSizeLimit int, searchAfter []any, jobIDs []string) ([]FindingsQueryHit, int64, error) {
-	idx := types.FindingsIndex
+	sorts []api.ComplianceResultsSort, pageSizeLimit int, searchAfter []any, jobIDs []string) ([]ComplianceResultsQueryHit, int64, error) {
+	idx := types.ComplianceResultsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
@@ -407,9 +407,9 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernanc
 		return nil, 0, err
 	}
 
-	logger.Info("FindingsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
+	logger.Info("ComplianceResultsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-	var response FindingsQueryResponse
+	var response ComplianceResultsQueryResponse
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, 0, err
@@ -418,16 +418,16 @@ func FindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernanc
 	return response.Hits.Hits, response.Hits.Total.Value, err
 }
 
-type FindingsCountResponse struct {
-	Hits  FindingsCountHits `json:"hits"`
-	PitID string            `json:"pit_id"`
+type ComplianceResultsCountResponse struct {
+	Hits  ComplianceResultsCountHits `json:"hits"`
+	PitID string                     `json:"pit_id"`
 }
-type FindingsCountHits struct {
+type ComplianceResultsCountHits struct {
 	Total opengovernance.SearchTotal `json:"total"`
 }
 
-func FindingsCount(ctx context.Context, client opengovernance.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
-	idx := types.FindingsIndex
+func ComplianceResultsCount(ctx context.Context, client opengovernance.Client, conformanceStatuses []types.ConformanceStatus, stateActive []bool) (int64, error) {
+	idx := types.ComplianceResultsIndex
 
 	filters := make([]map[string]any, 0)
 	if len(conformanceStatuses) > 0 {
@@ -465,7 +465,7 @@ func FindingsCount(ctx context.Context, client opengovernance.Client, conformanc
 		return 0, err
 	}
 
-	var response FindingsCountResponse
+	var response ComplianceResultsCountResponse
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return 0, err
@@ -491,7 +491,7 @@ func (a AggregationResult) GetBucketsKeys() []string {
 	return keys
 }
 
-type FindingFiltersAggregationResponse struct {
+type ComplianceResultFiltersAggregationResponse struct {
 	Aggregations struct {
 		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
@@ -512,14 +512,14 @@ type FindingFiltersAggregationResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+func ComplianceResultsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	resourceIDs []string, integrationTypes []string, connectionID []string, notConnectionID []string,
-	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
+	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	lastTransitionFrom *time.Time, lastTransitionTo *time.Time,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-) (*FindingFiltersAggregationResponse, error) {
-	idx := types.FindingsIndex
+) (*ComplianceResultFiltersAggregationResponse, error) {
+	idx := types.ComplianceResultsIndex
 
 	var filters []opengovernance.BoolFilter
 	if len(resourceIDs) > 0 {
@@ -617,23 +617,23 @@ func FindingsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengo
 
 	queryBytes, err := json.Marshal(root)
 	if err != nil {
-		logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+		logger.Error("ComplianceResultsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
 
-	logger.Info("FindingsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	logger.Info("ComplianceResultsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 
-	var resp FindingFiltersAggregationResponse
+	var resp ComplianceResultFiltersAggregationResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
-		logger.Error("FindingsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+		logger.Error("ComplianceResultsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
 
 	return &resp, nil
 }
 
-type FindingKPIResponse struct {
+type ComplianceResultKPIResponse struct {
 	Hits struct {
 		Total struct {
 			Value int64 `json:"value"`
@@ -652,7 +652,7 @@ type FindingKPIResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client) (*FindingKPIResponse, error) {
+func ComplianceResultKPIQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client) (*ComplianceResultKPIResponse, error) {
 	root := make(map[string]any)
 	root["size"] = 0
 	root["track_total_hits"] = true
@@ -692,17 +692,17 @@ func FindingKPIQuery(ctx context.Context, logger *zap.Logger, client opengoverna
 		return nil, err
 	}
 
-	logger.Info("FindingKPIQuery", zap.String("query", string(queryBytes)))
-	var resp FindingKPIResponse
-	err = client.SearchWithTrackTotalHits(ctx, types.FindingsIndex, string(queryBytes), nil, &resp, true)
+	logger.Info("ComplianceResultKPIQuery", zap.String("query", string(queryBytes)))
+	var resp ComplianceResultKPIResponse
+	err = client.SearchWithTrackTotalHits(ctx, types.ComplianceResultsIndex, string(queryBytes), nil, &resp, true)
 	if err != nil {
-		logger.Error("FindingKPIQuery", zap.Error(err), zap.String("query", string(queryBytes)))
+		logger.Error("ComplianceResultKPIQuery", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
 	return &resp, err
 }
 
-type FindingsTopFieldResponse struct {
+type ComplianceResultsTopFieldResponse struct {
 	Aggregations struct {
 		FieldFilter struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
@@ -718,13 +718,13 @@ type FindingsTopFieldResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+func ComplianceResultsTopFieldQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string, integrationTypes []string, resourceTypeID []string, connectionIDs []string, notConnectionIDs []string, jobIDs []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
-	size int, startTime, endTime *time.Time) (*FindingsTopFieldResponse, error) {
+	benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus, stateActives []bool,
+	size int, startTime, endTime *time.Time) (*ComplianceResultsTopFieldResponse, error) {
 	filters := make([]map[string]any, 0)
 
-	idx := types.FindingsIndex
+	idx := types.ComplianceResultsIndex
 	if len(benchmarkID) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{
@@ -880,13 +880,13 @@ func FindingsTopFieldQuery(ctx context.Context, logger *zap.Logger, client openg
 		return nil, err
 	}
 
-	logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp FindingsTopFieldResponse
+	logger.Info("ComplianceResultsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	var resp ComplianceResultsTopFieldResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
-type ResourceTypesFindingsSummaryResponse struct {
+type ResourceTypesComplianceResultsSummaryResponse struct {
 	Aggregations struct {
 		Summaries struct {
 			Buckets []struct {
@@ -909,8 +909,8 @@ type ResourceTypesFindingsSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func ResourceTypesFindingsSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
+func ResourceTypesComplianceResultsSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+	connectionIDs []string, benchmarkID string) (*ResourceTypesComplianceResultsSummaryResponse, error) {
 	var filters []map[string]any
 
 	filters = append(filters, map[string]any{
@@ -968,13 +968,13 @@ func ResourceTypesFindingsSummary(ctx context.Context, logger *zap.Logger, clien
 		return nil, err
 	}
 
-	logger.Info("ResourceTypesFindingsSummary", zap.String("query", string(queryBytes)))
-	var resp ResourceTypesFindingsSummaryResponse
-	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
+	logger.Info("ResourceTypesComplianceResultsSummary", zap.String("query", string(queryBytes)))
+	var resp ResourceTypesComplianceResultsSummaryResponse
+	err = client.Search(ctx, types.ComplianceResultsIndex, string(queryBytes), &resp)
 	return &resp, err
 }
 
-type FindingsFieldCountByControlResponse struct {
+type ComplianceResultsFieldCountByControlResponse struct {
 	Aggregations struct {
 		ControlCount struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
@@ -998,11 +998,11 @@ type FindingsFieldCountByControlResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+func ComplianceResultsFieldCountByControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string, integrationTypes []string, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (*FindingsFieldCountByControlResponse, error) {
+	severity []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus) (*ComplianceResultsFieldCountByControlResponse, error) {
 	terms := make(map[string]any)
-	idx := types.FindingsIndex
+	idx := types.ComplianceResultsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
@@ -1082,13 +1082,13 @@ func FindingsFieldCountByControl(ctx context.Context, logger *zap.Logger, client
 		return nil, err
 	}
 
-	logger.Info("FindingsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp FindingsFieldCountByControlResponse
+	logger.Info("ComplianceResultsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	var resp ComplianceResultsFieldCountByControlResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
-type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
+type ComplianceResultsConformanceStatusCountByControlPerConnectionResponse struct {
 	Aggregations struct {
 		ConnectionGroup struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
@@ -1115,11 +1115,11 @@ type FindingsConformanceStatusCountByControlPerConnectionResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+func ComplianceResultsConformanceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	integrationTypes []string, resourceTypeID []string, connectionIDs []string, benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (*FindingsConformanceStatusCountByControlPerConnectionResponse, error) {
+	severity []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (*ComplianceResultsConformanceStatusCountByControlPerConnectionResponse, error) {
 	terms := make(map[string]any)
-	idx := types.FindingsIndex
+	idx := types.ComplianceResultsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
@@ -1231,17 +1231,17 @@ func FindingsConformanceStatusCountByControlPerConnection(ctx context.Context, l
 		return nil, err
 	}
 
-	logger.Info("FindingsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp FindingsConformanceStatusCountByControlPerConnectionResponse
+	logger.Info("ComplianceResultsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	var resp ComplianceResultsConformanceStatusCountByControlPerConnectionResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
-		logger.Error("FindingsFieldCountByControl", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+		logger.Error("ComplianceResultsFieldCountByControl", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
 	return &resp, nil
 }
 
-type FindingCountPerOpenGovernanceResourceIdsResponse struct {
+type ComplianceResultCountPerOpenGovernanceResourceIdsResponse struct {
 	Aggregations struct {
 		OpenGovernanceResourceIDGroup struct {
 			Buckets []struct {
@@ -1252,8 +1252,8 @@ type FindingCountPerOpenGovernanceResourceIdsResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingCountPerOpenGovernanceResourceIds(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceIds []string,
-	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus,
+func FetchComplianceResultCountPerOpenGovernanceResourceIds(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceIds []string,
+	severities []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus,
 ) (map[string]int, error) {
 	var filters []map[string]any
 
@@ -1308,9 +1308,9 @@ func FetchFindingCountPerOpenGovernanceResourceIds(ctx context.Context, logger *
 		return nil, err
 	}
 
-	logger.Info("FetchFindingCountPerOpenGovernanceResourceIds", zap.String("query", string(queryBytes)))
-	var resp FindingCountPerOpenGovernanceResourceIdsResponse
-	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
+	logger.Info("FetchComplianceResultCountPerOpenGovernanceResourceIds", zap.String("query", string(queryBytes)))
+	var resp ComplianceResultCountPerOpenGovernanceResourceIdsResponse
+	err = client.Search(ctx, types.ComplianceResultsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1323,7 +1323,7 @@ func FetchFindingCountPerOpenGovernanceResourceIds(ctx context.Context, logger *
 	return result, nil
 }
 
-type FindingsPerControlForResourceIdResponse struct {
+type ComplianceResultsPerControlForResourceIdResponse struct {
 	Aggregations struct {
 		ControlIDGroup struct {
 			Buckets []struct {
@@ -1331,7 +1331,7 @@ type FindingsPerControlForResourceIdResponse struct {
 				HitSelect struct {
 					Hits struct {
 						Hits []struct {
-							Source types.Finding `json:"_source"`
+							Source types.ComplianceResult `json:"_source"`
 						} `json:"hits"`
 					} `json:"hits"`
 				} `json:"hit_select"`
@@ -1340,7 +1340,7 @@ type FindingsPerControlForResourceIdResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceId string) ([]types.Finding, error) {
+func FetchComplianceResultsPerControlForResourceId(ctx context.Context, logger *zap.Logger, client opengovernance.Client, opengovernanceResourceId string) ([]types.ComplianceResult, error) {
 	request := map[string]any{
 		"aggs": map[string]any{
 			"control_id_group": map[string]any{
@@ -1377,28 +1377,28 @@ func FetchFindingsPerControlForResourceId(ctx context.Context, logger *zap.Logge
 		return nil, err
 	}
 
-	logger.Info("FetchFindingsPerControlForResourceId", zap.String("query", string(queryBytes)))
-	var resp FindingsPerControlForResourceIdResponse
-	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
+	logger.Info("FetchComplianceResultsPerControlForResourceId", zap.String("query", string(queryBytes)))
+	var resp ComplianceResultsPerControlForResourceIdResponse
+	err = client.Search(ctx, types.ComplianceResultsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	var findings []types.Finding
+	var complianceResults []types.ComplianceResult
 	for _, bucket := range resp.Aggregations.ControlIDGroup.Buckets {
 		for _, hit := range bucket.HitSelect.Hits.Hits {
-			findings = append(findings, hit.Source)
+			complianceResults = append(complianceResults, hit.Source)
 		}
 	}
 
-	return findings, nil
+	return complianceResults, nil
 }
 
-func FetchFindingByID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, findingID string) (*types.Finding, error) {
+func FetchComplianceResultByID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, complianceResultId string) (*types.ComplianceResult, error) {
 	query := map[string]any{
 		"query": map[string]any{
 			"term": map[string]any{
-				"es_id": findingID,
+				"es_id": complianceResultId,
 			},
 		},
 		"size": 1,
@@ -1409,9 +1409,9 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client opengovern
 		return nil, err
 	}
 
-	logger.Info("FetchFindingByID", zap.String("query", string(queryBytes)))
-	var resp FindingsQueryResponse
-	err = client.Search(ctx, types.FindingsIndex, string(queryBytes), &resp)
+	logger.Info("FetchComplianceResultByID", zap.String("query", string(queryBytes)))
+	var resp ComplianceResultsQueryResponse
+	err = client.Search(ctx, types.ComplianceResultsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1423,13 +1423,13 @@ func FetchFindingByID(ctx context.Context, logger *zap.Logger, client opengovern
 	return &resp.Hits.Hits[0].Source, nil
 }
 
-func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, notResourceIDs []string,
+func ComplianceResultsQueryV2(ctx context.Context, logger *zap.Logger, client opengovernance.Client, resourceIDs []string, notResourceIDs []string,
 	integrationTypes []string, connectionID []string, notConnectionID []string, resourceTypes []string, notResourceTypes []string,
-	benchmarkID []string, notBenchmarkID []string, controlID []string, notControlID []string, severity []types.FindingSeverity,
-	notSeverity []types.FindingSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, notLastTransitionFrom *time.Time,
+	benchmarkID []string, notBenchmarkID []string, controlID []string, notControlID []string, severity []types.ComplianceResultSeverity,
+	notSeverity []types.ComplianceResultSeverity, lastTransitionFrom *time.Time, lastTransitionTo *time.Time, notLastTransitionFrom *time.Time,
 	notLastTransitionTo *time.Time, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, stateActive []bool,
-	conformanceStatuses []types.ConformanceStatus, sorts []api.FindingsSortV2, pageSizeLimit int, searchAfter []any) ([]FindingsQueryHit, int64, error) {
-	idx := types.FindingsIndex
+	conformanceStatuses []types.ConformanceStatus, sorts []api.ComplianceResultsSortV2, pageSizeLimit int, searchAfter []any) ([]ComplianceResultsQueryHit, int64, error) {
+	idx := types.ComplianceResultsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
@@ -1629,9 +1629,9 @@ func FindingsQueryV2(ctx context.Context, logger *zap.Logger, client opengoverna
 		return nil, 0, err
 	}
 
-	logger.Info("FindingsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
+	logger.Info("ComplianceResultsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-	var response FindingsQueryResponse
+	var response ComplianceResultsQueryResponse
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, 0, err

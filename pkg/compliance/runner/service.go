@@ -214,11 +214,11 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	}
 
 	result := JobResult{
-		Job:               job,
-		StartedAt:         time.Now(),
-		Status:            ComplianceRunnerInProgress,
-		Error:             "",
-		TotalFindingCount: nil,
+		Job:                        job,
+		StartedAt:                  time.Now(),
+		Status:                     ComplianceRunnerInProgress,
+		Error:                      "",
+		TotalComplianceResultCount: nil,
 	}
 
 	defer func() {
@@ -252,12 +252,12 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 
 	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
 
-	totalFindingCount, err := w.RunJob(ctx, job)
+	totalComplianceResultCount, err := w.RunJob(ctx, job)
 	if err != nil {
 		return true, false, err
 	}
 
-	result.TotalFindingCount = &totalFindingCount
+	result.TotalComplianceResultCount = &totalComplianceResultCount
 	return true, false, nil
 }
 

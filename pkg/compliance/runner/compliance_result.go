@@ -33,8 +33,8 @@ func GetResourceTypeFromTableName(tableName string, queryIntegrationType []integ
 	return integration.GetResourceTypeFromTableName(tableName), integrationType, nil
 }
 
-func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Benchmark, caller Caller, res *steampipe.Result, query api.Query) ([]types.Finding, error) {
-	var findings []types.Finding
+func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]api.Benchmark, caller Caller, res *steampipe.Result, query api.Query) ([]types.ComplianceResult, error) {
+	var complianceResults []types.ComplianceResult
 	var integrationType integration.Type
 	var err error
 	queryResourceType := ""
@@ -138,7 +138,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 		}
 		severity := caller.ControlSeverity
 		if severity == "" {
-			severity = types.FindingSeverityNone
+			severity = types.ComplianceResultSeverityNone
 		}
 
 		if (connectionId == "" || connectionId == "null") && w.ExecutionPlan.ConnectionID != nil {
@@ -154,7 +154,7 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			continue
 		}
 
-		findings = append(findings, types.Finding{
+		complianceResults = append(complianceResults, types.ComplianceResult{
 			BenchmarkID:               caller.RootBenchmark,
 			ControlID:                 caller.ControlID,
 			ConnectionID:              connectionId,
@@ -178,5 +178,5 @@ func (w *Job) ExtractFindings(_ *zap.Logger, benchmarkCache map[string]api.Bench
 			LastTransition:            w.CreatedAt.UnixMilli(),
 		})
 	}
-	return findings, nil
+	return complianceResults, nil
 }

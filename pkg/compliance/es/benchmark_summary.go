@@ -18,7 +18,7 @@ import (
 type BenchmarkTrendDatapoint struct {
 	DateEpoch      int64
 	QueryResult    map[types.ConformanceStatus]int
-	SeverityResult map[types.FindingSeverity]int
+	SeverityResult map[types.ComplianceResultSeverity]int
 	Controls       map[string]types2.ControlResult
 }
 
@@ -179,7 +179,7 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
 				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 
@@ -311,7 +311,7 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
 				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 
@@ -453,7 +453,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.C
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
 				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {

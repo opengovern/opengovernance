@@ -211,7 +211,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				IntegrationType:    control.Connector,
 				Enabled:            true,
 				Benchmarks:         nil,
-				Severity:           types.ParseFindingSeverity(control.Severity),
+				Severity:           types.ParseComplianceResultSeverity(control.Severity),
 				ManualVerification: control.ManualVerification,
 				Managed:            control.Managed,
 			}

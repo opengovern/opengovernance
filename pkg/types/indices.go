@@ -1,9 +1,9 @@
 package types
 
 const (
-	FindingsIndex         = "findings"
-	FindingEventsIndex    = "finding_events"
-	ResourceFindingsIndex = "resource_findings"
-	BenchmarkSummaryIndex = "benchmark_summary"
-	QueryRunIndex         = "query_run"
+	ComplianceResultsIndex      = "compliance_results"
+	ComplianceResultEventsIndex = "compliance_result_events"
+	ResourceFindingsIndex       = "resource_findings"
+	BenchmarkSummaryIndex       = "benchmark_summary"
+	QueryRunIndex               = "query_run"
 )

@@ -27,7 +27,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 	// We have to sort by opengovernanceResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []opengovernance.BoolFilter{
+	paginator, err := es.NewComplianceResultPaginator(w.esClient, types.ComplianceResultsIndex, []opengovernance.BoolFilter{
 		opengovernance.NewTermFilter("stateActive", "true"),
 	}, nil, []map[string]any{
 		{"opengovernanceResourceID": "asc"},
@@ -42,7 +42,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 	}()
 
-	w.logger.Info("FindingsIndex paginator ready")
+	w.logger.Info("ComplianceResultsIndex paginator ready")
 
 	jd := types2.JobDocs{
 		BenchmarkSummary: types2.BenchmarkSummary{
@@ -53,7 +53,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				BenchmarkResult: types2.ResultGroup{
 					Result: types2.Result{
 						QueryResult:    map[types.ConformanceStatus]int{},
-						SeverityResult: map[types.FindingSeverity]int{},
+						SeverityResult: map[types.ComplianceResultSeverity]int{},
 						SecurityScore:  0,
 					},
 					ResourceTypes: map[string]types2.Result{},
@@ -122,7 +122,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				}
 			}
 
-			jd.AddFinding(w.logger, j, f, resource)
+			jd.AddComplianceResult(w.logger, j, f, resource)
 		}
 
 		var docs []es2.Doc

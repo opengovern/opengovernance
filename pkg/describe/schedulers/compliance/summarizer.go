@@ -54,7 +54,7 @@ func (s *JobScheduler) getSankDocumentCountBenchmark(ctx context.Context, benchm
 
 	sankDocumentCountResponse := SankDocumentCountResponse{}
 	err = s.esClient.SearchWithTrackTotalHits(
-		ctx, types.FindingsIndex,
+		ctx, types.ComplianceResultsIndex,
 		string(query),
 		nil,
 		&sankDocumentCountResponse, true,

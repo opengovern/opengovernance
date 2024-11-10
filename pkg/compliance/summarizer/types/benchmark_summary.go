@@ -10,7 +10,7 @@ import (
 
 type Result struct {
 	QueryResult      map[types.ConformanceStatus]int
-	SeverityResult   map[types.FindingSeverity]int
+	SeverityResult   map[types.ComplianceResultSeverity]int
 	SecurityScore    float64
 	CostOptimization *float64 `json:"CostOptimization,omitempty"`
 }
@@ -74,63 +74,63 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, types.BenchmarkSummaryIndex
 }
 
-func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
-	if !finding.ConformanceStatus.IsPassed() {
-		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
+func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.ComplianceResult) {
+	if !complianceResult.ConformanceStatus.IsPassed() {
+		r.BenchmarkResult.Result.SeverityResult[complianceResult.Severity]++
 	}
-	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
-	r.BenchmarkResult.Result.CostOptimization = utils.PAdd(r.BenchmarkResult.Result.CostOptimization, finding.CostOptimization)
+	r.BenchmarkResult.Result.QueryResult[complianceResult.ConformanceStatus]++
+	r.BenchmarkResult.Result.CostOptimization = utils.PAdd(r.BenchmarkResult.Result.CostOptimization, complianceResult.CostOptimization)
 
-	connection, ok := r.Connections[finding.ConnectionID]
+	connection, ok := r.Connections[complianceResult.ConnectionID]
 	if !ok {
 		connection = ResultGroup{
 			Result: Result{
 				QueryResult:    map[types.ConformanceStatus]int{},
-				SeverityResult: map[types.FindingSeverity]int{},
+				SeverityResult: map[types.ComplianceResultSeverity]int{},
 				SecurityScore:  0,
 			},
 			ResourceTypes: map[string]Result{},
 			Controls:      map[string]ControlResult{},
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		connection.Result.SeverityResult[finding.Severity]++
+	if !complianceResult.ConformanceStatus.IsPassed() {
+		connection.Result.SeverityResult[complianceResult.Severity]++
 	}
-	connection.Result.QueryResult[finding.ConformanceStatus]++
-	connection.Result.CostOptimization = utils.PAdd(connection.Result.CostOptimization, finding.CostOptimization)
-	r.Connections[finding.ConnectionID] = connection
+	connection.Result.QueryResult[complianceResult.ConformanceStatus]++
+	connection.Result.CostOptimization = utils.PAdd(connection.Result.CostOptimization, complianceResult.CostOptimization)
+	r.Connections[complianceResult.ConnectionID] = connection
 
-	resourceType, ok := r.BenchmarkResult.ResourceTypes[finding.ResourceType]
+	resourceType, ok := r.BenchmarkResult.ResourceTypes[complianceResult.ResourceType]
 	if !ok {
 		resourceType = Result{
 			QueryResult:    map[types.ConformanceStatus]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
+			SeverityResult: map[types.ComplianceResultSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		resourceType.SeverityResult[finding.Severity]++
+	if !complianceResult.ConformanceStatus.IsPassed() {
+		resourceType.SeverityResult[complianceResult.Severity]++
 	}
-	resourceType.QueryResult[finding.ConformanceStatus]++
-	resourceType.CostOptimization = utils.PAdd(resourceType.CostOptimization, finding.CostOptimization)
-	r.BenchmarkResult.ResourceTypes[finding.ResourceType] = resourceType
+	resourceType.QueryResult[complianceResult.ConformanceStatus]++
+	resourceType.CostOptimization = utils.PAdd(resourceType.CostOptimization, complianceResult.CostOptimization)
+	r.BenchmarkResult.ResourceTypes[complianceResult.ResourceType] = resourceType
 
-	connectionResourceType, ok := connection.ResourceTypes[finding.ResourceType]
+	connectionResourceType, ok := connection.ResourceTypes[complianceResult.ResourceType]
 	if !ok {
 		connectionResourceType = Result{
 			QueryResult:    map[types.ConformanceStatus]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
+			SeverityResult: map[types.ComplianceResultSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		connectionResourceType.SeverityResult[finding.Severity]++
+	if !complianceResult.ConformanceStatus.IsPassed() {
+		connectionResourceType.SeverityResult[complianceResult.Severity]++
 	}
-	connectionResourceType.QueryResult[finding.ConformanceStatus]++
-	connectionResourceType.CostOptimization = utils.PAdd(connectionResourceType.CostOptimization, finding.CostOptimization)
-	connection.ResourceTypes[finding.ResourceType] = connectionResourceType
+	connectionResourceType.QueryResult[complianceResult.ConformanceStatus]++
+	connectionResourceType.CostOptimization = utils.PAdd(connectionResourceType.CostOptimization, complianceResult.CostOptimization)
+	connection.ResourceTypes[complianceResult.ResourceType] = connectionResourceType
 
-	control, ok := r.BenchmarkResult.Controls[finding.ControlID]
+	control, ok := r.BenchmarkResult.Controls[complianceResult.ControlID]
 	if !ok {
 		control = ControlResult{
 			Passed:            true,
@@ -141,18 +141,18 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 		}
 	}
 
-	if !finding.ConformanceStatus.IsPassed() {
+	if !complianceResult.ConformanceStatus.IsPassed() {
 		control.Passed = false
 
-		control.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
-		control.failedConnections.Insert([]byte(finding.ConnectionID))
+		control.failedResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
+		control.failedConnections.Insert([]byte(complianceResult.ConnectionID))
 	}
-	control.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
-	control.allConnections.Insert([]byte(finding.ConnectionID))
-	control.CostOptimization = utils.PAdd(control.CostOptimization, finding.CostOptimization)
-	r.BenchmarkResult.Controls[finding.ControlID] = control
+	control.allResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
+	control.allConnections.Insert([]byte(complianceResult.ConnectionID))
+	control.CostOptimization = utils.PAdd(control.CostOptimization, complianceResult.CostOptimization)
+	r.BenchmarkResult.Controls[complianceResult.ControlID] = control
 
-	connectionControl, ok := connection.Controls[finding.ControlID]
+	connectionControl, ok := connection.Controls[complianceResult.ControlID]
 	if !ok {
 		connectionControl = ControlResult{
 			Passed:            true,
@@ -162,15 +162,15 @@ func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
 			failedConnections: hyperloglog.New16(),
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
+	if !complianceResult.ConformanceStatus.IsPassed() {
 		connectionControl.Passed = false
-		connectionControl.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
-		connectionControl.failedConnections.Insert([]byte(finding.ConnectionID))
+		connectionControl.failedResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
+		connectionControl.failedConnections.Insert([]byte(complianceResult.ConnectionID))
 	}
-	connectionControl.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
-	connectionControl.allConnections.Insert([]byte(finding.ConnectionID))
-	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, finding.CostOptimization)
-	connection.Controls[finding.ControlID] = connectionControl
+	connectionControl.allResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
+	connectionControl.allConnections.Insert([]byte(complianceResult.ConnectionID))
+	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, complianceResult.CostOptimization)
+	connection.Controls[complianceResult.ControlID] = connectionControl
 }
 
 func (r *BenchmarkSummaryResult) summarize() {

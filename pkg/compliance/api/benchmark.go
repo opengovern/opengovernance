@@ -164,9 +164,9 @@ type BenchmarkControlSummary struct {
 }
 
 type GetBenchmarkDetailsRequest struct {
-	TagsRegex         *string                `json:"tags_regex"`
-	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
-	BenchmarkChildren bool                   `json:"benchmark_children"`
+	TagsRegex               *string                         `json:"tags_regex"`
+	ComplianceResultFilters *ComplianceResultSummaryFilters `json:"compliance_result_filters"`
+	BenchmarkChildren       bool                            `json:"benchmark_children"`
 }
 
 type GetBenchmarkDetailsMetadata struct {
@@ -185,44 +185,44 @@ type GetBenchmarkDetailsMetadata struct {
 	UpdatedAt         time.Time           `json:"updated_at"`
 }
 
-type GetBenchmarkDetailsFindings struct {
+type GetBenchmarkDetailsComplianceResults struct {
 	Results         map[types.ConformanceStatus]int `json:"results"`
 	LastEvaluatedAt time.Time                       `json:"lastEvaluated_at"`
 	ConnectionIDs   []string                        `json:"connection_ids"`
 }
 
 type GetBenchmarkDetailsChildren struct {
-	ID         string                        `json:"id"`
-	Title      string                        `json:"title"`
-	Tags       map[string][]string           `json:"tags"`
-	ControlIDs []string                      `json:"control_ids"`
-	Findings   GetBenchmarkDetailsFindings   `json:"findings"`
-	Children   []GetBenchmarkDetailsChildren `json:"children"`
+	ID                string                               `json:"id"`
+	Title             string                               `json:"title"`
+	Tags              map[string][]string                  `json:"tags"`
+	ControlIDs        []string                             `json:"control_ids"`
+	ComplianceResults GetBenchmarkDetailsComplianceResults `json:"compliance_results"`
+	Children          []GetBenchmarkDetailsChildren        `json:"children"`
 }
 
 type GetBenchmarkDetailsResponse struct {
-	Metadata GetBenchmarkDetailsMetadata   `json:"metadata"`
-	Findings GetBenchmarkDetailsFindings   `json:"findings"`
-	Children []GetBenchmarkDetailsChildren `json:"children"`
+	Metadata          GetBenchmarkDetailsMetadata          `json:"metadata"`
+	ComplianceResults GetBenchmarkDetailsComplianceResults `json:"compliance_results"`
+	Children          []GetBenchmarkDetailsChildren        `json:"children"`
 }
 
 type GetBenchmarkListRequest struct {
-	TitleRegex        *string                `json:"title_regex"`
-	ParentBenchmarkID []string               `json:"parent_benchmark_id"`
-	Tags              map[string][]string    `json:"tags"`
-	TagsRegex         *string                `json:"tags_regex"`
-	PrimaryTable      []string               `json:"primary_table"`
-	ListOfTables      []string               `json:"list_of_tables"`
-	Controls          []string               `json:"controls"`
-	Integration       []IntegrationFilter    `json:"integration"`
-	Connectors        []string               `json:"connectors"`
-	Root              *bool                  `json:"root"`
-	Assigned          *bool                  `json:"assigned"`
-	IsBaseline        *bool                  `json:"is_baseline"`
-	FindingFilters    *FindingSummaryFilters `json:"finding_filters"`
-	SortBy            string                 `json:"sort_by"`
-	Cursor            *int64                 `json:"cursor"`
-	PerPage           *int64                 `json:"per_page"`
+	TitleRegex              *string                         `json:"title_regex"`
+	ParentBenchmarkID       []string                        `json:"parent_benchmark_id"`
+	Tags                    map[string][]string             `json:"tags"`
+	TagsRegex               *string                         `json:"tags_regex"`
+	PrimaryTable            []string                        `json:"primary_table"`
+	ListOfTables            []string                        `json:"list_of_tables"`
+	Controls                []string                        `json:"controls"`
+	Integration             []IntegrationFilter             `json:"integration"`
+	Connectors              []string                        `json:"connectors"`
+	Root                    *bool                           `json:"root"`
+	Assigned                *bool                           `json:"assigned"`
+	IsBaseline              *bool                           `json:"is_baseline"`
+	ComplianceResultFilters *ComplianceResultSummaryFilters `json:"compliance_result_filters"`
+	SortBy                  string                          `json:"sort_by"`
+	Cursor                  *int64                          `json:"cursor"`
+	PerPage                 *int64                          `json:"per_page"`
 }
 
 type GetBenchmarkListMetadata struct {
@@ -311,7 +311,7 @@ type ComplianceSummaryOfIntegrationResponse struct {
 	ComplianceScore            float64                            `json:"compliance_score"`
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
-	FindingsSummary            ConformanceStatusSummaryV2         `json:"findings_summary"`
+	ComplianceResultsSummary   ConformanceStatusSummaryV2         `json:"compliance_results_summary"`
 	IssuesCount                int                                `json:"issues_count"`
 	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
 	TopResourceTypesWithIssues []TopFiledRecordV2                 `json:"top_resource_types_with_issues"`
@@ -336,7 +336,7 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
 	SeveritySummaryByIncidents types.SeverityResultV2             `json:"severity_summary_by_incidents"`
 	CostOptimization           *float64                           `json:"cost_optimization"`
-	FindingsSummary            ConformanceStatusSummaryV2         `json:"findings_summary"`
+	ComplianceResultsSummary   ConformanceStatusSummaryV2         `json:"compliance_results_summary"`
 	IssuesCount                int                                `json:"issues_count"`
 	TopIntegrations            []TopIntegration                   `json:"top_integrations"`
 	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
@@ -348,16 +348,16 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 }
 
 type ListComplianceJobsHistoryItem struct {
-	BenchmarkId     string                     `json:"benchmark_id"`
-	Integrations    []IntegrationInfo          `json:"integrations"`
-	JobId           string                     `json:"job_id"`
-	FindingsSummary ConformanceStatusSummaryV2 `json:"findings_summary"`
-	ComplianceScore float64                    `json:"compliance_score"`
-	TriggerType     string                     `json:"trigger_type"`
-	CreatedBy       string                     `json:"created_by"`
-	JobStatus       string                     `json:"job_status"`
-	CreatedAt       time.Time                  `json:"created_at"`
-	UpdatedAt       time.Time                  `json:"updated_at"`
+	BenchmarkId              string                     `json:"benchmark_id"`
+	Integrations             []IntegrationInfo          `json:"integrations"`
+	JobId                    string                     `json:"job_id"`
+	ComplianceResultsSummary ConformanceStatusSummaryV2 `json:"compliance_results_summary"`
+	ComplianceScore          float64                    `json:"compliance_score"`
+	TriggerType              string                     `json:"trigger_type"`
+	CreatedBy                string                     `json:"created_by"`
+	JobStatus                string                     `json:"job_status"`
+	CreatedAt                time.Time                  `json:"created_at"`
+	UpdatedAt                time.Time                  `json:"updated_at"`
 }
 
 type ListComplianceJobsHistoryResponse struct {
@@ -380,11 +380,11 @@ type GetBenchmarkTrendV3Request struct {
 }
 
 type BenchmarkTrendDatapointV3 struct {
-	Timestamp       time.Time `json:"timestamp"`
-	FindingsSummary *struct {
+	Timestamp                time.Time `json:"timestamp"`
+	ComplianceResultsSummary *struct {
 		Incidents    int `json:"incidents"`
 		NonIncidents int `json:"non_incidents"`
-	} `json:"findings_summary"`
+	} `json:"compliance_results_summary"`
 	IncidentsSeverityBreakdown *types.SeverityResult `json:"incidents_severity_breakdown"`
 }
 
