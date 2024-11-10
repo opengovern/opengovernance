@@ -87,10 +87,10 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 				ParentJobID: it.ParentJobID,
 				CreatedAt:   it.CreatedAt,
 				ExecutionPlan: runner.ExecutionPlan{
-					Callers:      callers,
-					Query:        *query,
-					ConnectionID: it.IntegrationID,
-					ProviderID:   providerID,
+					Callers:       callers,
+					Query:         *query,
+					IntegrationID: it.IntegrationID,
+					ProviderID:    providerID,
 				},
 			}
 

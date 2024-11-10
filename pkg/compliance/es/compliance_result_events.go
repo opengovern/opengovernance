@@ -12,38 +12,38 @@ import (
 	"time"
 )
 
-type FindingEventsQueryHit struct {
-	ID      string             `json:"_id"`
-	Score   float64            `json:"_score"`
-	Index   string             `json:"_index"`
-	Type    string             `json:"_type"`
-	Version int64              `json:"_version,omitempty"`
-	Source  types.FindingEvent `json:"_source"`
-	Sort    []any              `json:"sort"`
+type ComplianceResultDriftEventsQueryHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  types.ComplianceResultDriftEvent `json:"_source"`
+	Sort    []any                            `json:"sort"`
 }
 
-type FindingEventsQueryResponse struct {
+type ComplianceResultDriftEventsQueryResponse struct {
 	Hits struct {
-		Total opengovernance.SearchTotal `json:"total"`
-		Hits  []FindingEventsQueryHit    `json:"hits"`
+		Total opengovernance.SearchTotal            `json:"total"`
+		Hits  []ComplianceResultDriftEventsQueryHit `json:"hits"`
 	} `json:"hits"`
 	PitID string `json:"pit_id"`
 }
 
-type FetchFindingEventsByFindingIDResponse struct {
+type FetchComplianceResultDriftEventsByComplianceResultIDResponse struct {
 	Hits struct {
-		Hits []FindingEventsQueryHit `json:"hits"`
+		Hits []ComplianceResultDriftEventsQueryHit `json:"hits"`
 	} `json:"hits"`
 }
 
-func FetchFindingEventsByFindingIDs(ctx context.Context, logger *zap.Logger, client opengovernance.Client, findingID []string) ([]types.FindingEvent, error) {
+func FetchComplianceResultDriftEventsByComplianceResultIDs(ctx context.Context, logger *zap.Logger, client opengovernance.Client, complianceResultID []string) ([]types.ComplianceResultDriftEvent, error) {
 	request := map[string]any{
 		"query": map[string]any{
 			"bool": map[string]any{
 				"filter": []any{
 					map[string]any{
 						"terms": map[string][]string{
-							"findingEsID": findingID,
+							"complianceResultEsID": complianceResultID,
 						},
 					},
 				},
@@ -59,30 +59,30 @@ func FetchFindingEventsByFindingIDs(ctx context.Context, logger *zap.Logger, cli
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Fetching finding events", zap.String("request", string(jsonReq)), zap.String("index", types.FindingEventsIndex))
+	logger.Info("Fetching complianceResult events", zap.String("request", string(jsonReq)), zap.String("index", types.ComplianceResultEventsIndex))
 
-	var resp FetchFindingEventsByFindingIDResponse
-	err = client.Search(ctx, types.FindingEventsIndex, string(jsonReq), &resp)
+	var resp FetchComplianceResultDriftEventsByComplianceResultIDResponse
+	err = client.Search(ctx, types.ComplianceResultEventsIndex, string(jsonReq), &resp)
 	if err != nil {
-		logger.Error("Failed to fetch finding events", zap.Error(err), zap.String("request", string(jsonReq)), zap.String("index", types.FindingEventsIndex))
+		logger.Error("Failed to fetch complianceResult events", zap.Error(err), zap.String("request", string(jsonReq)), zap.String("index", types.ComplianceResultEventsIndex))
 		return nil, err
 	}
-	result := make([]types.FindingEvent, 0, len(resp.Hits.Hits))
+	result := make([]types.ComplianceResultDriftEvent, 0, len(resp.Hits.Hits))
 	for _, hit := range resp.Hits.Hits {
 		result = append(result, hit.Source)
 	}
 	return result, nil
 }
 
-func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	findingIDs []string, opengovernanceResourceIDs []string,
-	provider []source.Type, connectionID []string, notConnectionID []string,
+func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+	complianceResultIDs []string, opengovernanceResourceIDs []string,
+	provider []source.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string,
-	benchmarkID []string, controlID []string, severity []types.FindingSeverity,
+	benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-	sorts []api.FindingEventsSort, pageSizeLimit int, searchAfter []any) ([]FindingEventsQueryHit, int64, error) {
-	idx := types.FindingEventsIndex
+	sorts []api.ComplianceResultDriftEventsSort, pageSizeLimit int, searchAfter []any) ([]ComplianceResultDriftEventsQueryHit, int64, error) {
+	idx := types.ComplianceResultEventsIndex
 
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
@@ -100,9 +100,9 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 			requestSort = append(requestSort, map[string]any{
 				"resourceType": *sort.ResourceType,
 			})
-		case sort.ConnectionID != nil:
+		case sort.IntegrationID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"connectionID": *sort.ConnectionID,
+				"integrationID": *sort.IntegrationID,
 			})
 		case sort.BenchmarkID != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -173,8 +173,8 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 	})
 
 	var filters []opengovernance.BoolFilter
-	if len(findingIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("findingEsID", findingIDs))
+	if len(complianceResultIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("complianceResultEsID", complianceResultIDs))
 	}
 	if len(opengovernanceResourceIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
@@ -202,11 +202,11 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
-	if len(connectionID) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
+	if len(integrationID) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
 	}
-	if len(notConnectionID) > 0 {
-		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
+	if len(notIntegrationID) > 0 {
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
 	if len(provider) > 0 {
 		var connectors []string
@@ -257,9 +257,9 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 		return nil, 0, err
 	}
 
-	logger.Info("FindingEventsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
+	logger.Info("ComplianceResultDriftEventsQuery", zap.String("query", string(queryJson)), zap.String("index", idx))
 
-	var response FindingEventsQueryResponse
+	var response ComplianceResultDriftEventsQueryResponse
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return nil, 0, err
@@ -268,12 +268,12 @@ func FindingEventsQuery(ctx context.Context, logger *zap.Logger, client opengove
 	return response.Hits.Hits, response.Hits.Total.Value, err
 }
 
-type FindingEventFiltersAggregationResponse struct {
+type ComplianceResultDriftEventFiltersAggregationResponse struct {
 	Aggregations struct {
 		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
 		ConnectorFilter          AggregationResult `json:"connector_filter"`
-		ConnectionIDFilter       AggregationResult `json:"connection_id_filter"`
+		IntegrationIDFilter      AggregationResult `json:"integration_id_filter"`
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
@@ -289,17 +289,17 @@ type FindingEventFiltersAggregationResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	findingIDs []string, opengovernanceResourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
-	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.FindingSeverity,
+func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+	complianceResultIDs []string, opengovernanceResourceIDs []string, connector []source.Type, integrationID []string, notIntegrationID []string,
+	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
-) (*FindingEventFiltersAggregationResponse, error) {
-	idx := types.FindingEventsIndex
+) (*ComplianceResultDriftEventFiltersAggregationResponse, error) {
+	idx := types.ComplianceResultEventsIndex
 
 	var filters []opengovernance.BoolFilter
-	if len(findingIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("findingEsID", findingIDs))
+	if len(complianceResultIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("complianceResultEsID", complianceResultIDs))
 	}
 	if len(opengovernanceResourceIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
@@ -327,11 +327,11 @@ func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client o
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
-	if len(connectionID) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
+	if len(integrationID) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
 	}
-	if len(notConnectionID) > 0 {
-		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
+	if len(notIntegrationID) > 0 {
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
 	if len(connector) > 0 {
 		var connectors []string
@@ -367,7 +367,7 @@ func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client o
 	aggs := map[string]any{
 		"connector_filter":           map[string]any{"terms": map[string]any{"field": "connector", "size": 1000}},
 		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceType", "size": 1000}},
-		"connection_id_filter":       map[string]any{"terms": map[string]any{"field": "connectionID", "size": 1000}},
+		"integration_id_filter":      map[string]any{"terms": map[string]any{"field": "integrationID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
 		"control_id_filter":          map[string]any{"terms": map[string]any{"field": "controlID", "size": 1000}},
@@ -387,27 +387,27 @@ func FindingEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client o
 
 	queryBytes, err := json.Marshal(root)
 	if err != nil {
-		logger.Error("FindingEventsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+		logger.Error("ComplianceResultDriftEventsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
 
-	logger.Info("FindingEventsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
+	logger.Info("ComplianceResultDriftEventsFiltersQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 
-	var resp FindingEventFiltersAggregationResponse
+	var resp ComplianceResultDriftEventFiltersAggregationResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
-		logger.Error("FindingEventsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
+		logger.Error("ComplianceResultDriftEventsFiltersQuery", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))
 		return nil, err
 	}
 
 	return &resp, nil
 }
 
-func FetchFindingEventByID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, findingID string) (*types.FindingEvent, error) {
+func FetchComplianceResultDriftEventByID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, driftEventId string) (*types.ComplianceResultDriftEvent, error) {
 	query := map[string]any{
 		"query": map[string]any{
 			"term": map[string]any{
-				"es_id": findingID,
+				"es_id": driftEventId,
 			},
 		},
 		"size": 1,
@@ -418,9 +418,9 @@ func FetchFindingEventByID(ctx context.Context, logger *zap.Logger, client openg
 		return nil, err
 	}
 
-	logger.Info("FetchFindingByID", zap.String("query", string(queryBytes)))
-	var resp FindingEventsQueryResponse
-	err = client.Search(ctx, types.FindingEventsIndex, string(queryBytes), &resp)
+	logger.Info("FetchComplianceResultDriftEventByID", zap.String("query", string(queryBytes)))
+	var resp ComplianceResultDriftEventsQueryResponse
+	err = client.Search(ctx, types.ComplianceResultEventsIndex, string(queryBytes), &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -432,15 +432,15 @@ func FetchFindingEventByID(ctx context.Context, logger *zap.Logger, client openg
 	return &resp.Hits.Hits[0].Source, nil
 }
 
-type FindingEventsCountResponse struct {
+type ComplianceResultDriftEventsCountResponse struct {
 	Hits struct {
 		Total opengovernance.SearchTotal `json:"total"`
 	} `json:"hits"`
 	PitID string `json:"pit_id"`
 }
 
-func FindingEventsCount(ctx context.Context, client opengovernance.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
-	idx := types.FindingEventsIndex
+func ComplianceResultDriftEventsCount(ctx context.Context, client opengovernance.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
+	idx := types.ComplianceResultEventsIndex
 
 	filters := make([]map[string]any, 0)
 	if len(conformanceStatuses) > 0 {
@@ -507,7 +507,7 @@ func FindingEventsCount(ctx context.Context, client opengovernance.Client, bench
 		return 0, err
 	}
 
-	var response FindingsCountResponse
+	var response ComplianceResultsCountResponse
 	err = client.SearchWithTrackTotalHits(ctx, idx, string(queryJson), nil, &response, true)
 	if err != nil {
 		return 0, err

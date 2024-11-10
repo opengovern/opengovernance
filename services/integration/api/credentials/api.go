@@ -66,7 +66,7 @@ func (h API) Delete(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Success		200				{object}	models.ListResponse
+//	@Success		200	{object}	models.ListCredentialsResponse
 //	@Router			/integration/api/v1/credentials [get]
 func (h API) List(c echo.Context) error {
 	credentials, err := h.database.ListCredentials()
@@ -98,9 +98,9 @@ func (h API) List(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Param			credentialId	path	string	true	"credentialId"
-//	@Param			request	body	models.UpdateCredentialRequest	true	"Request"
-//	@Success		200				{object}	models.ListResponse
+//	@Param			credentialId	path		string							true	"credentialId"
+//	@Param			request			body		models.UpdateCredentialRequest	true	"Request"
+//	@Success		200				{object}	models.ListCredentialsResponse
 //	@Router			/integration/api/v1/credentials/{credentialId} [put]
 func (h API) UpdateCredential(c echo.Context) error {
 	credentialId := c.Param("credentialId")
@@ -146,8 +146,8 @@ func (h API) UpdateCredential(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Param			request	body	models.ListCredentialsRequest	true	"Request"
-//	@Success		200				{object}	models.ListResponse
+//	@Param			request	body		models.ListCredentialsRequest	true	"Request"
+//	@Success		200		{object}	models.ListCredentialsResponse
 //	@Router			/integration/api/v1/credentials/list [post]
 func (h API) CredentialsFilteredList(c echo.Context) error {
 	var req models.ListCredentialsRequest

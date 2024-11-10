@@ -151,7 +151,7 @@ type Control struct {
 	QueryID            *string
 	Query              *Query      `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_controls;"`
-	Severity           types.FindingSeverity
+	Severity           types.ComplianceResultSeverity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time

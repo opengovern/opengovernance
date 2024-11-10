@@ -128,9 +128,9 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		return err
 	}
 
-	var connectors []string
-	for _, c := range metric.Connectors {
-		connectors = append(connectors, c.String())
+	var integrationTypes []string
+	for _, c := range metric.IntegrationTypes {
+		integrationTypes = append(integrationTypes, c.String())
 	}
 
 	var tags []analyticsDB.MetricTag
@@ -181,7 +181,7 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 
 	dbMetric := analyticsDB.AnalyticMetric{
 		ID:                       id,
-		IntegrationTypes:         connectors,
+		IntegrationTypes:         integrationTypes,
 		Type:                     metricType,
 		Name:                     metric.Name,
 		Query:                    metric.Query,
@@ -227,9 +227,9 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
-	var connectors []string
-	for _, c := range item.Connectors {
-		connectors = append(connectors, string(c))
+	var integrationTypes []string
+	for _, c := range item.IntegrationTypes {
+		integrationTypes = append(integrationTypes, string(c))
 	}
 
 	tx := dbc.Begin()
@@ -277,12 +277,12 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	}
 
 	dbMetric := inventory.NamedQuery{
-		ID:           id,
-		Connectors:   connectors,
-		Title:        item.Title,
-		Description:  item.Description,
-		IsBookmarked: isBookmarked,
-		QueryID:      &id,
+		ID:               id,
+		IntegrationTypes: integrationTypes,
+		Title:            item.Title,
+		Description:      item.Description,
+		IsBookmarked:     isBookmarked,
+		QueryID:          &id,
 	}
 	queryParams := []inventory.QueryParameter{}
 	for _, qp := range item.Query.Parameters {

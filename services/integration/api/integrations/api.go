@@ -327,7 +327,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Router			/integration/api/v1/integrations/{IntegrationID}/healthcheck [post]
+//	@Router			/integration/api/v1/integrations/{IntegrationID}/healthcheck [put]
 func (h API) IntegrationHealthcheck(c echo.Context) error {
 	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {
@@ -440,14 +440,14 @@ func (h API) Delete(c echo.Context) error {
 
 // List godoc
 //
-//		@Summary		List integrations
-//		@Description	List integrations
-//		@Security		BearerToken
-//		@Tags			credentials
-//		@Produce		json
-//	 	@Param			integration_type query []string false "integration type filter"
-//		@Success		200				{object}	models.ListResponse
-//		@Router			/integration/api/v1/integrations [get]
+//	@Summary		List integrations
+//	@Description	List integrations
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			integration_type	query		[]string	false	"integration type filter"
+//	@Success		200					{object}	models.ListIntegrationsResponse
+//	@Router			/integration/api/v1/integrations [get]
 func (h API) List(c echo.Context) error {
 	integrationTypesStr := httpserver.QueryArrayParam(c, "integration_type")
 
@@ -485,7 +485,7 @@ func (h API) List(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Success		200				{object}	models.ListResponse
+//	@Success		200	{object}	models.ListIntegrationsResponse
 //	@Router			/integration/api/v1/credentials/list [post]
 func (h API) ListByFilters(c echo.Context) error {
 	var req models.ListIntegrationsRequest
@@ -536,7 +536,7 @@ func (h API) ListByFilters(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Param			populateIntegrations	query		bool	false	"Populate connections"	default(false)
-//	@Success		200				{object}	[]models.IntegrationGroup
+//	@Success		200						{object}	[]models.IntegrationGroup
 //	@Router			/integration/api/v1/integrations/integration-groups [get]
 func (h API) ListIntegrationGroups(c echo.Context) error {
 	populateIntegrations := false
@@ -593,7 +593,7 @@ func (h API) ListIntegrationGroups(c echo.Context) error {
 //	@Produce		json
 //	@Param			populateIntegrations	query		bool	false	"Populate connections"	default(false)
 //	@Param			integrationGroupName	path		string	true	"integrationGroupName"
-//	@Success		200				{object}	models.IntegrationGroup
+//	@Success		200						{object}	models.IntegrationGroup
 //	@Router			/integration/api/v1/integrations/integration-groups/{integrationGroupName} [get]
 func (h API) GetIntegrationGroup(c echo.Context) error {
 	integrationGroupName := c.Param("integrationGroupName")
@@ -758,10 +758,10 @@ func (h API) DeleteIntegrationType(c echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			credentials
 //	@Produce		json
-//	@Param			per_page	query		int			false	"PerPage"
-//	@Param			cursor		query		int			false	"Cursor"
-//	@Param			enabled		query		bool		false	"Enabled"
-//	@Success		200				{object}	models.ListIntegrationTypesResponse
+//	@Param			per_page	query		int		false	"PerPage"
+//	@Param			cursor		query		int		false	"Cursor"
+//	@Param			enabled		query		bool	false	"Enabled"
+//	@Success		200			{object}	models.ListIntegrationTypesResponse
 //	@Router			/integration/api/v1/integrations/types [get]
 func (h API) ListIntegrationTypes(c echo.Context) error {
 	perPageStr := c.QueryParam("per_page")

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/es"
@@ -129,12 +130,12 @@ type SummaryQueryHit struct {
 }
 
 type NamedQueryItem struct {
-	ID         string            `json:"id"`         // Query Id
-	Connectors []source.Type     `json:"connectors"` // Provider
-	Title      string            `json:"title"`      // Title
-	Category   string            `json:"category"`   // Category (Tags[category])
-	Query      string            `json:"query"`      // Query
-	Tags       map[string]string `json:"tags"`       // Tags
+	ID               string             `json:"id"`                // Query Id
+	IntegrationTypes []integration.Type `json:"integration_types"` // Provider
+	Title            string             `json:"title"`             // Title
+	Category         string             `json:"category"`          // Category (Tags[category])
+	Query            string             `json:"query"`             // Query
+	Tags             map[string]string  `json:"tags"`              // Tags
 }
 
 type ListQueriesV2Response struct {
@@ -143,12 +144,12 @@ type ListQueriesV2Response struct {
 }
 
 type NamedQueryItemV2 struct {
-	ID          string              `json:"id"`    // Query Id
-	Title       string              `json:"title"` // Title
-	Description string              `json:"description"`
-	Connectors  []source.Type       `json:"connectors"` // Provider
-	Query       Query               `json:"query"`      // Query
-	Tags        map[string][]string `json:"tags"`       // Tags
+	ID               string              `json:"id"`    // Query Id
+	Title            string              `json:"title"` // Title
+	Description      string              `json:"description"`
+	IntegrationTypes []integration.Type  `json:"integration_types"` // Provider
+	Query            Query               `json:"query"`             // Query
+	Tags             map[string][]string `json:"tags"`              // Tags
 }
 
 type QueryParameter struct {
