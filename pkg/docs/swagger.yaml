@@ -759,9 +759,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
         example: alarm
-      connectionID:
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
       controlID:
         example: azure_cis_v140_7_5
         type: string
@@ -778,6 +775,9 @@ definitions:
         type: string
       id:
         example: "1"
+        type: string
+      integrationID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       integrationName:
         description: Connection ID
@@ -853,9 +853,6 @@ definitions:
         type: string
       conformanceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
-      connectionID:
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
       controlID:
         example: azure_cis_v140_7_5
         type: string
@@ -863,6 +860,9 @@ definitions:
         type: string
       id:
         example: 8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8
+        type: string
+      integrationID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       integrationName:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -940,12 +940,6 @@ definitions:
         items:
           type: string
         type: array
-      connectionID:
-        example:
-        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        items:
-          type: string
-        type: array
       connector:
         example:
         - Azure
@@ -965,7 +959,13 @@ definitions:
           to:
             type: integer
         type: object
-      notConnectionID:
+      integrationID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      notIntegrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
@@ -1006,15 +1006,15 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
-      connectionID:
-        items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
-        type: array
       connector:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
       controlID:
+        items:
+          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
+        type: array
+      integrationID:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
@@ -1041,11 +1041,11 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       conformanceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      connectionID:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       connector:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       controlID:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
+      integrationID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       opengovernanceResourceID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1076,12 +1076,6 @@ definitions:
         items:
           type: string
         type: array
-      connectionID:
-        example:
-        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        items:
-          type: string
-        type: array
       controlID:
         example:
         - azure_cis_v140_7_5
@@ -1095,6 +1089,12 @@ definitions:
           to:
             type: integer
         type: object
+      integrationID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
       integrationType:
         example:
         - Azure
@@ -1115,7 +1115,7 @@ definitions:
           to:
             type: integer
         type: object
-      notConnectionID:
+      notIntegrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
@@ -1225,11 +1225,11 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
-      connectionID:
+      controlID:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
-      controlID:
+      integrationID:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
@@ -1267,7 +1267,7 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceResultSummaryFilters:
     properties:
-      connectionID:
+      integrationID:
         items:
           type: string
         type: array
@@ -1282,9 +1282,9 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       conformanceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      connectionID:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       controlID:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
+      integrationID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       integrationType:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1689,7 +1689,7 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.GetBenchmarkDetailsComplianceResults:
     properties:
-      connection_ids:
+      integration_ids:
         items:
           type: string
         type: array
@@ -2387,15 +2387,15 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceResult'
         type: array
-      connectionID:
-        description: Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
       evaluatedAt:
         type: string
       failedCount:
         type: integer
       id:
+        type: string
+      integrationID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       integrationName:
         description: Connection ID
@@ -2447,12 +2447,6 @@ definitions:
         items:
           type: string
         type: array
-      connectionID:
-        example:
-        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        items:
-          type: string
-        type: array
       connector:
         example:
         - Azure
@@ -2472,9 +2466,15 @@ definitions:
           to:
             type: integer
         type: object
+      integrationID:
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
       interval:
         type: string
-      notConnectionID:
+      notIntegrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
@@ -7458,7 +7458,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection Group '
@@ -7503,7 +7503,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: Connection group
@@ -7623,7 +7623,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: Connection groups to filter by
@@ -7675,7 +7675,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -7737,7 +7737,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -7801,7 +7801,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -7862,7 +7862,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -7956,7 +7956,7 @@ paths:
       - description: Field
         enum:
         - resourceType
-        - connectionID
+        - integrationID
         - resourceID
         - service
         in: path
@@ -7968,7 +7968,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8047,7 +8047,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8085,7 +8085,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8263,7 +8263,7 @@ paths:
       - description: Field
         enum:
         - resourceType
-        - connectionID
+        - integrationID
         - resourceID
         - service
         - controlID
@@ -8281,14 +8281,14 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: Connection IDs to filter by (exclusive)
         in: query
         items:
           type: string
-        name: notConnectionId
+        name: notIntegrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8522,7 +8522,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8558,7 +8558,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '
@@ -8614,7 +8614,7 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: integrationId
         type: array
       - collectionFormat: csv
         description: 'Connection groups to filter by '

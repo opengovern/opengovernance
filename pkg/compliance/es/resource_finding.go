@@ -79,8 +79,8 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 	return values, nil
 }
 
-func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connector []source.Type, connectionID []string,
-	notConnectionID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
+func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connector []source.Type, integrationID []string,
+	notIntegrationID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
 	severity []types.ComplianceResultSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, conformanceStatuses []types.ConformanceStatus,
 	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any, summaryJobIDs []string) ([]ResourceFindingsQueryHit, int64, error) {
 
@@ -92,20 +92,20 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 			},
 		})
 	}
-	if len(connectionID) > 0 {
+	if len(integrationID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"complianceResults.connectionID": connectionID,
+				"complianceResults.integrationID": integrationID,
 			},
 		})
 	}
-	if len(notConnectionID) > 0 {
+	if len(notIntegrationID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string]any{
-							"complianceResults.connectionID": notConnectionID,
+							"complianceResults.integrationID": notIntegrationID,
 						},
 					},
 				},
@@ -296,7 +296,7 @@ type GetPerBenchmarkResourceSeverityResultResponse struct {
 }
 
 func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
+	benchmarkIDs []string, integrationIDs []string, resourceCollections []string,
 	severities []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
@@ -308,10 +308,10 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 			},
 		})
 	}
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"complianceResults.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
@@ -434,7 +434,7 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 }
 
 func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
+	benchmarkIDs []string, integrationIDs []string, resourceCollections []string,
 	severities []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus, summaryJobIDs string) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
@@ -446,10 +446,10 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 			},
 		})
 	}
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"complianceResults.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
@@ -600,33 +600,33 @@ type GetPerFieldResourceConformanceResultResponse struct {
 }
 
 // GetPerFieldResourceConformanceResult
-// field could be: connectionID, benchmarkID, controlID, severity, conformanceStatus
+// field could be: integrationID, benchmarkID, controlID, severity, conformanceStatus
 func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
-	connectionIDs []string, notConnectionIDs []string,
+	integrationIDs []string, notIntegrationIDs []string,
 	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
 	severities []types.ComplianceResultSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
-	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" {
+	if field != "integrationID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" {
 		return nil, fmt.Errorf("field %s is not supported", field)
 	}
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"complianceResults.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
-	if len(notConnectionIDs) > 0 {
+	if len(notIntegrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string][]string{
-							"complianceResults.connectionID": notConnectionIDs,
+							"complianceResults.integrationID": notIntegrationIDs,
 						},
 					},
 				},
@@ -797,31 +797,31 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 
 func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
-	connectionIDs []string, notConnectionIDs []string,
+	integrationIDs []string, notIntegrationIDs []string,
 	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
 	severities []types.ComplianceResultSeverity, topCount int) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
-	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" &&
+	if field != "integrationID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" &&
 		field != "resourceType" && field != "resourceID" {
 		return nil, fmt.Errorf("field %s is not supported", field)
 	}
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"complianceResults.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
-	if len(notConnectionIDs) > 0 {
+	if len(notIntegrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string][]string{
-							"complianceResults.connectionID": notConnectionIDs,
+							"complianceResults.integrationID": notIntegrationIDs,
 						},
 					},
 				},

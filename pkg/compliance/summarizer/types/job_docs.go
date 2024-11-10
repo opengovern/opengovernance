@@ -45,7 +45,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 			zap.String("opengovernanceResourceId", complianceResult.OpenGovernanceResourceID),
 			zap.String("resourceId", complianceResult.ResourceID),
 			zap.String("resourceType", complianceResult.ResourceType),
-			zap.String("connectionId", complianceResult.ConnectionID),
+			zap.String("integrationID", complianceResult.IntegrationID),
 			zap.String("benchmarkId", complianceResult.BenchmarkID),
 			zap.String("controlId", complianceResult.ControlID),
 		)
@@ -114,7 +114,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 			found = false
 			for _, accountId := range filter.AccountIDs {
 				if integration, ok := jd.IntegrationCache[strings.ToLower(accountId)]; ok {
-					if strings.ToLower(integration.IntegrationID) == strings.ToLower(complianceResult.ConnectionID) {
+					if strings.ToLower(integration.IntegrationID) == strings.ToLower(complianceResult.IntegrationID) {
 						found = true
 						break
 					}

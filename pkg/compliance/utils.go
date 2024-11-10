@@ -79,8 +79,8 @@ func (h *HttpHandler) getBenchmarkComplianceResultSummary(ctx context.Context, b
 	var complianceResultsResult api.GetBenchmarkDetailsComplianceResults
 	complianceResultsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
 	for connection, resultGroup := range complianceResults {
-		if complianceResultFilters != nil && len(complianceResultFilters.ConnectionID) > 0 {
-			if !listContains(complianceResultFilters.ConnectionID, connection) {
+		if complianceResultFilters != nil && len(complianceResultFilters.IntegrationID) > 0 {
+			if !listContains(complianceResultFilters.IntegrationID, connection) {
 				continue
 			}
 		}
@@ -100,7 +100,7 @@ func (h *HttpHandler) getBenchmarkComplianceResultSummary(ctx context.Context, b
 		} else {
 			complianceResultsResult.Results = resultGroup.Result.QueryResult
 		}
-		complianceResultsResult.ConnectionIDs = append(complianceResultsResult.ConnectionIDs, connection)
+		complianceResultsResult.IntegrationIDs = append(complianceResultsResult.IntegrationIDs, connection)
 	}
 	return &complianceResultsResult, nil
 }
@@ -224,8 +224,8 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 		var complianceResultsResult api.GetBenchmarkDetailsComplianceResults
 		complianceResultsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
 		for connection, resultGroup := range complianceResults {
-			if req.ComplianceResultFilters != nil && len(req.ComplianceResultFilters.ConnectionID) > 0 {
-				if !listContains(req.ComplianceResultFilters.ConnectionID, connection) {
+			if req.ComplianceResultFilters != nil && len(req.ComplianceResultFilters.IntegrationID) > 0 {
+				if !listContains(req.ComplianceResultFilters.IntegrationID, connection) {
 					continue
 				}
 			}
@@ -245,7 +245,7 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 			} else {
 				complianceResultsResult.Results = resultGroup.Result.QueryResult
 			}
-			complianceResultsResult.ConnectionIDs = append(complianceResultsResult.ConnectionIDs, connection)
+			complianceResultsResult.IntegrationIDs = append(complianceResultsResult.IntegrationIDs, connection)
 		}
 
 		benchmarks = append(benchmarks, api.GetBenchmarkDetailsChildren{

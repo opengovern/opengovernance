@@ -35,8 +35,8 @@ type ExecutionPlan struct {
 	Callers []Caller
 	Query   complianceApi.Query
 
-	ConnectionID *string
-	ProviderID   *string
+	IntegrationID *string
+	ProviderID    *string
 }
 
 type Job struct {
@@ -87,8 +87,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
-		zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
-		zap.Stringp("provider_connection_id", j.ExecutionPlan.ProviderID),
+		zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
+		zap.Stringp("provider_id", j.ExecutionPlan.ProviderID),
 	)
 
 	if err := w.Initialize(ctx, j); err != nil {
@@ -113,7 +113,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			w.logger.Error("required query parameter not found",
 				zap.String("key", param.Key),
 				zap.String("query_id", j.ExecutionPlan.Query.ID),
-				zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+				zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
 				zap.Uint("job_id", j.ID),
 			)
 			return 0, fmt.Errorf("required query parameter not found: %s for query: %s", param.Key, j.ExecutionPlan.Query.ID)
@@ -122,7 +122,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			w.logger.Info("optional query parameter not found",
 				zap.String("key", param.Key),
 				zap.String("query_id", j.ExecutionPlan.Query.ID),
-				zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+				zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
 				zap.Uint("job_id", j.ID),
 			)
 			queryParamMap[param.Key] = ""
@@ -175,8 +175,8 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		filters = append(filters, opengovernance.NewTermFilter("parentBenchmarks", parentBenchmarkID))
 	}
 	filters = append(filters, opengovernance.NewRangeFilter("complianceJobID", "", "", fmt.Sprintf("%d", j.ID), ""))
-	if j.ExecutionPlan.ConnectionID != nil {
-		filters = append(filters, opengovernance.NewTermFilter("connectionID", *j.ExecutionPlan.ConnectionID))
+	if j.ExecutionPlan.IntegrationID != nil {
+		filters = append(filters, opengovernance.NewTermFilter("integrationID", *j.ExecutionPlan.IntegrationID))
 	}
 
 	newComplianceResults := make([]types.ComplianceResult, 0, len(complianceResults))
@@ -238,7 +238,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 						BenchmarkID:               f.BenchmarkID,
 						ControlID:                 f.ControlID,
-						ConnectionID:              f.ConnectionID,
+						IntegrationID:             f.IntegrationID,
 						IntegrationType:           f.IntegrationType,
 						Severity:                  f.Severity,
 						OpenGovernanceResourceID:  f.OpenGovernanceResourceID,
@@ -279,7 +279,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 					BenchmarkID:               newComplianceResult.BenchmarkID,
 					ControlID:                 newComplianceResult.ControlID,
-					ConnectionID:              newComplianceResult.ConnectionID,
+					IntegrationID:             newComplianceResult.IntegrationID,
 					IntegrationType:           newComplianceResult.IntegrationType,
 					Severity:                  newComplianceResult.Severity,
 					OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
@@ -323,7 +323,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 
 			BenchmarkID:               newComplianceResult.BenchmarkID,
 			ControlID:                 newComplianceResult.ControlID,
-			ConnectionID:              newComplianceResult.ConnectionID,
+			IntegrationID:             newComplianceResult.IntegrationID,
 			IntegrationType:           newComplianceResult.IntegrationType,
 			Severity:                  newComplianceResult.Severity,
 			OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
@@ -384,7 +384,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	w.logger.Info("Finished job",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
-		zap.Stringp("query_id", j.ExecutionPlan.ConnectionID),
+		zap.Stringp("query_id", j.ExecutionPlan.IntegrationID),
 	)
 	return totalComplianceResultCount, nil
 }
@@ -400,7 +400,7 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 		w.logger.Error("failed to execute query template",
 			zap.Error(err),
 			zap.String("query_id", j.ExecutionPlan.Query.ID),
-			zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID),
+			zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
 			zap.Uint("job_id", j.ID),
 		)
 		return nil, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
@@ -408,7 +408,7 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 
 	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
-		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("connection_id", j.ExecutionPlan.ConnectionID))
+		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID))
 		return nil, err
 	}
 

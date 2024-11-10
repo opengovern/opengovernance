@@ -28,7 +28,7 @@ type ComplianceResultDriftEvent struct {
 
 	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	ConnectionID              string                         `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	IntegrationType           integration.Type               `json:"integrationType" example:"Azure"`
 	Severity                  types.ComplianceResultSeverity `json:"severity" example:"low"`
 	OpenGovernanceResourceID  string                         `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
@@ -37,11 +37,11 @@ type ComplianceResultDriftEvent struct {
 	ParentBenchmarkReferences []string                       `json:"parentBenchmarkReferences"`
 
 	// Fake fields (won't be stored in ES)
-	ResourceTypeName     string `json:"resourceTypeName" example:"Virtual Machine"`
-	ProviderConnectionID string `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationName      string `json:"integrationName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ResourceName         string `json:"resourceName" example:"vm-1"`
-	ResourceLocation     string `json:"resourceLocation" example:"eastus"`
+	ResourceTypeName string `json:"resourceTypeName" example:"Virtual Machine"`
+	ProviderID       string `json:"providerID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationName  string `json:"integrationName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ResourceName     string `json:"resourceName" example:"vm-1"`
+	ResourceLocation string `json:"resourceLocation" example:"eastus"`
 
 	SortKey []any `json:"sortKey"`
 }
@@ -61,7 +61,7 @@ func GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(compliance
 
 		BenchmarkID:               complianceResultDriftEvent.BenchmarkID,
 		ControlID:                 complianceResultDriftEvent.ControlID,
-		ConnectionID:              complianceResultDriftEvent.ConnectionID,
+		IntegrationID:             complianceResultDriftEvent.IntegrationID,
 		IntegrationType:           complianceResultDriftEvent.IntegrationType,
 		Severity:                  complianceResultDriftEvent.Severity,
 		OpenGovernanceResourceID:  complianceResultDriftEvent.OpenGovernanceResourceID,
@@ -86,8 +86,8 @@ func GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(compliance
 type ComplianceResultDriftEventFilters struct {
 	Connector                []source.Type                    `json:"connector" example:"Azure"`
 	ResourceType             []string                         `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	ConnectionID             []string                         `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	NotConnectionID          []string                         `json:"notConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationID            []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	NotIntegrationID         []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	ConnectionGroup          []string                         `json:"connectionGroup" example:"healthy"`
 	BenchmarkID              []string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
@@ -107,7 +107,7 @@ type ComplianceResultDriftEventFiltersWithMetadata struct {
 	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`
 	ControlID          []FilterWithMetadata `json:"controlID"`
 	ResourceTypeID     []FilterWithMetadata `json:"resourceTypeID"`
-	ConnectionID       []FilterWithMetadata `json:"connectionID"`
+	IntegrationID      []FilterWithMetadata `json:"integrationID"`
 	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
 	Severity           []FilterWithMetadata `json:"severity"`
 	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
@@ -118,7 +118,7 @@ type ComplianceResultDriftEventsSort struct {
 	Connector                *SortDirection `json:"connector"`
 	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
 	ResourceType             *SortDirection `json:"resourceType"`
-	ConnectionID             *SortDirection `json:"connectionID"`
+	IntegrationID            *SortDirection `json:"integrationID"`
 	BenchmarkID              *SortDirection `json:"benchmarkID"`
 	ControlID                *SortDirection `json:"controlID"`
 	Severity                 *SortDirection `json:"severity"`

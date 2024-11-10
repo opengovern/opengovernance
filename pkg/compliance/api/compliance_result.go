@@ -12,8 +12,8 @@ type ComplianceResultFilters struct {
 	IntegrationType   []string                         `json:"integrationType" example:"Azure"`
 	ResourceID        []string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceTypeID    []string                         `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	ConnectionID      []string                         `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	NotConnectionID   []string                         `json:"notConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationID     []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	NotIntegrationID  []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	ConnectionGroup   []string                         `json:"connectionGroup" example:"healthy"`
 	BenchmarkID       []string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID         []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
@@ -32,7 +32,7 @@ type ComplianceResultFilters struct {
 }
 
 type ComplianceResultSummaryFilters struct {
-	ConnectionID   []string `json:"connectionID"`
+	IntegrationID  []string `json:"integrationID"`
 	ResourceTypeID []string `json:"resourceTypeID"`
 }
 
@@ -41,7 +41,7 @@ type ComplianceResultFiltersWithMetadata struct {
 	BenchmarkID        []FilterWithMetadata `json:"benchmarkID"`
 	ControlID          []FilterWithMetadata `json:"controlID"`
 	ResourceTypeID     []FilterWithMetadata `json:"resourceTypeID"`
-	ConnectionID       []FilterWithMetadata `json:"connectionID"`
+	IntegrationID      []FilterWithMetadata `json:"integrationID"`
 	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
 	Severity           []FilterWithMetadata `json:"severity"`
 	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
@@ -53,7 +53,7 @@ type ComplianceResultsSort struct {
 	ResourceID               *SortDirection `json:"resourceID"`
 	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
 	ResourceTypeID           *SortDirection `json:"resourceTypeID"`
-	ConnectionID             *SortDirection `json:"connectionID"`
+	IntegrationID            *SortDirection `json:"integrationID"`
 	BenchmarkID              *SortDirection `json:"benchmarkID"`
 	ControlID                *SortDirection `json:"controlID"`
 	Severity                 *SortDirection `json:"severity"`
@@ -71,7 +71,7 @@ type GetComplianceResultsRequest struct {
 type GetSingleComplianceResultRequest struct {
 	BenchmarkID              string `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                string `json:"controlID" example:"azure_cis_v140_7_5"`
-	ConnectionID             string `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationID            string `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	OpenGovernanceResourceID string `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceID               string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 }
@@ -119,7 +119,7 @@ type ComplianceResult struct {
 	ID                        string                         `json:"id" example:"1"`
 	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	ConnectionID              string                         `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	EvaluatedAt               int64                          `json:"evaluatedAt" example:"1589395200"`
 	StateActive               bool                           `json:"stateActive" example:"true"`
 	ConformanceStatus         ConformanceStatus              `json:"conformanceStatus" example:"alarm"`
@@ -153,7 +153,7 @@ func GetAPIComplianceResultFromESComplianceResult(complianceResult types.Complia
 		ID:                        complianceResult.EsID,
 		BenchmarkID:               complianceResult.BenchmarkID,
 		ControlID:                 complianceResult.ControlID,
-		ConnectionID:              complianceResult.ConnectionID,
+		IntegrationID:             complianceResult.IntegrationID,
 		EvaluatedAt:               complianceResult.EvaluatedAt,
 		StateActive:               complianceResult.StateActive,
 		ConformanceStatus:         "",

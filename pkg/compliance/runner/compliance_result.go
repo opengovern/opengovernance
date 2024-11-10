@@ -64,14 +64,14 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		}
 		resourceType := queryResourceType
 
-		var opengovernanceResourceId, connectionId, resourceID, resourceName, resourceLocation, reason string
+		var opengovernanceResourceId, integrationID, resourceID, resourceName, resourceLocation, reason string
 		var costOptimization *float64
 		var status types.ConformanceStatus
 		if v, ok := recordValue["og_resource_id"].(string); ok {
 			opengovernanceResourceId = v
 		}
 		if v, ok := recordValue["og_account_id"].(string); ok {
-			connectionId = v
+			integrationID = v
 		}
 		if v, ok := recordValue["og_table_name"].(string); ok && resourceType == "" {
 			resourceType, integrationType, err = GetResourceTypeFromTableName(v, w.ExecutionPlan.Query.IntegrationType)
@@ -141,8 +141,8 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 			severity = types.ComplianceResultSeverityNone
 		}
 
-		if (connectionId == "" || connectionId == "null") && w.ExecutionPlan.ConnectionID != nil {
-			connectionId = *w.ExecutionPlan.ConnectionID
+		if (integrationID == "" || integrationID == "null") && w.ExecutionPlan.IntegrationID != nil {
+			integrationID = *w.ExecutionPlan.IntegrationID
 		}
 
 		benchmarkReferences := make([]string, 0, len([]string{caller.RootBenchmark}))
@@ -157,7 +157,7 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		complianceResults = append(complianceResults, types.ComplianceResult{
 			BenchmarkID:               caller.RootBenchmark,
 			ControlID:                 caller.ControlID,
-			ConnectionID:              connectionId,
+			IntegrationID:             integrationID,
 			EvaluatedAt:               w.CreatedAt.UnixMilli(),
 			StateActive:               true,
 			ConformanceStatus:         status,

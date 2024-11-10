@@ -76,7 +76,7 @@ func FetchComplianceResultDriftEventsByComplianceResultIDs(ctx context.Context, 
 
 func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	complianceResultIDs []string, opengovernanceResourceIDs []string,
-	provider []source.Type, connectionID []string, notConnectionID []string,
+	provider []source.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
@@ -100,9 +100,9 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 			requestSort = append(requestSort, map[string]any{
 				"resourceType": *sort.ResourceType,
 			})
-		case sort.ConnectionID != nil:
+		case sort.IntegrationID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"connectionID": *sort.ConnectionID,
+				"integrationID": *sort.IntegrationID,
 			})
 		case sort.BenchmarkID != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -202,11 +202,11 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
-	if len(connectionID) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
+	if len(integrationID) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
 	}
-	if len(notConnectionID) > 0 {
-		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
+	if len(notIntegrationID) > 0 {
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
 	if len(provider) > 0 {
 		var connectors []string
@@ -273,7 +273,7 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
 		ConnectorFilter          AggregationResult `json:"connector_filter"`
-		ConnectionIDFilter       AggregationResult `json:"connection_id_filter"`
+		IntegrationIDFilter      AggregationResult `json:"integration_id_filter"`
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
@@ -290,7 +290,7 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 }
 
 func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	complianceResultIDs []string, opengovernanceResourceIDs []string, connector []source.Type, connectionID []string, notConnectionID []string,
+	complianceResultIDs []string, opengovernanceResourceIDs []string, connector []source.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
@@ -327,11 +327,11 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
 	}
-	if len(connectionID) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("connectionID", connectionID))
+	if len(integrationID) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
 	}
-	if len(notConnectionID) > 0 {
-		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("connectionID", notConnectionID)))
+	if len(notIntegrationID) > 0 {
+		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
 	if len(connector) > 0 {
 		var connectors []string
@@ -367,7 +367,7 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 	aggs := map[string]any{
 		"connector_filter":           map[string]any{"terms": map[string]any{"field": "connector", "size": 1000}},
 		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceType", "size": 1000}},
-		"connection_id_filter":       map[string]any{"terms": map[string]any{"field": "connectionID", "size": 1000}},
+		"integration_id_filter":      map[string]any{"terms": map[string]any{"field": "integrationID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
 		"control_id_filter":          map[string]any{"terms": map[string]any{"field": "controlID", "size": 1000}},

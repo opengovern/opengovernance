@@ -82,7 +82,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 	integrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
 	if err != nil {
-		w.logger.Error("failed to list connections", zap.Error(err))
+		w.logger.Error("failed to list integrations", zap.Error(err))
 		return err
 	}
 	for _, c := range integrations.Integrations {

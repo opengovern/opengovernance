@@ -566,7 +566,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -634,7 +634,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -691,7 +691,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -795,7 +795,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -874,7 +874,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -970,7 +970,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -1065,7 +1065,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -1424,7 +1424,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "resourceType",
-                            "connectionID",
+                            "integrationID",
                             "resourceID",
                             "service",
                             "controlID"
@@ -1449,7 +1449,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by (inclusive)",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -1459,7 +1459,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by (exclusive)",
-                        "name": "notConnectionId",
+                        "name": "notIntegrationId",
                         "in": "query"
                     },
                     {
@@ -1620,7 +1620,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -1677,7 +1677,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -1730,7 +1730,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "resourceType",
-                            "connectionID",
+                            "integrationID",
                             "resourceID",
                             "service"
                         ],
@@ -1747,7 +1747,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -2053,7 +2053,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -2122,7 +2122,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -2178,7 +2178,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "integrationId",
                         "in": "query"
                     },
                     {
@@ -9508,10 +9508,6 @@ const docTemplate = `{
                     ],
                     "example": "alarm"
                 },
-                "connectionID": {
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
                 "controlID": {
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
@@ -9534,6 +9530,10 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "1"
+                },
+                "integrationID": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "integrationName": {
                     "description": "Connection ID",
@@ -9640,10 +9640,6 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
                 },
-                "connectionID": {
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
                 "controlID": {
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
@@ -9654,6 +9650,10 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"
+                },
+                "integrationID": {
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "integrationName": {
                     "type": "string",
@@ -9766,15 +9766,6 @@ const docTemplate = `{
                         "healthy"
                     ]
                 },
-                "connectionID": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                    ]
-                },
                 "connector": {
                     "type": "array",
                     "items": {
@@ -9804,7 +9795,16 @@ const docTemplate = `{
                         }
                     }
                 },
-                "notConnectionID": {
+                "integrationID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
+                },
+                "notIntegrationID": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9866,12 +9866,6 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
                     }
                 },
-                "connectionID": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
-                    }
-                },
                 "connector": {
                     "type": "array",
                     "items": {
@@ -9879,6 +9873,12 @@ const docTemplate = `{
                     }
                 },
                 "controlID": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
+                    }
+                },
+                "integrationID": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
@@ -9919,13 +9919,13 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "connectionID": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
-                },
                 "connector": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "controlID": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
+                },
+                "integrationID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "opengovernanceResourceID": {
@@ -9972,15 +9972,6 @@ const docTemplate = `{
                         "healthy"
                     ]
                 },
-                "connectionID": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                    ]
-                },
                 "controlID": {
                     "type": "array",
                     "items": {
@@ -10000,6 +9991,15 @@ const docTemplate = `{
                             "type": "integer"
                         }
                     }
+                },
+                "integrationID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
                 },
                 "integrationType": {
                     "type": "array",
@@ -10031,7 +10031,7 @@ const docTemplate = `{
                         }
                     }
                 },
-                "notConnectionID": {
+                "notIntegrationID": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -10198,13 +10198,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
                     }
                 },
-                "connectionID": {
+                "controlID": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
                     }
                 },
-                "controlID": {
+                "integrationID": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
@@ -10262,7 +10262,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceResultSummaryFilters": {
             "type": "object",
             "properties": {
-                "connectionID": {
+                "integrationID": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -10285,10 +10285,10 @@ const docTemplate = `{
                 "conformanceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "connectionID": {
+                "controlID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "controlID": {
+                "integrationID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "integrationType": {
@@ -10880,7 +10880,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.GetBenchmarkDetailsComplianceResults": {
             "type": "object",
             "properties": {
-                "connection_ids": {
+                "integration_ids": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -11930,11 +11930,6 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceResult"
                     }
                 },
-                "connectionID": {
-                    "description": "Connection ID",
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
                 "evaluatedAt": {
                     "type": "string"
                 },
@@ -11943,6 +11938,11 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "integrationID": {
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "integrationName": {
                     "description": "Connection ID",
@@ -12017,15 +12017,6 @@ const docTemplate = `{
                         "healthy"
                     ]
                 },
-                "connectionID": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                    ]
-                },
                 "connector": {
                     "type": "array",
                     "items": {
@@ -12055,10 +12046,19 @@ const docTemplate = `{
                         }
                     }
                 },
+                "integrationID": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
+                },
                 "interval": {
                     "type": "string"
                 },
-                "notConnectionID": {
+                "notIntegrationID": {
                     "type": "array",
                     "items": {
                         "type": "string"

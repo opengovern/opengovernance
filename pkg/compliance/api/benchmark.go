@@ -188,7 +188,7 @@ type GetBenchmarkDetailsMetadata struct {
 type GetBenchmarkDetailsComplianceResults struct {
 	Results         map[types.ConformanceStatus]int `json:"results"`
 	LastEvaluatedAt time.Time                       `json:"lastEvaluated_at"`
-	ConnectionIDs   []string                        `json:"connection_ids"`
+	IntegrationIDs  []string                        `json:"integration_ids"`
 }
 
 type GetBenchmarkDetailsChildren struct {

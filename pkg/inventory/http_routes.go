@@ -2998,7 +2998,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 		if key == "Match" {
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
-				if dimKey == "ConnectionID" {
+				if dimKey == "IntegrationID" {
 					integrations, err = dimFilterFunction(dimFilter, allIntegrationsSrt)
 					if err != nil {
 						return nil, err

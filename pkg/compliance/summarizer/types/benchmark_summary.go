@@ -81,7 +81,7 @@ func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.Comp
 	r.BenchmarkResult.Result.QueryResult[complianceResult.ConformanceStatus]++
 	r.BenchmarkResult.Result.CostOptimization = utils.PAdd(r.BenchmarkResult.Result.CostOptimization, complianceResult.CostOptimization)
 
-	connection, ok := r.Connections[complianceResult.ConnectionID]
+	connection, ok := r.Connections[complianceResult.IntegrationID]
 	if !ok {
 		connection = ResultGroup{
 			Result: Result{
@@ -98,7 +98,7 @@ func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.Comp
 	}
 	connection.Result.QueryResult[complianceResult.ConformanceStatus]++
 	connection.Result.CostOptimization = utils.PAdd(connection.Result.CostOptimization, complianceResult.CostOptimization)
-	r.Connections[complianceResult.ConnectionID] = connection
+	r.Connections[complianceResult.IntegrationID] = connection
 
 	resourceType, ok := r.BenchmarkResult.ResourceTypes[complianceResult.ResourceType]
 	if !ok {
@@ -145,10 +145,10 @@ func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.Comp
 		control.Passed = false
 
 		control.failedResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
-		control.failedConnections.Insert([]byte(complianceResult.ConnectionID))
+		control.failedConnections.Insert([]byte(complianceResult.IntegrationID))
 	}
 	control.allResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
-	control.allConnections.Insert([]byte(complianceResult.ConnectionID))
+	control.allConnections.Insert([]byte(complianceResult.IntegrationID))
 	control.CostOptimization = utils.PAdd(control.CostOptimization, complianceResult.CostOptimization)
 	r.BenchmarkResult.Controls[complianceResult.ControlID] = control
 
@@ -165,10 +165,10 @@ func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.Comp
 	if !complianceResult.ConformanceStatus.IsPassed() {
 		connectionControl.Passed = false
 		connectionControl.failedResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
-		connectionControl.failedConnections.Insert([]byte(complianceResult.ConnectionID))
+		connectionControl.failedConnections.Insert([]byte(complianceResult.IntegrationID))
 	}
 	connectionControl.allResources.Insert([]byte(complianceResult.OpenGovernanceResourceID))
-	connectionControl.allConnections.Insert([]byte(complianceResult.ConnectionID))
+	connectionControl.allConnections.Insert([]byte(complianceResult.IntegrationID))
 	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, complianceResult.CostOptimization)
 	connection.Controls[complianceResult.ControlID] = connectionControl
 }
@@ -206,7 +206,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 		r.BenchmarkResult.Result.SecurityScore = float64(r.BenchmarkResult.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 	}
 
-	for connectionID, summary := range r.Connections {
+	for integrationID, summary := range r.Connections {
 		for controlID, controlSummary := range summary.Controls {
 			controlSummary.FailedConnectionCount = int(controlSummary.failedConnections.Estimate())
 			controlSummary.TotalConnectionCount = int(controlSummary.allConnections.Estimate())
@@ -239,7 +239,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 			summary.Result.SecurityScore = float64(summary.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
 		}
 
-		r.Connections[connectionID] = summary
+		r.Connections[integrationID] = summary
 	}
 }
 
