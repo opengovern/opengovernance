@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	AnalyticsSpendConnectionSummaryIndex = "analytics_spend_connection_summary"
+	AnalyticsSpendIntegrationSummaryIndex = "analytics_spend_integration_summary"
 )
 
-type PerConnectionMetricTrendSummary struct {
+type PerIntegrationMetricTrendSummary struct {
 	DateEpoch       int64            `json:"date_epoch"`
 	IntegrationID   string           `json:"integration_id"`
 	IntegrationName string           `json:"integration_name"`
@@ -17,7 +17,7 @@ type PerConnectionMetricTrendSummary struct {
 	IsJobSuccessful bool             `json:"is_job_successful"`
 }
 
-type ConnectionMetricTrendSummary struct {
+type IntegrationMetricTrendSummary struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
@@ -33,14 +33,14 @@ type ConnectionMetricTrendSummary struct {
 	PeriodStart int64  `json:"period_start"`
 	PeriodEnd   int64  `json:"period_end"`
 
-	Integrations    []PerConnectionMetricTrendSummary          `json:"integrations"`
-	IntegrationsMap map[string]PerConnectionMetricTrendSummary `json:"-"`
+	Integrations    []PerIntegrationMetricTrendSummary          `json:"integrations"`
+	IntegrationsMap map[string]PerIntegrationMetricTrendSummary `json:"-"`
 }
 
-func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
+func (r IntegrationMetricTrendSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.Date,
 		r.MetricID,
 	}
-	return keys, AnalyticsSpendConnectionSummaryIndex
+	return keys, AnalyticsSpendIntegrationSummaryIndex
 }

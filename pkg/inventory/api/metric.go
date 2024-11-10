@@ -1,10 +1,11 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
 )
 
@@ -12,7 +13,7 @@ type Metric struct {
 	ID                       string              `json:"id" example:"vms"`
 	FinderQuery              string              `json:"finderQuery" example:"select * from og_resources where resource_type = 'aws::ec2::instance'"`
 	FinderPerConnectionQuery string              `json:"finderPerConnectionQuery" example:"select * from og_resources where resource_type = 'aws::ec2::instance' AND connection_id IN <CONNECTION_ID_LIST>"`
-	Connectors               []source.Type       `json:"connectors" example:"[Azure]"`                  // Cloud Provider
+	IntegrationTypes         []integration.Type  `json:"integrationTypes" example:"[Azure]"`            // Cloud Provider
 	Name                     string              `json:"name" example:"VMs"`                            // Resource Type
 	Tags                     map[string][]string `json:"tags,omitempty"`                                // Tags
 	LastEvaluated            *time.Time          `json:"last_evaluated" example:"2020-01-01T00:00:00Z"` // Last time the metric was evaluated
@@ -26,7 +27,7 @@ func MetricToAPI(metric analyticsDB.AnalyticMetric) Metric {
 		ID:                       metric.ID,
 		FinderQuery:              metric.FinderQuery,
 		FinderPerConnectionQuery: metric.FinderPerConnectionQuery,
-		Connectors:               source.ParseTypes(metric.IntegrationTypes),
+		IntegrationTypes:         integration_type.ParseTypes(metric.IntegrationTypes),
 		Name:                     metric.Name,
 		Tags:                     model.TrimPrivateTags(GetTagsMap(metric)),
 	}

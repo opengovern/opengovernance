@@ -12,13 +12,13 @@ import (
 )
 
 type ConnectionCostSummaryHit struct {
-	ID      string                             `json:"_id"`
-	Score   float64                            `json:"_score"`
-	Index   string                             `json:"_index"`
-	Type    string                             `json:"_type"`
-	Version int64                              `json:"_version,omitempty"`
-	Source  spend.ConnectionMetricTrendSummary `json:"_source"`
-	Sort    []any                              `json:"sort"`
+	ID      string                              `json:"_id"`
+	Score   float64                             `json:"_score"`
+	Index   string                              `json:"_index"`
+	Type    string                              `json:"_type"`
+	Version int64                               `json:"_version,omitempty"`
+	Source  spend.IntegrationMetricTrendSummary `json:"_source"`
+	Sort    []any                               `json:"sort"`
 }
 
 type ConnectionCostSummaryHits struct {
@@ -36,7 +36,7 @@ type ConnectionCostSummaryPaginator struct {
 }
 
 func (k Client) NewConnectionCostSummaryPaginator(filters []essdk.BoolFilter, limit *int64) (ConnectionCostSummaryPaginator, error) {
-	paginator, err := essdk.NewPaginator(k.ES.ES(), spend.AnalyticsSpendConnectionSummaryIndex, filters, limit)
+	paginator, err := essdk.NewPaginator(k.ES.ES(), spend.AnalyticsSpendIntegrationSummaryIndex, filters, limit)
 	if err != nil {
 		return ConnectionCostSummaryPaginator{}, err
 	}
@@ -61,14 +61,14 @@ func (p ConnectionCostSummaryPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p ConnectionCostSummaryPaginator) NextPage(ctx context.Context) ([]spend.ConnectionMetricTrendSummary, error) {
+func (p ConnectionCostSummaryPaginator) NextPage(ctx context.Context) ([]spend.IntegrationMetricTrendSummary, error) {
 	var response ConnectionCostSummarySearchResponse
 	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []spend.ConnectionMetricTrendSummary
+	var values []spend.IntegrationMetricTrendSummary
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}

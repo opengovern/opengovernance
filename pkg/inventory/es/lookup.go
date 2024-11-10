@@ -3,9 +3,9 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"github.com/opengovern/og-util/pkg/integration"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/describe"
 	"github.com/opengovern/opengovernance/pkg/utils"
 )
@@ -21,16 +21,16 @@ type ResourceTypeCountsResponse struct {
 	} `json:"aggregations"`
 }
 
-func GetResourceTypeCounts(ctx context.Context, client opengovernance.Client, integrationTypes []source.Type, integrationIDs []string, resourceTypes []string, size int) (map[string]int, error) {
+func GetResourceTypeCounts(ctx context.Context, client opengovernance.Client, integrationTypes []integration.Type, integrationIDs []string, resourceTypes []string, size int) (map[string]int, error) {
 	var filters []any
 	if len(integrationTypes) > 0 {
-		connectorsStr := make([]string, 0, len(integrationTypes))
-		for _, connector := range integrationTypes {
-			connectorsStr = append(connectorsStr, connector.String())
+		integrationTypesStr := make([]string, 0, len(integrationTypes))
+		for _, integrationType := range integrationTypes {
+			integrationTypesStr = append(integrationTypesStr, integrationType.String())
 		}
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
-				"integration_type": connectorsStr,
+				"integration_type": integrationTypesStr,
 			},
 		})
 	}

@@ -3,34 +3,11 @@ package api
 import (
 	"github.com/opengovern/og-util/pkg/integration"
 	"time"
-
-	"github.com/opengovern/og-util/pkg/es"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type DirectionType string
 
-const (
-	DirectionAscending  DirectionType = "asc"
-	DirectionDescending DirectionType = "desc"
-)
-
 type SortFieldType string
-
-const (
-	SortFieldResourceID    SortFieldType = "resourceID"
-	SortFieldConnector     SortFieldType = "connector"
-	SortFieldResourceType  SortFieldType = "resourceType"
-	SortFieldResourceGroup SortFieldType = "resourceGroup"
-	SortFieldLocation      SortFieldType = "location"
-	SortFieldConnectionID  SortFieldType = "connectionID"
-)
-
-type CostWithUnit struct {
-	Cost float64 `json:"cost"` // Value
-	Unit string  `json:"unit"` // Currency
-}
 
 type Page struct {
 	No   int `json:"no,omitempty"`
@@ -60,73 +37,10 @@ type ResourceFilters struct {
 	TagValues map[string][]string `json:"tagValues"`
 }
 
-type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resourceID,connector,resourceType,resourceGroup,location,connectionID"`
-	Direction DirectionType `json:"direction" enums:"asc,desc"`
-}
-
 type NamedQuerySortItem struct {
 	// fill this with column name
 	Field     string        `json:"field"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
-}
-
-type AllResource struct {
-	ResourceName         string      `json:"resourceName"`      // Resource Name
-	ResourceID           string      `json:"resourceID"`        // Resource Id
-	ResourceType         string      `json:"resourceType"`      // Resource Type
-	ResourceTypeLabel    string      `json:"resourceTypeLabel"` // Resource Type Label
-	Connector            source.Type `json:"connector"`         // Resource Provider
-	Location             string      `json:"location"`          // The Region of the resource
-	ConnectionID         string      `json:"connectionID"`      // Platform Connection Id of the resource
-	ProviderConnectionID string      `json:"providerID"`        // Platform Connection Id
-	IntegrationName      string      `json:"integrationName"`   // Provider Connection Name
-
-	Attributes map[string]string `json:"attributes"`
-}
-
-type AzureResource struct {
-	ResourceName         string `json:"resourceName"`      // Resource Name
-	ResourceID           string `json:"resourceID"`        // Resource Id
-	ResourceType         string `json:"resourceType"`      // Resource Type
-	ResourceTypeLabel    string `json:"resourceTypeLabel"` // Resource Type Label
-	ResourceGroup        string `json:"resourceGroup"`     // Resource Group
-	Location             string `json:"location"`          // The Region of the resource
-	ConnectionID         string `json:"connectionID"`      // Platform Connection Id of the resource
-	ProviderConnectionID string `json:"providerID"`        // Provider Connection Id
-	IntegrationName      string `json:"integrationName"`   // Provider Connection Name
-
-	Attributes map[string]string `json:"attributes"`
-}
-
-type AWSResource struct {
-	ResourceName         string `json:"resourceName"`
-	ResourceID           string `json:"resourceID"`
-	ResourceType         string `json:"resourceType"`
-	ResourceTypeLabel    string `json:"resourceTypeLabel"`
-	Location             string `json:"location"`
-	ConnectionID         string `json:"connectionID"`
-	ProviderConnectionID string `json:"ProviderConnectionID"`
-	IntegrationName      string `json:"integrationName"`
-
-	Attributes map[string]string `json:"attributes"`
-}
-
-type SummaryQueryResponse struct {
-	Hits SummaryQueryHits `json:"hits"`
-}
-type SummaryQueryHits struct {
-	Total opengovernance.SearchTotal `json:"total"`
-	Hits  []SummaryQueryHit          `json:"hits"`
-}
-type SummaryQueryHit struct {
-	ID      string            `json:"_id"`
-	Score   float64           `json:"_score"`
-	Index   string            `json:"_index"`
-	Type    string            `json:"_type"`
-	Version int64             `json:"_version,omitempty"`
-	Source  es.LookupResource `json:"_source"`
-	Sort    []any             `json:"sort"`
 }
 
 type NamedQueryItem struct {
@@ -170,15 +84,15 @@ type Query struct {
 }
 
 type ListQueryV2Request struct {
-	TitleFilter   string              `json:"titleFilter"`
-	Providers     []string            `json:"providers"`
-	HasParameters *bool               `json:"has_parameters"`
-	PrimaryTable  []string            `json:"primary_table"`
-	ListOfTables  []string            `json:"list_of_tables"`
-	Tags          map[string][]string `json:"tags"`
-	TagsRegex     *string             `json:"tags_regex"`
-	Cursor        *int64              `json:"cursor"`
-	PerPage       *int64              `json:"per_page"`
+	TitleFilter      string              `json:"title_filter"`
+	IntegrationTypes []string            `json:"integration_types"`
+	HasParameters    *bool               `json:"has_parameters"`
+	PrimaryTable     []string            `json:"primary_table"`
+	ListOfTables     []string            `json:"list_of_tables"`
+	Tags             map[string][]string `json:"tags"`
+	TagsRegex        *string             `json:"tags_regex"`
+	Cursor           *int64              `json:"cursor"`
+	PerPage          *int64              `json:"per_page"`
 }
 
 type ListQueryRequest struct {

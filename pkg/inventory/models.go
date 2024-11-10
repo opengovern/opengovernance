@@ -8,7 +8,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/model"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/inventory/api"
 	"gorm.io/gorm"
 )
@@ -219,20 +218,20 @@ func (r ResourceCollection) GetTagsMap() map[string][]string {
 }
 
 type ResourceTypeV2 struct {
-	ProviderName   source.Type `gorm:"column:provider_name"`
-	ResourceName   string      `gorm:"column:resource_name"`
-	ResourceID     string      `gorm:"primaryKey"`
-	SteampipeTable string      `gorm:"column:steampipe_table"`
-	Category       string      `gorm:"column:category"`
+	IntegrationType integration.Type `gorm:"column:integration_type"`
+	ResourceName    string           `gorm:"column:resource_name"`
+	ResourceID      string           `gorm:"primaryKey"`
+	SteampipeTable  string           `gorm:"column:steampipe_table"`
+	Category        string           `gorm:"column:category"`
 }
 
 func (r ResourceTypeV2) ToApi() api.ResourceTypeV2 {
 	apiResourceType := api.ResourceTypeV2{
-		ProviderName:   r.ProviderName,
-		ResourceName:   r.ResourceName,
-		ResourceID:     r.ResourceID,
-		SteampipeTable: r.SteampipeTable,
-		Category:       r.Category,
+		IntegrationType: r.IntegrationType,
+		ResourceName:    r.ResourceName,
+		ResourceID:      r.ResourceID,
+		SteampipeTable:  r.SteampipeTable,
+		Category:        r.Category,
 	}
 	return apiResourceType
 }
