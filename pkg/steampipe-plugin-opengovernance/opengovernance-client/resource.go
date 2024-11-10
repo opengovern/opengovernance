@@ -28,16 +28,16 @@ type Metadata struct {
 }
 
 type Resource struct {
-	Description   any      `json:"description"`
-	Metadata      Metadata `json:"metadata"`
-	ResourceJobID int      `json:"resource_job_id"`
-	SourceJobID   int      `json:"source_job_id"`
-	ResourceType  string   `json:"resource_type"`
-	SourceType    string   `json:"source_type"`
-	ID            string   `json:"id"`
-	ARN           string   `json:"arn"`
-	SourceID      string   `json:"source_id"`
-	CreatedAt     int64    `json:"created_at"`
+	PlatformID      string   `json:"platform_id"`
+	Description     any      `json:"description"`
+	Metadata        Metadata `json:"metadata"`
+	ResourceID      string   `json:"resource_id"`
+	IntegrationID   string   `json:"integration_id"`
+	IntegrationType string   `json:"integration_type"`
+	ResourceType    string   `json:"resource_type"`
+	ResourceName    string   `json:"resource_name"`
+	DescribedBy     string   `json:"described_by"`
+	DescribedAt     int64    `json:"described_at"`
 }
 
 type ResourceHit struct {

@@ -8,9 +8,9 @@ import (
 	"github.com/kaytu-io/pennywise/pkg/schema"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	essdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"net/http"
@@ -425,9 +425,9 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 				resources = append(resources, hit)
 
 				var provider schema.ProviderName
-				if hit.SourceType == source.CloudAWS.String() {
+				if hit.IntegrationType == integration_type.IntegrationTypeAWSAccount.String() {
 					provider = schema.AWSProvider
-				} else if hit.SourceType == source.CloudAzure.String() {
+				} else if hit.IntegrationType == integration_type.IntegrationTypeAzureSubscription.String() {
 					provider = schema.AzureProvider
 				}
 				values, err := GetValues(hit, index.resourceType)
@@ -436,7 +436,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 					return nil, err
 				}
 				req.Resources = append(req.Resources, schema.ResourceDef{
-					Address:      hit.ID,
+					Address:      hit.ResourceID,
 					Type:         ResourceTypeConversion(hit.ResourceType),
 					Name:         hit.Metadata.Name,
 					RegionCode:   hit.Metadata.Region,
@@ -474,7 +474,7 @@ func ListResourceCostEstimate(ctx context.Context, d *plugin.QueryData, _ *plugi
 		}
 
 		d.StreamListItem(ctx, ResourceCostEstimate{
-			ResourceID:   hit.ID,
+			ResourceID:   hit.ResourceID,
 			ResourceType: hit.ResourceType,
 			Cost:         resourceCost.Decimal.InexactFloat64(),
 		})
