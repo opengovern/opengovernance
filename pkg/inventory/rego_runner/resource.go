@@ -3,14 +3,9 @@ package rego_runner
 import (
 	"context"
 	"regexp"
-	"runtime"
 	"strings"
 
 	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 
 type Client struct {
@@ -29,19 +24,6 @@ type Metadata struct {
 	Region       string
 	Partition    string
 	ResourceType string
-}
-
-type Resource struct {
-	Description   any      `json:"description"`
-	Metadata      Metadata `json:"metadata"`
-	ResourceJobID int      `json:"resource_job_id"`
-	SourceJobID   int      `json:"source_job_id"`
-	ResourceType  string   `json:"resource_type"`
-	SourceType    string   `json:"source_type"`
-	ID            string   `json:"id"`
-	ARN           string   `json:"arn"`
-	SourceID      string   `json:"source_id"`
-	CreatedAt     int64    `json:"created_at"`
 }
 
 type ResourceHit struct {
@@ -113,15 +95,6 @@ func (p ResourcePaginator) NextPage(ctx context.Context) ([]map[string]interface
 	return values, nil
 }
 
-var resourceMapping = map[string]string{
-	"resource_id":   "id",
-	"resource_arn":  "arn",
-	"connector":     "source_type",
-	"region":        "location",
-	"connection_id": "source_id",
-	"name":          "metadata.Name",
-}
-
 var resourceTypeMap = map[string]string{
 	"aws::ec2::volumegp3": "aws::ec2::volume",
 }
@@ -134,82 +107,4 @@ func ResourceTypeToESIndex(t string) string {
 	}
 	t = stopWordsRe.ReplaceAllString(t, "_")
 	return strings.ToLower(t)
-}
-
-func ListResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {
-	plugin.Logger(ctx).Trace("ListResources 1", d)
-	runtime.GC()
-	// create service
-	cfg := config.GetConfig(d.Connection)
-
-	plugin.Logger(ctx).Trace("ListResources 2", cfg)
-	ke, err := config.NewClientCached(cfg, d.ConnectionCache, ctx)
-	if err != nil {
-		return nil, err
-	}
-	k := Client{ES: ke}
-
-	plugin.Logger(ctx).Trace("ListResources 3", k)
-	sc, err := steampipesdk.NewSelfClientCached(ctx, d.ConnectionCache)
-	if err != nil {
-		plugin.Logger(ctx).Error("ListResources NewSelfClientCached", "error", err)
-		return nil, err
-	}
-	plugin.Logger(ctx).Trace("ListResources 4", sc)
-	encodedResourceCollectionFilters, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyResourceCollectionFilters)
-	if err != nil {
-		plugin.Logger(ctx).Error("ListResources GetConfigTableValueOrNil for resource_collection_filters", "error", err)
-		return nil, err
-	}
-	plugin.Logger(ctx).Trace("ListResources 5", encodedResourceCollectionFilters)
-	clientType, err := sc.GetConfigTableValueOrNil(ctx, steampipesdk.OpenGovernanceConfigKeyClientType)
-	if err != nil {
-		plugin.Logger(ctx).Error("ListResources GetConfigTableValueOrNil for client_type", "error", err)
-		return nil, err
-	}
-
-	plugin.Logger(ctx).Trace("Columns", d.EqualsQuals)
-	var indexes []string
-	for column, q := range d.EqualsQuals {
-		if column == "resource_type" {
-			if s, ok := q.GetValue().(*proto.QualValue_StringValue); ok && s != nil {
-				indexes = []string{ResourceTypeToESIndex(s.StringValue)}
-			} else if l := q.GetListValue(); l != nil {
-				for _, v := range l.GetValues() {
-					if v == nil {
-						continue
-					}
-					indexes = append(indexes, v.GetStringValue())
-				}
-			}
-		}
-	}
-
-	for _, index := range indexes {
-		paginator, err := k.NewResourcePaginator(es.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, resourceMapping,
-			"", nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index)
-		if err != nil {
-			plugin.Logger(ctx).Error("ListResources NewResourcePaginator", "error", err)
-			return nil, err
-		}
-
-		for paginator.HasNext() {
-			page, err := paginator.NextPage(ctx)
-			if err != nil {
-				plugin.Logger(ctx).Error("ListResources NextPage", "error", err)
-				return nil, err
-			}
-			plugin.Logger(ctx).Trace("ListResources", "next page")
-
-			for _, v := range page {
-				d.StreamListItem(ctx, v)
-			}
-		}
-		err = paginator.Close(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return nil, nil
 }

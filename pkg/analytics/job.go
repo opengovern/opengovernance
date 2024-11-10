@@ -136,7 +136,7 @@ func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfi
 		req.IntegrationTypeCount[integration.IntegrationType.String()] += 1
 	}
 
-	connData, err := inventoryClient.ListConnectionsData(&httpCtx, nil, nil,
+	connData, err := inventoryClient.ListIntegrationsData(&httpCtx, nil, nil,
 		utils.GetPointer(now.AddDate(0, -1, 0)), &now, nil, true, false)
 	if err != nil {
 		logger.Error("failed to list connections data", zap.Error(err))
@@ -278,7 +278,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	status []describeApi.DescribeStatus,
 	integrationClient integrationClient.IntegrationServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient) (
-	*resource.ConnectionMetricTrendSummaryResult,
+	*resource.IntegrationMetricTrendSummaryResult,
 	*resource.IntegrationTypeMetricTrendSummaryResult,
 	error,
 ) {
@@ -316,7 +316,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	logger.Info("assets ==== ", zap.Int("count", len(res.Data)))
 
 	totalCount := 0
-	perConnection := make(map[string]resource.PerConnectionMetricTrendSummary)
+	perConnection := make(map[string]resource.PerIntegrationMetricTrendSummary)
 	perConnector := make(map[string]resource.PerIntegrationTypeMetricTrendSummary)
 
 	connectorCount := map[string]int64{}
@@ -376,7 +376,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 			v.ResourceCount += int(count)
 			perConnection[integration.IntegrationID] = v
 		} else {
-			vn := resource.PerConnectionMetricTrendSummary{
+			vn := resource.PerIntegrationMetricTrendSummary{
 				IntegrationID:   integration.IntegrationID,
 				IntegrationName: integration.Name,
 				IntegrationType: integration.IntegrationType,
@@ -400,7 +400,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 		}
 		totalCount += int(count)
 	}
-	perConnectionArray := make([]resource.PerConnectionMetricTrendSummary, 0, len(perConnection))
+	perConnectionArray := make([]resource.PerIntegrationMetricTrendSummary, 0, len(perConnection))
 	for _, v := range perConnection {
 		perConnectionArray = append(perConnectionArray, v)
 	}
@@ -410,9 +410,9 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	}
 	logger.Info("assets ==== ", zap.String("metric_id", metric.ID), zap.Int("totalCount", totalCount))
 
-	return &resource.ConnectionMetricTrendSummaryResult{
+	return &resource.IntegrationMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
-			Connections:        perConnectionArray,
+			Integrations:       perConnectionArray,
 		}, &resource.IntegrationTypeMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
 			IntegrationTypes:   perConnectorArray,
@@ -420,7 +420,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 }
 
 func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, integrationCache map[string]integrationApi.Integration, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
-	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
+	connectionMetricTrendSummary := resource.IntegrationMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
 		Month:               startTime.Format("2006-01"),
@@ -441,7 +441,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 		ResourceCollections: nil,
 	}
 	if len(encodedResourceCollectionFilters) > 0 {
-		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectionMetricTrendSummaryResult)
+		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.IntegrationMetricTrendSummaryResult)
 		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.IntegrationTypeMetricTrendSummaryResult)
 
 		for rcId, encodedFilter := range encodedResourceCollectionFilters {
@@ -497,7 +497,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 }
 
 func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]integrationApi.Integration, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
-	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
+	connectionResultMap := map[string]spend.IntegrationMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
@@ -610,7 +610,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 				v2.IsJobSuccessful = isJobSuccessful
 				v.IntegrationsMap[integration.IntegrationID] = v2
 			} else {
-				v.IntegrationsMap[integration.IntegrationID] = spend.PerConnectionMetricTrendSummary{
+				v.IntegrationsMap[integration.IntegrationID] = spend.PerIntegrationMetricTrendSummary{
 					DateEpoch:       dateTimestamp.UnixMilli(),
 					IntegrationID:   integration.IntegrationID,
 					IntegrationName: integration.Name,
@@ -621,7 +621,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			}
 			connectionResultMap[date] = v
 		} else {
-			vn := spend.ConnectionMetricTrendSummary{
+			vn := spend.IntegrationMetricTrendSummary{
 				Date:           dateTimestamp.Format("2006-01-02"),
 				DateEpoch:      dateTimestamp.UnixMilli(),
 				Month:          dateTimestamp.Format("2006-01"),
@@ -632,7 +632,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 				PeriodEnd:      endTime.UnixMilli(),
 				EvaluatedAt:    time.Now().UnixMilli(),
 				TotalCostValue: sum,
-				IntegrationsMap: map[string]spend.PerConnectionMetricTrendSummary{
+				IntegrationsMap: map[string]spend.PerIntegrationMetricTrendSummary{
 					integration.IntegrationID: {
 						DateEpoch:       dateTimestamp.UnixMilli(),
 						IntegrationID:   integration.IntegrationID,

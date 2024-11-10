@@ -56,8 +56,8 @@ const (
 )
 
 const (
-	ConnectionIdParam    = "connectionId"
-	ConnectionGroupParam = "connectionGroup"
+	IntegrationIdParam    = "integrationId"
+	IntegrationGroupParam = "integrationGroup"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
@@ -92,8 +92,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, api.ViewerRole))
 	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, api.ViewerRole))
 
-	connectionsV2 := v2.Group("/connections")
-	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, api.ViewerRole))
+	connectionsV2 := v2.Group("/integrations")
+	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListIntegrationsData, api.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
 	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, api.ViewerRole))
@@ -124,19 +124,19 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
-	integrationIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
+	integrationIds := httpserver.QueryArrayParam(ctx, IntegrationIdParam)
 	integrationIds, err := httpserver.ResolveConnectionIDs(ctx, integrationIds)
 	if err != nil {
 		return nil, err
 	}
 
-	integrationGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	integrationGroup := httpserver.QueryArrayParam(ctx, IntegrationGroupParam)
 	if len(integrationIds) == 0 && len(integrationGroup) == 0 {
 		return nil, nil
 	}
 
 	if len(integrationIds) > 0 && len(integrationGroup) > 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "integrationId and integrationGroup cannot be used together")
 	}
 
 	if len(integrationIds) > 0 {
@@ -149,16 +149,16 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 		if err != nil {
 			return nil, err
 		}
-		for _, connectionID := range integrationGroupObj.IntegrationIds {
-			integrationMap[connectionID] = true
+		for _, integrationId := range integrationGroupObj.IntegrationIds {
+			integrationMap[integrationId] = true
 		}
 	}
 	integrationIds = make([]string, 0, len(integrationMap))
-	for connectionID := range integrationMap {
-		integrationIds = append(integrationIds, connectionID)
+	for integrationId := range integrationMap {
+		integrationIds = append(integrationIds, integrationId)
 	}
 	if len(integrationIds) == 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup(s) do not have any connections")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "integrationGroup(s) do not have any integrations")
 	}
 
 	return integrationIds, nil
@@ -176,7 +176,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
-func (h *HttpHandler) getIntegrationTypesFromConnectionIDs(ctx echo.Context, integrationTypes []integration.Type, integrationIDs []string) ([]integration.Type, error) {
+func (h *HttpHandler) getIntegrationTypesFromIntegrationIDs(ctx echo.Context, integrationTypes []integration.Type, integrationIDs []string) ([]integration.Type, error) {
 	if len(integrationIDs) == 0 {
 		return integrationTypes, nil
 	}
@@ -195,8 +195,8 @@ func (h *HttpHandler) getIntegrationTypesFromConnectionIDs(ctx echo.Context, int
 		enabledIntegrations[integration.IntegrationType] = true
 	}
 	integrationTypes = make([]integration.Type, 0, len(enabledIntegrations))
-	for connectorType := range enabledIntegrations {
-		integrationTypes = append(integrationTypes, connectorType)
+	for integrationType := range enabledIntegrations {
+		integrationTypes = append(integrationTypes, integrationType)
 	}
 
 	return integrationTypes, nil
@@ -228,7 +228,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 	if len(connectionIDs) > 0 {
 		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx, h.logger, h.client, filteredMetricIDs, integrationTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx, h.logger, h.client, filteredMetricIDs, integrationTypes, resourceCollections, timeAt, EsFetchPageSize)
+		metricIndexed, err = es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx, h.logger, h.client, filteredMetricIDs, integrationTypes, resourceCollections, timeAt, EsFetchPageSize)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -263,7 +263,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
 //	@Produce		json
 //	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			metricType			query		string			false	"Metric type, default: assets"	Enums(assets, spend)
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			integrationType		query		[]source.Type	false	"Integration Type to filter by"
 //	@Param			connectionId		query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
@@ -283,7 +283,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	integrationTypes := integration_type.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	integrationTypes := integration_type.ParseTypes(httpserver.QueryArrayParam(ctx, "integrationType"))
 	integrationIds, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -294,7 +294,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
-	integrationTypes, err = h.getIntegrationTypesFromConnectionIDs(ctx, integrationTypes, integrationIds)
+	integrationTypes, err = h.getIntegrationTypesFromIntegrationIDs(ctx, integrationTypes, integrationIds)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
@@ -450,7 +450,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			connector			query		[]string	false	"Connector type to filter by"
+//	@Param			integrationType			query		[]string	false	"Integration type to filter by"
 //	@Param			connectionId		query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup		query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
@@ -461,12 +461,12 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Success		200					{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
-	connectorTypes := integration_type.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	integrationTypes := integration_type.ParseTypes(httpserver.QueryArrayParam(ctx, "integrationType"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
-	connectorTypes, err = h.getIntegrationTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	integrationTypes, err = h.getIntegrationTypesFromIntegrationIDs(ctx, integrationTypes, connectionIDs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
@@ -498,12 +498,12 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	fmt.Println("connectorTypes", connectorTypes)
+	fmt.Println("integrationTypes", integrationTypes)
 	// trace :
 	outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_ListMetricTagsKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListMetricTagsKeysWithPossibleValues")
 
-	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
+	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(integrationTypes)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
@@ -517,15 +517,15 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
-			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, integrationTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 		} else {
-			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
+			metricCount, err = es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, integrationTypes, resourceCollections, endTime, EsFetchPageSize)
 		}
 		if err != nil {
 			return err
 		}
 	} else {
-		spend, err = es.FetchSpendByMetric(ctx.Request().Context(), h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		spend, err = es.FetchSpendByMetric(ctx.Request().Context(), h.client, connectionIDs, integrationTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -547,7 +547,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
 				key: {tagValue},
-			}, metricType, nil, connectorTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
+			}, metricType, nil, integrationTypes, []analyticsDB.AnalyticMetricStatus{analyticsDB.AnalyticMetricStatusActive})
 			if err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
@@ -679,7 +679,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(ctx.Request().Context(), h.logger, h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchIntegrationTypeMetricTrendSummaryPage(ctx.Request().Context(), h.logger, h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -840,7 +840,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if len(connectionIDs) > 0 {
 		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, resourceCollections, endTime, EsFetchPageSize)
+		metricIndexed, err = es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, resourceCollections, endTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -850,7 +850,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if len(connectionIDs) > 0 {
 		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
 	} else {
-		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, resourceCollections, startTime, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, metricsIDs, integrationTypes, resourceCollections, startTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -1884,14 +1884,14 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, table)
 }
 
-func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
+func (h *HttpHandler) ListIntegrationsData(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	performanceStartTime := time.Now()
 	var err error
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	integrationIDs := httpserver.QueryArrayParam(ctx, "integrationId")
 	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	metricIDFilters := httpserver.QueryArrayParam(ctx, "metricId")
-	integrationTypes, err := h.getIntegrationTypesFromConnectionIDs(ctx, nil, connectionIDs)
+	integrationTypes, err := h.getIntegrationTypesFromIntegrationIDs(ctx, nil, integrationIDs)
 	if err != nil {
 		return err
 	}
@@ -1937,7 +1937,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			metricIDs = append(metricIDs, m.ID)
 		}
 
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, integrationTypes, connectionIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, integrationTypes, integrationIDs, resourceCollections, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1956,7 +1956,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, integrationTypes, connectionIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(ctx.Request().Context(), h.logger, h.client, integrationTypes, integrationIDs, resourceCollections, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1979,7 +1979,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 
 	if needCost {
-		hits, err := es.FetchConnectionDailySpendHistory(ctx.Request().Context(), h.client, connectionIDs, integrationTypes, metricIDFilters, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistory(ctx.Request().Context(), h.client, integrationIDs, integrationTypes, metricIDFilters, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2085,7 +2085,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
 
-	queries, err := h.db.ListQueriesByFilters(search, req.Tags, req.Providers, req.HasParameters, req.PrimaryTable,
+	queries, err := h.db.ListQueriesByFilters(search, req.Tags, req.IntegrationTypes, req.HasParameters, req.PrimaryTable,
 		req.ListOfTables, nil)
 	if err != nil {
 		span.RecordError(err)
@@ -2324,7 +2324,7 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	metricsIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
+	metricsIndexed, err := es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, nil, nil, nil, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2580,7 +2580,7 @@ func (h *HttpHandler) RunRegoNamedQuery(ctx context.Context, title, query string
 
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	integrationTypes := integration_type.ParseTypes(httpserver.QueryArrayParam(ctx, "integrationType"))
 	serviceNames := httpserver.QueryArrayParam(ctx, "service")
 	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
 	summarized := strings.ToLower(ctx.QueryParam("summarized")) == "true"
@@ -2592,7 +2592,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredResourceTypes", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredResourceTypes")
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, integrationTypes, summarized)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2666,7 +2666,7 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	perRcMetricResult, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
+	perRcMetricResult, err := es.FetchPerResourceCollectionIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
 		filteredMetricIds, nil, collectionIds, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2685,16 +2685,16 @@ func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
 			countWithTime := countWithTime
 
 			metric := filteredMetricMap[metricId]
-			for _, connector := range metric.IntegrationTypes {
+			for _, integrationType := range metric.IntegrationTypes {
 				found := false
-				for _, c := range v.Connectors {
-					if c.String() == connector {
+				for _, c := range v.IntegrationTypes {
+					if c.String() == integrationType {
 						found = true
 						break
 					}
 				}
 				if !found {
-					v.Connectors = append(v.Connectors, source.Type(connector))
+					v.IntegrationTypes = append(v.IntegrationTypes, integration.Type(integrationType))
 				}
 			}
 			v.ResourceCount = utils.PAdd(v.ResourceCount, &countWithTime.Count)
@@ -2748,7 +2748,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		filteredMetricMap[metric.ID] = metric
 	}
 
-	metricIndexed, err := es.FetchPerResourceCollectionConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
+	metricIndexed, err := es.FetchPerResourceCollectionIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client,
 		filteredMetricIds, nil, []string{collectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		h.logger.Error("failed to fetch per resource collection metric count", zap.Error(err))
@@ -2763,16 +2763,16 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		countWithTime := count
 
 		metric := filteredMetricMap[metricId]
-		for _, connector := range metric.IntegrationTypes {
+		for _, integrationType := range metric.IntegrationTypes {
 			found := false
-			for _, c := range result.Connectors {
-				if c.String() == connector {
+			for _, c := range result.IntegrationTypes {
+				if c.String() == integrationType {
 					found = true
 					break
 				}
 			}
 			if !found {
-				result.Connectors = append(result.Connectors, source.Type(connector))
+				result.IntegrationTypes = append(result.IntegrationTypes, integration.Type(integrationType))
 			}
 		}
 		result.ResourceCount = utils.PAdd(result.ResourceCount, &countWithTime.Count)
@@ -2825,7 +2825,7 @@ func (h *HttpHandler) GetResourceCollectionLandscape(ctx echo.Context) error {
 		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
 		metricsMap[metric.ID] = metric
 	}
-	metricIndexed, err := es.FetchConnectorAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
+	metricIndexed, err := es.FetchIntegrationTypeAnalyticMetricCountAtTime(ctx.Request().Context(), h.logger, h.client, filteredMetricIDs, nil, []string{resourceCollectionID}, time.Now(), EsFetchPageSize)
 	if err != nil {
 		return err
 	}

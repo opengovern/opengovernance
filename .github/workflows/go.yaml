@@ -72,7 +72,6 @@ jobs:
       inventory-service: ${{ steps.build_services.outputs.inventory-service }}
       metadata-service: ${{ steps.build_services.outputs.metadata-service }}
       migrator-worker: ${{ steps.build_services.outputs.migrator-worker }}
-      onboard-service: ${{ steps.build_services.outputs.onboard-service }}
       swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
       analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
       steampipe-plugin-opengovernance: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
@@ -597,43 +596,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
           context: .
-
-  deploy-onboard-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/OnboardServiceDockerfile
-          context: .
-
   deploy-swagger-ui:
     runs-on: ubuntu-latest
     needs:

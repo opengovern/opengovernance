@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/integration"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/og-util/pkg/source"
 	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
 	"github.com/opengovern/opengovernance/pkg/inventory/api"
 )
@@ -19,15 +19,15 @@ type InventoryServiceClient interface {
 	RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error)
 	GetQuery(ctx *httpclient.Context, id string) (*api.NamedQueryItemV2, error)
 	CountResources(ctx *httpclient.Context) (int64, error)
-	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
-	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
+	ListIntegrationsData(ctx *httpclient.Context, integrationIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
+	ListResourceTypesMetadata(ctx *httpclient.Context, integrationTypes []integration.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 	ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
-	ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, connectionIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error)
-	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
-	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
+	ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, integrationIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error)
+	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
+	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
 	GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error)
 	GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResponse, error)
 }
@@ -170,19 +170,19 @@ func (s *inventoryClient) GetResourceCategories(ctx *httpclient.Context, tables 
 	return &resp, nil
 }
 
-func (s *inventoryClient) ListConnectionsData(
+func (s *inventoryClient) ListIntegrationsData(
 	ctx *httpclient.Context,
-	connectionIds, resourceCollections []string,
+	integrationIds, resourceCollections []string,
 	startTime, endTime *time.Time, metricIDs []string,
 	needCost, needResourceCount bool,
 ) (map[string]api.ConnectionData, error) {
 	params := url.Values{}
 
-	url := fmt.Sprintf("%s/api/v2/connections/data", s.baseURL)
+	url := fmt.Sprintf("%s/api/v2/integrations/data", s.baseURL)
 
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
-			params.Add("connectionId", connectionId)
+	if len(integrationIds) > 0 {
+		for _, integrationId := range integrationIds {
+			params.Add("integrationId", integrationId)
 		}
 	}
 	if len(resourceCollections) > 0 {
@@ -221,18 +221,18 @@ func (s *inventoryClient) ListConnectionsData(
 	return response, nil
 }
 
-func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error) {
+func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, integrationTypes []integration.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error) {
 	url := fmt.Sprintf("%s/api/v2/metadata/resourcetype", s.baseURL)
 	firstParamAttached := false
-	if len(connectors) > 0 {
-		for _, connector := range connectors {
+	if len(integrationTypes) > 0 {
+		for _, integrationType := range integrationTypes {
 			if !firstParamAttached {
 				url += "?"
 				firstParamAttached = true
 			} else {
 				url += "&"
 			}
-			url += fmt.Sprintf("connector=%s", connector)
+			url += fmt.Sprintf("integrationType=%s", integrationType)
 		}
 	}
 	if len(services) > 0 {
@@ -356,7 +356,7 @@ func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]ap
 	return response, nil
 }
 
-func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error) {
+func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error) {
 	url := fmt.Sprintf("%s/api/v2/analytics/trend", s.baseURL)
 	firstParamAttached := false
 	if len(metricIds) > 0 {
@@ -370,8 +370,8 @@ func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metr
 			url += fmt.Sprintf("ids=%s", metricId)
 		}
 	}
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
+	if len(integrationIds) > 0 {
+		for _, connectionId := range integrationIds {
 			if !firstParamAttached {
 				url += "?"
 				firstParamAttached = true
@@ -410,7 +410,7 @@ func (s *inventoryClient) ListAnalyticsMetricTrend(ctx *httpclient.Context, metr
 	return response, nil
 }
 
-func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, connectionIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error) {
+func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error) {
 	url := fmt.Sprintf("%s/api/v2/analytics/spend/trend", s.baseURL)
 	firstParamAttached := false
 	if len(metricIds) > 0 {
@@ -424,8 +424,8 @@ func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metri
 			url += fmt.Sprintf("metricIds=%s", metricId)
 		}
 	}
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
+	if len(integrationIds) > 0 {
+		for _, connectionId := range integrationIds {
 			if !firstParamAttached {
 				url += "?"
 				firstParamAttached = true
@@ -464,7 +464,7 @@ func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metri
 	return response, nil
 }
 
-func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, connectionIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error) {
+func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, integrationIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error) {
 	url := fmt.Sprintf("%s/api/v2/analytics/metric", s.baseURL)
 	firstParamAttached := false
 	if metricType != nil {
@@ -487,8 +487,8 @@ func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, m
 			url += fmt.Sprintf("metricIDs=%s", metricId)
 		}
 	}
-	if len(connectionIds) > 0 {
-		for _, connectionId := range connectionIds {
+	if len(integrationIds) > 0 {
+		for _, connectionId := range integrationIds {
 			if !firstParamAttached {
 				url += "?"
 				firstParamAttached = true

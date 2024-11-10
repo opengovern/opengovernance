@@ -3,8 +3,6 @@ package api
 import (
 	"github.com/opengovern/og-util/pkg/integration"
 	"time"
-
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type ResourceType struct {
@@ -24,11 +22,11 @@ type ResourceType struct {
 }
 
 type ResourceTypeV2 struct {
-	ProviderName   source.Type `json:"provider_name"`
-	ResourceName   string      `json:"resource_name"`
-	ResourceID     string      `json:"resource_id"`
-	SteampipeTable string      `json:"steampipe_table"`
-	Category       string      `json:"category"`
+	IntegrationType integration.Type `json:"integration_type"`
+	ResourceName    string           `json:"resource_name"`
+	ResourceID      string           `json:"resource_id"`
+	SteampipeTable  string           `json:"steampipe_table"`
+	Category        string           `json:"category"`
 }
 
 type CategoriesTables struct {

@@ -5,8 +5,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/inventory"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
 	"go.uber.org/zap"
@@ -86,11 +86,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&inventory.ResourceTypeV2{
-				ProviderName:   source.CloudAWS,
-				ResourceName:   record[0],
-				ResourceID:     record[1],
-				SteampipeTable: record[2],
-				Category:       record[3],
+				IntegrationType: integration_type.IntegrationTypeAWSAccount,
+				ResourceName:    record[0],
+				ResourceID:      record[1],
+				SteampipeTable:  record[2],
+				Category:        record[3],
 			}).Error
 			if err != nil {
 				logger.Error("failed to create aws resource type", zap.Error(err))
