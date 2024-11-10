@@ -27,12 +27,12 @@ func tablePlatformResources(_ context.Context) *plugin.Table {
 		},
 		Columns: []*plugin.Column{
 			{Name: "platform_id", Type: proto.ColumnType_STRING},
-			{Name: "resource_id", Transform: transform.FromField("ID"), Type: proto.ColumnType_STRING},
-			{Name: "integration_id", Transform: transform.FromField("IntegrationID"), Type: proto.ColumnType_STRING},
-			{Name: "integration_type", Transform: transform.FromField("IntegrationType"), Type: proto.ColumnType_STRING},
+			{Name: "resource_id", Type: proto.ColumnType_STRING},
+			{Name: "integration_id", Type: proto.ColumnType_STRING},
+			{Name: "integration_type", Type: proto.ColumnType_STRING},
 			{Name: "resource_type", Type: proto.ColumnType_STRING},
-			{Name: "resource_name", Transform: transform.FromField("ResourceName"), Type: proto.ColumnType_STRING},
-			{Name: "described_by", Transform: transform.FromField("DescribedBy"), Type: proto.ColumnType_STRING},
+			{Name: "resource_name", Type: proto.ColumnType_STRING},
+			{Name: "described_by", Type: proto.ColumnType_STRING},
 			{Name: "described_at", Transform: transform.From(fixTime), Type: proto.ColumnType_TIMESTAMP},
 			{Name: "description", Type: proto.ColumnType_JSON},
 		},
@@ -41,7 +41,7 @@ func tablePlatformResources(_ context.Context) *plugin.Table {
 
 func fixTime(ctx context.Context, d *transform.TransformData) (interface{}, error) {
 	resource := d.HydrateItem.(og_client.Resource)
-	t := time.UnixMilli(resource.CreatedAt)
+	t := time.UnixMilli(resource.DescribedAt)
 	return t.Format("2006-01-02T15:04:05"), nil
 }
 
