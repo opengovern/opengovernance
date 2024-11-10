@@ -203,10 +203,10 @@ func (h *HttpHandler) getIntegrationIdFilterFromInputs(ctx context.Context, inte
 
 func (h *HttpHandler) getIntegrationIdFilterFromParams(echoCtx echo.Context) ([]string, error) {
 	integrationIds := httpserver2.QueryArrayParam(echoCtx, IntegrationIDParam)
-	integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
-	if err != nil {
-		return nil, err
-	}
+	//integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//if err != nil {
+	//	return nil, err
+	//}
 	connectionGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
 	return h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, connectionGroup)
 }
@@ -721,10 +721,10 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 		return err
 	}
 
-	req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
-	if err != nil {
-		return err
-	}
+	//req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
+	//if err != nil {
+	//	return err
+	//}
 
 	if len(req.ConformanceStatus) == 0 {
 		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
@@ -1736,10 +1736,10 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		return err
 	}
 
-	req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
-	if err != nil {
-		return err
-	}
+	//req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
+	//if err != nil {
+	//	return err
+	//}
 
 	var response api.GetComplianceResultDriftEventsResponse
 
@@ -1976,10 +1976,10 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 		return err
 	}
 
-	req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
-	if err != nil {
-		return err
-	}
+	//req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
+	//if err != nil {
+	//	return err
+	//}
 
 	if len(req.ConformanceStatus) == 0 {
 		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
@@ -2278,10 +2278,10 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return err
 	}
 
-	req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
-	if err != nil {
-		return err
-	}
+	//req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
+	//if err != nil {
+	//	return err
+	//}
 
 	if len(req.AfterSortKey) != 0 {
 		expectedLen := len(req.Sort) + 1
@@ -4095,10 +4095,10 @@ func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 
 	controlID := echoCtx.Param("controlId")
 	integrationIds := httpserver2.QueryArrayParam(echoCtx, IntegrationIDParam)
-	integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
-	if err != nil {
-		return err
-	}
+	//integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//if err != nil {
+	//	return err
+	//}
 	integrationGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
 
 	if len(integrationIds) == 0 && len(integrationGroup) == 0 {
@@ -5804,10 +5804,10 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 	}
 
 	var err error
-	integrationIds, err = httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
-	if err != nil {
-		return err
-	}
+	//integrationIds, err = httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//if err != nil {
+	//	return err
+	//}
 
 	var response api.GetComplianceResultsResponse
 
