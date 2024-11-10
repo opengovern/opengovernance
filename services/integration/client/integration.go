@@ -123,7 +123,7 @@ func (c *integrationClient) IntegrationHealthcheck(ctx *httpclient.Context, inte
 }
 
 func (c *integrationClient) GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/integration-groups/%s", c.baseURL, integrationGroupName)
+	url := fmt.Sprintf("%s/api/v1/integrations/integration-groups/%s", c.baseURL, integrationGroupName)
 
 	var integrationGroup models.IntegrationGroup
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &integrationGroup); err != nil {
@@ -137,7 +137,7 @@ func (c *integrationClient) GetIntegrationGroup(ctx *httpclient.Context, integra
 }
 
 func (c *integrationClient) ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/connection-groups", c.baseURL)
+	url := fmt.Sprintf("%s/api/v1/integrations/integration-groups", c.baseURL)
 
 	var integrationGroup []models.IntegrationGroup
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &integrationGroup); err != nil {
