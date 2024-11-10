@@ -7,14 +7,14 @@ import (
 var defaultIntegrationGroups = []models.IntegrationGroup{
 	{
 		Name:  "active",
-		Query: `SELECT integration_id FROM og_integrations WHERE state = 'active'`,
+		Query: `SELECT integration_id FROM og_integrations WHERE state = 'ACTIVE'`,
 	},
 	{
 		Name:  "inactive",
-		Query: `SELECT integration_id FROM og_integrations WHERE state = 'inactive'`,
+		Query: `SELECT integration_id FROM og_integrations WHERE state = 'INACTIVE'`,
 	},
 	{
 		Name:  "archived",
-		Query: `SELECT integration_id FROM og_integrations WHERE state = 'archived'`,
+		Query: `SELECT integration_id FROM og_integrations WHERE state = 'ARCHIVED'`,
 	},
 }
