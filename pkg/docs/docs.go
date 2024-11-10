@@ -15442,7 +15442,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_services_integration_api_models.IntegrationState": {
             "type": "string",
             "enum": [
-                "ACTIVE",
+                "active",
                 "INACTIVE",
                 "ARCHIVED"
             ],

@@ -54,8 +54,8 @@ import (
 )
 
 const (
-	IntegrationIDParam   = "integrationID"
-	ConnectionGroupParam = "connectionGroup"
+	IntegrationIDParam    = "integrationID"
+	IntegrationGroupParam = "integrationGroup"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
@@ -207,7 +207,7 @@ func (h *HttpHandler) getIntegrationIdFilterFromParams(echoCtx echo.Context) ([]
 	if err != nil {
 		return nil, err
 	}
-	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
+	connectionGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
 	return h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, connectionGroup)
 }
 
@@ -233,7 +233,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), req.Filters.IntegrationID, req.Filters.ConnectionGroup)
+	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), req.Filters.IntegrationID, req.Filters.IntegrationGroup)
 	if err != nil {
 		return err
 	}
@@ -716,7 +716,7 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	req.IntegrationID, err = h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), req.IntegrationID, req.ConnectionGroup)
+	req.IntegrationID, err = h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), req.IntegrationID, req.IntegrationGroup)
 	if err != nil {
 		return err
 	}
@@ -1731,7 +1731,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.Filters.IntegrationID, req.Filters.ConnectionGroup)
+	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.Filters.IntegrationID, req.Filters.IntegrationGroup)
 	if err != nil {
 		return err
 	}
@@ -1971,7 +1971,7 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	req.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.IntegrationID, req.ConnectionGroup)
+	req.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.IntegrationID, req.IntegrationGroup)
 	if err != nil {
 		return err
 	}
@@ -2268,12 +2268,12 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	connectionGroupId := req.Filters.ConnectionGroup
+	integrationGroupId := req.Filters.ConnectionGroup
 	if len(req.Filters.IntegrationID) == 0 && len(req.Filters.ConnectionGroup) == 0 {
-		connectionGroupId = []string{"healthy"}
+		integrationGroupId = []string{"active"}
 	}
 
-	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.Filters.IntegrationID, connectionGroupId)
+	req.Filters.IntegrationID, err = h.getIntegrationIdFilterFromInputs(ctx, req.Filters.IntegrationID, integrationGroupId)
 	if err != nil {
 		return err
 	}
@@ -3418,14 +3418,13 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		integrationIDs = req.ComplianceResultFilters.IntegrationID
 	}
 	if len(integrationIDs) == 0 {
-		// TODO (before push to main will mess up things)
-		//integrations, err := h.integrationClient.ListIntegrations(clientCtx, "healthy")
-		//if err != nil {
-		//	return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		//}
-		//for _, c := range integrations.Integrations {
-		//	integrationIDs = append(integrationIDs, c.IntegrationID)
-		//}
+		integrations, err := h.integrationClient.GetIntegrationGroup(&httpclient.Context{UserRole: authApi.AdminRole}, "active")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		for _, c := range integrations.Integrations {
+			integrationIDs = append(integrationIDs, c.IntegrationID)
+		}
 	}
 
 	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
@@ -4100,12 +4099,12 @@ func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	connectionGroup := httpserver2.QueryArrayParam(echoCtx, ConnectionGroupParam)
+	integrationGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
 
-	if len(integrationIds) == 0 && len(connectionGroup) == 0 {
-		connectionGroup = []string{"healthy"}
+	if len(integrationIds) == 0 && len(integrationGroup) == 0 {
+		integrationGroup = []string{"active"}
 	}
-	integrationIDs, err := h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, connectionGroup)
+	integrationIDs, err := h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, integrationGroup)
 	if err != nil {
 		return err
 	}
