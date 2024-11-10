@@ -327,7 +327,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 //	@Tags			integrations
 //	@Produce		json
 //	@Success		200
-//	@Router			/integration/api/v1/integrations/{IntegrationID}/healthcheck [post]
+//	@Router			/integration/api/v1/integrations/{IntegrationID}/healthcheck [put]
 func (h API) IntegrationHealthcheck(c echo.Context) error {
 	IntegrationID, err := uuid.Parse(c.Param("IntegrationID"))
 	if err != nil {

@@ -97,7 +97,7 @@ func IntegrationTypesMigration(conf config.MigratorConfig, logger *zap.Logger, d
 		return err
 	}
 
-	logger.Info("connectors json:", zap.String("json", string(content)))
+	logger.Info("integration types json:", zap.String("json", string(content)))
 
 	var integrationTypes []IntegrationType
 	err = json.Unmarshal(content, &integrationTypes)

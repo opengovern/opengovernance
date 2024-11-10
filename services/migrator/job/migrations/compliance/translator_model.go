@@ -8,7 +8,6 @@ type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
 	Title             string              `json:"Title" yaml:"Title"`
 	SectionCode       string              `json:"SectionCode" yaml:"SectionCode"`
-	Connectors        []string            `json:"Connectors" yaml:"Connectors"`
 	Description       string              `json:"Description" yaml:"Description"`
 	Children          []string            `json:"Children" yaml:"Children"`
 	Tags              map[string][]string `json:"Tags" yaml:"Tags"`
@@ -19,15 +18,15 @@ type Benchmark struct {
 }
 
 type Control struct {
-	ID                 string              `json:"ID" yaml:"ID"`
-	Title              string              `json:"Title" yaml:"Title"`
-	Connector          []string            `json:"Connector" yaml:"Connector"`
-	Description        string              `json:"Description" yaml:"Description"`
-	Query              *shared.Query       `json:"Query" yaml:"Query"`
-	ManualVerification bool                `json:"ManualVerification" yaml:"ManualVerification"`
-	Severity           string              `json:"Severity" yaml:"Severity"`
-	Tags               map[string][]string `json:"Tags" yaml:"Tags"`
-	Managed            bool                `json:"Managed" yaml:"Managed"`
+	ID                  string              `json:"ID" yaml:"ID"`
+	Title               string              `json:"Title" yaml:"Title"`
+	IntegrationTypeName []string            `json:"IntegrationTypeName" yaml:"IntegrationTypeName"`
+	Description         string              `json:"Description" yaml:"Description"`
+	Query               *shared.Query       `json:"Query" yaml:"Query"`
+	ManualVerification  bool                `json:"ManualVerification" yaml:"ManualVerification"`
+	Severity            string              `json:"Severity" yaml:"Severity"`
+	Tags                map[string][]string `json:"Tags" yaml:"Tags"`
+	Managed             bool                `json:"Managed" yaml:"Managed"`
 }
 
 type QueryView struct {

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -35,14 +36,14 @@ func (s NamedQueryTagsResult) ToApi() api.NamedQueryTagsResult {
 }
 
 type NamedQuery struct {
-	ID           string         `gorm:"primarykey"`
-	Connectors   pq.StringArray `gorm:"type:text[]"`
-	Title        string
-	Description  string
-	QueryID      *string
-	Query        *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
-	IsBookmarked bool
-	Tags         []NamedQueryTag `gorm:"foreignKey:NamedQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ID               string         `gorm:"primarykey"`
+	IntegrationTypes pq.StringArray `gorm:"type:text[]"`
+	Title            string
+	Description      string
+	QueryID          *string
+	Query            *Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
+	IsBookmarked     bool
+	Tags             []NamedQueryTag `gorm:"foreignKey:NamedQueryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type QueryParameter struct {
@@ -114,12 +115,12 @@ func (s NamedQueryHistory) ToApi() api.NamedQueryHistory {
 }
 
 type ResourceType struct {
-	Connector     source.Type `json:"connector" gorm:"index"`
-	ResourceType  string      `json:"resource_type" gorm:"primaryKey; type:citext"`
-	ResourceLabel string      `json:"resource_name"`
-	ServiceName   string      `json:"service_name" gorm:"index"`
-	DoSummarize   bool        `json:"do_summarize"`
-	LogoURI       *string     `json:"logo_uri,omitempty"`
+	IntegrationType integration.Type `json:"integration_type" gorm:"index"`
+	ResourceType    string           `json:"resource_type" gorm:"primaryKey; type:citext"`
+	ResourceLabel   string           `json:"resource_name"`
+	ServiceName     string           `json:"service_name" gorm:"index"`
+	DoSummarize     bool             `json:"do_summarize"`
+	LogoURI         *string          `json:"logo_uri,omitempty"`
 
 	Tags    []ResourceTypeTag   `gorm:"foreignKey:ResourceType;references:ResourceType;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`
@@ -131,12 +132,12 @@ type ResourceType struct {
 
 func (r ResourceType) ToApi() api.ResourceType {
 	apiResourceType := api.ResourceType{
-		Connector:     r.Connector,
-		ResourceType:  r.ResourceType,
-		ResourceLabel: r.ResourceLabel,
-		ServiceName:   r.ServiceName,
-		Tags:          model.TrimPrivateTags(r.GetTagsMap()),
-		LogoURI:       r.LogoURI,
+		IntegrationType: r.IntegrationType,
+		ResourceType:    r.ResourceType,
+		ResourceLabel:   r.ResourceLabel,
+		ServiceName:     r.ServiceName,
+		Tags:            model.TrimPrivateTags(r.GetTagsMap()),
+		LogoURI:         r.LogoURI,
 	}
 	return apiResourceType
 }

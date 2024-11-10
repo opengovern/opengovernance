@@ -2049,12 +2049,12 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 			tags["platform_queries_bookmark"] = "true"
 		}
 		result = append(result, inventoryApi.NamedQueryItem{
-			ID:         item.ID,
-			Connectors: source.ParseTypes(item.Connectors),
-			Title:      item.Title,
-			Category:   category,
-			Query:      item.Query.QueryToExecute,
-			Tags:       tags,
+			ID:               item.ID,
+			IntegrationTypes: integration_type.ParseTypes(item.IntegrationTypes),
+			Title:            item.Title,
+			Category:         category,
+			Query:            item.Query.QueryToExecute,
+			Tags:             tags,
 		})
 	}
 	return ctx.JSON(200, result)
@@ -2104,12 +2104,12 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 			tags["platform_queries_bookmark"] = []string{"true"}
 		}
 		items = append(items, inventoryApi.NamedQueryItemV2{
-			ID:          item.ID,
-			Title:       item.Title,
-			Description: item.Description,
-			Connectors:  source.ParseTypes(item.Connectors),
-			Query:       item.Query.ToApi(),
-			Tags:        filterTagsByRegex(req.TagsRegex, tags),
+			ID:               item.ID,
+			Title:            item.Title,
+			Description:      item.Description,
+			IntegrationTypes: integration_type.ParseTypes(item.IntegrationTypes),
+			Query:            item.Query.ToApi(),
+			Tags:             filterTagsByRegex(req.TagsRegex, tags),
 		})
 	}
 
@@ -2166,12 +2166,12 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		tags["platform_queries_bookmark"] = []string{"true"}
 	}
 	result := inventoryApi.NamedQueryItemV2{
-		ID:          query.ID,
-		Title:       query.Title,
-		Description: query.Description,
-		Connectors:  source.ParseTypes(query.Connectors),
-		Query:       query.Query.ToApi(),
-		Tags:        tags,
+		ID:               query.ID,
+		Title:            query.Title,
+		Description:      query.Description,
+		IntegrationTypes: integration_type.ParseTypes(query.IntegrationTypes),
+		Query:            query.Query.ToApi(),
+		Tags:             tags,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -3591,12 +3591,12 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 				tags["platform_queries_bookmark"] = []string{"true"}
 			}
 			result := inventoryApi.NamedQueryItemV2{
-				ID:          query.ID,
-				Title:       query.Title,
-				Description: query.Description,
-				Connectors:  source.ParseTypes(query.Connectors),
-				Query:       query.Query.ToApi(),
-				Tags:        tags,
+				ID:               query.ID,
+				Title:            query.Title,
+				Description:      query.Description,
+				IntegrationTypes: integration_type.ParseTypes(query.IntegrationTypes),
+				Query:            query.Query.ToApi(),
+				Tags:             tags,
 			}
 			for _, t := range query.Query.ListOfTables {
 				if t == "" {
@@ -3665,12 +3665,12 @@ func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 				tags["platform_queries_bookmark"] = []string{"true"}
 			}
 			items = append(items, inventoryApi.NamedQueryItemV2{
-				ID:          item.ID,
-				Title:       item.Title,
-				Description: item.Description,
-				Connectors:  source.ParseTypes(item.Connectors),
-				Query:       item.Query.ToApi(),
-				Tags:        tags,
+				ID:               item.ID,
+				Title:            item.Title,
+				Description:      item.Description,
+				IntegrationTypes: integration_type.ParseTypes(item.IntegrationTypes),
+				Query:            item.Query.ToApi(),
+				Tags:             tags,
 			})
 		}
 

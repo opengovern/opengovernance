@@ -1,18 +1,19 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/source"
 )
 
 type ResourceType struct {
-	Connector     source.Type         `json:"connector" example:"Azure"`                                                                                                            // Cloud Provider
-	ResourceType  string              `json:"resource_type" example:"Microsoft.Compute/virtualMachines"`                                                                            // Resource Type
-	ResourceLabel string              `json:"resource_name" example:"VM"`                                                                                                           // Resource Name
-	ServiceName   string              `json:"service_name" example:"compute"`                                                                                                       // Service Name
-	Tags          map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"` // Tags
-	LogoURI       *string             `json:"logo_uri,omitempty" example:"https://opengovernance.io/logo.png"`                                                                      // Logo URI
+	IntegrationType integration.Type    `json:"integration_type" example:"Azure"`                                                                                                     // Cloud Provider
+	ResourceType    string              `json:"resource_type" example:"Microsoft.Compute/virtualMachines"`                                                                            // Resource Type
+	ResourceLabel   string              `json:"resource_name" example:"VM"`                                                                                                           // Resource Name
+	ServiceName     string              `json:"service_name" example:"compute"`                                                                                                       // Service Name
+	Tags            map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"` // Tags
+	LogoURI         *string             `json:"logo_uri,omitempty" example:"https://opengovernance.io/logo.png"`                                                                      // Logo URI
 
 	Count    *int `json:"count" example:"100" minimum:"0"`    // Number of Resources of this Resource Type - Metric
 	OldCount *int `json:"old_count" example:"90" minimum:"0"` // Number of Resources of this Resource Type in the past - Metric
