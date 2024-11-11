@@ -99,12 +99,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			return err
 		}
 
-		resourceIds := make([]string, 0, len(page))
+		platformResourceIDs := make([]string, 0, len(page))
 		for _, f := range page {
-			resourceIds = append(resourceIds, f.PlatformResourceID)
+			platformResourceIDs = append(platformResourceIDs, f.PlatformResourceID)
 		}
 
-		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
+		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, platformResourceIDs)
 		if err != nil {
 			w.logger.Error("failed to fetch lookup resources", zap.Error(err))
 			return err
