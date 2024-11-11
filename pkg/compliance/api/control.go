@@ -70,7 +70,7 @@ type ControlsFilterSummaryRequest struct {
 }
 
 type ListControlsFilterRequest struct {
-	Connector               []string                 `json:"connector"`
+	IntegrationTypes        []string                 `json:"integration_types"`
 	Severity                []string                 `json:"severity"`
 	RootBenchmark           []string                 `json:"root_benchmark"`
 	ParentBenchmark         []string                 `json:"parent_benchmark"`
