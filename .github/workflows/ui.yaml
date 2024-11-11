@@ -1,4 +1,4 @@
-name: NodeJS with Webpack
+name: Web UI Build
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
-
+     
       - name: NPM Cache
         uses: actions/cache@v3
         with:
@@ -46,7 +46,9 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
-
+      - name: Go To Code directory
+        run : cd services/web-ui
+        
       - name: Install dependencies
         run: npm install
 
