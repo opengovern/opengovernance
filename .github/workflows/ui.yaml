@@ -1,24 +1,22 @@
-name: Web UI Build
+name: NodeJS with Webpack
 
 on:
   workflow_dispatch:
     inputs:
-      buildWebUI:
+      deployTo:
         type: choice
-        description: "build web ui image"
+        description: "Environment to deploy to"
         options:
-          - "true"
-        default: "true"
+          - "dev"
+          - "prod"
+        default: "dev"
   push:
-    branches:
-      - main  # Only run this workflow on pushes to the main branch
+    branches: [ "main" ]
 
 jobs:
   build:
-    # Check if the last commit is a merge from the `ui-changes` branch
-    if: (github.event.inputs.buildWebUI == 'true') || (contains(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'ui-changes') &&  github.event_name != 'pull_request')
+    environment: web
     runs-on: ubuntu-latest
-    environment: docker
     permissions:
       id-token: write
       contents: write
@@ -49,44 +47,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
-      - name: Go to Code Directory
-        working-directory: services/web-ui
-        run: |
-          echo "Navigating to code directory..."
-
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
-        working-directory: services/web-ui
 
       - name: Build
         env:
           CI: false
         run: npm run build
-        working-directory: services/web-ui
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-
-      - name: Log in to the Container Registry
+      - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
-      - name: Go Back  to main Code Directory
-        working-directory: ../
-        run: |
-          echo "Navigating to main directory..."
-          pwd
-          ls
-      - name: Build and Push Docker Image
+      - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/web-ui:${{ steps.tag_version.outputs.new_tag }}
-          file: docker/WebUiDockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          platforms: linux/amd64,linux/arm64 # Add multi-platform support
+    
+          tags:
+            ghcr.io/${{ github.repository_owner }}/web-ui:${{ steps.tag_version.outputs.new_tag }}-${{ github.event.inputs.deployTo == '' && 'dev' || github.event.inputs.deployTo }}
+          file: docker/WebUIDockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
