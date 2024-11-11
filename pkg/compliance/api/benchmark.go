@@ -51,17 +51,17 @@ type NestedBenchmark struct {
 }
 
 type BenchmarkTrendDatapoint struct {
-	Timestamp                time.Time                       `json:"timestamp" example:"1686346668"`
-	ConformanceStatusSummary ConformanceStatusSummary        `json:"conformanceStatusSummary"`
-	Checks                   types.SeverityResult            `json:"checks"`
-	ControlsSeverityStatus   BenchmarkControlsSeverityStatus `json:"controlsSeverityStatus"`
+	Timestamp               time.Time                       `json:"timestamp" example:"1686346668"`
+	ComplianceStatusSummary ComplianceStatusSummary         `json:"complianceStatusSummary"`
+	Checks                  types.SeverityResult            `json:"checks"`
+	ControlsSeverityStatus  BenchmarkControlsSeverityStatus `json:"controlsSeverityStatus"`
 }
 
 type ListBenchmarksSummaryResponse struct {
 	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
 
-	TotalConformanceStatusSummary ConformanceStatusSummary `json:"totalConformanceStatusSummary"`
-	TotalChecks                   types.SeverityResult     `json:"totalChecks"`
+	TotalComplianceStatusSummary ComplianceStatusSummary `json:"totalComplianceStatusSummary"`
+	TotalChecks                  types.SeverityResult    `json:"totalChecks"`
 }
 
 type BenchmarkStatusResult struct {
@@ -115,46 +115,46 @@ type BenchmarkResourcesSeverityStatusV2 struct {
 	None     BenchmarkStatusResultV2 `json:"none"`
 }
 
-type ConformanceStatusSummary struct {
+type ComplianceStatusSummary struct {
 	PassedCount int `json:"passed"`
 	FailedCount int `json:"failed"`
 }
 
-type ConformanceStatusSummaryV2 struct {
+type ComplianceStatusSummaryV2 struct {
 	TotalCount  int `json:"total_count"`
 	PassedCount int `json:"passed"`
 	FailedCount int `json:"failed"`
 }
 
-func (c *ConformanceStatusSummary) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
-	c.PassedCount += summary[types.ConformanceStatusOK]
-	c.FailedCount += summary[types.ConformanceStatusALARM]
-	c.PassedCount += summary[types.ConformanceStatusINFO]
-	c.PassedCount += summary[types.ConformanceStatusSKIP]
-	c.FailedCount += summary[types.ConformanceStatusERROR]
+func (c *ComplianceStatusSummary) AddESComplianceStatusMap(summary map[types.ComplianceStatus]int) {
+	c.PassedCount += summary[types.ComplianceStatusOK]
+	c.FailedCount += summary[types.ComplianceStatusALARM]
+	c.PassedCount += summary[types.ComplianceStatusINFO]
+	c.PassedCount += summary[types.ComplianceStatusSKIP]
+	c.FailedCount += summary[types.ComplianceStatusERROR]
 }
 
-func (c *ConformanceStatusSummaryV2) AddESConformanceStatusMap(summary map[types.ConformanceStatus]int) {
-	c.PassedCount += summary[types.ConformanceStatusOK]
-	c.FailedCount += summary[types.ConformanceStatusALARM]
-	c.PassedCount += summary[types.ConformanceStatusINFO]
-	c.PassedCount += summary[types.ConformanceStatusSKIP]
-	c.FailedCount += summary[types.ConformanceStatusERROR]
+func (c *ComplianceStatusSummaryV2) AddESComplianceStatusMap(summary map[types.ComplianceStatus]int) {
+	c.PassedCount += summary[types.ComplianceStatusOK]
+	c.FailedCount += summary[types.ComplianceStatusALARM]
+	c.PassedCount += summary[types.ComplianceStatusINFO]
+	c.PassedCount += summary[types.ComplianceStatusSKIP]
+	c.FailedCount += summary[types.ComplianceStatusERROR]
 
 	c.TotalCount = c.FailedCount + c.PassedCount
 }
 
 type BenchmarkEvaluationSummary struct {
 	Benchmark
-	ConformanceStatusSummary ConformanceStatusSummary         `json:"conformanceStatusSummary"`
-	Checks                   types.SeverityResult             `json:"checks"`
-	ControlsSeverityStatus   BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
-	ResourcesSeverityStatus  BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
-	ConnectionsStatus        BenchmarkStatusResult            `json:"connectionsStatus"`
-	CostOptimization         *float64                         `json:"costOptimization"`
-	EvaluatedAt              *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
-	LastJobStatus            string                           `json:"lastJobStatus" example:"success"`
-	TopConnections           []TopFieldRecord                 `json:"topConnections"`
+	ComplianceStatusSummary ComplianceStatusSummary          `json:"complianceStatusSummary"`
+	Checks                  types.SeverityResult             `json:"checks"`
+	ControlsSeverityStatus  BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
+	ResourcesSeverityStatus BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
+	ConnectionsStatus       BenchmarkStatusResult            `json:"connectionsStatus"`
+	CostImpact              *float64                         `json:"costImpact"`
+	EvaluatedAt             *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
+	LastJobStatus           string                           `json:"lastJobStatus" example:"success"`
+	TopConnections          []TopFieldRecord                 `json:"topConnections"`
 }
 
 type BenchmarkControlSummary struct {
@@ -186,9 +186,9 @@ type GetBenchmarkDetailsMetadata struct {
 }
 
 type GetBenchmarkDetailsComplianceResults struct {
-	Results         map[types.ConformanceStatus]int `json:"results"`
-	LastEvaluatedAt time.Time                       `json:"lastEvaluated_at"`
-	IntegrationIDs  []string                        `json:"integration_ids"`
+	Results         map[types.ComplianceStatus]int `json:"results"`
+	LastEvaluatedAt time.Time                      `json:"lastEvaluated_at"`
+	IntegrationIDs  []string                       `json:"integration_ids"`
 }
 
 type GetBenchmarkDetailsChildren struct {
@@ -311,7 +311,7 @@ type ComplianceSummaryOfIntegrationResponse struct {
 	ComplianceScore            float64                            `json:"compliance_score"`
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
-	ComplianceResultsSummary   ConformanceStatusSummaryV2         `json:"compliance_results_summary"`
+	ComplianceResultsSummary   ComplianceStatusSummaryV2          `json:"compliance_results_summary"`
 	IssuesCount                int                                `json:"issues_count"`
 	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
 	TopResourceTypesWithIssues []TopFiledRecordV2                 `json:"top_resource_types_with_issues"`
@@ -335,8 +335,8 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 	SeveritySummaryByControl   BenchmarkControlsSeverityStatusV2  `json:"severity_summary_by_control"`
 	SeveritySummaryByResource  BenchmarkResourcesSeverityStatusV2 `json:"severity_summary_by_resource"`
 	SeveritySummaryByIncidents types.SeverityResultV2             `json:"severity_summary_by_incidents"`
-	CostOptimization           *float64                           `json:"cost_optimization"`
-	ComplianceResultsSummary   ConformanceStatusSummaryV2         `json:"compliance_results_summary"`
+	CostImpact                 *float64                           `json:"cost_impact"`
+	ComplianceResultsSummary   ComplianceStatusSummaryV2          `json:"compliance_results_summary"`
 	IssuesCount                int                                `json:"issues_count"`
 	TopIntegrations            []TopIntegration                   `json:"top_integrations"`
 	TopResourcesWithIssues     []TopFiledRecordV2                 `json:"top_resources_with_issues"`
@@ -348,16 +348,16 @@ type ComplianceSummaryOfBenchmarkResponse struct {
 }
 
 type ListComplianceJobsHistoryItem struct {
-	BenchmarkId              string                     `json:"benchmark_id"`
-	Integrations             []IntegrationInfo          `json:"integrations"`
-	JobId                    string                     `json:"job_id"`
-	ComplianceResultsSummary ConformanceStatusSummaryV2 `json:"compliance_results_summary"`
-	ComplianceScore          float64                    `json:"compliance_score"`
-	TriggerType              string                     `json:"trigger_type"`
-	CreatedBy                string                     `json:"created_by"`
-	JobStatus                string                     `json:"job_status"`
-	CreatedAt                time.Time                  `json:"created_at"`
-	UpdatedAt                time.Time                  `json:"updated_at"`
+	BenchmarkId              string                    `json:"benchmark_id"`
+	Integrations             []IntegrationInfo         `json:"integrations"`
+	JobId                    string                    `json:"job_id"`
+	ComplianceResultsSummary ComplianceStatusSummaryV2 `json:"compliance_results_summary"`
+	ComplianceScore          float64                   `json:"compliance_score"`
+	TriggerType              string                    `json:"trigger_type"`
+	CreatedBy                string                    `json:"created_by"`
+	JobStatus                string                    `json:"job_status"`
+	CreatedAt                time.Time                 `json:"created_at"`
+	UpdatedAt                time.Time                 `json:"updated_at"`
 }
 
 type ListComplianceJobsHistoryResponse struct {

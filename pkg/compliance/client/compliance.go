@@ -25,7 +25,7 @@ type ComplianceServiceClient interface {
 	ListAllBenchmarks(ctx *httpclient.Context, isBare bool) ([]compliance.Benchmark, error)
 	GetAccountsComplianceResultsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsComplianceResultsSummaryResponse, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
-	CountComplianceResults(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountComplianceResultsResponse, error)
+	CountComplianceResults(ctx *httpclient.Context, complianceStatuses []compliance.ComplianceStatus) (*compliance.CountComplianceResultsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
 	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
 	GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error)
@@ -323,22 +323,22 @@ func (s *complianceClient) GetComplianceResults(ctx *httpclient.Context, req com
 	return response, nil
 }
 
-func (s *complianceClient) CountComplianceResults(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountComplianceResultsResponse, error) {
+func (s *complianceClient) CountComplianceResults(ctx *httpclient.Context, complianceStatuses []compliance.ComplianceStatus) (*compliance.CountComplianceResultsResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/compliance_result/count", s.baseURL)
 
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = compliance.ListConformanceStatuses()
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = compliance.ListComplianceStatuses()
 	}
 
 	isFirstParamAttached := false
-	for _, conformanceStatus := range conformanceStatuses {
+	for _, complianceStatus := range complianceStatuses {
 		if !isFirstParamAttached {
 			url += "?"
 			isFirstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("conformanceStatus=%s", conformanceStatus)
+		url += fmt.Sprintf("complianceStatus=%s", complianceStatus)
 	}
 
 	var response compliance.CountComplianceResultsResponse

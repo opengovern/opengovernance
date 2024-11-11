@@ -223,25 +223,25 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 					f.ComplianceJobID = j.ID
 					f.ParentComplianceJobID = j.ParentJobID
 					f.EvaluatedAt = j.CreatedAt.UnixMilli()
-					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.OpenGovernanceResourceID)
+					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.PlatformResourceID)
 					f.Reason = reason
 					fs := types.ComplianceResultDriftEvent{
-						ComplianceResultEsID:      f.EsID,
-						ParentComplianceJobID:     j.ParentJobID,
-						ComplianceJobID:           j.ID,
-						PreviousConformanceStatus: f.ConformanceStatus,
-						ConformanceStatus:         f.ConformanceStatus,
-						PreviousStateActive:       true,
-						StateActive:               f.StateActive,
-						EvaluatedAt:               j.CreatedAt.UnixMilli(),
-						Reason:                    reason,
+						ComplianceResultEsID:     f.EsID,
+						ParentComplianceJobID:    j.ParentJobID,
+						ComplianceJobID:          j.ID,
+						PreviousComplianceStatus: f.ComplianceStatus,
+						ComplianceStatus:         f.ComplianceStatus,
+						PreviousStateActive:      true,
+						StateActive:              f.StateActive,
+						EvaluatedAt:              j.CreatedAt.UnixMilli(),
+						Reason:                   reason,
 
 						BenchmarkID:               f.BenchmarkID,
 						ControlID:                 f.ControlID,
 						IntegrationID:             f.IntegrationID,
 						IntegrationType:           f.IntegrationType,
 						Severity:                  f.Severity,
-						OpenGovernanceResourceID:  f.OpenGovernanceResourceID,
+						PlatformResourceID:        f.PlatformResourceID,
 						ResourceID:                f.ResourceID,
 						ResourceType:              f.ResourceType,
 						ParentBenchmarkReferences: f.ParentBenchmarkReferences,
@@ -261,28 +261,28 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				continue
 			}
 
-			if (f.ConformanceStatus != newComplianceResult.ConformanceStatus) ||
+			if (f.ComplianceStatus != newComplianceResult.ComplianceStatus) ||
 				(f.StateActive != newComplianceResult.StateActive) {
 				newComplianceResult.LastTransition = j.CreatedAt.UnixMilli()
 				newComplianceResult.ComplianceJobID = j.ID
 				newComplianceResult.ParentComplianceJobID = j.ParentJobID
 				fs := types.ComplianceResultDriftEvent{
-					ComplianceResultEsID:      f.EsID,
-					ParentComplianceJobID:     j.ParentJobID,
-					ComplianceJobID:           j.ID,
-					PreviousConformanceStatus: f.ConformanceStatus,
-					ConformanceStatus:         newComplianceResult.ConformanceStatus,
-					PreviousStateActive:       f.StateActive,
-					StateActive:               newComplianceResult.StateActive,
-					EvaluatedAt:               j.CreatedAt.UnixMilli(),
-					Reason:                    newComplianceResult.Reason,
+					ComplianceResultEsID:     f.EsID,
+					ParentComplianceJobID:    j.ParentJobID,
+					ComplianceJobID:          j.ID,
+					PreviousComplianceStatus: f.ComplianceStatus,
+					ComplianceStatus:         newComplianceResult.ComplianceStatus,
+					PreviousStateActive:      f.StateActive,
+					StateActive:              newComplianceResult.StateActive,
+					EvaluatedAt:              j.CreatedAt.UnixMilli(),
+					Reason:                   newComplianceResult.Reason,
 
 					BenchmarkID:               newComplianceResult.BenchmarkID,
 					ControlID:                 newComplianceResult.ControlID,
 					IntegrationID:             newComplianceResult.IntegrationID,
 					IntegrationType:           newComplianceResult.IntegrationType,
 					Severity:                  newComplianceResult.Severity,
-					OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
+					PlatformResourceID:        newComplianceResult.PlatformResourceID,
 					ResourceID:                newComplianceResult.ResourceID,
 					ResourceType:              newComplianceResult.ResourceType,
 					ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,
@@ -316,7 +316,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			ComplianceResultEsID:  newComplianceResult.EsID,
 			ParentComplianceJobID: j.ParentJobID,
 			ComplianceJobID:       j.ID,
-			ConformanceStatus:     newComplianceResult.ConformanceStatus,
+			ComplianceStatus:      newComplianceResult.ComplianceStatus,
 			StateActive:           newComplianceResult.StateActive,
 			EvaluatedAt:           j.CreatedAt.UnixMilli(),
 			Reason:                newComplianceResult.Reason,
@@ -326,7 +326,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			IntegrationID:             newComplianceResult.IntegrationID,
 			IntegrationType:           newComplianceResult.IntegrationType,
 			Severity:                  newComplianceResult.Severity,
-			OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
+			PlatformResourceID:        newComplianceResult.PlatformResourceID,
 			ResourceID:                newComplianceResult.ResourceID,
 			ResourceType:              newComplianceResult.ResourceType,
 			ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,

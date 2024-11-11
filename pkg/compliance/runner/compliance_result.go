@@ -64,11 +64,11 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		}
 		resourceType := queryResourceType
 
-		var opengovernanceResourceId, integrationID, resourceID, resourceName, resourceLocation, reason string
-		var costOptimization *float64
-		var status types.ConformanceStatus
+		var platformResourceID, integrationID, resourceID, resourceName, resourceLocation, reason string
+		var costImpact *float64
+		var status types.ComplianceStatus
 		if v, ok := recordValue["og_resource_id"].(string); ok {
-			opengovernanceResourceId = v
+			platformResourceID = v
 		}
 		if v, ok := recordValue["og_account_id"].(string); ok {
 			integrationID = v
@@ -94,46 +94,46 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 			reason = v
 		}
 		if v, ok := recordValue["status"].(string); ok {
-			status = types.ConformanceStatus(v)
+			status = types.ComplianceStatus(v)
 		}
 		if v, ok := recordValue["cost_optimization"]; ok {
 			// cast to proper types
 			reflectValue := reflect.ValueOf(v)
 			switch reflectValue.Kind() {
 			case reflect.Float32:
-				costOptimization = utils.GetPointer(float64(v.(float32)))
+				costImpact = utils.GetPointer(float64(v.(float32)))
 			case reflect.Float64:
-				costOptimization = utils.GetPointer(v.(float64))
+				costImpact = utils.GetPointer(v.(float64))
 			case reflect.String:
 				c, err := strconv.ParseFloat(v.(string), 64)
 				if err == nil {
-					costOptimization = &c
+					costImpact = &c
 				} else {
 					fmt.Printf("error parsing cost_optimization: %s\n", err)
-					costOptimization = utils.GetPointer(0.0)
+					costImpact = utils.GetPointer(0.0)
 				}
 			case reflect.Int:
-				costOptimization = utils.GetPointer(float64(v.(int)))
+				costImpact = utils.GetPointer(float64(v.(int)))
 			case reflect.Int8:
-				costOptimization = utils.GetPointer(float64(v.(int8)))
+				costImpact = utils.GetPointer(float64(v.(int8)))
 			case reflect.Int16:
-				costOptimization = utils.GetPointer(float64(v.(int16)))
+				costImpact = utils.GetPointer(float64(v.(int16)))
 			case reflect.Int32:
-				costOptimization = utils.GetPointer(float64(v.(int32)))
+				costImpact = utils.GetPointer(float64(v.(int32)))
 			case reflect.Int64:
-				costOptimization = utils.GetPointer(float64(v.(int64)))
+				costImpact = utils.GetPointer(float64(v.(int64)))
 			case reflect.Uint:
-				costOptimization = utils.GetPointer(float64(v.(uint)))
+				costImpact = utils.GetPointer(float64(v.(uint)))
 			case reflect.Uint8:
-				costOptimization = utils.GetPointer(float64(v.(uint8)))
+				costImpact = utils.GetPointer(float64(v.(uint8)))
 			case reflect.Uint16:
-				costOptimization = utils.GetPointer(float64(v.(uint16)))
+				costImpact = utils.GetPointer(float64(v.(uint16)))
 			case reflect.Uint32:
-				costOptimization = utils.GetPointer(float64(v.(uint32)))
+				costImpact = utils.GetPointer(float64(v.(uint32)))
 			case reflect.Uint64:
-				costOptimization = utils.GetPointer(float64(v.(uint64)))
+				costImpact = utils.GetPointer(float64(v.(uint64)))
 			default:
-				fmt.Printf("error parsing cost_optimization: unknown type %s\n", reflectValue.Kind())
+				fmt.Printf("error parsing cost_impact: unknown type %s\n", reflectValue.Kind())
 			}
 		}
 		severity := caller.ControlSeverity
@@ -150,7 +150,7 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 			benchmarkReferences = append(benchmarkReferences, benchmarkCache[parentBenchmarkID].ReferenceCode)
 		}
 
-		if status != types.ConformanceStatusOK && status != types.ConformanceStatusALARM {
+		if status != types.ComplianceStatusOK && status != types.ComplianceStatusALARM {
 			continue
 		}
 
@@ -160,17 +160,17 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 			IntegrationID:             integrationID,
 			EvaluatedAt:               w.CreatedAt.UnixMilli(),
 			StateActive:               true,
-			ConformanceStatus:         status,
+			ComplianceStatus:          status,
 			Severity:                  severity,
 			Evaluator:                 w.ExecutionPlan.Query.Engine,
 			IntegrationType:           integrationType,
-			OpenGovernanceResourceID:  opengovernanceResourceId,
+			PlatformResourceID:        platformResourceID,
 			ResourceID:                resourceID,
 			ResourceName:              resourceName,
 			ResourceLocation:          resourceLocation,
 			ResourceType:              resourceType,
 			Reason:                    reason,
-			CostOptimization:          costOptimization,
+			CostImpact:                costImpact,
 			ComplianceJobID:           w.ID,
 			ParentComplianceJobID:     w.ParentJobID,
 			ParentBenchmarkReferences: benchmarkReferences,

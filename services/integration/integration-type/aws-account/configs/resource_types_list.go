@@ -248,7 +248,7 @@ var ResourceTypesList = []string{
 	"AWS::IAM::Group",
 	"AWS::IAM::OpenIdConnectProvider",
 	"AWS::Backup::Plan",
-	"AWS::Config::ConformancePack",
+	"AWS::Config::CompliancePack",
 	"AWS::Config::RetentionConfiguration",
 	"AWS::CostExplorer::ByAccountDaily",
 	"AWS::Account::Contact",

@@ -17,7 +17,7 @@ import (
 
 type BenchmarkTrendDatapoint struct {
 	DateEpoch      int64
-	QueryResult    map[types.ConformanceStatus]int
+	QueryResult    map[types.ComplianceStatus]int
 	SeverityResult map[types.ComplianceResultSeverity]int
 	Controls       map[string]types2.ControlResult
 }
@@ -178,7 +178,7 @@ func FetchBenchmarkSummaryTrendByIntegrationID(ctx context.Context, logger *zap.
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
 				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
@@ -310,7 +310,7 @@ func FetchBenchmarkSummaryTrendByIntegrationIDV3(ctx context.Context, logger *za
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
 				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
@@ -452,7 +452,7 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndIntegrationID(ctx context.
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
 				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}

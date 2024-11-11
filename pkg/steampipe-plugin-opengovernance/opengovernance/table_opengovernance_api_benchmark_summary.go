@@ -59,16 +59,16 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Default:     time.Now(),
 			},
 			{
-				Name:        "conformance_status_passed_count",
+				Name:        "compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that passed in the benchmark summary",
-				Transform:   transform.FromField("ConformanceStatusSummary.PassedCount"),
+				Transform:   transform.FromField("ComplianceStatusSummary.PassedCount"),
 			},
 			{
-				Name:        "conformance_status_failed_count",
+				Name:        "compliance_status_failed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that failed in the benchmark summary",
-				Transform:   transform.FromField("ConformanceStatusSummary.FailedCount"),
+				Transform:   transform.FromField("ComplianceStatusSummary.FailedCount"),
 			},
 			{
 				Name:        "severity_result_critical_count",
@@ -245,22 +245,22 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("ResourcesSeverityStatus.None.PassedCount"),
 			},
 			{
-				Name:        "connections_result_conformance_status_passed_count",
+				Name:        "connections_result_compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that passed in the benchmark summary for the connection",
 				Transform:   transform.FromField("ConnectionsStatus.PassedCount"),
 			},
 			{
-				Name:        "connections_result_conformance_status_total_count",
+				Name:        "connections_result_compliance_status_total_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The total number of checks in the benchmark summary for the connection",
 				Transform:   transform.FromField("ConnectionsStatus.TotalCount"),
 			},
 			{
-				Name:        "cost_optimization",
+				Name:        "cost_impact",
 				Type:        proto.ColumnType_DOUBLE,
-				Description: "The cost optimization score of the benchmark summary",
-				Transform:   transform.FromField("CostOptimization"),
+				Description: "The cost impact score of the benchmark summary",
+				Transform:   transform.FromField("CostImpact"),
 			},
 			{
 				Name:        "evaluated_at",
