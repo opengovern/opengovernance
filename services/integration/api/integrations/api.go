@@ -295,6 +295,22 @@ func (h API) AddIntegrations(c echo.Context) error {
 		healthcheckTime := time.Now()
 		i.LastCheck = &healthcheckTime
 
+		if i.Labels.Status != pgtype.Present {
+			err = i.Labels.Set("{}")
+			if err != nil {
+				h.logger.Error("failed to set label", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to set label")
+			}
+		}
+
+		if i.Annotations.Status != pgtype.Present {
+			err = i.Annotations.Set("{}")
+			if err != nil {
+				h.logger.Error("failed to set annotations", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to set annotations")
+			}
+		}
+
 		iApi, err := i.ToApi()
 		if err != nil {
 			h.logger.Error("failed to create integration api", zap.Error(err))
@@ -310,8 +326,8 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
-			h.logger.Error("failed to create credential", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+			h.logger.Error("failed to create integration", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration")
 		}
 	}
 
