@@ -4365,13 +4365,13 @@ interface IuseComplianceApiV1FindingsTopDetailState {
 export const useComplianceApiV1FindingsTopDetail = (
     field:
         | 'resourceType'
-        | 'integrationID'
+        | 'connectionID'
         | 'resourceID'
         | 'service'
         | 'controlID',
     count: number,
     query?: {
-        integrationID?: string[]
+        connectionId?: string[]
 
         notConnectionId?: string[]
 
@@ -4412,14 +4412,14 @@ export const useComplianceApiV1FindingsTopDetail = (
         abortCtrl: AbortController,
         reqfield:
             | 'resourceType'
-            | 'integrationID'
+            | 'connectionID'
             | 'resourceID'
             | 'service'
             | 'controlID',
         reqcount: number,
         reqquery:
             | {
-                  integrationID?: string[]
+                  connectionId?: string[]
 
                   notConnectionId?: string[]
 
@@ -4537,14 +4537,14 @@ export const useComplianceApiV1FindingsTopDetail = (
     const sendNowWithParams = (
         reqfield:
             | 'resourceType'
-            | 'integrationID'
+            | 'connectionID'
             | 'resourceID'
             | 'service'
             | 'controlID',
         reqcount: number,
         reqquery:
             | {
-                  integrationID?: string[]
+                  connectionId?: string[]
 
                   notConnectionId?: string[]
 
@@ -4926,7 +4926,7 @@ interface IuseComplianceApiV1FindingsCountDetailState {
  */
 export const useComplianceApiV1FindingsCountDetail = (
     benchmarkId: string,
-    field: 'resourceType' | 'integrationID' | 'resourceID' | 'service',
+    field: 'resourceType' | 'connectionID' | 'resourceID' | 'service',
     query?: {
         connectionId?: string[]
 
@@ -4962,7 +4962,7 @@ export const useComplianceApiV1FindingsCountDetail = (
     const sendRequest = (
         abortCtrl: AbortController,
         reqbenchmarkId: string,
-        reqfield: 'resourceType' | 'integrationID' | 'resourceID' | 'service',
+        reqfield: 'resourceType' | 'connectionID' | 'resourceID' | 'service',
         reqquery:
             | {
                   connectionId?: string[]
@@ -5079,7 +5079,7 @@ export const useComplianceApiV1FindingsCountDetail = (
 
     const sendNowWithParams = (
         reqbenchmarkId: string,
-        reqfield: 'resourceType' | 'integrationID' | 'resourceID' | 'service',
+        reqfield: 'resourceType' | 'connectionID' | 'resourceID' | 'service',
         reqquery:
             | {
                   connectionId?: string[]

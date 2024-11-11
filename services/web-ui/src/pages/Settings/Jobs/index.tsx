@@ -79,7 +79,7 @@ const columns = () => {
             resizable: true,
         },
         {
-            field: 'integrationID',
+            field: 'connectionID',
             headerName: 'OpenGovernance Connection ID',
             type: 'string',
             sortable: true,

@@ -27,7 +27,7 @@ export default function CloudAccountDetail({
     const { response: filters, sendNow } =
         useComplianceApiV1FindingsFiltersCreate(
             {
-                integrationID: [account?.id || ''],
+                connectionID: [account?.id || ''],
             },
             {},
             false

@@ -99,13 +99,7 @@ export default function IntegrationList({
                 const data = res.data
 
                 setTotalCount(data.total_count)
-                if(data.integrations){
                 setRow(data.integrations)
-
-                }
-                else{
-                    setRow([])
-                }
                 setLoading(false)
             })
             .catch((err) => {
@@ -194,7 +188,7 @@ export default function IntegrationList({
 
         axios
             .put(
-                `${url}/main/integration/api/v1/integrations/${selectedItem?.integration_id}/healthcheck`,
+                `${url}/main//integration/api/v1/integrations/${selectedItem?.integration_id}/healthcheck`,
                 {},
                 config
             )
@@ -426,7 +420,7 @@ export default function IntegrationList({
                                         }
                                         className="w-full"
                                     >
-                                        {name} Integrations{' '}
+                                        {name} Accounts{' '}
                                         <span className=" font-medium">
                                             ({total_count})
                                         </span>

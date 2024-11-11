@@ -56,7 +56,7 @@ export default function ResourceFindingDetail({
 }: IResourceFindingDetail) {
     const { response, isLoading, sendNow } =
         useComplianceApiV1FindingsResourceCreate(
-            { platformResourceID: resourceFinding?.platformResourceID || '' },
+            { kaytuResourceId: resourceFinding?.kaytuResourceID || '' },
             {},
             false
         )
@@ -76,7 +76,7 @@ export default function ResourceFindingDetail({
 
     const conformance = () => {
         if (showOnlyOneControl) {
-            return (finding?.complianceStatus || 0) ===
+            return (finding?.conformanceStatus || 0) ===
                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusFailed ? (
                 <Flex className="w-fit gap-1.5">
                     <XCircleIcon className="h-4 text-rose-600" />
@@ -133,7 +133,7 @@ export default function ResourceFindingDetail({
                 <SummaryCard
                     title="Resource"
                     metric={resourceFinding?.resourceName}
-                    secondLine={resourceFinding?.platformResourceID}
+                    secondLine={resourceFinding?.kaytuResourceID}
                     blurSecondLine={isDemo}
                     isString
                 />
@@ -240,7 +240,7 @@ export default function ResourceFindingDetail({
                                                         {control.controlTitle}
                                                     </Text>
                                                     <Flex justifyContent="start">
-                                                        {control.complianceStatus ===
+                                                        {control.conformanceStatus ===
                                                         GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed ? (
                                                             <Flex className="w-fit gap-1.5">
                                                                 <CheckCircleIcon className="h-4 text-emerald-500" />

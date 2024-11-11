@@ -22,7 +22,11 @@ export default function Benchmarks({ benchmarks }: IBenchmarks) {
             {benchmarks?.map((bm) => (
                 <Card
                     className="w-full py-4 cursor-pointer"
-                    onClick={() => navigate(`/compliance/${bm.id}`)}
+                    onClick={() =>
+                        navigate(
+                            `/compliance/${bm.id}`
+                        )
+                    }
                 >
                     <Flex>
                         <Flex
@@ -31,7 +35,7 @@ export default function Benchmarks({ benchmarks }: IBenchmarks) {
                             className="w-3/4"
                         >
                             <Flex justifyContent="start" className="gap-3">
-                                {getConnectorIcon(bm.integrationTypes)}
+                                {getConnectorIcon(bm.connectors)}
                                 <Title className="font-semibold">
                                     {bm.title}
                                 </Title>

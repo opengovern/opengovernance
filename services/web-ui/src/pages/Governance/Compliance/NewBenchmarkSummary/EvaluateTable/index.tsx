@@ -408,7 +408,7 @@ export default function EvaluateTable({
                                 header: 'Integration Id',
                                 cell: (item) => (
                                     // @ts-ignore
-                                    <>{item.integration_info?.integration_id}</>
+                                    <>{item.integration_info?.id}</>
                                 ),
                             },
 
@@ -417,20 +417,15 @@ export default function EvaluateTable({
                                 header: 'Integration Name',
                                 cell: (item) => (
                                     // @ts-ignore
-                                    <>{item.integration_info?.name}</>
+                                    <>{item.integration_info?.id_name}</>
                                 ),
                             },
                             {
-                                id: 'integration_type',
-                                header: 'Integration Type',
+                                id: 'connector',
+                                header: 'Connector',
                                 cell: (item) => (
                                     // @ts-ignore
-                                    <>
-                                        {
-                                            item.integration_info
-                                                ?.integration_type
-                                        }
-                                    </>
+                                    <>{item.integration_info?.integration}</>
                                 ),
                             },
 
@@ -449,7 +444,7 @@ export default function EvaluateTable({
                             { id: 'job_status', visible: true },
                             { id: 'integration_id', visible: true },
                             { id: 'integration_name', visible: true },
-                            { id: 'integration_type', visible: true },
+                            { id: 'connector', visible: true },
 
                             // { id: 'conformanceStatus', visible: true },
                             // { id: 'severity', visible: true },

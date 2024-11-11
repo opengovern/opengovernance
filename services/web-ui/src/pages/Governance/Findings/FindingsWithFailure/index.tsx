@@ -357,7 +357,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                 benchmarkID: queries.benchmarkID,
                 severity: queries.severity,
                 resourceTypeID: queries.resourceTypeID,
-                complianceStatus: queries.conformanceStatus,
+                conformanceStatus: queries.conformanceStatus,
                 stateActive: queries.lifecycle,
                 jobID: queries?.jobID,
                 integrationGroup: queries.connectionGroup,
@@ -410,8 +410,8 @@ export default function FindingsWithFailure({ query }: ICount) {
 
                 setTotalCount(resp.data.totalCount)
                 // @ts-ignore
-                if (resp.data.complianceResults) {
-                    setRows(resp.data.complianceResults)
+                if (resp.data.findings) {
+                    setRows(resp.data.findings)
                 } else {
                     setRows([])
                 }
@@ -455,9 +455,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                             finding ? (
                                 <>
                                     <Flex justifyContent="start">
-                                        {getConnectorIcon(
-                                            finding?.integrationType
-                                        )}
+                                        {getConnectorIcon(finding?.connector)}
                                         <Title className="text-lg font-semibold ml-2 my-1">
                                             {finding?.resourceName}
                                         </Title>
@@ -499,7 +497,10 @@ export default function FindingsWithFailure({ query }: ICount) {
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (row.platformResourceID) {
+                            if (
+                                row.kaytuResourceID &&
+                                row.kaytuResourceID.length > 0
+                            ) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {
@@ -596,19 +597,19 @@ export default function FindingsWithFailure({ query }: ICount) {
                                 ),
                             },
                             {
-                                id: 'complianceStatus',
+                                id: 'conformanceStatus',
                                 header: 'Status',
                                 sortingField: 'severity',
                                 cell: (item) => (
                                     <Badge
                                         // @ts-ignore
                                         color={`${
-                                            item.complianceStatus == 'passed'
+                                            item.conformanceStatus == 'passed'
                                                 ? 'green'
                                                 : 'red'
                                         }`}
                                     >
-                                        {item.complianceStatus}
+                                        {item.conformanceStatus}
                                     </Badge>
                                 ),
                                 maxWidth: 50,
@@ -643,7 +644,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                             { id: 'resourceName', visible: true },
                             { id: 'benchmarkID', visible: true },
                             { id: 'controlID', visible: true },
-                            { id: 'complianceStatus', visible: true },
+                            { id: 'conformanceStatus', visible: true },
                             { id: 'severity', visible: true },
                             { id: 'evaluatedAt', visible: true },
 

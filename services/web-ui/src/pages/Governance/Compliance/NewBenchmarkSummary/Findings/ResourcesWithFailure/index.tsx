@@ -42,7 +42,7 @@ const columns = (isDemo: boolean) => {
                 >
                     <Text className="text-gray-800">{param.value}</Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data.platformResourceID}
+                        {param.data.kaytuResourceID}
                     </Text>
                 </Flex>
             ),
@@ -191,7 +191,7 @@ export default function ResourcesWithFailure({ query }: ICount) {
                             benchmarkID: query.benchmarkID,
                             severity: query.severity,
                             resourceTypeID: query.resourceTypeID,
-                            complianceStatus: query.conformanceStatus,
+                            conformanceStatus: query.conformanceStatus,
                         },
                         sort: params.request.sortModel.length
                             ? [
@@ -235,7 +235,10 @@ export default function ResourcesWithFailure({ query }: ICount) {
                 onCellClicked={(
                     event: RowClickedEvent<GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding>
                 ) => {
-                    if (event.data?.platformResourceID) {
+                    if (
+                        event.data?.kaytuResourceID &&
+                        event.data?.kaytuResourceID.length > 0
+                    ) {
                         setFinding(event.data)
                         setOpen(true)
                     } else {

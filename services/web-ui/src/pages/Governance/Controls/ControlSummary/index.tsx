@@ -876,7 +876,7 @@ export default function ControlDetail() {
                                         />
                                     }
                                 >
-                                    Compliance Status filter:
+                                    Confomance Status filter:
                                 </Header>
                                 {/* <Text className="mr-2 w-fit">
                             Confomance Status filter:

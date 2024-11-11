@@ -74,7 +74,7 @@ const columns = (
                                 : '')}
                     </Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data?.platformResourceID}
+                        {param.data?.kaytuResourceID}
                     </Text>
                 </Flex>
             ),
@@ -206,7 +206,7 @@ const columns = (
                                         ? 1
                                         : -1
                                 })
-                                .map((f) => f.complianceStatus)
+                                .map((f) => f.conformanceStatus)
                                 .at(0)
                         )}
                     </Flex>
@@ -367,15 +367,15 @@ export default function ImpactedResources({
           .apiV1ResourceFindingsCreate({
               filters: {
                   controlID: [controlId || ''],
-                  complianceStatus:
+                  conformanceStatus:
                       conformanceFilter === undefined
                           ? [
                                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed,
                                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusFailed,
                             ]
                           : conformanceFilter,
-                  // @ts-ignore
-                  integrationGroup: ['active'],
+                // @ts-ignore
+                connectionGroup: ['healthy']
               },
               // sort: [],
               limit: 15,
@@ -387,11 +387,13 @@ export default function ImpactedResources({
           })
           .then((resp) => {
               setLoading(false)
-              if (resp.data.resourceFindings) {
-                  setRows(resp.data.resourceFindings)
-              } else {
-                  setRows([])
-              }
+                if (resp.data.resourceFindings){
+                    setRows(resp.data.resourceFindings)
+
+                }
+                else{
+                    setRows([])
+                }
               // @ts-ignore
 
               setTotalPage(Math.ceil(resp.data.totalCount / 15))
@@ -406,12 +408,12 @@ export default function ImpactedResources({
           })
           .catch((err) => {
               setLoading(false)
-              if (
-                  err.message !==
-                  "Cannot read properties of null (reading 'NaN')"
-              ) {
-                  setError(err.message)
-              }
+                if (
+                    err.message !==
+                    "Cannot read properties of null (reading 'NaN')"
+                ) {
+                    setError(err.message)
+                }
               setNotification({
                   text: 'Can not Connect to Server',
                   type: 'warning',
@@ -496,7 +498,10 @@ export default function ImpactedResources({
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (row?.platformResourceID) {
+                            if (
+                                row?.kaytuResourceID &&
+                                row?.kaytuResourceID.length > 0
+                            ) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {
@@ -526,7 +531,7 @@ export default function ImpactedResources({
                                                     isDemo ? 'blur-sm' : ''
                                                 }
                                             >
-                                                {item.platformResourceID}
+                                                {item.kaytuResourceID}
                                             </Text>
                                         </Flex>
                                     </>
@@ -623,7 +628,7 @@ export default function ImpactedResources({
                                                     })
                                                     .map(
                                                         (f) =>
-                                                            f.complianceStatus
+                                                            f.conformanceStatus
                                                     )
                                                     .at(0)
                                             )}

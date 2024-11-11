@@ -318,11 +318,15 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
     const connectionGroup_data = [
         {
             label: 'Active',
-            value: 'active',
+            value: 'ACTIVE',
         },
         {
             label: 'Inactive',
-            value: 'inactive',
+            value: 'INACTIVE',
+        },
+        {
+            label: 'Archived',
+            value: 'ARCHIVED',
         },
     ]
      const connector_data = [
@@ -338,7 +342,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
     const filterOptions = [
         {
             id: 'conformance_status',
-            name: 'Compliance Status',
+            name: 'Conformance Status',
             icon: CheckCircleIcon,
             component: (
                 <ConformanceStatus
@@ -374,7 +378,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
             defaultValue: defConformanceStatus,
             onDelete: undefined,
             data: connectionGroup_data,
-            types: ['controls', 'resources'],
+            types: ['controls','resources'],
         },
         {
             id: 'job_id',
@@ -412,14 +416,14 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
             setCondition: (c: string) => undefined,
             value: [connector],
             defaultValue: [defConnector],
-            data: Types?.integration_types?.map((d) => {
+            data: Types?.integration_types?.map((d)=>{
                 return {
                     label: d.label,
-                    value: d.platform_name,
+                    value: d.platform_name
                 }
             }),
             onDelete: () => setConnector(defConnector),
-            types: ['controls'],
+            types: [ 'controls'],
         },
         // {
         //     id: 'lifecycle',
@@ -458,7 +462,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
             defaultValue: defSeverity,
             data: severity_data,
             onDelete: () => setSeverity(defSeverity),
-            types: ['findings', 'events', 'controls'],
+            types: ['findings', 'events','controls'],
         },
         // {
         //     id: 'limit_healthy',
@@ -488,7 +492,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
                     defaultValue={[]}
                     data={filters}
                     condition={connectionCon}
-                    type="integrationID"
+                    type="connectionID"
                     onChange={(o) => setConnectionID(o)}
                     name={'Integration'}
                 />
@@ -500,7 +504,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
 
             defaultValue: [],
             onDelete: () => setConnectionID([]),
-            data: filters?.integrationID,
+            data: filters?.connectionID,
             types: ['findings', 'resources', 'events', 'controls', 'accounts'],
         },
         {

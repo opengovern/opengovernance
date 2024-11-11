@@ -400,7 +400,10 @@ export default function Events({ query }: ICount) {
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (row.platformResourceID) {
+                            if (
+                                row.kaytuResourceID &&
+                                row.kaytuResourceID.length > 0
+                            ) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {

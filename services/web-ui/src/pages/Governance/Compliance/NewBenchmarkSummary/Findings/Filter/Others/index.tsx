@@ -15,9 +15,9 @@ interface IOthers {
         | GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFiltersWithMetadata
         | undefined
     condition: string
-    type: 'benchmarkID' | 'integrationID' | 'controlID' | 'resourceTypeID'
-    onChange: (o: string[]) => void
-    name: string
+    type: 'benchmarkID' | 'connectionID' | 'controlID' | 'resourceTypeID'
+    onChange: (o: string[]) => void,
+    name: string,
 }
 
 export default function Others({

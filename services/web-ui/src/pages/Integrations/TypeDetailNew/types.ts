@@ -13,18 +13,6 @@ export interface Integration {
 export interface Annotations {
 }
 
-export interface Credentials {
-    id:               string;
-    secret:           string;
-    integration_type: string;
-    metadata:         Metadata;
-    created_at:       Date;
-    updated_at:       Date;
-}
-
-export interface Metadata {
-}
-
 export interface Schema {
     integration_type_id:    string;
     integration_name:       string;
@@ -33,21 +21,21 @@ export interface Schema {
     provider_documentation: string;
     icon:                   string;
     discover:               Discover;
-    render:                 Render;
+    list:                   List;
+    view:                   View;
     actions:                Actions;
 }
 
 export interface Actions {
-    credentials:  ActionsCredential[];
-    integrations: ActionsIntegration[];
+    credentials:  Credential[];
+    integrations: Integration[];
 }
 
-export interface ActionsCredential {
-    type: string
-    label: string
-    editableFields?: string[]
-    confirm?: CredentialConfirm
-    tooltip?: string
+export interface Credential {
+    type:            string;
+    label:           string;
+    editableFields?: string[];
+    confirm?:        CredentialConfirm;
 }
 
 export interface CredentialConfirm {
@@ -62,12 +50,12 @@ export interface Condition {
     errorMessage: string;
 }
 
-export interface ActionsIntegration {
-    type: string
-    label: string
-    confirm?: IntegrationConfirm
-    editableFields?: string[]
-    tooltip?: string
+export interface Integration {
+    type:            string;
+    label:           string;
+    editableFields?: string[];
+    confirm?:        IntegrationConfirm;
+    tooltip?:        string;
 }
 
 export interface IntegrationConfirm {
@@ -75,18 +63,18 @@ export interface IntegrationConfirm {
 }
 
 export interface Discover {
-    credentials:  DiscoverCredential[];
-    integrations: DiscoverIntegration[];
+    description:      string;
+    credentialInputs: CredentialInput[];
 }
 
-export interface DiscoverCredential {
+export interface CredentialInput {
     type:     string;
     label:    string;
     priority: number;
-    fields:   CredentialField[];
+    fields:   CredentialInputField[];
 }
 
-export interface CredentialField {
+export interface CredentialInputField {
     name:               string;
     label:              string;
     inputType:          string;
@@ -95,29 +83,46 @@ export interface CredentialField {
     validation:         Validation;
     info:               string;
     external_help_url?: string;
+    conditional?:       Conditional;
+}
+
+export interface Conditional {
+    field:     string;
+    isPresent: boolean;
 }
 
 export interface Validation {
     pattern?:       string;
     errorMessage:   string;
+    minLength?:     number;
+    maxLength?:     number;
     fileTypes?:     string[];
     maxFileSizeMB?: number;
 }
 
-export interface DiscoverIntegration {
-    label:  string;
-    type:   string;
-    fields: IntegrationField[];
+export interface List {
+    credentials:  Credentials;
+    integrations: Integrations;
 }
 
-export interface IntegrationField {
+export interface Credentials {
+    defaultPageSize: number;
+    display:         CredentialsDisplay;
+}
+
+export interface CredentialsDisplay {
+    displayFields:  DisplayField[];
+   
+}
+
+export interface DisplayField {
     name:           string;
     label:          string;
     fieldType:      string;
-    required:       boolean;
     order:          number;
+    sortable:       boolean;
+    filterable:     boolean;
     info:           string;
-    valueMap?:      ValueMap;
     statusOptions?: StatusOption[];
 }
 
@@ -127,32 +132,51 @@ export interface StatusOption {
     color: string;
 }
 
-export interface ValueMap {
-    spn_password_based: string;
-    spn_certificate:    string;
-}
-
-export interface Render {
-    credentials:  Credentials;
-    integrations: Credentials;
-}
-
-export interface Credentials {
+export interface Integrations {
     defaultPageSize: number;
-    fields:          CredentialsField[];
+    display:         IntegrationsDisplay;
 }
 
-export interface CredentialsField {
+export interface IntegrationsDisplay {
+    id:             string;
+    name:           string;
+    description:    string;
+    logo:           string;
+    help_text:      string;
+    displayFields:  DisplayField[];
+   
+}
+
+export interface View {
+    integration_details: Details;
+    credential_details:  Details;
+}
+
+export interface Details {
+    description:    string;
+    fields:         CredentialDetailsField[];
+  
+}
+
+export interface CredentialDetailsField {
     name:           string;
     label:          string;
     fieldType:      string;
     order:          number;
-    sortable?:      boolean;
-    filterable?:    boolean;
     info:           string;
-    detail:         boolean;
-    detail_order:   number;
-    required?:      boolean;
-    valueMap?:      ValueMap;
+    conditional?:   Conditional;
     statusOptions?: StatusOption[];
+    
+}
+
+export interface Credentials {
+    id:               string;
+    secret:           string;
+    integration_type: string;
+    metadata:         Metadata;
+    created_at:       Date;
+    updated_at:       Date;
+}
+
+export interface Metadata {
 }

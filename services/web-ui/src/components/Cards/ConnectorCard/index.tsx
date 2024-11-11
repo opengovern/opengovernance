@@ -29,7 +29,6 @@ interface IConnectorCard {
     logo?: string
     onClickCard?: Function
     name?: string
-    id? :number
 }
 export const getConnectorsIcon = (connector: SourceType[], className = '') => {
     if (connector?.length >= 2) {
@@ -68,17 +67,17 @@ export const getConnectorIcon = (
     className = ''
 ) => {
     const connectorIcon = () => {
-        if (String(connector).toLowerCase() === 'azure_subscription') {
+        if (String(connector).toLowerCase() === 'azure') {
             return AzureIcon
         }
-        if (String(connector).toLowerCase() === 'aws_cloud_account') {
+        if (String(connector).toLowerCase() === 'aws') {
             return AWSIcon
         }
         if (connector?.length && connector?.length > 0) {
-            if (String(connector[0]).toLowerCase() === 'azure_subscription') {
+            if (String(connector[0]).toLowerCase() === 'azure') {
                 return AzureIcon
             }
-            if (String(connector[0]).toLowerCase() === 'aws_cloud_account') {
+            if (String(connector[0]).toLowerCase() === 'aws') {
                 return AWSIcon
             }
         }
@@ -124,7 +123,6 @@ export default function ConnectorCard({
     tier,
     logo,
     onClickCard,
-    id
 }: IConnectorCard) {
     const navigate = useNavigate()
     const searchParams = useAtomValue(searchAtom)
@@ -144,7 +142,7 @@ export default function ConnectorCard({
 
     const onClick = () => {
         if (status === 'enabled' && (count || 0) > 0) {
-            navigate(`${connector}`, { state: { name, id } })
+            navigate(`${name}`, { state: { connector } })
             return
         }
         if (status === 'first-time') {
@@ -157,10 +155,10 @@ export default function ConnectorCard({
             tier ===
             GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
         ) {
-            navigate(`${connector}`, { state: { name, id } })
+            navigate(`${name}`, { state: { connector } })
             return
         }
-        navigate(`${connector}/../../request-access?connector=${title}`) // it's a hack!
+        navigate(`${name}/../../request-access?connector=${title}`) // it's a hack!
     }
 
     return (

@@ -34,7 +34,7 @@ import UpdateCredentials from './Update'
 
 interface CredentialsListProps {
     name?: string
-    integration_type?: string
+    integration_type: string
     schema?: Schema
 }
 
@@ -347,7 +347,7 @@ export default function CredentialsList({
                                       <Header
                                           actions={
                                               <Flex className="gap-1">
-                                                  {/* <Button
+                                                  <Button
                                                       // icon={PlusIcon}
                                                       onClick={() =>
                                                           setOpen(true)
@@ -355,7 +355,7 @@ export default function CredentialsList({
                                                   >
                                                       Add New {`${name}`}{' '}
                                                       Integration
-                                                  </Button> */}
+                                                  </Button>
                                                   {/* <Button
                                             // icon={PencilIcon}
                                             onClick={() => setEdit(true)}
@@ -374,7 +374,7 @@ export default function CredentialsList({
                                           }
                                           className="w-full"
                                       >
-                                          {name} Credentials{' '}
+                                          {name} Accounts{' '}
                                           <span className=" font-medium">
                                               ({total_count})
                                           </span>

@@ -313,18 +313,21 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
    const connectionGroup_data = [
        {
            label: 'Active',
-           value: 'active',
+           value: 'ACTIVE',
        },
        {
            label: 'Inactive',
-           value: 'inactive',
+           value: 'INACTIVE',
        },
-      
+       {
+           label: 'Archived',
+           value: 'ARCHIVED',
+       },
    ]
     const filterOptions = [
         {
             id: 'conformance_status',
-            name: 'compliance Status',
+            name: 'Conformance Status',
             icon: CheckCircleIcon,
             component: (
                 <ConformanceStatus
@@ -468,7 +471,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
                     defaultValue={[]}
                     data={filters}
                     condition={connectionCon}
-                    type="integrationID"
+                    type="connectionID"
                     onChange={(o) => setConnectionID(o)}
                     name={'Integration'}
                 />
@@ -480,7 +483,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
 
             defaultValue: [],
             onDelete: () => setConnectionID([]),
-            data: filters?.integrationID,
+            data: filters?.connectionID,
             types: ['findings', 'resources', 'events', 'controls', 'accounts'],
         },
         {

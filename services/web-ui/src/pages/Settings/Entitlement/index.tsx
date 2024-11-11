@@ -272,18 +272,12 @@ export default function SettingsEntitlement() {
              setStatus(res.data.status)
              setPercentage(res.data.Summary?.progress_percentage)
              if (intervalId) {
-                 if (
-                     res.data.status === 'SUCCEEDED' ||
-                     res.data.status === 'FAILED'
-                 ) {
+                 if (res.data.status === 'SUCCEEDED') {
                      clearInterval(intervalId)
                  }
              } else {
-                 if (
-                     res.data.status !== 'SUCCEEDED' &&
-                     res.data.status !== 'FAILED'
-                 ) {
-                     const id = setInterval(GetStatus, 30000)
+                 if (res.data.status !== 'SUCCEEDED') {
+                     const id = setInterval(GetStatus, 10000)
                      // @ts-ignore
                      setIntervalId(id)
                  }
@@ -347,7 +341,7 @@ export default function SettingsEntitlement() {
   useEffect(() => {
         if (syncExecuted && !syncLoading) {
             GetStatus()
-            const id = setInterval(GetStatus,30000)
+            const id = setInterval(GetStatus,10000)
             // @ts-ignore
             setIntervalId(id)
             // setValue(response?.value || '')
@@ -462,18 +456,18 @@ export default function SettingsEntitlement() {
                         variant="secondary"
                         className="ml-2"
                         loading={syncExecuted && syncLoading}
-                        disabled={status !== 'SUCCEEDED' && status !== 'FAILED'}
+                        disabled={status !== 'SUCCEEDED'}
                         onClick={() => runSync()}
                     >
                         <Flex flexDirection="row" className="gap-2">
-                            {status !== 'SUCCEEDED' && status !== 'FAILED' && (
+                            {status !== 'SUCCEEDED' && (
                                 <Spinner className=" w-4 h-4" />
                             )}
-                            {(status === 'SUCCEEDED' ||  status === 'FAILED') ? 'Re-Sync' : status}
+                            {status === 'SUCCEEDED' ? 'Re-Sync' : status}
                         </Flex>
                     </Button>
                 </Flex>
-                {(status !== 'SUCCEEDED' ||  status !== 'FAILED') && (
+                {status !== 'SUCCEEDED' && (
                     <>
                         <Flex className="w-full">
                             <ProgressBar
@@ -581,18 +575,20 @@ export default function SettingsEntitlement() {
                         )}
                     </Flex>
                 </Flex>
-                {((error && error !== '') ||
-                    (errorPurge && errorPurge !== '')) && (
-                    <>
-                        {console.log(getErrorMessage(error))}
-                        <Alert className="mt-2" type="error">
-                            <>
-                                {getErrorMessage(error)}
-                                {getErrorMessage(errorPurge)}
-                            </>
-                        </Alert>
-                    </>
-                )}
+                {((error && error !=='') ||
+                    (errorPurge && errorPurge !== '') )&& (
+                        <>
+                            {console.log(getErrorMessage(error))}
+                            <Alert className="mt-2" type="error">
+                                <>
+                                  
+                                        {getErrorMessage(error)}
+                                    {
+                                        getErrorMessage(errorPurge)}
+                                </>
+                            </Alert>
+                        </>
+                    )}
             </Card>
         </Flex>
     )
