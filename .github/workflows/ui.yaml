@@ -1,6 +1,7 @@
 name: Web UI Build
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main  # Only run this workflow on pushes to the main branch
