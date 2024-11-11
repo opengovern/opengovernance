@@ -30,8 +30,8 @@ type LookupQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchLookupByResourceIDBatch(ctx context.Context, client opengovernance.Client, resourceID []string) (map[string][]es.LookupResource, error) {
-	if len(resourceID) == 0 {
+func FetchLookupByResourceIDBatch(ctx context.Context, client opengovernance.Client, platformResourceIDs []string) (map[string][]es.LookupResource, error) {
+	if len(platformResourceIDs) == 0 {
 		return nil, nil
 	}
 	request := make(map[string]any)
@@ -45,7 +45,7 @@ func FetchLookupByResourceIDBatch(ctx context.Context, client opengovernance.Cli
 		"bool": map[string]any{
 			"filter": map[string]any{
 				"terms": map[string]any{
-					"resource_id": resourceID,
+					"platform_id": platformResourceIDs,
 				},
 			},
 		},
@@ -53,8 +53,8 @@ func FetchLookupByResourceIDBatch(ctx context.Context, client opengovernance.Cli
 	request["aggs"] = map[string]any{
 		"resources": map[string]any{
 			"terms": map[string]any{
-				"field": "resource_id",
-				"size":  len(resourceID),
+				"field": "platform_id",
+				"size":  len(platformResourceIDs),
 			},
 			"aggs": map[string]any{
 				"hit_select": map[string]any{
