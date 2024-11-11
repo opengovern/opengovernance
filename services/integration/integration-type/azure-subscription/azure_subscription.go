@@ -23,19 +23,7 @@ func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.De
 	}
 }
 
-func (i *AzureSubscriptionIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *AzureSubscriptionIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *AzureSubscriptionIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *AzureSubscriptionIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
 	var credentials azureDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {

@@ -2,6 +2,8 @@ package aws_account
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/jackc/pgtype"
 	awsDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/discovery"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/healthcheck"
@@ -23,31 +25,19 @@ func (i *AwsCloudAccountIntegration) GetDescriberConfiguration() interfaces.Desc
 	}
 }
 
-func (i *AwsCloudAccountIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *AwsCloudAccountIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *AwsCloudAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *AwsCloudAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
 	var credentials awsDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
 		return false, err
 	}
 
-	return healthcheck.AWSIntegrationHealthCheck(healthcheck.Config{
-		AWSAccessKeyID:            credentials.AwsAccessKeyID,
-		AWSSecretAccessKey:        credentials.AwsSecretAccessKey,
-		RoleToAssumeInMainAccount: credentials.RoleToAssumeInMainAccount,
-		CrossAccountRole:          credentials.CrossAccountRoleName,
-		ExternalID:                credentials.ExternalID,
+	return healthcheck.AWSIntegrationHealthCheck(healthcheck.AWSConfigInput{
+		AccessKeyID:              credentials.AwsAccessKeyID,
+		SecretAccessKey:          credentials.AwsSecretAccessKey,
+		RoleNameInPrimaryAccount: credentials.RoleToAssumeInMainAccount,
+		CrossAccountRoleARN:      credentials.CrossAccountRoleName,
+		ExternalID:               credentials.ExternalID,
 	}, providerId)
 }
 
@@ -59,20 +49,38 @@ func (i *AwsCloudAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	}
 
 	var integrations []models.Integration
-	accounts, err := discovery.AWSIntegrationDiscovery(discovery.Config{
-		AWSAccessKeyID:            credentials.AwsAccessKeyID,
-		AWSSecretAccessKey:        credentials.AwsSecretAccessKey,
-		RoleToAssumeInMainAccount: credentials.RoleToAssumeInMainAccount,
-		CrossAccountRole:          credentials.CrossAccountRoleName,
-		ExternalID:                credentials.ExternalID,
+	accounts := discovery.AWSIntegrationDiscovery(discovery.Config{
+		AWSAccessKeyID:                credentials.AwsAccessKeyID,
+		AWSSecretAccessKey:            credentials.AwsSecretAccessKey,
+		RoleNameToAssumeInMainAccount: credentials.RoleToAssumeInMainAccount,
+		CrossAccountRoleName:          credentials.CrossAccountRoleName,
+		ExternalID:                    credentials.ExternalID,
 	})
-	if err != nil {
-		return nil, err
-	}
 	for _, a := range accounts {
+		if a.Details.Error != "" {
+			return nil, fmt.Errorf(a.Details.Error)
+		}
+
+		labels := map[string]string{
+			"RoleNameInMainAccount": a.Labels.RoleNameInMainAccount,
+			"AccountType":           a.Labels.AccountType,
+			"CrossAccountRoleARN":   a.Labels.CrossAccountRoleARN,
+			"ExternalID":            a.Labels.ExternalID,
+		}
+		labelsJsonData, err := json.Marshal(labels)
+		if err != nil {
+			return nil, err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		if err != nil {
+			return nil, err
+		}
+
 		integrations = append(integrations, models.Integration{
 			ProviderID: a.AccountID,
 			Name:       a.AccountName,
+			Labels:     integrationLabelsJsonb,
 		})
 	}
 
