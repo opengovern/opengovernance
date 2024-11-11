@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     # Check if the last commit is a merge from the `ui-changes` branch
-    if:  contains(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'ui-changes') 
+    if:  contains(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'ui-changes') &&  github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
