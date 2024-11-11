@@ -9,7 +9,7 @@ build/*
 cache/*
 
 # Environment files
-*.env
+
 
 # PEM files
 *.pem
