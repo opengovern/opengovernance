@@ -48,7 +48,9 @@ jobs:
             ${{ runner.os }}-npm-
       - name: Go To Code directory
         run : cd services/web-ui
-        
+      - name: check dir
+        run : ls
+          
       - name: Install dependencies
         run: npm install
 
