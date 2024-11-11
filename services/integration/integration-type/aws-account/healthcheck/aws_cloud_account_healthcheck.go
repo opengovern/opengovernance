@@ -2,52 +2,45 @@ package healthcheck
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsarn "github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-// Config represents the configuration loaded from the JSON file.
-type Config struct {
-	AWSAccessKeyID            string `json:"aws_access_key_id"`
-	AWSSecretAccessKey        string `json:"aws_secret_access_key"`
-	RoleToAssumeInMainAccount string `json:"role_to_assume_in_main_account,omitempty"`
-	CrossAccountRole          string `json:"cross_account_role,omitempty"`
-	ExternalID                string `json:"external_id,omitempty"`
+// AWSConfigInput encapsulates all possible AWS credentials and role information.
+type AWSConfigInput struct {
+	AccessKeyID              string `json:"access_key_id"`                // AWS Access Key ID. Leave empty to use default credentials.
+	SecretAccessKey          string `json:"secret_access_key"`            // AWS Secret Access Key. Leave empty to use default credentials.
+	RoleNameInPrimaryAccount string `json:"role_name_in_primary_account"` // Role ARN to assume in the primary account. Leave empty if not assuming a role.
+	CrossAccountRoleARN      string `json:"cross_account_role_arn"`       // Role ARN to assume in the cross account. Leave empty if not assuming a cross account role.
+	ExternalID               string `json:"external_id"`                  // External ID required for assuming the cross account role. Leave empty if not required.
+	Region                   string `json:"region"`                       // AWS region. Defaults to "us-east-2" if empty.
 }
 
-func AWSIntegrationHealthCheck(config Config, accountID string) (bool, error) {
-	result := ValidateAccount(accountID, config)
-
-	var err error
-	if result.Details.Error != "" {
-		err = fmt.Errorf(result.Details.Error)
-	}
-	return result.Healthy, err
-}
-
-// AccountResult holds the result for the account.
+// AccountResult represents the outcome of validating an AWS account.
 type AccountResult struct {
-	AccountID string  `json:"account_id"`
-	Healthy   bool    `json:"healthy"`
-	Details   Details `json:"details"`
+	AccountID string        `json:"account_id"` // The AWS account ID being validated.
+	Healthy   bool          `json:"healthy"`    // Indicates if the account is healthy (accessible and has required policies).
+	Details   PolicyDetails `json:"details"`    // Detailed information about policies and accessibility.
 }
 
-// Details holds detailed information for the account.
-type Details struct {
-	IsAccessible     bool     `json:"isAccessible"`
-	HasPolicies      bool     `json:"hasPolicies"`
-	AttachedPolicies []string `json:"attached_policies,omitempty"`
-	RequiredPolicies []string `json:"required_policies,omitempty"`
-	IamPrincipal     string   `json:"iam_principal,omitempty"`
-	CredentialType   string   `json:"credential_type"`
-	Error            string   `json:"error,omitempty"`
+// PolicyDetails provides detailed information about the policies attached to the IAM principal.
+type PolicyDetails struct {
+	RequiredPolicies []string `json:"required_policies"` // List of required policy ARNs.
+	AttachedPolicies []string `json:"attached_policies"` // List of policies attached to the principal.
+	MissingPolicies  []string `json:"missing_policies"`  // List of required policies that are missing.
+	CredentialType   string   `json:"credential_type"`   // Type of credentials used ("Single Account" or "Multi-Account").
+	IsAccessible     bool     `json:"is_accessible"`     // Indicates if the account is accessible.
+	IamPrincipal     string   `json:"iam_principal"`     // ARN of the IAM principal.
+	HasPolicies      bool     `json:"has_policies"`      // Indicates if required policies are attached.
+	Error            string   `json:"error,omitempty"`   // Error message, if any.
 }
 
 // List of required policy ARNs. Modify this list as needed.
@@ -56,25 +49,238 @@ var requiredPolicies = []string{
 	// Add more policy ARNs as needed
 }
 
-// GenerateAWSConfig creates an AWS configuration using the provided credentials provider.
-func GenerateAWSConfig(credsProvider aws.CredentialsProvider) (aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credsProvider),
+func AWSIntegrationHealthCheck(creds AWSConfigInput, accountID string) (bool, error) {
+	// Perform account validation
+	result := ValidateIntegrationHealth(accountID, creds)
+	if result.Details.Error != "" {
+		return false, errors.New(result.Details.Error)
+	}
+
+	return result.Healthy, nil
+}
+
+// GenerateAWSConfig initializes and returns an AWS configuration based on the provided inputs.
+// It determines whether to perform single or multi-account validation based on the inputs.
+func GenerateAWSConfig(
+	accessKeyID string,
+	secretAccessKey string,
+	roleNameInPrimaryAccount string,
+	crossAccountRoleARN string,
+	externalID string,
+	region string,
+) (*aws.Config, error) {
+	var cfg aws.Config
+	var err error
+
+	// Step 1: Set default region if not provided
+	if region == "" {
+		region = "us-east-2"
+	}
+
+	// Step 2: Initialize the base credentials provider
+	var baseCredentials aws.CredentialsProvider = nil
+
+	if accessKeyID != "" && secretAccessKey != "" {
+		// Use static credentials if provided
+		baseCredentials = credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")
+	}
+
+	// Step 3: Load the initial AWS configuration
+	if baseCredentials != nil {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithCredentialsProvider(baseCredentials),
+			config.WithRegion(region),
+		)
+	} else {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(region),
+		)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("unable to load SDK config: %v", err)
+	}
+
+	// Step 4: Determine the type of validation based on provided inputs
+	isMultiAccount := false
+	if crossAccountRoleARN != "" || roleNameInPrimaryAccount != "" {
+		isMultiAccount = true
+	}
+
+	if isMultiAccount {
+		// Assume Role in Primary Account if RoleNameInPrimaryAccount is provided
+		if roleNameInPrimaryAccount != "" {
+			primaryRoleARN := roleNameInPrimaryAccount // Expected to be full ARN
+
+			// Create an STS client from the existing configuration
+			stsClient := sts.NewFromConfig(cfg)
+
+			// Configure AssumeRole options
+			primaryAssumeRoleOptions := func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = "primary-account-session" // Customize as needed
+				// Optional: o.DurationSeconds = 3600
+				// Optional: o.MFAOptions = &stscreds.MFAOptions{SerialNumber: "YOUR_MFA_SERIAL", TokenCode: "123456"}
+			}
+
+			// Create an AssumeRole provider for the primary account role
+			primaryRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, primaryRoleARN, primaryAssumeRoleOptions)
+
+			// Cache the credentials
+			primaryCredentials := aws.NewCredentialsCache(primaryRoleProvider)
+
+			// Update the AWS configuration to use the assumed primary role credentials
+			cfg.Credentials = primaryCredentials
+		}
+
+		// Assume Role in Cross Account if CrossAccountRoleARN is provided
+		if crossAccountRoleARN != "" {
+			// Create an STS client from the existing configuration
+			stsClient := sts.NewFromConfig(cfg)
+
+			// Configure AssumeRole options
+			crossAccountAssumeRoleOptions := func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = "cross-account-session" // Customize as needed
+				if externalID != "" {
+					o.ExternalID = aws.String(externalID)
+				}
+				// Optional: o.DurationSeconds = 3600
+				// Optional: o.MFAOptions = &stscreds.MFAOptions{SerialNumber: "YOUR_MFA_SERIAL", TokenCode: "123456"}
+			}
+
+			// Create an AssumeRole provider for the cross account role
+			crossAccountRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, crossAccountRoleARN, crossAccountAssumeRoleOptions)
+
+			// Cache the credentials
+			crossAccountCredentials := aws.NewCredentialsCache(crossAccountRoleProvider)
+
+			// Update the AWS configuration to use the assumed cross account role credentials
+			cfg.Credentials = crossAccountCredentials
+		}
+	}
+
+	return &cfg, nil
+}
+
+// ValidateIntegrationHealth validates the integration health of the specified AWS account.
+// It checks if the account is accessible and if the IAM principal has the required policies.
+func ValidateIntegrationHealth(accountID string, creds AWSConfigInput) AccountResult {
+	var result AccountResult
+	result.AccountID = accountID
+	result.Details.RequiredPolicies = requiredPolicies
+	result.Details.CredentialType = "Single Account" // default, may change to "Multi-Account"
+
+	// Create AWS Config using provided credentials
+	awsCfg, err := GenerateAWSConfig(
+		creds.AccessKeyID,
+		creds.SecretAccessKey,
+		creds.RoleNameInPrimaryAccount,
+		creds.CrossAccountRoleARN,
+		creds.ExternalID,
+		creds.Region,
 	)
 	if err != nil {
-		return aws.Config{}, fmt.Errorf("failed to load configuration: %v", err)
+		result.Details.Error = fmt.Sprintf("Failed to generate AWS config: %v", err)
+		result.Details.IsAccessible = false
+		result.Details.HasPolicies = false
+		result.Healthy = false
+		return result
 	}
-	return cfg, nil
+
+	// Initialize STS client
+	stsClient := sts.NewFromConfig(*awsCfg)
+
+	// Determine if it's multi-account based on provided inputs
+	isMultiAccount := creds.CrossAccountRoleARN != "" || creds.RoleNameInPrimaryAccount != ""
+
+	if isMultiAccount {
+		result.Details.CredentialType = "Multi-Account"
+		// Assume roles are already handled in GenerateAWSConfig
+		// Proceed to get caller identity
+	}
+
+	// Get Caller Identity to check access
+	identityOutput, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
+	if err != nil {
+		result.Details.IsAccessible = false
+		result.Details.HasPolicies = false
+		result.Details.Error = fmt.Sprintf("Failed to get caller identity: %v", err)
+		result.Healthy = false
+		return result
+	}
+
+	// Verify if the account ID matches
+	if *identityOutput.Account != accountID {
+		result.Details.IsAccessible = false
+		result.Details.HasPolicies = false
+		result.Details.Error = fmt.Sprintf("Provided credentials do not match the account ID: %s", accountID)
+		result.Healthy = false
+		return result
+	}
+
+	// Record the principal ARN
+	result.Details.IsAccessible = true
+	result.Details.IamPrincipal = *identityOutput.Arn
+
+	// Check policies attached to the principal using utility functions
+	attachedPolicies, missingPolicies, err := GetAttachedPolicies(*awsCfg, result.Details.IamPrincipal, requiredPolicies)
+	if err != nil {
+		result.Details.HasPolicies = false
+		result.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
+		result.Healthy = false
+		return result
+	}
+
+	result.Details.AttachedPolicies = attachedPolicies
+	result.Details.MissingPolicies = missingPolicies
+	if len(missingPolicies) > 0 {
+		result.Details.HasPolicies = false
+		result.Details.Error = fmt.Sprintf("Missing policies: %v", missingPolicies)
+	} else {
+		result.Details.HasPolicies = true
+	}
+
+	result.Healthy = result.Details.IsAccessible && result.Details.HasPolicies
+
+	return result
+}
+
+// ParsePrincipalArn parses an AWS principal ARN and returns the entity type and entity name.
+// This updated function handles assumed roles by extracting the actual role name.
+func ParsePrincipalArn(principalArn string) (string, string, error) {
+	parts := strings.Split(principalArn, ":")
+	if len(parts) < 6 {
+		return "", "", fmt.Errorf("invalid ARN format")
+	}
+
+	// parts[5] contains the resource part
+	resource := parts[5]
+	resourceParts := strings.SplitN(resource, "/", 2)
+	if len(resourceParts) != 2 {
+		return "", "", fmt.Errorf("invalid resource format in ARN")
+	}
+
+	entityType := resourceParts[0]
+	entityName := resourceParts[1]
+
+	if entityType == "assumed-role" {
+		entityType = "role"
+		// For assumed roles, entityName is "RoleName/SessionName"
+		// We only need the RoleName
+		roleParts := strings.SplitN(entityName, "/", 2)
+		entityName = roleParts[0]
+	}
+
+	return entityType, entityName, nil
 }
 
 // GetAttachedPolicies retrieves the attached policies and identifies any missing required policies.
+// It uses the ParsePrincipalArn function.
 func GetAttachedPolicies(cfg aws.Config, principalArn string, requiredPolicies []string) ([]string, []string, error) {
 	var attachedPolicies []string
 	var missingPolicies []string
 
 	iamClient := iam.NewFromConfig(cfg)
 
-	entityType, entityName, err := parsePrincipalArn(principalArn)
+	entityType, entityName, err := ParsePrincipalArn(principalArn)
 	if err != nil {
 		return attachedPolicies, missingPolicies, fmt.Errorf("failed to parse principal ARN: %v", err)
 	}
@@ -135,172 +341,4 @@ func GetAttachedPolicies(cfg aws.Config, principalArn string, requiredPolicies [
 	}
 
 	return attachedPolicies, missingPolicies, nil
-}
-
-// parsePrincipalArn parses the ARN and returns the entity type and name.
-func parsePrincipalArn(principalArn string) (entityType string, entityName string, err error) {
-	// Parse the ARN
-	parsedArn, err := awsarn.Parse(principalArn)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to parse ARN: %v", err)
-	}
-
-	switch parsedArn.Service {
-	case "iam":
-		// Resource format: {entityType}/{entityName}
-		resourceParts := strings.SplitN(parsedArn.Resource, "/", 2)
-		if len(resourceParts) < 2 {
-			return "", "", fmt.Errorf("invalid resource format in ARN: %s", principalArn)
-		}
-
-		entityType = strings.ToLower(resourceParts[0])
-		entityName = resourceParts[1]
-	case "sts":
-		// Resource format: assumed-role/{role-name}/{session-name}
-		resourceParts := strings.SplitN(parsedArn.Resource, "/", 3)
-		if len(resourceParts) < 2 {
-			return "", "", fmt.Errorf("invalid resource format in ARN: %s", principalArn)
-		}
-
-		if strings.ToLower(resourceParts[0]) != "assumed-role" {
-			return "", "", fmt.Errorf("unsupported resource type in STS ARN: %s", resourceParts[0])
-		}
-
-		entityType = "role"
-		entityName = resourceParts[1]
-	default:
-		return "", "", fmt.Errorf("unsupported service in ARN: %s", parsedArn.Service)
-	}
-
-	return entityType, entityName, nil
-}
-
-// ValidateAccount attempts to access the specified account using the provided credentials and configurations.
-// It returns an AccountResult indicating whether the account is accessible and has required policies.
-func ValidateAccount(accountID string, cfg Config) AccountResult {
-	var result AccountResult
-	result.AccountID = accountID
-	result.Details.RequiredPolicies = requiredPolicies
-	result.Details.CredentialType = "Single Account" // default, may change to "Multi-Account"
-
-	// Create AWS Config using provided credentials
-	credsProvider := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-		cfg.AWSAccessKeyID,
-		cfg.AWSSecretAccessKey,
-		"",
-	))
-
-	awsCfg, err := GenerateAWSConfig(credsProvider)
-	if err != nil {
-		result.Details.Error = fmt.Sprintf("Failed to generate AWS config: %v", err)
-		result.Details.IsAccessible = false
-		result.Details.HasPolicies = false
-		result.Healthy = false
-		return result
-	}
-
-	// Initialize STS client
-	stsClient := sts.NewFromConfig(awsCfg)
-
-	// Check if we need to assume a role
-	var roleToAssume string
-	if cfg.CrossAccountRole != "" {
-		// Use CrossAccountRole to assume role in target account
-		roleToAssume = cfg.CrossAccountRole
-		result.Details.CredentialType = "Multi-Account"
-	} else if cfg.RoleToAssumeInMainAccount != "" {
-		// Use RoleToAssumeInMainAccount to assume role in target account
-		roleToAssume = cfg.RoleToAssumeInMainAccount
-		result.Details.CredentialType = "Multi-Account"
-	}
-
-	if roleToAssume != "" {
-		// Attempt to assume the specified role in the target account
-		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleToAssume)
-		assumeRoleInput := &sts.AssumeRoleInput{
-			RoleArn:         aws.String(roleArn),
-			RoleSessionName: aws.String("AssumeRoleSession"),
-		}
-
-		// Include ExternalID if provided
-		if cfg.ExternalID != "" {
-			assumeRoleInput.ExternalId = aws.String(cfg.ExternalID)
-		}
-
-		// Attempt to assume the role
-		assumeRoleOutput, err := stsClient.AssumeRole(context.TODO(), assumeRoleInput)
-		if err != nil {
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Error = fmt.Sprintf("Failed to assume role %s in account %s: %v", roleToAssume, accountID, err)
-			result.Healthy = false
-			return result
-		}
-
-		// Create new AWS Config with assumed role credentials
-		credsProvider = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			*assumeRoleOutput.Credentials.AccessKeyId,
-			*assumeRoleOutput.Credentials.SecretAccessKey,
-			*assumeRoleOutput.Credentials.SessionToken,
-		))
-
-		awsCfg, err = GenerateAWSConfig(credsProvider)
-		if err != nil {
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Error = fmt.Sprintf("Failed to generate AWS config with assumed role: %v", err)
-			result.Healthy = false
-			return result
-		}
-
-		// Record the assumed role ARN
-		result.Details.IsAccessible = true
-		result.Details.IamPrincipal = *assumeRoleOutput.AssumedRoleUser.Arn
-	} else {
-		// No role assumption, use provided credentials directly
-
-		// Get Caller Identity to check access
-		identityOutput, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
-		if err != nil {
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Error = fmt.Sprintf("Failed to get caller identity: %v", err)
-			result.Healthy = false
-			return result
-		}
-
-		// Verify if the account ID matches
-		if *identityOutput.Account != accountID {
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Error = fmt.Sprintf("Provided credentials do not match the account ID: %s", accountID)
-			result.Healthy = false
-			return result
-		}
-
-		// Record the principal ARN
-		result.Details.IsAccessible = true
-		result.Details.IamPrincipal = *identityOutput.Arn
-	}
-
-	// Check policies attached to the principal
-	attachedPolicies, missingPolicies, err := GetAttachedPolicies(awsCfg, result.Details.IamPrincipal, requiredPolicies)
-	if err != nil {
-		result.Details.HasPolicies = false
-		result.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
-		result.Healthy = false
-		return result
-	}
-
-	result.Details.AttachedPolicies = attachedPolicies
-	if len(missingPolicies) > 0 {
-		result.Details.HasPolicies = false
-		result.Details.Error = fmt.Sprintf("Missing policies: %v", missingPolicies)
-	} else {
-		result.Details.HasPolicies = true
-	}
-
-	result.Healthy = result.Details.IsAccessible && result.Details.HasPolicies
-
-	return result
 }

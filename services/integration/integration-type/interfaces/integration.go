@@ -10,10 +10,8 @@ type DescriberConfiguration struct {
 
 type IntegrationType interface {
 	GetDescriberConfiguration() DescriberConfiguration
-	GetAnnotations(jsonData []byte) (map[string]string, error)
-	GetLabels(jsonData []byte) (map[string]string, error)
 	GetResourceTypesByLabels(map[string]string) ([]string, error)
-	HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error)
+	HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error)
 	DiscoverIntegrations(jsonData []byte) ([]models.Integration, error)
 	GetResourceTypeFromTableName(tableName string) string
 }

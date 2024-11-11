@@ -201,30 +201,6 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
-		annotations, err := integration.GetAnnotations(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get annotations", zap.Error(err))
-		}
-		annotationsJsonData, err := json.Marshal(annotations)
-		if err != nil {
-			return err
-		}
-		integrationAnnotationsJsonb := pgtype.JSONB{}
-		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
-		i.Annotations = integrationAnnotationsJsonb
-
-		labels, err := integration.GetLabels(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get labels", zap.Error(err))
-		}
-		labelsJsonData, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		i.Labels = integrationLabelsJsonb
-
 		integrationAPI, err := i.ToApi()
 		if err != nil {
 			h.logger.Error("failed to create integration api", zap.Error(err))
@@ -316,34 +292,15 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		i.CredentialID = credentialID
 
-		annotations, err := integration.GetAnnotations(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get annotations", zap.Error(err))
-		}
-		annotationsJsonData, err := json.Marshal(annotations)
-		if err != nil {
-			return err
-		}
-		integrationAnnotationsJsonb := pgtype.JSONB{}
-		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
-		i.Annotations = integrationAnnotationsJsonb
-
-		labels, err := integration.GetLabels(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get labels", zap.Error(err))
-		}
-		labelsJsonData, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		i.Labels = integrationLabelsJsonb
-
 		healthcheckTime := time.Now()
 		i.LastCheck = &healthcheckTime
 
-		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, labels)
+		iApi, err := i.ToApi()
+		if err != nil {
+			h.logger.Error("failed to create integration api", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
+		}
+		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, iApi.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			i.State = models2.IntegrationStateInactive

@@ -155,7 +155,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 			cred: credential,
 		}
 		wp.AddJob(func() (interface{}, error) {
-			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.cred.Secret)
+			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.cred.Secret, c.src)
 			if err != nil {
 				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 				DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
@@ -367,7 +367,8 @@ func newDescribeConnectionJob(a integrationapi.Integration, resourceType string,
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeIntegrationJob, cipherText string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeIntegrationJob, cipherText string,
+	integration *integrationapi.Integration) error {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -395,15 +396,17 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		VaultConfig: s.conf.Vault,
 
 		DescribeJob: describe.DescribeJob{
-			JobID:           dc.ID,
-			ResourceType:    dc.ResourceType,
-			IntegrationID:   dc.IntegrationID,
-			ProviderID:      dc.ProviderID,
-			DescribedAt:     dc.CreatedAt.UnixMilli(),
-			IntegrationType: dc.IntegrationType,
-			CipherText:      cipherText,
-			TriggerType:     dc.TriggerType,
-			RetryCounter:    0,
+			JobID:                  dc.ID,
+			ResourceType:           dc.ResourceType,
+			IntegrationID:          dc.IntegrationID,
+			ProviderID:             dc.ProviderID,
+			DescribedAt:            dc.CreatedAt.UnixMilli(),
+			IntegrationType:        dc.IntegrationType,
+			CipherText:             cipherText,
+			IntegrationLabels:      integration.Labels,
+			IntegrationAnnotations: integration.Annotations,
+			TriggerType:            dc.TriggerType,
+			RetryCounter:           0,
 		},
 	}
 
