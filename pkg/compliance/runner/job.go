@@ -9,7 +9,6 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	"io"
 	"strings"
 	"text/template"
 	"time"
@@ -441,103 +440,4 @@ type ComplianceResultsMultiGetResponse struct {
 	Docs []struct {
 		Source types.ComplianceResult `json:"_source"`
 	} `json:"docs"`
-}
-
-func (w *Worker) handleOldComplianceResultsStateByTime(ctx context.Context, cutThreshold time.Time, doDelete bool) error {
-	idx := types.ComplianceResultsIndex
-	var filters []map[string]any
-	mustFilters := make([]map[string]any, 0, 4)
-	mustFilters = append(mustFilters, map[string]any{
-		"range": map[string]any{
-			"evaluatedAt": map[string]any{
-				"lt": cutThreshold.UnixMilli(),
-			},
-		},
-	})
-
-	filters = append(filters, map[string]any{
-		"bool": map[string]any{
-			"must": []map[string]any{
-				{
-					"bool": map[string]any{
-						"filter": mustFilters,
-					},
-				},
-			},
-		},
-	})
-
-	request := make(map[string]any)
-	request["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-
-	es := w.esClient.ES()
-	if !doDelete {
-		request["doc"] = map[string]any{
-			"stateActive": false,
-		}
-
-		query, err := json.Marshal(request)
-		if err != nil {
-			return err
-		}
-
-		res, err := es.UpdateByQuery(
-			[]string{idx},
-			es.UpdateByQuery.WithContext(ctx),
-			es.UpdateByQuery.WithBody(bytes.NewReader(query)),
-		)
-		defer opengovernance.CloseSafe(res)
-		if err != nil {
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		} else if err := opengovernance.CheckError(res); err != nil {
-			if opengovernance.IsIndexNotFoundErr(err) {
-				return nil
-			}
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		}
-
-		_, err = io.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("read response: %w", err)
-		}
-	} else {
-		query, err := json.Marshal(request)
-		if err != nil {
-			return err
-		}
-
-		res, err := es.DeleteByQuery(
-			[]string{idx},
-			bytes.NewReader(query),
-			es.DeleteByQuery.WithContext(ctx),
-		)
-		defer opengovernance.CloseSafe(res)
-		if err != nil {
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		} else if err := opengovernance.CheckError(res); err != nil {
-			if opengovernance.IsIndexNotFoundErr(err) {
-				return nil
-			}
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		}
-
-		_, err = io.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("read response: %w", err)
-		}
-	}
-
-	return nil
 }
