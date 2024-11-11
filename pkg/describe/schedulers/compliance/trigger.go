@@ -251,7 +251,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 			IntegrationID: []string{job.IntegrationID},
 		})
 		if err != nil {
-			s.logger.Error("error while getting sources", zap.Error(err))
+			s.logger.Error("error while getting integrations", zap.Error(err))
 			continue
 		}
 		assignments = &complianceApi.BenchmarkAssignedEntities{}
