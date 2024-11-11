@@ -528,7 +528,7 @@ func (h API) List(c echo.Context) error {
 //	@Tags			credentials
 //	@Produce		json
 //	@Success		200	{object}	models.ListIntegrationsResponse
-//	@Router			/integration/api/v1/credentials/list [post]
+//	@Router			/integration/api/v1/integrations/list [post]
 func (h API) ListByFilters(c echo.Context) error {
 	var req models.ListIntegrationsRequest
 
