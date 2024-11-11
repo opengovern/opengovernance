@@ -36,7 +36,7 @@ jobs:
     environment: golang
     outputs:
       latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && github.event.pull_request.head.ref != 'ui-changes'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
