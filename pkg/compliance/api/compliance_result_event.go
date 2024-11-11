@@ -15,26 +15,25 @@ type GetSingleResourceFindingResponse struct {
 }
 
 type ComplianceResultDriftEvent struct {
-	ID                        string            `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
-	ComplianceResultID        string            `json:"complianceResultID"`
-	ParentComplianceJobID     uint              `json:"parentComplianceJobID"`
-	ComplianceJobID           uint              `json:"complianceJobID"`
-	PreviousConformanceStatus ConformanceStatus `json:"previousConformanceStatus"`
-	ConformanceStatus         ConformanceStatus `json:"conformanceStatus"`
-	PreviousStateActive       bool              `json:"previousStateActive"`
-	StateActive               bool              `json:"stateActive"`
-	EvaluatedAt               time.Time         `json:"evaluatedAt"`
-	Reason                    string            `json:"reason"`
+	ID                       string           `json:"id" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
+	ComplianceResultID       string           `json:"complianceResultID"`
+	ParentComplianceJobID    uint             `json:"parentComplianceJobID"`
+	ComplianceJobID          uint             `json:"complianceJobID"`
+	PreviousComplianceStatus ComplianceStatus `json:"previousComplianceStatus"`
+	ComplianceStatus         ComplianceStatus `json:"complianceStatus"`
+	PreviousStateActive      bool             `json:"previousStateActive"`
+	StateActive              bool             `json:"stateActive"`
+	EvaluatedAt              time.Time        `json:"evaluatedAt"`
+	Reason                   string           `json:"reason"`
 
-	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationType           integration.Type               `json:"integrationType" example:"Azure"`
-	Severity                  types.ComplianceResultSeverity `json:"severity" example:"low"`
-	OpenGovernanceResourceID  string                         `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType              string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	ParentBenchmarkReferences []string                       `json:"parentBenchmarkReferences"`
+	BenchmarkID        string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationType    integration.Type               `json:"integrationType" example:"Azure"`
+	Severity           types.ComplianceResultSeverity `json:"severity" example:"low"`
+	PlatformResourceID string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType       string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 
 	// Fake fields (won't be stored in ES)
 	ResourceTypeName string `json:"resourceTypeName" example:"Virtual Machine"`
@@ -48,55 +47,54 @@ type ComplianceResultDriftEvent struct {
 
 func GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(complianceResultDriftEvent types.ComplianceResultDriftEvent) ComplianceResultDriftEvent {
 	f := ComplianceResultDriftEvent{
-		ID:                        complianceResultDriftEvent.EsID,
-		ComplianceResultID:        complianceResultDriftEvent.ComplianceResultEsID,
-		ParentComplianceJobID:     complianceResultDriftEvent.ParentComplianceJobID,
-		ComplianceJobID:           complianceResultDriftEvent.ComplianceJobID,
-		PreviousConformanceStatus: "",
-		ConformanceStatus:         "",
-		PreviousStateActive:       complianceResultDriftEvent.PreviousStateActive,
-		StateActive:               complianceResultDriftEvent.StateActive,
-		EvaluatedAt:               time.UnixMilli(complianceResultDriftEvent.EvaluatedAt),
-		Reason:                    complianceResultDriftEvent.Reason,
+		ID:                       complianceResultDriftEvent.EsID,
+		ComplianceResultID:       complianceResultDriftEvent.ComplianceResultEsID,
+		ParentComplianceJobID:    complianceResultDriftEvent.ParentComplianceJobID,
+		ComplianceJobID:          complianceResultDriftEvent.ComplianceJobID,
+		PreviousComplianceStatus: "",
+		ComplianceStatus:         "",
+		PreviousStateActive:      complianceResultDriftEvent.PreviousStateActive,
+		StateActive:              complianceResultDriftEvent.StateActive,
+		EvaluatedAt:              time.UnixMilli(complianceResultDriftEvent.EvaluatedAt),
+		Reason:                   complianceResultDriftEvent.Reason,
 
-		BenchmarkID:               complianceResultDriftEvent.BenchmarkID,
-		ControlID:                 complianceResultDriftEvent.ControlID,
-		IntegrationID:             complianceResultDriftEvent.IntegrationID,
-		IntegrationType:           complianceResultDriftEvent.IntegrationType,
-		Severity:                  complianceResultDriftEvent.Severity,
-		OpenGovernanceResourceID:  complianceResultDriftEvent.OpenGovernanceResourceID,
-		ResourceID:                complianceResultDriftEvent.ResourceID,
-		ResourceType:              complianceResultDriftEvent.ResourceType,
-		ParentBenchmarkReferences: complianceResultDriftEvent.ParentBenchmarkReferences,
+		BenchmarkID:        complianceResultDriftEvent.BenchmarkID,
+		ControlID:          complianceResultDriftEvent.ControlID,
+		IntegrationID:      complianceResultDriftEvent.IntegrationID,
+		IntegrationType:    complianceResultDriftEvent.IntegrationType,
+		Severity:           complianceResultDriftEvent.Severity,
+		PlatformResourceID: complianceResultDriftEvent.PlatformResourceID,
+		ResourceID:         complianceResultDriftEvent.ResourceID,
+		ResourceType:       complianceResultDriftEvent.ResourceType,
 	}
-	if complianceResultDriftEvent.PreviousConformanceStatus.IsPassed() {
-		f.PreviousConformanceStatus = ConformanceStatusPassed
+	if complianceResultDriftEvent.PreviousComplianceStatus.IsPassed() {
+		f.PreviousComplianceStatus = ComplianceStatusPassed
 	} else {
-		f.PreviousConformanceStatus = ConformanceStatusFailed
+		f.PreviousComplianceStatus = ComplianceStatusFailed
 	}
-	if complianceResultDriftEvent.ConformanceStatus.IsPassed() {
-		f.ConformanceStatus = ConformanceStatusPassed
+	if complianceResultDriftEvent.ComplianceStatus.IsPassed() {
+		f.ComplianceStatus = ComplianceStatusPassed
 	} else {
-		f.ConformanceStatus = ConformanceStatusFailed
+		f.ComplianceStatus = ComplianceStatusFailed
 	}
 
 	return f
 }
 
 type ComplianceResultDriftEventFilters struct {
-	Connector                []source.Type                    `json:"connector" example:"Azure"`
-	ResourceType             []string                         `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	IntegrationID            []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	NotIntegrationID         []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationGroup         []string                         `json:"integrationGroup" example:"active"`
-	BenchmarkID              []string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	Severity                 []types.ComplianceResultSeverity `json:"severity" example:"low"`
-	ConformanceStatus        []ConformanceStatus              `json:"conformanceStatus" example:"alarm"`
-	StateActive              []bool                           `json:"stateActive" example:"true"`
-	ComplianceResultID       []string                         `json:"complianceResultID" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
-	OpenGovernanceResourceID []string                         `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	EvaluatedAt              struct {
+	Connector          []source.Type                    `json:"connector" example:"Azure"`
+	ResourceType       []string                         `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
+	IntegrationID      []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	NotIntegrationID   []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationGroup   []string                         `json:"integrationGroup" example:"active"`
+	BenchmarkID        []string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	Severity           []types.ComplianceResultSeverity `json:"severity" example:"low"`
+	ComplianceStatus   []ComplianceStatus               `json:"complianceStatus" example:"alarm"`
+	StateActive        []bool                           `json:"stateActive" example:"true"`
+	ComplianceResultID []string                         `json:"complianceResultID" example:"8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"`
+	PlatformResourceID []string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	EvaluatedAt        struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	} `json:"evaluatedAt"`
@@ -110,20 +108,20 @@ type ComplianceResultDriftEventFiltersWithMetadata struct {
 	IntegrationID      []FilterWithMetadata `json:"integrationID"`
 	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
 	Severity           []FilterWithMetadata `json:"severity"`
-	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
+	ComplianceStatus   []FilterWithMetadata `json:"complianceStatus"`
 	StateActive        []FilterWithMetadata `json:"stateActive"`
 }
 
 type ComplianceResultDriftEventsSort struct {
-	Connector                *SortDirection `json:"connector"`
-	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
-	ResourceType             *SortDirection `json:"resourceType"`
-	IntegrationID            *SortDirection `json:"integrationID"`
-	BenchmarkID              *SortDirection `json:"benchmarkID"`
-	ControlID                *SortDirection `json:"controlID"`
-	Severity                 *SortDirection `json:"severity"`
-	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
-	StateActive              *SortDirection `json:"stateActive"`
+	Connector          *SortDirection `json:"connector"`
+	PlatformResourceID *SortDirection `json:"platformResourceID"`
+	ResourceType       *SortDirection `json:"resourceType"`
+	IntegrationID      *SortDirection `json:"integrationID"`
+	BenchmarkID        *SortDirection `json:"benchmarkID"`
+	ControlID          *SortDirection `json:"controlID"`
+	Severity           *SortDirection `json:"severity"`
+	ComplianceStatus   *SortDirection `json:"complianceStatus"`
+	StateActive        *SortDirection `json:"stateActive"`
 }
 
 type GetComplianceResultDriftEventsRequest struct {

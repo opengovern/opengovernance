@@ -244,18 +244,18 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 
 	var response api.GetComplianceResultsResponse
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	if len(req.Filters.ComplianceStatus) == 0 {
+		req.Filters.ComplianceStatus = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
-	for _, status := range req.Filters.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(req.Filters.ComplianceStatus))
+	for _, status := range req.Filters.ComplianceStatus {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	if len(req.Sort) == 0 {
 		req.Sort = []api.ComplianceResultsSort{
-			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+			{ComplianceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
 
@@ -297,7 +297,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 	res, totalCount, err := es.ComplianceResultsQuery(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.IntegrationType,
 		req.Filters.IntegrationID, req.Filters.NotIntegrationID, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
 		req.Filters.ControlID, req.Filters.Severity, lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo,
-		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, req.Filters.JobID)
+		req.Filters.StateActive, esComplianceStatuses, req.Sort, req.Limit, req.AfterSortKey, req.Filters.JobID)
 	if err != nil {
 		h.logger.Error("failed to get compliacne results", zap.Error(err))
 		return err
@@ -360,12 +360,12 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	opengovernanceResourceIds := make([]string, 0, len(response.ComplianceResults))
+	platformResourceIDs := make([]string, 0, len(response.ComplianceResults))
 	for _, finding := range response.ComplianceResults {
-		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
+		platformResourceIDs = append(platformResourceIDs, finding.PlatformResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, platformResourceIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -373,7 +373,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 
 	for i, finding := range response.ComplianceResults {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
+		potentialResources := lookupResourcesMap[finding.PlatformResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
@@ -385,7 +385,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
+				zap.String("og_resource_id", finding.PlatformResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)
@@ -445,21 +445,21 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 	if err := bindValidate(echoCtx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	opengovernanceResourceID := req.OpenGovernanceResourceId
+	platformResourceID := req.PlatformResourceID
 
-	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx, h.client, []string{opengovernanceResourceID})
+	lookupResourceRes, err := es.FetchLookupByResourceIDBatch(ctx, h.client, []string{platformResourceID})
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
 	}
-	if len(lookupResourceRes) == 0 || len(lookupResourceRes[req.OpenGovernanceResourceId]) == 0 {
+	if len(lookupResourceRes) == 0 || len(lookupResourceRes[req.PlatformResourceID]) == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 	var lookupResource *es2.LookupResource
 	if req.ResourceType == nil {
-		lookupResource = utils.GetPointer(lookupResourceRes[req.OpenGovernanceResourceId][0])
+		lookupResource = utils.GetPointer(lookupResourceRes[req.PlatformResourceID][0])
 	} else {
-		for _, r := range lookupResourceRes[req.OpenGovernanceResourceId] {
+		for _, r := range lookupResourceRes[req.PlatformResourceID] {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(*req.ResourceType) {
 				lookupResource = &r
@@ -542,7 +542,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		controlFinding.ResourceName = lookupResource.ResourceName
 		complianceResult := api.GetAPIComplianceResultFromESComplianceResult(controlFinding)
 
-		for _, parentBenchmark := range complianceResult.ParentBenchmarks {
+		for _, parentBenchmark := range controlFinding.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				complianceResult.ParentBenchmarkNames = append(complianceResult.ParentBenchmarkNames, benchmark.Title)
 			}
@@ -654,16 +654,16 @@ func (h *HttpHandler) GetSingleComplianceResultByComplianceResultID(echoCtx echo
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			complianceStatus	query		[]api.ComplianceStatus	false	"ComplianceStatus to filter by defaults to all complianceStatus except passed"
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to true"
 //	@Success		200					{object}	api.CountComplianceResultsResponse
 //	@Router			/compliance/api/v1/compliance_result/count [get]
 func (h *HttpHandler) CountComplianceResults(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	complianceStatuses := api.ParseComplianceStatuses(httpserver2.QueryArrayParam(echoCtx, "complianceStatus"))
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
 	stateActives := httpserver2.QueryArrayParam(echoCtx, "stateActive")
@@ -679,12 +679,12 @@ func (h *HttpHandler) CountComplianceResults(echoCtx echo.Context) error {
 		boolStateActives = append(boolStateActives, stateActiveBool)
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
-	for _, status := range conformanceStatuses {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
+	for _, status := range complianceStatuses {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
-	totalCount, err := es.ComplianceResultsCount(ctx, h.client, esConformanceStatuses, boolStateActives)
+	totalCount, err := es.ComplianceResultsCount(ctx, h.client, esComplianceStatuses, boolStateActives)
 	if err != nil {
 		return err
 	}
@@ -726,13 +726,13 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 	//	return err
 	//}
 
-	if len(req.ConformanceStatus) == 0 {
-		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	if len(req.ComplianceStatus) == 0 {
+		req.ComplianceStatus = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
-	for _, status := range req.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(req.ComplianceStatus))
+	for _, status := range req.ComplianceStatus {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
@@ -812,7 +812,7 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 		req.Severity,
 		lastEventFrom, lastEventTo,
 		evaluatedAtFrom, evaluatedAtTo,
-		req.StateActive, esConformanceStatuses)
+		req.StateActive, esComplianceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
@@ -927,17 +927,17 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 		})
 	}
 
-	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
-	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
-		if opengovernanceTypes.ParseConformanceStatus(item.Key).IsPassed() {
-			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
+	apiComplianceStatuses := make(map[api.ComplianceStatus]int)
+	for _, item := range possibleFilters.Aggregations.ComplianceStatusFilter.Buckets {
+		if opengovernanceTypes.ParseComplianceStatus(item.Key).IsPassed() {
+			apiComplianceStatuses[api.ComplianceStatusPassed] += item.DocCount
 		} else {
-			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
+			apiComplianceStatuses[api.ComplianceStatusFailed] += item.DocCount
 		}
 	}
-	for status, count := range apiConformanceStatuses {
+	for status, count := range apiComplianceStatuses {
 		count := count
-		response.ConformanceStatus = append(response.ConformanceStatus, api.FilterWithMetadata{
+		response.ComplianceStatus = append(response.ComplianceStatus, api.FilterWithMetadata{
 			Key:         string(status),
 			DisplayName: string(status),
 			Count:       &count,
@@ -991,7 +991,7 @@ func (h *HttpHandler) GetComplianceResultKPIs(echoCtx echo.Context) error {
 //	@Param			benchmarkId			query		[]string										false	"BenchmarkID"
 //	@Param			controlId			query		[]string										false	"ControlID"
 //	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus							false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			complianceStatus	query		[]api.ComplianceStatus							false	"ComplianceStatus to filter by defaults to all complianceStatus except passed"
 //	@Param			stateActive			query		[]bool											false	"StateActive to filter by defaults to true"
 //	@Param			jobId				query		[]string										false	"Job ID to filter"
 //	@Param			startTime			query		int64											false	"Start time to filter by"
@@ -1026,10 +1026,10 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 	controlIDs := httpserver2.QueryArrayParam(echoCtx, "controlId")
 	jobIDs := httpserver2.QueryArrayParam(echoCtx, "jobId")
 	severities := opengovernanceTypes.ParseComplianceResultSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = []api.ConformanceStatus{
-			api.ConformanceStatusFailed,
+	complianceStatuses := api.ParseComplianceStatuses(httpserver2.QueryArrayParam(echoCtx, "complianceStatus"))
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = []api.ComplianceStatus{
+			api.ComplianceStatusFailed,
 		}
 	}
 
@@ -1060,9 +1060,9 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 		}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
-	for _, status := range conformanceStatuses {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
+	for _, status := range complianceStatuses {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	stateActives := []bool{true}
@@ -1080,7 +1080,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 	var response api.GetTopFieldResponse
 	topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
 		nil, integrationIDs, notIntegrationIDs, jobIDs,
-		benchmarkIDs, controlIDs, severities, esConformanceStatuses, stateActives, min(10000, esCount), startTime, endTime)
+		benchmarkIDs, controlIDs, severities, esComplianceStatuses, stateActives, min(10000, esCount), startTime, endTime)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
@@ -1254,7 +1254,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			recordMap[item.Key] = record
 		}
 
-		controlsResult, err := es.ComplianceResultsConformanceStatusCountByControlPerConnection(
+		controlsResult, err := es.ComplianceResultsComplianceStatusCountByControlPerConnection(
 			ctx, h.logger, h.client, connectors, nil, resIntegrationIDs, benchmarkIDs, controlIDs, severities, nil,
 			startTime, endTime)
 		if err != nil {
@@ -1274,9 +1274,9 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			}
 			for _, control := range item.ControlCount.Buckets {
 				isFailed := false
-				for _, conformanceStatus := range control.ConformanceStatuses.Buckets {
-					status := opengovernanceTypes.ParseConformanceStatus(conformanceStatus.Key)
-					if !status.IsPassed() && conformanceStatus.DocCount > 0 {
+				for _, complianceStatus := range control.ComplianceStatuses.Buckets {
+					status := opengovernanceTypes.ParseComplianceStatus(complianceStatus.Key)
+					if !status.IsPassed() && complianceStatus.DocCount > 0 {
 						isFailed = true
 						break
 					}
@@ -1289,7 +1289,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			recordMap[item.Key] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "integrationID",
+		resourcesResult, err := es.GetPerFieldResourceComplianceResult(ctx, h.logger, h.client, "integrationID",
 			resIntegrationIDs, notIntegrationIDs, nil, controlIDs, benchmarkIDs, severities, nil, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1303,14 +1303,14 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 				continue
 			}
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
-			for _, conformanceStatus := range conformanceStatuses {
-				switch conformanceStatus {
-				case api.ConformanceStatusFailed:
+			for _, complianceStatus := range complianceStatuses {
+				switch complianceStatus {
+				case api.ComplianceStatusFailed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
-				case api.ConformanceStatusPassed:
+				case api.ComplianceStatusPassed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
 				}
 			}
@@ -1368,7 +1368,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			recordMap[control.ID] = record
 		}
 
-		resourcesResult, err := es.GetPerFieldResourceConformanceResult(ctx, h.logger, h.client, "controlID",
+		resourcesResult, err := es.GetPerFieldResourceComplianceResult(ctx, h.logger, h.client, "controlID",
 			integrationIDs, notIntegrationIDs, nil, resControlIDs, benchmarkIDs, severities, nil, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get resourcesResult", zap.Error(err))
@@ -1382,14 +1382,14 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 				continue
 			}
 			record.ResourceTotalCount = utils.GetPointer(results.TotalCount)
-			for _, conformanceStatus := range conformanceStatuses {
-				switch conformanceStatus {
-				case api.ConformanceStatusFailed:
+			for _, complianceStatus := range complianceStatuses {
+				switch complianceStatus {
+				case api.ComplianceStatusFailed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.AlarmCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.ErrorCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.InfoCount)
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.SkipCount)
-				case api.ConformanceStatusPassed:
+				case api.ComplianceStatusPassed:
 					record.ResourceCount = utils.PAdd(record.ResourceCount, &results.OkCount)
 				}
 			}
@@ -1447,7 +1447,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 //	@Param			resourceCollection	query		[]string										false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type									false	"Connector type to filter by"
 //	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus							false	"ConformanceStatus to filter by defaults to failed"
+//	@Param			complianceStatus	query		[]api.ComplianceStatus							false	"ComplianceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Context) error {
@@ -1469,15 +1469,15 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 
 	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
 	severities := opengovernanceTypes.ParseComplianceResultSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = []api.ConformanceStatus{
-			api.ConformanceStatusFailed,
+	complianceStatuses := api.ParseComplianceStatuses(httpserver2.QueryArrayParam(echoCtx, "complianceStatus"))
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = []api.ComplianceStatus{
+			api.ComplianceStatusFailed,
 		}
 	}
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
-	for _, status := range conformanceStatuses {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
+	for _, status := range complianceStatuses {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 	//tracer :
 	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
@@ -1497,13 +1497,13 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 
 	var response api.GetFieldCountResponse
 	res, err := es.ComplianceResultsFieldCountByControl(ctx, h.logger, h.client, esField, connectors, nil, integrationIDs, benchmarkIDs, nil, severities,
-		esConformanceStatuses)
+		esComplianceStatuses)
 	if err != nil {
 		return err
 	}
 	for _, b := range res.Aggregations.ControlCount.Buckets {
 		var fieldCounts []api.TopFieldRecord
-		for _, bucketField := range b.ConformanceStatuses.Buckets {
+		for _, bucketField := range b.ComplianceStatuses.Buckets {
 			bucketField := bucketField
 			fieldCounts = append(fieldCounts, api.TopFieldRecord{Field: &bucketField.Key, Count: bucketField.FieldCount.Value})
 		}
@@ -1568,7 +1568,7 @@ func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) 
 		summary, ok := res[src.IntegrationID]
 		if !ok {
 			summary.Result.SeverityResult = map[opengovernanceTypes.ComplianceResultSeverity]int{}
-			summary.Result.QueryResult = map[opengovernanceTypes.ConformanceStatus]int{}
+			summary.Result.QueryResult = map[opengovernanceTypes.ComplianceStatus]int{}
 		}
 
 		account := api.AccountsComplianceResultsSummary{
@@ -1588,18 +1588,18 @@ func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) 
 				Low:      summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityLow],
 				None:     summary.Result.SeverityResult[opengovernanceTypes.ComplianceResultSeverityNone],
 			},
-			ConformanceStatusesCount: struct {
+			ComplianceStatusesCount: struct {
 				Passed int `json:"passed"`
 				Failed int `json:"failed"`
 				Error  int `json:"error"`
 				Info   int `json:"info"`
 				Skip   int `json:"skip"`
 			}{
-				Passed: summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusOK],
-				Failed: summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusALARM],
-				Error:  summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusERROR],
-				Info:   summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusINFO],
-				Skip:   summary.Result.QueryResult[opengovernanceTypes.ConformanceStatusSKIP],
+				Passed: summary.Result.QueryResult[opengovernanceTypes.ComplianceStatusOK],
+				Failed: summary.Result.QueryResult[opengovernanceTypes.ComplianceStatusALARM],
+				Error:  summary.Result.QueryResult[opengovernanceTypes.ComplianceStatusERROR],
+				Info:   summary.Result.QueryResult[opengovernanceTypes.ComplianceStatusINFO],
+				Skip:   summary.Result.QueryResult[opengovernanceTypes.ComplianceStatusSKIP],
 			},
 			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
@@ -1660,11 +1660,11 @@ func (h *HttpHandler) GetServicesComplianceResultsSummary(echoCtx echo.Context) 
 			sevMap[severity.Key] = severity.DocCount
 		}
 		resMap := make(map[string]int)
-		for _, controlResult := range resourceType.ConformanceStatus.Buckets {
+		for _, controlResult := range resourceType.ComplianceStatus.Buckets {
 			resMap[controlResult.Key] = controlResult.DocCount
 		}
 
-		securityScore := float64(resMap[string(opengovernanceTypes.ConformanceStatusOK)]) / float64(resourceType.DocCount) * 100.0
+		securityScore := float64(resMap[string(opengovernanceTypes.ComplianceStatusOK)]) / float64(resourceType.DocCount) * 100.0
 
 		resourceTypeMetadata := resourceTypeMap[strings.ToLower(resourceType.Key)]
 		if resourceTypeMetadata.ResourceType == "" {
@@ -1694,15 +1694,15 @@ func (h *HttpHandler) GetServicesComplianceResultsSummary(echoCtx echo.Context) 
 				Low:      sevMap[string(opengovernanceTypes.ComplianceResultSeverityLow)],
 				None:     sevMap[string(opengovernanceTypes.ComplianceResultSeverityNone)],
 			},
-			ConformanceStatusesCount: struct {
+			ComplianceStatusesCount: struct {
 				Passed int `json:"passed"`
 				Failed int `json:"failed"`
 			}{
-				Passed: resMap[string(opengovernanceTypes.ConformanceStatusOK)] +
-					resMap[string(opengovernanceTypes.ConformanceStatusINFO)] +
-					resMap[string(opengovernanceTypes.ConformanceStatusSKIP)],
-				Failed: resMap[string(opengovernanceTypes.ConformanceStatusALARM)] +
-					resMap[string(opengovernanceTypes.ConformanceStatusERROR)],
+				Passed: resMap[string(opengovernanceTypes.ComplianceStatusOK)] +
+					resMap[string(opengovernanceTypes.ComplianceStatusINFO)] +
+					resMap[string(opengovernanceTypes.ComplianceStatusSKIP)],
+				Failed: resMap[string(opengovernanceTypes.ComplianceStatusALARM)] +
+					resMap[string(opengovernanceTypes.ComplianceStatusERROR)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -1743,18 +1743,18 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 
 	var response api.GetComplianceResultDriftEventsResponse
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	if len(req.Filters.ComplianceStatus) == 0 {
+		req.Filters.ComplianceStatus = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
-	for _, status := range req.Filters.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(req.Filters.ComplianceStatus))
+	for _, status := range req.Filters.ComplianceStatus {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	if len(req.Sort) == 0 {
 		req.Sort = []api.ComplianceResultDriftEventsSort{
-			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+			{ComplianceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
 
@@ -1774,12 +1774,12 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 	}
 
 	res, totalCount, err := es.ComplianceResultDriftEventsQuery(ctx, h.logger, h.client,
-		req.Filters.ComplianceResultID, req.Filters.OpenGovernanceResourceID,
+		req.Filters.ComplianceResultID, req.Filters.PlatformResourceID,
 		req.Filters.Connector, req.Filters.IntegrationID, req.Filters.NotIntegrationID,
 		req.Filters.ResourceType,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
 		evaluatedAtFrom, evaluatedAtTo,
-		req.Filters.StateActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+		req.Filters.StateActive, esComplianceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get complianceResults", zap.Error(err))
 		return err
@@ -1808,7 +1808,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
 	}
 
-	var opengovernanceResourceIds []string
+	var platformResourceIDs []string
 	for _, h := range res {
 		findingEvent := api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(h.Source)
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
@@ -1819,12 +1819,12 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 			findingEvent.IntegrationName = connection.Name
 		}
 		findingEvent.SortKey = h.Sort
-		opengovernanceResourceIds = append(opengovernanceResourceIds, h.Source.OpenGovernanceResourceID)
+		platformResourceIDs = append(platformResourceIDs, h.Source.PlatformResourceID)
 		response.ComplianceResultDriftEvents = append(response.ComplianceResultDriftEvents, findingEvent)
 	}
 	response.TotalCount = totalCount
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, platformResourceIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -1832,7 +1832,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 
 	for i, findingEvent := range response.ComplianceResultDriftEvents {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[findingEvent.OpenGovernanceResourceID]
+		potentialResources := lookupResourcesMap[findingEvent.PlatformResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(findingEvent.ResourceType) {
@@ -1845,7 +1845,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 			response.ComplianceResultDriftEvents[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", findingEvent.OpenGovernanceResourceID),
+				zap.String("og_resource_id", findingEvent.PlatformResourceID),
 				zap.String("resource_id", findingEvent.ResourceID),
 				zap.String("controlId", findingEvent.ControlID),
 			)
@@ -1863,7 +1863,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			conformanceStatus	query		[]api.ConformanceStatus	false	"ConformanceStatus to filter by defaults to all conformanceStatus except passed"
+//	@Param			complianceStatus	query		[]api.ComplianceStatus	false	"ComplianceStatus to filter by defaults to all complianceStatus except passed"
 //	@Param			benchmarkID			query		[]string				false	"BenchmarkID to filter by"
 //	@Param			stateActive			query		[]bool					false	"StateActive to filter by defaults to all stateActives"
 //	@Param			startTime			query		int64					false	"Start time to filter by"
@@ -1873,14 +1873,14 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 func (h *HttpHandler) CountComplianceResultDriftEvents(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	conformanceStatuses := api.ParseConformanceStatuses(httpserver2.QueryArrayParam(echoCtx, "conformanceStatus"))
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	complianceStatuses := api.ParseComplianceStatuses(httpserver2.QueryArrayParam(echoCtx, "complianceStatus"))
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
-	for _, status := range conformanceStatuses {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
+	for _, status := range complianceStatuses {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	benchmarkIDs := httpserver2.QueryArrayParam(echoCtx, "benchmarkID")
@@ -1912,7 +1912,7 @@ func (h *HttpHandler) CountComplianceResultDriftEvents(echoCtx echo.Context) err
 		startTime = utils.GetPointer(time.Unix(startTimeInt, 0))
 	}
 
-	totalCount, err := es.ComplianceResultDriftEventsCount(ctx, h.client, benchmarkIDs, esConformanceStatuses, stateActive, startTime, endTime)
+	totalCount, err := es.ComplianceResultDriftEventsCount(ctx, h.client, benchmarkIDs, esComplianceStatuses, stateActive, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1981,13 +1981,13 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 	//	return err
 	//}
 
-	if len(req.ConformanceStatus) == 0 {
-		req.ConformanceStatus = []api.ConformanceStatus{api.ConformanceStatusFailed}
+	if len(req.ComplianceStatus) == 0 {
+		req.ComplianceStatus = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ConformanceStatus))
-	for _, status := range req.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(req.ComplianceStatus))
+	for _, status := range req.ComplianceStatus {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	var evaluatedAtFrom, evaluatedAtTo *time.Time
@@ -2055,12 +2055,12 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 	}
 
 	possibleFilters, err := es.ComplianceResultDriftEventsFiltersQuery(ctx, h.logger, h.client,
-		req.ComplianceResultID, req.OpenGovernanceResourceID, req.Connector, req.IntegrationID, req.NotIntegrationID,
+		req.ComplianceResultID, req.PlatformResourceID, req.Connector, req.IntegrationID, req.NotIntegrationID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
 		evaluatedAtFrom, evaluatedAtTo,
-		req.StateActive, esConformanceStatuses)
+		req.StateActive, esComplianceStatuses)
 	if err != nil {
 		h.logger.Error("failed to get possible filters", zap.Error(err))
 		return err
@@ -2175,17 +2175,17 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 		})
 	}
 
-	apiConformanceStatuses := make(map[api.ConformanceStatus]int)
-	for _, item := range possibleFilters.Aggregations.ConformanceStatusFilter.Buckets {
-		if opengovernanceTypes.ParseConformanceStatus(item.Key).IsPassed() {
-			apiConformanceStatuses[api.ConformanceStatusPassed] += item.DocCount
+	apiComplianceStatuses := make(map[api.ComplianceStatus]int)
+	for _, item := range possibleFilters.Aggregations.ComplianceStatusFilter.Buckets {
+		if opengovernanceTypes.ParseComplianceStatus(item.Key).IsPassed() {
+			apiComplianceStatuses[api.ComplianceStatusPassed] += item.DocCount
 		} else {
-			apiConformanceStatuses[api.ConformanceStatusFailed] += item.DocCount
+			apiComplianceStatuses[api.ComplianceStatusFailed] += item.DocCount
 		}
 	}
-	for status, count := range apiConformanceStatuses {
+	for status, count := range apiComplianceStatuses {
 		count := count
-		response.ConformanceStatus = append(response.ConformanceStatus, api.FilterWithMetadata{
+		response.ComplianceStatus = append(response.ComplianceStatus, api.FilterWithMetadata{
 			Key:         string(status),
 			DisplayName: string(status),
 			Count:       &count,
@@ -2324,15 +2324,15 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		resourceTypeMap[strings.ToLower(rt.ResourceType)] = &rt
 	}
 
-	if len(req.Filters.ConformanceStatus) == 0 {
-		req.Filters.ConformanceStatus = []api.ConformanceStatus{
-			api.ConformanceStatusFailed,
+	if len(req.Filters.ComplianceStatus) == 0 {
+		req.Filters.ComplianceStatus = []api.ComplianceStatus{
+			api.ComplianceStatusFailed,
 		}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(req.Filters.ConformanceStatus))
-	for _, status := range req.Filters.ConformanceStatus {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(req.Filters.ComplianceStatus))
+	for _, status := range req.Filters.ComplianceStatus {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	summaryJobs, err := h.schedulerClient.GetSummaryJobs(clientCtx, req.Filters.ComplianceJobId)
@@ -2343,7 +2343,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 
 	resourceFindings, totalCount, err := es.ResourceFindingsQuery(ctx, h.logger, h.client, req.Filters.IntegrationType, req.Filters.IntegrationID,
 		req.Filters.NotIntegrationID, req.Filters.ResourceCollection, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
-		req.Filters.ControlID, req.Filters.Severity, evaluatedAtFrom, evaluatedAtTo, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, summaryJobs)
+		req.Filters.ControlID, req.Filters.Severity, evaluatedAtFrom, evaluatedAtTo, esComplianceStatuses, req.Sort, req.Limit, req.AfterSortKey, summaryJobs)
 	if err != nil {
 		h.logger.Error("failed to get resource findings", zap.Error(err))
 		return err
@@ -2609,7 +2609,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 	span3.SetName("new_PopulateConnectors(loop)")
 	defer span3.End()
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, integrationIDs, resourceCollections, nil, opengovernanceTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, integrationIDs, resourceCollections, nil, opengovernanceTypes.GetPassedComplianceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2628,14 +2628,14 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		}
 
 		summaryAtTime := summariesAtTime[b.ID]
-		csResult := api.ConformanceStatusSummary{}
+		csResult := api.ComplianceStatusSummary{}
 		sResult := opengovernanceTypes.SeverityResult{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
-		var costOptimization *float64
+		var costImpact *float64
 		addToResults := func(resultGroup types.ResultGroup) {
-			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+			csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 			sResult.AddResultMap(resultGroup.Result.SeverityResult)
-			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+			costImpact = utils.PAdd(costImpact, resultGroup.Result.CostImpact)
 			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2663,13 +2663,13 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
 			topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
 				nil, integrationIDs, nil, nil, []string{b.ID}, nil, nil,
-				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+				opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 				return err
 			}
 			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors, nil,
-				integrationIDs, nil, nil, []string{b.ID}, nil, nil, opengovernanceTypes.GetConformanceStatuses(),
+				integrationIDs, nil, nil, []string{b.ID}, nil, nil, opengovernanceTypes.GetComplianceStatuses(),
 				[]bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
@@ -2725,15 +2725,15 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
-			Benchmark:                be,
-			ConformanceStatusSummary: csResult,
-			Checks:                   sResult,
-			ControlsSeverityStatus:   controlSeverityResult,
-			ResourcesSeverityStatus:  resourcesSeverityResult,
-			CostOptimization:         costOptimization,
-			EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-			LastJobStatus:            "",
-			TopConnections:           topConnections,
+			Benchmark:               be,
+			ComplianceStatusSummary: csResult,
+			Checks:                  sResult,
+			ControlsSeverityStatus:  controlSeverityResult,
+			ResourcesSeverityStatus: resourcesSeverityResult,
+			CostImpact:              costImpact,
+			EvaluatedAt:             utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+			LastJobStatus:           "",
+			TopConnections:          topConnections,
 		})
 	}
 	span3.End()
@@ -2830,7 +2830,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, integrationIDs, resourceCollections, nil, opengovernanceTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, integrationIDs, resourceCollections, nil, opengovernanceTypes.GetPassedComplianceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -2844,15 +2844,15 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
-	csResult := api.ConformanceStatusSummary{}
+	csResult := api.ComplianceStatusSummary{}
 	sResult := opengovernanceTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
 	connectionsResult := api.BenchmarkStatusResult{}
-	var costOptimization *float64
+	var costImpact *float64
 	addToResults := func(resultGroup types.ResultGroup) {
-		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+		csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 		sResult.AddResultMap(resultGroup.Result.SeverityResult)
-		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+		costImpact = utils.PAdd(costImpact, resultGroup.Result.CostImpact)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
 			controlSeverityResult = addToControlSeverityResult(controlSeverityResult, control, controlResult)
@@ -2911,7 +2911,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 	if topAccountCount > 0 {
 		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
 			nil, integrationIDs, nil, nil, []string{benchmark.ID}, nil, nil,
-			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 			return err
@@ -2919,7 +2919,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
 			nil, integrationIDs, nil, nil, []string{benchmark.ID}, nil, nil,
-			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, topAccountCount, nil, nil)
+			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 			return err
@@ -2974,15 +2974,15 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 	resourcesSeverityResult.None.PassedCount = passedResource.NoneCount
 
 	response := api.BenchmarkEvaluationSummary{
-		Benchmark:                be,
-		ConformanceStatusSummary: csResult,
-		Checks:                   sResult,
-		ControlsSeverityStatus:   controlSeverityResult,
-		ResourcesSeverityStatus:  resourcesSeverityResult,
-		ConnectionsStatus:        connectionsResult,
-		CostOptimization:         costOptimization,
-		EvaluatedAt:              utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
-		LastJobStatus:            lastJobStatus,
+		Benchmark:               be,
+		ComplianceStatusSummary: csResult,
+		Checks:                  sResult,
+		ControlsSeverityStatus:  controlSeverityResult,
+		ResourcesSeverityStatus: resourcesSeverityResult,
+		ConnectionsStatus:       connectionsResult,
+		CostImpact:              costImpact,
+		EvaluatedAt:             utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
+		LastJobStatus:           lastJobStatus,
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
@@ -3110,7 +3110,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 			TotalResourcesCount:   result.TotalResourcesCount,
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
-			CostOptimization:      result.CostOptimization,
+			CostImpact:            result.CostImpact,
 			EvaluatedAt:           time.Unix(evaluatedAt, 0),
 		}
 	}
@@ -3312,12 +3312,12 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 	var response []api.BenchmarkTrendDatapoint
 	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
 		apiDataPoint := api.BenchmarkTrendDatapoint{
-			Timestamp:                time.Unix(datapoint.DateEpoch, 0),
-			ConformanceStatusSummary: api.ConformanceStatusSummary{},
-			Checks:                   opengovernanceTypes.SeverityResult{},
-			ControlsSeverityStatus:   api.BenchmarkControlsSeverityStatus{},
+			Timestamp:               time.Unix(datapoint.DateEpoch, 0),
+			ComplianceStatusSummary: api.ComplianceStatusSummary{},
+			Checks:                  opengovernanceTypes.SeverityResult{},
+			ControlsSeverityStatus:  api.BenchmarkControlsSeverityStatus{},
 		}
-		apiDataPoint.ConformanceStatusSummary.AddESConformanceStatusMap(datapoint.QueryResult)
+		apiDataPoint.ComplianceStatusSummary.AddESComplianceStatusMap(datapoint.QueryResult)
 		apiDataPoint.Checks.AddResultMap(datapoint.SeverityResult)
 		for controlId, controlResult := range datapoint.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
@@ -3436,13 +3436,13 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	var fRes map[string]map[string]int64
 
 	if req.ComplianceResultFilters != nil || req.ComplianceResultSummary {
-		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
+		var esComplianceStatuses []opengovernanceTypes.ComplianceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
 		if req.ComplianceResultFilters != nil {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ComplianceResultFilters.ConformanceStatus))
-			for _, status := range req.ComplianceResultFilters.ConformanceStatus {
-				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0, len(req.ComplianceResultFilters.ComplianceStatus))
+			for _, status := range req.ComplianceResultFilters.ComplianceStatus {
+				esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 			}
 
 			if req.ComplianceResultFilters.LastEvent.From != nil && *req.ComplianceResultFilters.LastEvent.From != 0 {
@@ -3458,7 +3458,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				evaluatedAtTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.To, 0))
 			}
 		} else {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
+			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0)
 		}
 
 		var controlIDs []string
@@ -3473,14 +3473,14 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, req.ComplianceResultFilters.ResourceID,
 				req.ComplianceResultFilters.IntegrationType, integrationIDs, req.ComplianceResultFilters.NotIntegrationID,
 				req.ComplianceResultFilters.ResourceTypeID, benchmarksFilter, controlIDs, req.ComplianceResultFilters.Severity,
-				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esConformanceStatuses)
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esComplianceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
 			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, nil, nil, integrationIDs, nil,
 				nil, benchmarks, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
-				evaluatedAtTo, nil, esConformanceStatuses)
+				evaluatedAtTo, nil, esComplianceStatuses)
 		}
 
 		h.logger.Info("ComplianceResult Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("ComplianceResults Count", fRes))
@@ -3552,14 +3552,14 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				NonCompliantResources int      `json:"noncompliant_resources"`
 				CompliantResources    int      `json:"compliant_resources"`
 				ImpactedResources     int      `json:"impacted_resources"`
-				CostOptimization      *float64 `json:"cost_optimization"`
+				CostImpact            *float64 `json:"cost_impact"`
 			}{
 				IncidentCount:         incidentCount,
 				NonIncidentCount:      passingComplianceResultCount,
 				CompliantResources:    controlResult[control.ID].TotalResourcesCount - controlResult[control.ID].FailedResourcesCount,
 				NonCompliantResources: controlResult[control.ID].FailedResourcesCount,
 				ImpactedResources:     controlResult[control.ID].TotalResourcesCount,
-				CostOptimization:      controlResult[control.ID].CostOptimization,
+				CostImpact:            controlResult[control.ID].CostImpact,
 			}
 		}
 
@@ -3745,13 +3745,13 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	var fRes map[string]map[string]int64
 
 	if req.ComplianceResultFilters != nil {
-		var esConformanceStatuses []opengovernanceTypes.ConformanceStatus
+		var esComplianceStatuses []opengovernanceTypes.ComplianceStatus
 		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
 
 		if req.ComplianceResultFilters != nil {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0, len(req.ComplianceResultFilters.ConformanceStatus))
-			for _, status := range req.ComplianceResultFilters.ConformanceStatus {
-				esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0, len(req.ComplianceResultFilters.ComplianceStatus))
+			for _, status := range req.ComplianceResultFilters.ComplianceStatus {
+				esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 			}
 
 			if req.ComplianceResultFilters.LastEvent.From != nil && *req.ComplianceResultFilters.LastEvent.From != 0 {
@@ -3767,7 +3767,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 				evaluatedAtTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.To, 0))
 			}
 		} else {
-			esConformanceStatuses = make([]opengovernanceTypes.ConformanceStatus, 0)
+			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0)
 		}
 
 		var controlIDs []string
@@ -3778,14 +3778,14 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, req.ComplianceResultFilters.ResourceID,
 				req.ComplianceResultFilters.IntegrationType, req.ComplianceResultFilters.IntegrationID, req.ComplianceResultFilters.NotIntegrationID,
 				req.ComplianceResultFilters.ResourceTypeID, req.ComplianceResultFilters.BenchmarkID, controlIDs, req.ComplianceResultFilters.Severity,
-				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esConformanceStatuses)
+				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esComplianceStatuses)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 		} else {
 			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
 				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
-				evaluatedAtTo, nil, esConformanceStatuses)
+				evaluatedAtTo, nil, esComplianceStatuses)
 		}
 
 		h.logger.Info("ComplianceResult Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("ComplianceResults Count", fRes))
@@ -4059,7 +4059,7 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 			TotalResourcesCount:   result.TotalResourcesCount,
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
-			CostOptimization:      result.CostOptimization,
+			CostImpact:            result.CostImpact,
 			EvaluatedAt:           time.Unix(evaluatedAt, 0),
 		}
 		results = append(results, controlSummary)
@@ -4212,7 +4212,7 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 		TotalResourcesCount:   result.TotalResourcesCount,
 		FailedConnectionCount: result.FailedConnectionCount,
 		TotalConnectionCount:  result.TotalConnectionCount,
-		CostOptimization:      result.CostOptimization,
+		CostImpact:            result.CostImpact,
 		EvaluatedAt:           time.Unix(evaluatedAt, 0),
 	}
 
@@ -4971,7 +4971,7 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 				continue
 			}
 		}
-		if c, ok := complianceResults.Results[types2.ConformanceStatusALARM]; ok {
+		if c, ok := complianceResults.Results[types2.ComplianceStatusALARM]; ok {
 			incidentCount = c
 		}
 
@@ -5811,27 +5811,27 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 
 	var response api.GetComplianceResultsResponse
 
-	var conformanceStatuses []api.ConformanceStatus
+	var complianceStatuses []api.ComplianceStatus
 	if len(req.Filters.IsCompliant) == 0 {
-		conformanceStatuses = []api.ConformanceStatus{api.ConformanceStatusFailed}
+		complianceStatuses = []api.ComplianceStatus{api.ComplianceStatusFailed}
 	} else {
 		for _, s := range req.Filters.IsCompliant {
 			if s {
-				conformanceStatuses = append(conformanceStatuses, api.ConformanceStatusPassed)
+				complianceStatuses = append(complianceStatuses, api.ComplianceStatusPassed)
 			} else {
-				conformanceStatuses = append(conformanceStatuses, api.ConformanceStatusFailed)
+				complianceStatuses = append(complianceStatuses, api.ComplianceStatusFailed)
 			}
 		}
 	}
 
-	esConformanceStatuses := make([]opengovernanceTypes.ConformanceStatus, 0, len(conformanceStatuses))
-	for _, status := range conformanceStatuses {
-		esConformanceStatuses = append(esConformanceStatuses, status.GetEsConformanceStatuses()...)
+	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
+	for _, status := range complianceStatuses {
+		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
 	}
 
 	if len(req.Sort) == 0 {
 		req.Sort = []api.ComplianceResultsSortV2{
-			{ConformanceStatus: utils.GetPointer(api.SortDirectionDescending)},
+			{ComplianceStatus: utils.GetPointer(api.SortDirectionDescending)},
 		}
 	}
 
@@ -5861,7 +5861,7 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 		integrationIds, nil, req.Filters.ResourceType, req.Filters.NotResourceType, req.Filters.BenchmarkID,
 		req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
 		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo, notLastEventFrom, notLastEventTo,
-		evaluatedAtFrom, evaluatedAtTo, req.Filters.IsActive, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey)
+		evaluatedAtFrom, evaluatedAtTo, req.Filters.IsActive, esComplianceStatuses, req.Sort, req.Limit, req.AfterSortKey)
 	if err != nil {
 		h.logger.Error("failed to get complianceResults", zap.Error(err))
 		return err
@@ -5935,12 +5935,12 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 	}
 	response.TotalCount = totalCount
 
-	opengovernanceResourceIds := make([]string, 0, len(response.ComplianceResults))
+	platformResourceIDs := make([]string, 0, len(response.ComplianceResults))
 	for _, finding := range response.ComplianceResults {
-		opengovernanceResourceIds = append(opengovernanceResourceIds, finding.OpenGovernanceResourceID)
+		platformResourceIDs = append(platformResourceIDs, finding.PlatformResourceID)
 	}
 
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, opengovernanceResourceIds)
+	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, platformResourceIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
 		return err
@@ -5948,7 +5948,7 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 
 	for i, finding := range response.ComplianceResults {
 		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[finding.OpenGovernanceResourceID]
+		potentialResources := lookupResourcesMap[finding.PlatformResourceID]
 		for _, r := range potentialResources {
 			r := r
 			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
@@ -5960,7 +5960,7 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", finding.OpenGovernanceResourceID),
+				zap.String("og_resource_id", finding.PlatformResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)
@@ -6207,7 +6207,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 		return err
 	}
 
-	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, integrationIDs, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses())
+	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmarkID}, integrationIDs, nil, nil, opengovernanceTypes.GetPassedComplianceStatuses())
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -6221,14 +6221,14 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 
 	summaryAtTime := summariesAtTime[benchmarkID]
 
-	csResult := api.ConformanceStatusSummaryV2{}
+	csResult := api.ComplianceStatusSummaryV2{}
 	sResult := opengovernanceTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
-	var costOptimization *float64
+	var costImpact *float64
 	addToResults := func(resultGroup types.ResultGroup) {
-		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+		csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 		sResult.AddResultMap(resultGroup.Result.SeverityResult)
-		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+		costImpact = utils.PAdd(costImpact, resultGroup.Result.CostImpact)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
 			controlSeverityResult = addToControlSeverityResultV2(controlSeverityResult, control, controlResult)
@@ -6427,7 +6427,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			return err
 		}
 
-		passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses())
+		passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, []string{benchmark.ID}, nil, nil, nil, opengovernanceTypes.GetPassedComplianceStatuses())
 		if err != nil {
 			h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 			return err
@@ -6441,14 +6441,14 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 		summaryAtTime := summariesAtTime[benchmark.ID]
 
-		csResult := api.ConformanceStatusSummaryV2{}
+		csResult := api.ComplianceStatusSummaryV2{}
 		sResult := opengovernanceTypes.SeverityResultV2{}
 		controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
-		var costOptimization *float64
+		var costImpact *float64
 		addToResults := func(resultGroup types.ResultGroup) {
-			csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+			csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 			sResult.AddResultMap(resultGroup.Result.SeverityResult)
-			costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+			costImpact = utils.PAdd(costImpact, resultGroup.Result.CostImpact)
 			for controlId, controlResult := range resultGroup.Controls {
 				control := controlsMap[strings.ToLower(controlId)]
 				controlSeverityResult = addToControlSeverityResultV2(controlSeverityResult, control, controlResult)
@@ -6473,7 +6473,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		if req.ShowTop > 0 {
 			res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
-				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
+				opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 				return err
@@ -6481,7 +6481,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 
 			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
-				opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, req.ShowTop, nil, nil)
+				opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, req.ShowTop, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 				return err
@@ -6636,7 +6636,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			SeveritySummaryByControl:   controlSeverityResult,
 			SeveritySummaryByResource:  resourcesSeverityResult,
 			SeveritySummaryByIncidents: sResult,
-			CostOptimization:           costOptimization,
+			CostImpact:                 costImpact,
 			TopIntegrations:            topIntegrations,
 			TopResourceTypesWithIssues: topResourceTypes,
 			TopResourcesWithIssues:     topResources,
@@ -6716,7 +6716,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	}
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResultByJobId(ctx, h.logger, h.client, []string{benchmarkId},
-		nil, nil, nil, opengovernanceTypes.GetPassedConformanceStatuses(), jobId)
+		nil, nil, nil, opengovernanceTypes.GetPassedComplianceStatuses(), jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
 		return err
@@ -6731,14 +6731,14 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 	summaryAtTime := summariesAtTime[benchmarkId]
 
-	csResult := api.ConformanceStatusSummaryV2{}
+	csResult := api.ComplianceStatusSummaryV2{}
 	sResult := opengovernanceTypes.SeverityResultV2{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatusV2{}
-	var costOptimization *float64
+	var costImpact *float64
 	addToResults := func(resultGroup types.ResultGroup) {
-		csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+		csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 		sResult.AddResultMap(resultGroup.Result.SeverityResult)
-		costOptimization = utils.PAdd(costOptimization, resultGroup.Result.CostOptimization)
+		costImpact = utils.PAdd(costImpact, resultGroup.Result.CostImpact)
 		for controlId, controlResult := range resultGroup.Controls {
 			control := controlsMap[strings.ToLower(controlId)]
 			controlSeverityResult = addToControlSeverityResultV2(controlSeverityResult, control, controlResult)
@@ -6750,7 +6750,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	topConnections := make([]api.TopFieldRecord, 0, showTop)
 	if showTop > 0 {
 		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil, nil,
-			nil, nil, nil, []string{benchmarkId}, nil, nil, opengovernanceTypes.GetFailedConformanceStatuses(),
+			nil, nil, nil, []string{benchmarkId}, nil, nil, opengovernanceTypes.GetFailedComplianceStatuses(),
 			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
@@ -6759,7 +6759,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
 			nil, nil, nil, nil, []string{benchmarkId}, nil, nil,
-			opengovernanceTypes.GetFailedConformanceStatuses(), []bool{true}, int(showTop), nil, nil)
+			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
 			return err
@@ -6924,7 +6924,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		SeveritySummaryByControl:   controlSeverityResult,
 		SeveritySummaryByResource:  resourcesSeverityResult,
 		SeveritySummaryByIncidents: sResult,
-		CostOptimization:           costOptimization,
+		CostImpact:                 costImpact,
 		TopIntegrations:            topIntegrations,
 		TopResourceTypesWithIssues: topResourceTypes,
 		TopResourcesWithIssues:     topResources,
@@ -7367,9 +7367,9 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 		if j.JobStatus == string(model3.ComplianceJobSucceeded) {
 			summaryAtTime := summariesAtTime[j.SummarizerJobs[len(j.SummarizerJobs)-1]]
 
-			csResult := api.ConformanceStatusSummaryV2{}
+			csResult := api.ComplianceStatusSummaryV2{}
 			addToResults := func(resultGroup types.ResultGroup) {
-				csResult.AddESConformanceStatusMap(resultGroup.Result.QueryResult)
+				csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 			}
 
 			addToResults(summaryAtTime.Connections.BenchmarkResult)
@@ -7525,20 +7525,20 @@ func (h *HttpHandler) GetBenchmarkTrendV3(echoCtx echo.Context) error {
 			Timestamp:                  time.Unix(datapoint.DateEpoch, 0),
 			IncidentsSeverityBreakdown: &opengovernanceTypes.SeverityResult{},
 		}
-		conformanceSummary := api.ConformanceStatusSummary{}
+		complianceSummary := api.ComplianceStatusSummary{}
 		if len(datapoint.QueryResult) > 0 {
-			conformanceSummary.AddESConformanceStatusMap(datapoint.QueryResult)
+			complianceSummary.AddESComplianceStatusMap(datapoint.QueryResult)
 		}
 		if len(datapoint.SeverityResult) > 0 {
 			apiDataPoint.IncidentsSeverityBreakdown.AddResultMap(datapoint.SeverityResult)
 		}
-		if conformanceSummary.FailedCount == 0 && conformanceSummary.PassedCount == 0 {
+		if complianceSummary.FailedCount == 0 && complianceSummary.PassedCount == 0 {
 			apiDataPoint.IncidentsSeverityBreakdown = nil
 		} else {
 			apiDataPoint.ComplianceResultsSummary = &struct {
 				Incidents    int `json:"incidents"`
 				NonIncidents int `json:"non_incidents"`
-			}{Incidents: conformanceSummary.FailedCount, NonIncidents: conformanceSummary.PassedCount}
+			}{Incidents: complianceSummary.FailedCount, NonIncidents: complianceSummary.PassedCount}
 		}
 
 		if apiDataPoint.ComplianceResultsSummary != nil {

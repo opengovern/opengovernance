@@ -7,14 +7,14 @@ import (
 )
 
 type ResourceFinding struct {
-	ID                       string           `json:"id"`
-	OpenGovernanceResourceID string           `json:"opengovernanceResourceID"`
-	ResourceName             string           `json:"resourceName"`
-	ResourceLocation         string           `json:"resourceLocation"`
-	ResourceType             string           `json:"resourceType"`
-	ResourceTypeLabel        string           `json:"resourceTypeLabel"`
-	IntegrationType          integration.Type `json:"integrationType"`
-	ComplianceJobID          string           `json:"complianceJobID"`
+	ID                 string           `json:"id"`
+	PlatformResourceID string           `json:"platformResourceID"`
+	ResourceName       string           `json:"resourceName"`
+	ResourceLocation   string           `json:"resourceLocation"`
+	ResourceType       string           `json:"resourceType"`
+	ResourceTypeLabel  string           `json:"resourceTypeLabel"`
+	IntegrationType    integration.Type `json:"integrationType"`
+	ComplianceJobID    string           `json:"complianceJobID"`
 
 	FailedCount int `json:"failedCount"`
 	TotalCount  int `json:"totalCount"`
@@ -32,12 +32,12 @@ type ResourceFinding struct {
 
 func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFinding {
 	apiRf := ResourceFinding{
-		ID:                       resourceFinding.EsID,
-		OpenGovernanceResourceID: resourceFinding.OpenGovernanceResourceID,
-		ResourceName:             resourceFinding.ResourceName,
-		ResourceLocation:         resourceFinding.ResourceLocation,
-		ResourceType:             resourceFinding.ResourceType,
-		IntegrationType:          resourceFinding.IntegrationType,
+		ID:                 resourceFinding.EsID,
+		PlatformResourceID: resourceFinding.PlatformResourceID,
+		ResourceName:       resourceFinding.ResourceName,
+		ResourceLocation:   resourceFinding.ResourceLocation,
+		ResourceType:       resourceFinding.ResourceType,
+		IntegrationType:    resourceFinding.IntegrationType,
 
 		FailedCount: 0,
 		TotalCount:  len(resourceFinding.ComplianceResults),
@@ -50,7 +50,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 	integrationIDs := make(map[string]bool)
 
 	for _, complianceResult := range resourceFinding.ComplianceResults {
-		if !complianceResult.ConformanceStatus.IsPassed() {
+		if !complianceResult.ComplianceStatus.IsPassed() {
 			apiRf.FailedCount++
 		}
 		integrationIDs[complianceResult.IntegrationID] = true
@@ -79,7 +79,7 @@ type ResourceFindingFilters struct {
 	BenchmarkID        []string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID          []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
 	Severity           []types.ComplianceResultSeverity `json:"severity" example:"low"`
-	ConformanceStatus  []ConformanceStatus              `json:"conformanceStatus" example:"alarm"`
+	ComplianceStatus   []ComplianceStatus               `json:"complianceStatus" example:"alarm"`
 	EvaluatedAt        struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
@@ -88,12 +88,12 @@ type ResourceFindingFilters struct {
 }
 
 type ResourceFindingsSort struct {
-	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
-	ResourceType             *SortDirection `json:"resourceType"`
-	ResourceName             *SortDirection `json:"resourceName"`
-	ResourceLocation         *SortDirection `json:"resourceLocation"`
-	FailedCount              *SortDirection `json:"failedCount"`
-	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
+	PlatformResourceID *SortDirection `json:"platformResourceID"`
+	ResourceType       *SortDirection `json:"resourceType"`
+	ResourceName       *SortDirection `json:"resourceName"`
+	ResourceLocation   *SortDirection `json:"resourceLocation"`
+	FailedCount        *SortDirection `json:"failedCount"`
+	ComplianceStatus   *SortDirection `json:"complianceStatus"`
 }
 
 type ListResourceFindingsRequest struct {

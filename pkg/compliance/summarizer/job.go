@@ -25,12 +25,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	// We have to sort by opengovernanceResourceID to be able to optimize memory usage for resourceFinding generations
+	// We have to sort by platformResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
 	paginator, err := es.NewComplianceResultPaginator(w.esClient, types.ComplianceResultsIndex, []opengovernance.BoolFilter{
 		opengovernance.NewTermFilter("stateActive", "true"),
 	}, nil, []map[string]any{
-		{"opengovernanceResourceID": "asc"},
+		{"platformResourceID": "asc"},
 		{"resourceType": "asc"},
 	})
 	if err != nil {
@@ -52,7 +52,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			Connections: types2.BenchmarkSummaryResult{
 				BenchmarkResult: types2.ResultGroup{
 					Result: types2.Result{
-						QueryResult:    map[types.ConformanceStatus]int{},
+						QueryResult:    map[types.ComplianceStatus]int{},
 						SeverityResult: map[types.ComplianceResultSeverity]int{},
 						SecurityScore:  0,
 					},
@@ -101,7 +101,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 		resourceIds := make([]string, 0, len(page))
 		for _, f := range page {
-			resourceIds = append(resourceIds, f.OpenGovernanceResourceID)
+			resourceIds = append(resourceIds, f.PlatformResourceID)
 		}
 
 		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
@@ -113,7 +113,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			var resource *es2.LookupResource
-			potentialResources := lookupResourcesMap[f.OpenGovernanceResourceID]
+			potentialResources := lookupResourcesMap[f.PlatformResourceID]
 			for _, r := range potentialResources {
 				r := r
 				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
@@ -188,6 +188,24 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 	}
 
+	w.logger.Info("Deleting compliance results and resource findings of removed integrations", zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+
+	currentInregrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
+	if err != nil {
+		w.logger.Error("failed to list integrations", zap.Error(err), zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+		return err
+	}
+	currentIntegrationIds := make([]string, 0, len(currentInregrations.Integrations))
+	for _, i := range currentInregrations.Integrations {
+		currentIntegrationIds = append(currentIntegrationIds, i.IntegrationID)
+	}
+
+	err = w.deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations(ctx, j, currentIntegrationIds)
+	if err != nil {
+		w.logger.Error("failed to delete compliance results and resource findings of removed integrations", zap.Error(err), zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+		return err
+	}
+
 	w.logger.Info("Finished summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
@@ -199,7 +217,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, currentResourceIds []string) error {
 	// Delete old resource findings
 	filters := make([]opengovernance.BoolFilter, 0, 2)
-	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("opengovernanceResourceID", currentResourceIds)))
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("platformResourceID", currentResourceIds)))
 	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
 
 	root := map[string]any{
@@ -225,6 +243,80 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 	}
 
 	keys, idx := task.KeysAndIndex()
+	task.EsID = es2.HashOf(keys...)
+	task.EsIndex = idx
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {
+		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (w *Worker) deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations(ctx context.Context, j types2.Job, currentIntegrationIds []string) error {
+	// Delete compliance results
+	filters := make([]opengovernance.BoolFilter, 0, 2)
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", currentIntegrationIds)))
+	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+
+	root := map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+	}
+	rootJson, err := json.Marshal(root)
+	if err != nil {
+		w.logger.Error("failed to marshal root", zap.Error(err))
+		return err
+	}
+
+	task := es3.DeleteTask{
+		DiscoveryJobID: j.ID,
+		IntegrationID:  j.BenchmarkID,
+		ResourceType:   "compliance-result-old-integrations-removal",
+		TaskType:       es3.DeleteTaskTypeQuery,
+		Query:          string(rootJson),
+		QueryIndex:     types.ComplianceResultsIndex,
+	}
+
+	keys, idx := task.KeysAndIndex()
+	task.EsID = es2.HashOf(keys...)
+	task.EsIndex = idx
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {
+		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
+		return err
+	}
+
+	// Delete resource findings
+	filters = make([]opengovernance.BoolFilter, 0, 2)
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", currentIntegrationIds)))
+	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+
+	root = map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+	}
+	rootJson, err = json.Marshal(root)
+	if err != nil {
+		w.logger.Error("failed to marshal root", zap.Error(err))
+		return err
+	}
+
+	task = es3.DeleteTask{
+		DiscoveryJobID: j.ID,
+		IntegrationID:  j.BenchmarkID,
+		ResourceType:   "resource-finding-old-integrations-removal",
+		TaskType:       es3.DeleteTaskTypeQuery,
+		Query:          string(rootJson),
+		QueryIndex:     types.ResourceFindingsIndex,
+	}
+
+	keys, idx = task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
 	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {

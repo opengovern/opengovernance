@@ -9,7 +9,6 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	"io"
 	"strings"
 	"text/template"
 	"time"
@@ -219,32 +218,31 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				if f.StateActive {
 					f := f
 					f.StateActive = false
-					f.LastTransition = j.CreatedAt.UnixMilli()
-					f.ComplianceJobID = j.ID
-					f.ParentComplianceJobID = j.ParentJobID
+					f.LastUpdatedAt = j.CreatedAt.UnixMilli()
+					f.RunnerID = j.ID
+					f.ComplianceJobID = j.ParentJobID
 					f.EvaluatedAt = j.CreatedAt.UnixMilli()
-					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.OpenGovernanceResourceID)
+					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.PlatformResourceID)
 					f.Reason = reason
 					fs := types.ComplianceResultDriftEvent{
-						ComplianceResultEsID:      f.EsID,
-						ParentComplianceJobID:     j.ParentJobID,
-						ComplianceJobID:           j.ID,
-						PreviousConformanceStatus: f.ConformanceStatus,
-						ConformanceStatus:         f.ConformanceStatus,
-						PreviousStateActive:       true,
-						StateActive:               f.StateActive,
-						EvaluatedAt:               j.CreatedAt.UnixMilli(),
-						Reason:                    reason,
+						ComplianceResultEsID:     f.EsID,
+						ParentComplianceJobID:    j.ParentJobID,
+						ComplianceJobID:          j.ID,
+						PreviousComplianceStatus: f.ComplianceStatus,
+						ComplianceStatus:         f.ComplianceStatus,
+						PreviousStateActive:      true,
+						StateActive:              f.StateActive,
+						EvaluatedAt:              j.CreatedAt.UnixMilli(),
+						Reason:                   reason,
 
-						BenchmarkID:               f.BenchmarkID,
-						ControlID:                 f.ControlID,
-						IntegrationID:             f.IntegrationID,
-						IntegrationType:           f.IntegrationType,
-						Severity:                  f.Severity,
-						OpenGovernanceResourceID:  f.OpenGovernanceResourceID,
-						ResourceID:                f.ResourceID,
-						ResourceType:              f.ResourceType,
-						ParentBenchmarkReferences: f.ParentBenchmarkReferences,
+						BenchmarkID:        f.BenchmarkID,
+						ControlID:          f.ControlID,
+						IntegrationID:      f.IntegrationID,
+						IntegrationType:    f.IntegrationType,
+						Severity:           f.Severity,
+						PlatformResourceID: f.PlatformResourceID,
+						ResourceID:         f.ResourceID,
+						ResourceType:       f.ResourceType,
 					}
 					keys, idx := fs.KeysAndIndex()
 					fs.EsID = es.HashOf(keys...)
@@ -261,31 +259,30 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				continue
 			}
 
-			if (f.ConformanceStatus != newComplianceResult.ConformanceStatus) ||
+			if (f.ComplianceStatus != newComplianceResult.ComplianceStatus) ||
 				(f.StateActive != newComplianceResult.StateActive) {
-				newComplianceResult.LastTransition = j.CreatedAt.UnixMilli()
-				newComplianceResult.ComplianceJobID = j.ID
-				newComplianceResult.ParentComplianceJobID = j.ParentJobID
+				newComplianceResult.LastUpdatedAt = j.CreatedAt.UnixMilli()
+				newComplianceResult.RunnerID = j.ID
+				newComplianceResult.ComplianceJobID = j.ParentJobID
 				fs := types.ComplianceResultDriftEvent{
-					ComplianceResultEsID:      f.EsID,
-					ParentComplianceJobID:     j.ParentJobID,
-					ComplianceJobID:           j.ID,
-					PreviousConformanceStatus: f.ConformanceStatus,
-					ConformanceStatus:         newComplianceResult.ConformanceStatus,
-					PreviousStateActive:       f.StateActive,
-					StateActive:               newComplianceResult.StateActive,
-					EvaluatedAt:               j.CreatedAt.UnixMilli(),
-					Reason:                    newComplianceResult.Reason,
+					ComplianceResultEsID:     f.EsID,
+					ParentComplianceJobID:    j.ParentJobID,
+					ComplianceJobID:          j.ID,
+					PreviousComplianceStatus: f.ComplianceStatus,
+					ComplianceStatus:         newComplianceResult.ComplianceStatus,
+					PreviousStateActive:      f.StateActive,
+					StateActive:              newComplianceResult.StateActive,
+					EvaluatedAt:              j.CreatedAt.UnixMilli(),
+					Reason:                   newComplianceResult.Reason,
 
-					BenchmarkID:               newComplianceResult.BenchmarkID,
-					ControlID:                 newComplianceResult.ControlID,
-					IntegrationID:             newComplianceResult.IntegrationID,
-					IntegrationType:           newComplianceResult.IntegrationType,
-					Severity:                  newComplianceResult.Severity,
-					OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
-					ResourceID:                newComplianceResult.ResourceID,
-					ResourceType:              newComplianceResult.ResourceType,
-					ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,
+					BenchmarkID:        newComplianceResult.BenchmarkID,
+					ControlID:          newComplianceResult.ControlID,
+					IntegrationID:      newComplianceResult.IntegrationID,
+					IntegrationType:    newComplianceResult.IntegrationType,
+					Severity:           newComplianceResult.Severity,
+					PlatformResourceID: newComplianceResult.PlatformResourceID,
+					ResourceID:         newComplianceResult.ResourceID,
+					ResourceType:       newComplianceResult.ResourceType,
 				}
 				keys, idx := fs.KeysAndIndex()
 				fs.EsID = es.HashOf(keys...)
@@ -297,9 +294,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				}
 			} else {
 				w.logger.Info("ComplianceResult status didn't change. doing nothing", zap.Any("complianceResult", newComplianceResult))
-				newComplianceResult.LastTransition = f.LastTransition
-				newComplianceResult.ComplianceJobID = j.ID
-				newComplianceResult.ParentComplianceJobID = j.ParentJobID
+				newComplianceResult.LastUpdatedAt = f.LastUpdatedAt
+				newComplianceResult.RunnerID = j.ID
+				newComplianceResult.ComplianceJobID = j.ParentJobID
 			}
 
 			newComplianceResults = append(newComplianceResults, newComplianceResult)
@@ -309,27 +306,26 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 	closePaginator()
 	for _, newComplianceResult := range complianceResultsMap {
-		newComplianceResult.LastTransition = j.CreatedAt.UnixMilli()
-		newComplianceResult.ComplianceJobID = j.ID
-		newComplianceResult.ParentComplianceJobID = j.ParentJobID
+		newComplianceResult.LastUpdatedAt = j.CreatedAt.UnixMilli()
+		newComplianceResult.RunnerID = j.ID
+		newComplianceResult.ComplianceJobID = j.ParentJobID
 		fs := types.ComplianceResultDriftEvent{
 			ComplianceResultEsID:  newComplianceResult.EsID,
 			ParentComplianceJobID: j.ParentJobID,
 			ComplianceJobID:       j.ID,
-			ConformanceStatus:     newComplianceResult.ConformanceStatus,
+			ComplianceStatus:      newComplianceResult.ComplianceStatus,
 			StateActive:           newComplianceResult.StateActive,
 			EvaluatedAt:           j.CreatedAt.UnixMilli(),
 			Reason:                newComplianceResult.Reason,
 
-			BenchmarkID:               newComplianceResult.BenchmarkID,
-			ControlID:                 newComplianceResult.ControlID,
-			IntegrationID:             newComplianceResult.IntegrationID,
-			IntegrationType:           newComplianceResult.IntegrationType,
-			Severity:                  newComplianceResult.Severity,
-			OpenGovernanceResourceID:  newComplianceResult.OpenGovernanceResourceID,
-			ResourceID:                newComplianceResult.ResourceID,
-			ResourceType:              newComplianceResult.ResourceType,
-			ParentBenchmarkReferences: newComplianceResult.ParentBenchmarkReferences,
+			BenchmarkID:        newComplianceResult.BenchmarkID,
+			ControlID:          newComplianceResult.ControlID,
+			IntegrationID:      newComplianceResult.IntegrationID,
+			IntegrationType:    newComplianceResult.IntegrationType,
+			Severity:           newComplianceResult.Severity,
+			PlatformResourceID: newComplianceResult.PlatformResourceID,
+			ResourceID:         newComplianceResult.ResourceID,
+			ResourceType:       newComplianceResult.ResourceType,
 		}
 		keys, idx := fs.KeysAndIndex()
 		fs.EsID = es.HashOf(keys...)
@@ -444,103 +440,4 @@ type ComplianceResultsMultiGetResponse struct {
 	Docs []struct {
 		Source types.ComplianceResult `json:"_source"`
 	} `json:"docs"`
-}
-
-func (w *Worker) handleOldComplianceResultsStateByTime(ctx context.Context, cutThreshold time.Time, doDelete bool) error {
-	idx := types.ComplianceResultsIndex
-	var filters []map[string]any
-	mustFilters := make([]map[string]any, 0, 4)
-	mustFilters = append(mustFilters, map[string]any{
-		"range": map[string]any{
-			"evaluatedAt": map[string]any{
-				"lt": cutThreshold.UnixMilli(),
-			},
-		},
-	})
-
-	filters = append(filters, map[string]any{
-		"bool": map[string]any{
-			"must": []map[string]any{
-				{
-					"bool": map[string]any{
-						"filter": mustFilters,
-					},
-				},
-			},
-		},
-	})
-
-	request := make(map[string]any)
-	request["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-
-	es := w.esClient.ES()
-	if !doDelete {
-		request["doc"] = map[string]any{
-			"stateActive": false,
-		}
-
-		query, err := json.Marshal(request)
-		if err != nil {
-			return err
-		}
-
-		res, err := es.UpdateByQuery(
-			[]string{idx},
-			es.UpdateByQuery.WithContext(ctx),
-			es.UpdateByQuery.WithBody(bytes.NewReader(query)),
-		)
-		defer opengovernance.CloseSafe(res)
-		if err != nil {
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		} else if err := opengovernance.CheckError(res); err != nil {
-			if opengovernance.IsIndexNotFoundErr(err) {
-				return nil
-			}
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		}
-
-		_, err = io.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("read response: %w", err)
-		}
-	} else {
-		query, err := json.Marshal(request)
-		if err != nil {
-			return err
-		}
-
-		res, err := es.DeleteByQuery(
-			[]string{idx},
-			bytes.NewReader(query),
-			es.DeleteByQuery.WithContext(ctx),
-		)
-		defer opengovernance.CloseSafe(res)
-		if err != nil {
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while deleting es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		} else if err := opengovernance.CheckError(res); err != nil {
-			if opengovernance.IsIndexNotFoundErr(err) {
-				return nil
-			}
-			b, _ := io.ReadAll(res.Body)
-			w.logger.Error("failure while querying es", zap.Error(err), zap.String("response", string(b)))
-			return err
-		}
-
-		_, err = io.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("read response: %w", err)
-		}
-	}
-
-	return nil
 }

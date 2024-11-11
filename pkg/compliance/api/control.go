@@ -44,7 +44,7 @@ type ControlSummary struct {
 	TotalResourcesCount   int       `json:"totalResourcesCount"`
 	FailedConnectionCount int       `json:"failedConnectionCount"`
 	TotalConnectionCount  int       `json:"totalConnectionCount"`
-	CostOptimization      *float64  `json:"costOptimization"`
+	CostImpact            *float64  `json:"costImpact"`
 	EvaluatedAt           time.Time `json:"evaluatedAt"`
 }
 
@@ -110,7 +110,7 @@ type ListControlsFilterResultControl struct {
 		NonCompliantResources int      `json:"noncompliant_resources"`
 		CompliantResources    int      `json:"compliant_resources"`
 		ImpactedResources     int      `json:"impacted_resources"`
-		CostOptimization      *float64 `json:"cost_optimization"`
+		CostImpact            *float64 `json:"cost_impact"`
 	} `json:"compliance_results_summary"`
 }
 

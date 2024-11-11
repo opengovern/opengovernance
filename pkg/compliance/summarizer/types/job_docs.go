@@ -29,8 +29,8 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	if complianceResult.Severity == "" {
 		complianceResult.Severity = types.ComplianceResultSeverityNone
 	}
-	if complianceResult.ConformanceStatus == "" {
-		complianceResult.ConformanceStatus = types.ConformanceStatusERROR
+	if complianceResult.ComplianceStatus == "" {
+		complianceResult.ComplianceStatus = types.ComplianceStatusERROR
 	}
 	if complianceResult.ResourceType == "" {
 		complianceResult.ResourceType = "-"
@@ -42,7 +42,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 
 	if resource == nil {
 		logger.Warn("no resource found ignoring resource collection population for this complianceResult",
-			zap.String("opengovernanceResourceId", complianceResult.OpenGovernanceResourceID),
+			zap.String("platformResourceID", complianceResult.PlatformResourceID),
 			zap.String("resourceId", complianceResult.ResourceID),
 			zap.String("resourceType", complianceResult.ResourceType),
 			zap.String("integrationID", complianceResult.IntegrationID),
@@ -61,15 +61,15 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
-			OpenGovernanceResourceID: resource.ResourceID,
-			ResourceType:             resource.ResourceType,
-			ResourceName:             resource.ResourceName,
-			IntegrationType:          resource.IntegrationType,
-			ComplianceResults:        nil,
-			ResourceCollection:       nil,
-			ResourceCollectionMap:    make(map[string]bool),
-			JobId:                    job.ID,
-			EvaluatedAt:              job.CreatedAt.UnixMilli(),
+			PlatformResourceID:    resource.ResourceID,
+			ResourceType:          resource.ResourceType,
+			ResourceName:          resource.ResourceName,
+			IntegrationType:       resource.IntegrationType,
+			ComplianceResults:     nil,
+			ResourceCollection:    nil,
+			ResourceCollectionMap: make(map[string]bool),
+			JobId:                 job.ID,
+			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
 		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
 	} else {
@@ -163,7 +163,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 				benchmarkSummaryRc = BenchmarkSummaryResult{
 					BenchmarkResult: ResultGroup{
 						Result: Result{
-							QueryResult:    map[types.ConformanceStatus]int{},
+							QueryResult:    map[types.ComplianceStatus]int{},
 							SeverityResult: map[types.ComplianceResultSeverity]int{},
 							SecurityScore:  0,
 						},

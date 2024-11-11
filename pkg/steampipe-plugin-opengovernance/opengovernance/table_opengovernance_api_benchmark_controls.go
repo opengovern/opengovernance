@@ -113,10 +113,10 @@ func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("TotalConnectionCount"),
 			},
 			{
-				Name:        "cost_optimization",
+				Name:        "cost_impact",
 				Type:        proto.ColumnType_DOUBLE,
-				Description: "The cost optimization",
-				Transform:   transform.FromField("CostOptimization"),
+				Description: "The cost impact",
+				Transform:   transform.FromField("CostImpact"),
 			},
 			{
 				Name:        "evaluated_at",
