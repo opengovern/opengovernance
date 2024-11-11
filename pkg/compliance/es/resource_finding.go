@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/pkg/utils"
@@ -79,16 +79,16 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 	return values, nil
 }
 
-func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connector []source.Type, integrationID []string,
+func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, integrationType []integration.Type, integrationID []string,
 	notIntegrationID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
 	severity []types.ComplianceResultSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, conformanceStatuses []types.ConformanceStatus,
 	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any, summaryJobIDs []string) ([]ResourceFindingsQueryHit, int64, error) {
 
 	nestedFilters := make([]map[string]any, 0)
-	if len(connector) > 0 {
+	if len(integrationType) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"complianceResults.connector": connector,
+				"complianceResults.integrationType": integrationType,
 			},
 		})
 	}
