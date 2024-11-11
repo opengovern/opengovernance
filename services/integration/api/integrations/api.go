@@ -207,7 +207,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 		}
 
-		healthy, err := integration.HealthCheck(jsonData, integrationAPI.ProviderID, integrationAPI.Labels)
+		healthy, err := integration.HealthCheck(jsonData, integrationAPI.ProviderID, integrationAPI.Labels, integrationAPI.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			integrationAPI.State = models.IntegrationStateInactive
@@ -300,7 +300,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 			h.logger.Error("failed to create integration api", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 		}
-		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, iApi.Annotations)
+		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, iApi.Labels, iApi.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			i.State = models2.IntegrationStateInactive
@@ -379,7 +379,7 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 	}
 
-	healthy, err := integrationType.HealthCheck(jsonData, integrationApi.ProviderID, integrationApi.Labels)
+	healthy, err := integrationType.HealthCheck(jsonData, integrationApi.ProviderID, integrationApi.Labels, integrationApi.Annotations)
 	if err != nil || !healthy {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		if integration.State != models2.IntegrationStateArchived {
