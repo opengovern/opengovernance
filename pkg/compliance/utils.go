@@ -71,7 +71,7 @@ func (h *HttpHandler) getBenchmarkPath(ctx context.Context, benchmarkId string) 
 }
 
 func (h *HttpHandler) getBenchmarkComplianceResultSummary(ctx context.Context, benchmarkId string, complianceResultFilters *api.ComplianceResultSummaryFilters) (*api.GetBenchmarkDetailsComplianceResults, error) {
-	complianceResults, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkId)
+	complianceResults, evaluatedAt, err := es.BenchmarkIntegrationSummary(ctx, h.logger, h.client, benchmarkId)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 			controlIDs = append(controlIDs, c.ID)
 		}
 
-		complianceResults, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmark.ID)
+		complianceResults, evaluatedAt, err := es.BenchmarkIntegrationSummary(ctx, h.logger, h.client, benchmark.ID)
 		if err != nil {
 			return nil, err
 		}

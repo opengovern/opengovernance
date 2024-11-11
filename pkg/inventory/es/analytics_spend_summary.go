@@ -959,9 +959,9 @@ type CountAnalyticsSpendResponse struct {
 		MetricCount struct {
 			Value int `json:"value"`
 		} `json:"metric_count"`
-		ConnectionCount struct {
+		IntegrationCount struct {
 			Value int `json:"value"`
-		} `json:"connection_count"`
+		} `json:"integration_count"`
 	} `json:"aggregations"`
 }
 
@@ -969,7 +969,7 @@ func CountAnalyticsSpend(ctx context.Context, logger *zap.Logger, client opengov
 	query := make(map[string]any)
 	query["size"] = 0
 
-	connectionScript := `
+	integrationScript := `
 String[] res = new String[params['_source']['connections'].length];
 for (int i=0; i<params['_source']['connections'].length;++i) { 
   res[i] = params['_source']['connections'][i]['connection_id'];
@@ -982,11 +982,11 @@ return res;
 				"field": "metric_id",
 			},
 		},
-		"connection_count": map[string]any{
+		"integration_count": map[string]any{
 			"cardinality": map[string]any{
 				"script": map[string]any{
 					"lang":   "painless",
-					"source": connectionScript,
+					"source": integrationScript,
 				},
 			},
 		},

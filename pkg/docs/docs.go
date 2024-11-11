@@ -9510,7 +9510,7 @@ const docTemplate = `{
                 "failedComplianceResultsCount": {
                     "type": "integer"
                 },
-                "failedConnectionCount": {
+                "failedIntegrationCount": {
                     "type": "integer"
                 },
                 "failedControlCount": {
@@ -9904,7 +9904,7 @@ const docTemplate = `{
                 "evaluatedAt": {
                     "type": "string"
                 },
-                "failedConnectionCount": {
+                "failedIntegrationCount": {
                     "type": "integer"
                 },
                 "failedResourcesCount": {
@@ -9916,7 +9916,7 @@ const docTemplate = `{
                 "resourceType": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_inventory_api.ResourceType"
                 },
-                "totalConnectionCount": {
+                "totalIntegrationCount": {
                     "type": "integer"
                 },
                 "totalResourcesCount": {
@@ -9941,7 +9941,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.ControlTrendDatapoint": {
             "type": "object",
             "properties": {
-                "failedConnectionCount": {
+                "failedIntegrationCount": {
                     "type": "integer"
                 },
                 "failedResourcesCount": {
@@ -9952,7 +9952,7 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1686346668
                 },
-                "totalConnectionCount": {
+                "totalIntegrationCount": {
                     "type": "integer"
                 },
                 "totalResourcesCount": {
@@ -12795,7 +12795,7 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time"
                 },
-                "totalConnectionCount": {
+                "totalIntegrationCount": {
                     "type": "integer"
                 },
                 "totalSuccessfulDescribedConnectionCount": {
@@ -13367,7 +13367,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_inventory_api.ResourceCollection": {
             "type": "object",
             "properties": {
-                "connection_count": {
+                "integration_count": {
                     "type": "integer"
                 },
                 "created_at": {
@@ -13611,7 +13611,7 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time"
                 },
-                "totalConnectionCount": {
+                "totalIntegrationCount": {
                     "type": "integer"
                 },
                 "totalSuccessfulDescribedConnectionCount": {

@@ -14,10 +14,10 @@ const (
 )
 
 type BenchmarkAssignment struct {
-	BenchmarkId          string    `json:"benchmarkId" example:"azure_cis_v140"`                        // Benchmark ID
-	ConnectionId         *string   `json:"connectionId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	ResourceCollectionId *string   `json:"resourceCollectionId" example:"example-rc"`                   // Resource Collection ID
-	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
+	BenchmarkId          string    `json:"benchmarkId" example:"azure_cis_v140"`                         // Benchmark ID
+	IntegrationId        *string   `json:"integrationId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ResourceCollectionId *string   `json:"resourceCollectionId" example:"example-rc"`                    // Resource Collection ID
+	AssignedAt           time.Time `json:"assignedAt"`                                                   // Unix timestamp
 }
 
 type AssignedBenchmark struct {
@@ -25,7 +25,7 @@ type AssignedBenchmark struct {
 	Status    bool      `json:"status" example:"true"` // Status
 }
 
-type BenchmarkAssignedConnection struct {
+type BenchmarkAssignedIntegration struct {
 	IntegrationID   string           `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 	ProviderID      string           `json:"providerID" example:"1283192749"`                              // Provider Connection ID
 	IntegrationName string           `json:"integrationName"`                                              // Provider Connection Name
@@ -40,7 +40,7 @@ type BenchmarkAssignedResourceCollection struct {
 }
 
 type BenchmarkAssignedEntities struct {
-	Connections []BenchmarkAssignedConnection `json:"connections"`
+	Integrations []BenchmarkAssignedIntegration `json:"integrations"`
 }
 
 type TopFieldRecord struct {

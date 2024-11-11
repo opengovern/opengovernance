@@ -248,13 +248,13 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Name:        "connections_result_compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that passed in the benchmark summary for the connection",
-				Transform:   transform.FromField("ConnectionsStatus.PassedCount"),
+				Transform:   transform.FromField("IntegrationsStatus.PassedCount"),
 			},
 			{
 				Name:        "connections_result_compliance_status_total_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The total number of checks in the benchmark summary for the connection",
-				Transform:   transform.FromField("ConnectionsStatus.TotalCount"),
+				Transform:   transform.FromField("IntegrationsStatus.TotalCount"),
 			},
 			{
 				Name:        "cost_impact",

@@ -37,7 +37,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	}
 
 	if job.BenchmarkID == complianceResult.BenchmarkID {
-		jd.BenchmarkSummary.Connections.addComplianceResult(complianceResult)
+		jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
 	}
 
 	if resource == nil {
@@ -90,8 +90,8 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 		for _, filter := range rc.Filters {
 			found := false
 
-			for _, connector := range filter.Connectors {
-				if strings.ToLower(connector) == strings.ToLower(complianceResult.IntegrationType.String()) {
+			for _, integrationType := range filter.Connectors {
+				if strings.ToLower(integrationType) == strings.ToLower(complianceResult.IntegrationType.String()) {
 					found = true
 					break
 				}
@@ -170,7 +170,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 						ResourceTypes: map[string]Result{},
 						Controls:      map[string]ControlResult{},
 					},
-					Connections: map[string]ResultGroup{},
+					Integrations: map[string]ResultGroup{},
 				}
 			}
 			benchmarkSummaryRc.addComplianceResult(complianceResult)

@@ -718,6 +718,6 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	logger.Info("done with spend metric",
 		zap.String("metric", metric.ID),
 		zap.Int("connector_count", len(connectorResultMap)),
-		zap.Int("connection_count", len(connectionResultMap)))
+		zap.Int("integration_count", len(connectionResultMap)))
 	return nil
 }

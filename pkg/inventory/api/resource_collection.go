@@ -27,7 +27,7 @@ type ResourceCollection struct {
 	IntegrationTypes []integration.Type `json:"integration_types,omitempty"`
 	LastEvaluatedAt  *time.Time         `json:"last_evaluated_at,omitempty"`
 	ResourceCount    *int               `json:"resource_count,omitempty"`
-	ConnectionCount  *int               `json:"connection_count,omitempty"`
+	IntegrationCount *int               `json:"integration_count,omitempty"`
 	MetricCount      *int               `json:"metric_count,omitempty"`
 }
 

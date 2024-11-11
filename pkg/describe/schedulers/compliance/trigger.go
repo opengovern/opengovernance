@@ -256,19 +256,19 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		}
 		assignments = &complianceApi.BenchmarkAssignedEntities{}
 		for _, integration := range integrations.Integrations {
-			assignment := complianceApi.BenchmarkAssignedConnection{
+			assignment := complianceApi.BenchmarkAssignedIntegration{
 				IntegrationID:   integration.IntegrationID,
 				ProviderID:      integration.ProviderID,
 				IntegrationName: integration.Name,
 				IntegrationType: integration.IntegrationType,
 				Status:          true,
 			}
-			assignments.Connections = append(assignments.Connections, assignment)
+			assignments.Integrations = append(assignments.Integrations, assignment)
 		}
 
 		var globalRunners []*model.ComplianceRunner
 		var runners []*model.ComplianceRunner
-		for _, it := range assignments.Connections {
+		for _, it := range assignments.Integrations {
 			if !it.Status {
 				continue
 			}

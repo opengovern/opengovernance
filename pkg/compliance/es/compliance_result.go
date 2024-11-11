@@ -646,9 +646,9 @@ type ComplianceResultKPIResponse struct {
 		ControlCount struct {
 			Value int64 `json:"value"`
 		} `json:"control_count"`
-		ConnectionCount struct {
+		IntegrationCount struct {
 			Value int64 `json:"value"`
-		} `json:"connection_count"`
+		} `json:"integration_count"`
 	} `json:"aggregations"`
 }
 
@@ -680,7 +680,7 @@ func ComplianceResultKPIQuery(ctx context.Context, logger *zap.Logger, client op
 				"field": "controlID",
 			},
 		},
-		"connection_count": map[string]any{
+		"integration_count": map[string]any{
 			"cardinality": map[string]any{
 				"field": "integrationID",
 			},
@@ -1088,9 +1088,9 @@ func ComplianceResultsFieldCountByControl(ctx context.Context, logger *zap.Logge
 	return &resp, err
 }
 
-type ComplianceResultsComplianceStatusCountByControlPerConnectionResponse struct {
+type ComplianceResultsComplianceStatusCountByControlPerIntegrationResponse struct {
 	Aggregations struct {
-		ConnectionGroup struct {
+		IntegrationGroup struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
 			SumOtherDocCount        int `json:"sum_other_doc_count"`
 			Buckets                 []struct {
@@ -1111,13 +1111,13 @@ type ComplianceResultsComplianceStatusCountByControlPerConnectionResponse struct
 					} `json:"buckets"`
 				} `json:"control_count"`
 			} `json:"buckets"`
-		} `json:"connection_group"`
+		} `json:"integration_group"`
 	} `json:"aggregations"`
 }
 
-func ComplianceResultsComplianceStatusCountByControlPerConnection(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+func ComplianceResultsComplianceStatusCountByControlPerIntegration(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	integrationTypes []string, resourceTypeID []string, integrationIDs []string, benchmarkID []string, controlID []string,
-	severity []types.ComplianceResultSeverity, complianceStatuses []types.ComplianceStatus, startTime, endTime *time.Time) (*ComplianceResultsComplianceStatusCountByControlPerConnectionResponse, error) {
+	severity []types.ComplianceResultSeverity, complianceStatuses []types.ComplianceStatus, startTime, endTime *time.Time) (*ComplianceResultsComplianceStatusCountByControlPerIntegrationResponse, error) {
 	terms := make(map[string]any)
 	idx := types.ComplianceResultsIndex
 	if len(benchmarkID) > 0 {
@@ -1154,7 +1154,7 @@ func ComplianceResultsComplianceStatusCountByControlPerConnection(ctx context.Co
 	root["size"] = 0
 
 	root["aggs"] = map[string]any{
-		"connection_group": map[string]any{
+		"integration_group": map[string]any{
 			"terms": map[string]any{
 				"field": "integrationID",
 				"size":  10000,
@@ -1232,7 +1232,7 @@ func ComplianceResultsComplianceStatusCountByControlPerConnection(ctx context.Co
 	}
 
 	logger.Info("ComplianceResultsFieldCountByControl", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp ComplianceResultsComplianceStatusCountByControlPerConnectionResponse
+	var resp ComplianceResultsComplianceStatusCountByControlPerIntegrationResponse
 	err = client.Search(ctx, idx, string(queryBytes), &resp)
 	if err != nil {
 		logger.Error("ComplianceResultsFieldCountByControl", zap.Error(err), zap.String("query", string(queryBytes)), zap.String("index", idx))

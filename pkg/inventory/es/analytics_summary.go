@@ -1037,9 +1037,9 @@ type CountAnalyticsMetricsResponse struct {
 		MetricCount struct {
 			Value int `json:"value"`
 		} `json:"metric_count"`
-		ConnectionCount struct {
+		IntegrationCount struct {
 			Value int `json:"value"`
-		} `json:"connection_count"`
+		} `json:"integration_count"`
 	} `json:"aggregations"`
 }
 
@@ -1047,10 +1047,10 @@ func CountAnalyticsMetrics(ctx context.Context, logger *zap.Logger, client openg
 	query := make(map[string]any)
 	query["size"] = 0
 
-	connectionScript := `
-String[] res = new String[params['_source']['connections']['connections'].length];
-for (int i=0; i<params['_source']['connections']['connections'].length;++i) { 
-  res[i] = params['_source']['connections']['connections'][i]['connection_id'];
+	integrationScript := `
+String[] res = new String[params['_source']['integrations']['integrations'].length];
+for (int i=0; i<params['_source']['integrations']['integrations'].length;++i) { 
+  res[i] = params['_source']['integrations']['integrations'][i]['connection_id'];
 } 
 return res;
 `
@@ -1060,11 +1060,11 @@ return res;
 				"field": "metric_id",
 			},
 		},
-		"connection_count": map[string]any{
+		"integration_count": map[string]any{
 			"cardinality": map[string]any{
 				"script": map[string]any{
 					"lang":   "painless",
-					"source": connectionScript,
+					"source": integrationScript,
 				},
 			},
 		},

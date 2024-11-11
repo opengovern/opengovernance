@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
 )
@@ -82,7 +81,7 @@ func GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(compliance
 }
 
 type ComplianceResultDriftEventFilters struct {
-	Connector          []source.Type                    `json:"connector" example:"Azure"`
+	IntegrationType    []integration.Type               `json:"integrationType" example:"Azure"`
 	ResourceType       []string                         `json:"resourceType" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
 	IntegrationID      []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	NotIntegrationID   []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
@@ -113,7 +112,7 @@ type ComplianceResultDriftEventFiltersWithMetadata struct {
 }
 
 type ComplianceResultDriftEventsSort struct {
-	Connector          *SortDirection `json:"connector"`
+	IntegrationType    *SortDirection `json:"integrationType"`
 	PlatformResourceID *SortDirection `json:"platformResourceID"`
 	ResourceType       *SortDirection `json:"resourceType"`
 	IntegrationID      *SortDirection `json:"integrationID"`
