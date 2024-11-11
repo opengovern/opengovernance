@@ -74,7 +74,7 @@ type ResourceFindingFilters struct {
 	ResourceTypeID     []string                         `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
 	IntegrationID      []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	NotIntegrationID   []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	ConnectionGroup    []string                         `json:"connectionGroup" example:"healthy"`
+	IntegrationGroup   []string                         `json:"integrationGroup" example:"healthy"`
 	ResourceCollection []string                         `json:"resourceCollection" example:"example-rc"`
 	BenchmarkID        []string                         `json:"benchmarkID" example:"azure_cis_v140"`
 	ControlID          []string                         `json:"controlID" example:"azure_cis_v140_7_5"`

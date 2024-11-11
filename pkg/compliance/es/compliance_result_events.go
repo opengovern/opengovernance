@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
@@ -76,7 +76,7 @@ func FetchComplianceResultDriftEventsByComplianceResultIDs(ctx context.Context, 
 
 func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	complianceResultIDs []string, platformResourceIDs []string,
-	provider []source.Type, integrationID []string, notIntegrationID []string,
+	integrationType []integration.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
@@ -87,9 +87,9 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
 		switch {
-		case sort.Connector != nil:
+		case sort.IntegrationType != nil:
 			requestSort = append(requestSort, map[string]any{
-				"connector": *sort.Connector,
+				"integrationType": *sort.IntegrationType,
 			})
 		case sort.PlatformResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -208,12 +208,12 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 	if len(notIntegrationID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
-	if len(provider) > 0 {
-		var connectors []string
-		for _, p := range provider {
-			connectors = append(connectors, p.String())
+	if len(integrationType) > 0 {
+		var integrationTypes []string
+		for _, p := range integrationType {
+			integrationTypes = append(integrationTypes, p.String())
 		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
@@ -272,7 +272,7 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 	Aggregations struct {
 		ControlIDFilter          AggregationResult `json:"control_id_filter"`
 		SeverityFilter           AggregationResult `json:"severity_filter"`
-		ConnectorFilter          AggregationResult `json:"connector_filter"`
+		IntegrationTypeFilter    AggregationResult `json:"integration_type_filter"`
 		IntegrationIDFilter      AggregationResult `json:"integration_id_filter"`
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
@@ -290,7 +290,7 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 }
 
 func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	complianceResultIDs []string, platformResourceIDs []string, connector []source.Type, integrationID []string, notIntegrationID []string,
+	complianceResultIDs []string, platformResourceIDs []string, integrationType []integration.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
 	stateActive []bool, complianceStatuses []types.ComplianceStatus,
@@ -333,12 +333,12 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 	if len(notIntegrationID) > 0 {
 		filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", notIntegrationID)))
 	}
-	if len(connector) > 0 {
-		var connectors []string
-		for _, p := range connector {
-			connectors = append(connectors, p.String())
+	if len(integrationType) > 0 {
+		var integrationTypes []string
+		for _, p := range integrationType {
+			integrationTypes = append(integrationTypes, p.String())
 		}
-		filters = append(filters, opengovernance.NewTermsFilter("connector", connectors))
+		filters = append(filters, opengovernance.NewTermsFilter("integrationType", integrationTypes))
 	}
 	if len(stateActive) > 0 {
 		strStateActive := make([]string, 0)
@@ -365,7 +365,7 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 	root["size"] = 0
 
 	aggs := map[string]any{
-		"connector_filter":           map[string]any{"terms": map[string]any{"field": "connector", "size": 1000}},
+		"integration_type_filter":    map[string]any{"terms": map[string]any{"field": "integrationType", "size": 1000}},
 		"resource_type_filter":       map[string]any{"terms": map[string]any{"field": "resourceType", "size": 1000}},
 		"integration_id_filter":      map[string]any{"terms": map[string]any{"field": "integrationID", "size": 1000}},
 		"resource_collection_filter": map[string]any{"terms": map[string]any{"field": "resourceCollection", "size": 1000}},

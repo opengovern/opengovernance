@@ -150,11 +150,11 @@ type BenchmarkEvaluationSummary struct {
 	Checks                  types.SeverityResult             `json:"checks"`
 	ControlsSeverityStatus  BenchmarkControlsSeverityStatus  `json:"controlsSeverityStatus"`
 	ResourcesSeverityStatus BenchmarkResourcesSeverityStatus `json:"resourcesSeverityStatus"`
-	ConnectionsStatus       BenchmarkStatusResult            `json:"connectionsStatus"`
+	IntegrationsStatus      BenchmarkStatusResult            `json:"IntegrationsStatus"`
 	CostImpact              *float64                         `json:"costImpact"`
 	EvaluatedAt             *time.Time                       `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`
 	LastJobStatus           string                           `json:"lastJobStatus" example:"success"`
-	TopConnections          []TopFieldRecord                 `json:"topConnections"`
+	TopIntegrations         []TopFieldRecord                 `json:"topIntegrations"`
 }
 
 type BenchmarkControlSummary struct {
@@ -215,7 +215,7 @@ type GetBenchmarkListRequest struct {
 	ListOfTables            []string                        `json:"list_of_tables"`
 	Controls                []string                        `json:"controls"`
 	Integration             []IntegrationFilter             `json:"integration"`
-	Connectors              []string                        `json:"connectors"`
+	IntegrationTypes        []string                        `json:"integration_types"`
 	Root                    *bool                           `json:"root"`
 	Assigned                *bool                           `json:"assigned"`
 	IsBaseline              *bool                           `json:"is_baseline"`

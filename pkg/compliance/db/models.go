@@ -222,8 +222,8 @@ func (p Control) GetTagsMap() map[string][]string {
 	return p.tagsMap
 }
 
-func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.Control) error {
-	tracer := otel.Tracer("PopulateConnector")
+func (p *Control) PopulateIntegrationType(ctx context.Context, db Database, api *api.Control) error {
+	tracer := otel.Tracer("PopulateIntegrationType")
 	if api.IntegrationType == nil || len(api.IntegrationType) > 0 {
 		return nil
 	}

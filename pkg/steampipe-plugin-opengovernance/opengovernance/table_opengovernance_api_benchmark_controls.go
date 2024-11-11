@@ -101,16 +101,16 @@ func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("TotalResourcesCount"),
 			},
 			{
-				Name:        "failed_connection_count",
+				Name:        "failed_integration_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The count of failed connections",
-				Transform:   transform.FromField("FailedConnectionCount"),
+				Transform:   transform.FromField("FailedIntegrationCount"),
 			},
 			{
-				Name:        "total_connection_count",
+				Name:        "total_integration_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The total count of connections",
-				Transform:   transform.FromField("TotalConnectionCount"),
+				Transform:   transform.FromField("TotalIntegrationCount"),
 			},
 			{
 				Name:        "cost_impact",

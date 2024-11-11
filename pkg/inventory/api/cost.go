@@ -10,7 +10,7 @@ import (
 type CostTrendDatapoint struct {
 	Cost                                    float64           `json:"cost" minimum:"0"`
 	CostStacked                             []CostStackedItem `json:"costStacked" minimum:"0"`
-	TotalDescribedConnectionCount           int64             `json:"totalConnectionCount"`
+	TotalDescribedConnectionCount           int64             `json:"totalIntegrationCount"`
 	TotalSuccessfulDescribedConnectionCount int64             `json:"totalSuccessfulDescribedConnectionCount"`
 	Date                                    time.Time         `json:"date" format:"date-time"`
 }

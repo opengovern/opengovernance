@@ -22,7 +22,7 @@ type Control struct {
 	GuardrailRemediation    string `json:"guardrailRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 	ProgrammaticRemediation string `json:"programmaticRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 
-	IntegrationType    []string                       `json:"connector" example:"Azure"`
+	IntegrationType    []string                       `json:"integration_type" example:"Azure"`
 	Enabled            bool                           `json:"enabled" example:"true"`
 	DocumentURI        string                         `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
 	Query              *Query                         `json:"query"`
@@ -39,25 +39,25 @@ type ControlSummary struct {
 
 	Benchmarks []Benchmark `json:"benchmarks"`
 
-	Passed                bool      `json:"passed"`
-	FailedResourcesCount  int       `json:"failedResourcesCount"`
-	TotalResourcesCount   int       `json:"totalResourcesCount"`
-	FailedConnectionCount int       `json:"failedConnectionCount"`
-	TotalConnectionCount  int       `json:"totalConnectionCount"`
-	CostImpact            *float64  `json:"costImpact"`
-	EvaluatedAt           time.Time `json:"evaluatedAt"`
+	Passed                 bool      `json:"passed"`
+	FailedResourcesCount   int       `json:"failedResourcesCount"`
+	TotalResourcesCount    int       `json:"totalResourcesCount"`
+	FailedIntegrationCount int       `json:"failedIntegrationCount"`
+	TotalIntegrationCount  int       `json:"totalIntegrationCount"`
+	CostImpact             *float64  `json:"costImpact"`
+	EvaluatedAt            time.Time `json:"evaluatedAt"`
 }
 
 type ControlTrendDatapoint struct {
-	Timestamp             int `json:"timestamp" example:"1686346668"` // Time
-	FailedResourcesCount  int `json:"failedResourcesCount"`
-	TotalResourcesCount   int `json:"totalResourcesCount"`
-	FailedConnectionCount int `json:"failedConnectionCount"`
-	TotalConnectionCount  int `json:"totalConnectionCount"`
+	Timestamp              int `json:"timestamp" example:"1686346668"` // Time
+	FailedResourcesCount   int `json:"failedResourcesCount"`
+	TotalResourcesCount    int `json:"totalResourcesCount"`
+	FailedIntegrationCount int `json:"failedIntegrationCount"`
+	TotalIntegrationCount  int `json:"totalIntegrationCount"`
 }
 
 type ControlsFilterSummaryRequest struct {
-	Connector               []string                 `json:"connector"`
+	IntegrationTypes        []string                 `json:"integration_types"`
 	Severity                []string                 `json:"severity"`
 	RootBenchmark           []string                 `json:"root_benchmark"`
 	ParentBenchmark         []string                 `json:"parent_benchmark"`
@@ -96,7 +96,7 @@ type ListControlsFilterResultControl struct {
 	ID              string                         `json:"id"`
 	Title           string                         `json:"title"`
 	Description     string                         `json:"description"`
-	IntegrationType []integration.Type             `json:"connector"`
+	IntegrationType []integration.Type             `json:"integration_type"`
 	Severity        types.ComplianceResultSeverity `json:"severity"`
 	Tags            map[string][]string            `json:"tags"`
 	Query           struct {
@@ -115,23 +115,12 @@ type ListControlsFilterResultControl struct {
 }
 
 type ControlsFilterSummaryResult struct {
-	ControlsCount int64               `json:"controls_count"`
-	Connector     []string            `json:"connector"`
-	Severity      []string            `json:"severity"`
-	Tags          map[string][]string `json:"tags"`
-	PrimaryTable  []string            `json:"primary_table"`
-	ListOfTables  []string            `json:"list_of_tables"`
-}
-
-type ListControlsFilterResult struct {
-	Controls []ListControlsFilterResultControl `json:"controls"`
-	Summary  struct {
-		Connector    []string            `json:"connector"`
-		Severity     []string            `json:"severity"`
-		Tags         map[string][]string `json:"tags"`
-		PrimaryTable []string            `json:"primary_table"`
-		ListOfTables []string            `json:"list_of_tables"`
-	} `json:"summary"`
+	ControlsCount    int64               `json:"controls_count"`
+	IntegrationTypes []string            `json:"integration_types"`
+	Severity         []string            `json:"severity"`
+	Tags             map[string][]string `json:"tags"`
+	PrimaryTable     []string            `json:"primary_table"`
+	ListOfTables     []string            `json:"list_of_tables"`
 }
 
 type ControlTagsResult struct {

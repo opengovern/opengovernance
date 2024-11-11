@@ -42,7 +42,7 @@ func (s *JobScheduler) runScheduler() error {
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
-		for _, assignment := range assignments.Connections {
+		for _, assignment := range assignments.Integrations {
 			if !assignment.Status {
 				continue
 			}

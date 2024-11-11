@@ -189,7 +189,7 @@ type ComplianceResultKPIResponse struct {
 	FailedComplianceResultsCount int64 `json:"failedComplianceResultsCount"`
 	FailedResourceCount          int64 `json:"failedResourceCount"`
 	FailedControlCount           int64 `json:"failedControlCount"`
-	FailedConnectionCount        int64 `json:"failedConnectionCount"`
+	FailedIntegrationCount       int64 `json:"failedIntegrationCount"`
 }
 
 type ServiceComplianceResultsSummary struct {

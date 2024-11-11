@@ -1359,7 +1359,7 @@ func (h *HttpHandler) CountAnalyticsSpend(ctx echo.Context) error {
 	}
 
 	response := inventoryApi.CountAnalyticsSpendResponse{
-		ConnectionCount: counts.Aggregations.ConnectionCount.Value,
+		ConnectionCount: counts.Aggregations.IntegrationCount.Value,
 		MetricCount:     counts.Aggregations.MetricCount.Value,
 	}
 
@@ -1384,7 +1384,7 @@ func (h *HttpHandler) CountAnalytics(ctx echo.Context) error {
 	}
 
 	response := inventoryApi.CountAnalyticsMetricsResponse{
-		ConnectionCount: counts.Aggregations.ConnectionCount.Value,
+		ConnectionCount: counts.Aggregations.IntegrationCount.Value,
 		MetricCount:     counts.Aggregations.MetricCount.Value,
 	}
 
@@ -2793,7 +2793,7 @@ func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
 		if metricCount.ResourceCountsSum == 0 {
 			continue
 		}
-		result.ConnectionCount = utils.PAdd(result.ConnectionCount, utils.GetPointer(1))
+		result.IntegrationCount = utils.PAdd(result.IntegrationCount, utils.GetPointer(1))
 	}
 
 	return ctx.JSON(http.StatusOK, result)

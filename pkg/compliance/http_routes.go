@@ -16,7 +16,6 @@ import (
 	httpserver2 "github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/compliance/db"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
@@ -88,10 +87,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	assignments := v1.Group("/assignments")
 	assignments.GET("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
-	assignments.GET("/connection/:connection_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
+	assignments.GET("/integration/:integration_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByIntegration, authApi.ViewerRole))
 	assignments.GET("/resource_collection/:resource_collection_id", httpserver2.AuthorizeHandler(h.ListAssignmentsByResourceCollection, authApi.ViewerRole))
-	assignments.POST("/:benchmark_id/connection", httpserver2.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
-	assignments.DELETE("/:benchmark_id/connection", httpserver2.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
+	assignments.POST("/:benchmark_id/integration", httpserver2.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
+	assignments.DELETE("/:benchmark_id/integration", httpserver2.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
 
 	metadata := v1.Group("/metadata")
 	metadata.GET("/tag/compliance", httpserver2.AuthorizeHandler(h.ListComplianceTags, authApi.ViewerRole))
@@ -169,7 +168,7 @@ func (h *HttpHandler) getIntegrationIdFilterFromInputs(ctx context.Context, inte
 	}
 
 	if len(integrationIds) > 0 && len(integrationGroup) > 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "integrationId and connectionGroup cannot be used together")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "integrationId and integrationGroup cannot be used together")
 	}
 
 	if len(integrationIds) > 0 {
@@ -188,7 +187,7 @@ func (h *HttpHandler) getIntegrationIdFilterFromInputs(ctx context.Context, inte
 			return nil, err
 		}
 
-		// Check for duplicate connection groups
+		// Check for duplicate integration groups
 		for _, entry := range integrationGroupObj.IntegrationIds {
 			if _, value := check[entry]; !value {
 				check[entry] = true
@@ -203,12 +202,12 @@ func (h *HttpHandler) getIntegrationIdFilterFromInputs(ctx context.Context, inte
 
 func (h *HttpHandler) getIntegrationIdFilterFromParams(echoCtx echo.Context) ([]string, error) {
 	integrationIds := httpserver2.QueryArrayParam(echoCtx, IntegrationIDParam)
-	//integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//integrationIds, err := httpserver2.ResolveIntegrationIDs(echoCtx, integrationIds)
 	//if err != nil {
 	//	return nil, err
 	//}
-	connectionGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
-	return h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, connectionGroup)
+	integrationGroup := httpserver2.QueryArrayParam(echoCtx, IntegrationGroupParam)
+	return h.getIntegrationIdFilterFromInputs(echoCtx.Request().Context(), integrationIds, integrationGroup)
 }
 
 var tracer = otel.Tracer("new_compliance")
@@ -237,7 +236,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	//req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
+	//req.Filters.IntegrationID, err = httpserver2.ResolveIntegrationIDs(echoCtx, req.Filters.IntegrationID)
 	//if err != nil {
 	//	return err
 	//}
@@ -602,7 +601,7 @@ func (h *HttpHandler) GetSingleComplianceResultByComplianceResultID(echoCtx echo
 
 	integration, err := h.integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, finding.IntegrationID)
 	if err != nil {
-		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", finding.IntegrationID))
+		h.logger.Error("failed to get integration", zap.Error(err), zap.String("integration_id", finding.IntegrationID))
 		return err
 	}
 	apiFinding.ProviderID = integration.ProviderID
@@ -721,7 +720,7 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 		return err
 	}
 
-	//req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
+	//req.IntegrationID, err = httpserver2.ResolveIntegrationIDs(echoCtx, req.IntegrationID)
 	//if err != nil {
 	//	return err
 	//}
@@ -760,13 +759,13 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 
 	integrations, err := h.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
-		h.logger.Error("failed to get connections", zap.Error(err))
+		h.logger.Error("failed to get integrations", zap.Error(err))
 		return err
 	}
-	connectionMetadataMap := make(map[string]*integrationapi.Integration)
+	integrationMetadataMap := make(map[string]*integrationapi.Integration)
 	for _, item := range integrations.Integrations {
 		item := item
-		connectionMetadataMap[item.IntegrationID] = &item
+		integrationMetadataMap[item.IntegrationID] = &item
 	}
 
 	benchmarkMetadata, err := h.db.ListBenchmarksBare(ctx)
@@ -850,10 +849,10 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 	}
 	if len(possibleFilters.Aggregations.IntegrationTypeFilter.Buckets) > 0 {
 		for _, bucket := range possibleFilters.Aggregations.IntegrationTypeFilter.Buckets {
-			connector, _ := source.ParseType(bucket.Key)
+			integrationType := integration_type.ParseType(bucket.Key)
 			response.IntegrationType = append(response.IntegrationType, api.FilterWithMetadata{
-				Key:         connector.String(),
-				DisplayName: connector.String(),
+				Key:         integrationType.String(),
+				DisplayName: integrationType.String(),
 				Count:       utils.GetPointer(bucket.DocCount),
 			})
 		}
@@ -880,10 +879,10 @@ func (h *HttpHandler) GetComplianceResultFilterValues(echoCtx echo.Context) erro
 	}
 
 	for _, item := range possibleFilters.Aggregations.IntegrationIDFilter.Buckets {
-		if connection, ok := connectionMetadataMap[item.Key]; ok {
+		if integration, ok := integrationMetadataMap[item.Key]; ok {
 			response.IntegrationID = append(response.IntegrationID, api.FilterWithMetadata{
 				Key:         item.Key,
-				DisplayName: connection.Name,
+				DisplayName: integration.Name,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
@@ -969,7 +968,7 @@ func (h *HttpHandler) GetComplianceResultKPIs(echoCtx echo.Context) error {
 		FailedComplianceResultsCount: kpiRes.Hits.Total.Value,
 		FailedResourceCount:          kpiRes.Aggregations.ResourceCount.Value,
 		FailedControlCount:           kpiRes.Aggregations.ControlCount.Value,
-		FailedConnectionCount:        kpiRes.Aggregations.ConnectionCount.Value,
+		FailedIntegrationCount:       kpiRes.Aggregations.IntegrationCount.Value,
 	}
 	return echoCtx.JSON(http.StatusOK, response)
 }
@@ -984,10 +983,10 @@ func (h *HttpHandler) GetComplianceResultKPIs(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Param			field				path		string											true	"Field"	Enums(resourceType,integrationID,resourceID,service,controlID)
 //	@Param			count				path		int												true	"Count"
-//	@Param			integrationId		query		[]string										false	"Connection IDs to filter by (inclusive)"
-//	@Param			notIntegrationId	query		[]string										false	"Connection IDs to filter by (exclusive)"
-//	@Param			connectionGroup		query		[]string										false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type									false	"Connector type to filter by"
+//	@Param			integrationId		query		[]string										false	"integration IDs to filter by (inclusive)"
+//	@Param			notIntegrationId	query		[]string										false	"integration IDs to filter by (exclusive)"
+//	@Param			integrationGroup		query		[]string										false	"integration groups to filter by "
+//	@Param			integrationTypes	query		[]integration.Type								false	"integration type to filter by"
 //	@Param			benchmarkId			query		[]string										false	"BenchmarkID"
 //	@Param			controlId			query		[]string										false	"ControlID"
 //	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
@@ -1021,7 +1020,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 		return err
 	}
 	notIntegrationIDs := httpserver2.QueryArrayParam(echoCtx, "notIntegrationId")
-	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
+	integrationTypes := httpserver2.QueryArrayParam(echoCtx, "integrationTypes")
 	benchmarkIDs := httpserver2.QueryArrayParam(echoCtx, "benchmarkId")
 	controlIDs := httpserver2.QueryArrayParam(echoCtx, "controlId")
 	jobIDs := httpserver2.QueryArrayParam(echoCtx, "jobId")
@@ -1078,14 +1077,14 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 	}
 
 	var response api.GetTopFieldResponse
-	topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
+	topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, integrationTypes,
 		nil, integrationIDs, notIntegrationIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, esComplianceStatuses, stateActives, min(10000, esCount), startTime, endTime)
 	if err != nil {
 		h.logger.Error("failed to get top field", zap.Error(err))
 		return err
 	}
-	topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, connectors,
+	topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, esField, integrationTypes,
 		nil, integrationIDs, notIntegrationIDs, jobIDs,
 		benchmarkIDs, controlIDs, severities, nil, stateActives, 10000, startTime, endTime)
 	if err != nil {
@@ -1203,7 +1202,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			IntegrationID: resIntegrationIDs,
 		})
 		if err != nil {
-			h.logger.Error("failed to get connections", zap.Error(err))
+			h.logger.Error("failed to get integrations", zap.Error(err))
 			return err
 		}
 
@@ -1219,15 +1218,15 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			if !ok {
 				id, err := uuid.Parse(item.Key)
 				if err != nil {
-					h.logger.Error("failed to parse connection id", zap.Error(err))
+					h.logger.Error("failed to parse integration id", zap.Error(err))
 					return err
 				}
-				connection, ok := integrationsMap[id.String()]
+				integration, ok := integrationsMap[id.String()]
 				if !ok {
 					continue
 				}
 				record = api.TopFieldRecord{
-					Integration: &connection,
+					Integration: &integration,
 				}
 			}
 			record.TotalCount += item.DocCount
@@ -1239,7 +1238,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			if !ok {
 				id, err := uuid.Parse(item.Key)
 				if err != nil {
-					h.logger.Error("failed to parse connection id", zap.Error(err))
+					h.logger.Error("failed to parse integration id", zap.Error(err))
 					return err
 				}
 				integration, ok := integrationsMap[id.String()]
@@ -1254,14 +1253,14 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 			recordMap[item.Key] = record
 		}
 
-		controlsResult, err := es.ComplianceResultsComplianceStatusCountByControlPerConnection(
-			ctx, h.logger, h.client, connectors, nil, resIntegrationIDs, benchmarkIDs, controlIDs, severities, nil,
+		controlsResult, err := es.ComplianceResultsComplianceStatusCountByControlPerIntegration(
+			ctx, h.logger, h.client, integrationTypes, nil, resIntegrationIDs, benchmarkIDs, controlIDs, severities, nil,
 			startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get controls", zap.Error(err))
 			return err
 		}
-		for _, item := range controlsResult.Aggregations.ConnectionGroup.Buckets {
+		for _, item := range controlsResult.Aggregations.IntegrationGroup.Buckets {
 			record, ok := recordMap[item.Key]
 			if !ok {
 				continue
@@ -1442,10 +1441,10 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 //	@Produce		json
 //	@Param			benchmarkId			path		string											true	"BenchmarkID"
 //	@Param			field				path		string											true	"Field"	Enums(resourceType,integrationID,resourceID,service)
-//	@Param			integrationId		query		[]string										false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string										false	"Connection groups to filter by "
+//	@Param			integrationId		query		[]string										false	"integration IDs to filter by"
+//	@Param			integrationGroup		query		[]string										false	"integration groups to filter by "
 //	@Param			resourceCollection	query		[]string										false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type									false	"Connector type to filter by"
+//	@Param			integrationTypes	query		[]integration.Type								false	"Integration type to filter by"
 //	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
 //	@Param			complianceStatus	query		[]api.ComplianceStatus							false	"ComplianceStatus to filter by defaults to failed"
 //	@Success		200					{object}	api.GetTopFieldResponse
@@ -1467,7 +1466,7 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 		return err
 	}
 
-	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
+	integrationTypes := httpserver2.QueryArrayParam(echoCtx, "integrationTypes")
 	severities := opengovernanceTypes.ParseComplianceResultSeverities(httpserver2.QueryArrayParam(echoCtx, "severities"))
 	complianceStatuses := api.ParseComplianceStatuses(httpserver2.QueryArrayParam(echoCtx, "complianceStatus"))
 	if len(complianceStatuses) == 0 {
@@ -1496,7 +1495,7 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.ComplianceResultsFieldCountByControl(ctx, h.logger, h.client, esField, connectors, nil, integrationIDs, benchmarkIDs, nil, severities,
+	res, err := es.ComplianceResultsFieldCountByControl(ctx, h.logger, h.client, esField, integrationTypes, nil, integrationIDs, benchmarkIDs, nil, severities,
 		esComplianceStatuses)
 	if err != nil {
 		return err
@@ -1525,8 +1524,8 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId		path		string		true	"BenchmarkID"
-//	@Param			integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param			integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param			integrationGroup	query		[]string	false	"integration groups to filter by "
 //	@Success		200				{object}	api.GetAccountsComplianceResultsSummaryResponse
 //	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) error {
@@ -1539,7 +1538,7 @@ func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) 
 	}
 
 	var response api.GetAccountsComplianceResultsSummaryResponse
-	res, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkID)
+	res, evaluatedAt, err := es.BenchmarkIntegrationSummary(ctx, h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -1624,8 +1623,8 @@ func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) 
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId		path		string		true	"BenchmarkID"
-//	@Param			integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param			integrationId	query		[]string	false	"Integration IDs to filter by"
+//	@Param			integrationGroup	query		[]string	false	"Integration groups to filter by "
 //	@Success		200				{object}	api.GetServicesComplianceResultsSummaryResponse
 //	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesComplianceResultsSummary(echoCtx echo.Context) error {
@@ -1736,7 +1735,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		return err
 	}
 
-	//req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
+	//req.Filters.IntegrationID, err = httpserver2.ResolveIntegrationIDs(echoCtx, req.Filters.IntegrationID)
 	//if err != nil {
 	//	return err
 	//}
@@ -1775,7 +1774,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 
 	res, totalCount, err := es.ComplianceResultDriftEventsQuery(ctx, h.logger, h.client,
 		req.Filters.ComplianceResultID, req.Filters.PlatformResourceID,
-		req.Filters.Connector, req.Filters.IntegrationID, req.Filters.NotIntegrationID,
+		req.Filters.IntegrationType, req.Filters.IntegrationID, req.Filters.NotIntegrationID,
 		req.Filters.ResourceType,
 		req.Filters.BenchmarkID, req.Filters.ControlID, req.Filters.Severity,
 		evaluatedAtFrom, evaluatedAtTo,
@@ -1790,10 +1789,10 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		h.logger.Error("failed to get sources", zap.Error(err))
 		return err
 	}
-	allConnectionsMap := make(map[string]*integrationapi.Integration)
+	allIntegrationsMap := make(map[string]*integrationapi.Integration)
 	for _, src := range allSources.Integrations {
 		src := src
-		allConnectionsMap[src.IntegrationID] = &src
+		allIntegrationsMap[src.IntegrationID] = &src
 	}
 
 	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
@@ -1814,9 +1813,9 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(h.Source.ResourceType)]; ok {
 			findingEvent.ResourceType = rtMetadata.ResourceLabel
 		}
-		if connection, ok := allConnectionsMap[h.Source.IntegrationID]; ok {
-			findingEvent.ProviderID = connection.ProviderID
-			findingEvent.IntegrationName = connection.Name
+		if integration, ok := allIntegrationsMap[h.Source.IntegrationID]; ok {
+			findingEvent.ProviderID = integration.ProviderID
+			findingEvent.IntegrationName = integration.Name
 		}
 		findingEvent.SortKey = h.Sort
 		platformResourceIDs = append(platformResourceIDs, h.Source.PlatformResourceID)
@@ -1976,7 +1975,7 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 		return err
 	}
 
-	//req.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.IntegrationID)
+	//req.IntegrationID, err = httpserver2.ResolveIntegrationIDs(echoCtx, req.IntegrationID)
 	//if err != nil {
 	//	return err
 	//}
@@ -2023,7 +2022,7 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 
 	IntegrationMetadata, err := h.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
-		h.logger.Error("failed to get connections", zap.Error(err))
+		h.logger.Error("failed to get integrations", zap.Error(err))
 		return err
 	}
 	integrationMetadataMap := make(map[string]*integrationapi.Integration)
@@ -2055,7 +2054,7 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 	}
 
 	possibleFilters, err := es.ComplianceResultDriftEventsFiltersQuery(ctx, h.logger, h.client,
-		req.ComplianceResultID, req.PlatformResourceID, req.Connector, req.IntegrationID, req.NotIntegrationID,
+		req.ComplianceResultID, req.PlatformResourceID, req.IntegrationType, req.IntegrationID, req.NotIntegrationID,
 		req.ResourceType,
 		req.BenchmarkID, req.ControlID,
 		req.Severity,
@@ -2096,12 +2095,12 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 			})
 		}
 	}
-	if len(possibleFilters.Aggregations.ConnectorFilter.Buckets) > 0 {
-		for _, bucket := range possibleFilters.Aggregations.ConnectorFilter.Buckets {
-			connector, _ := source.ParseType(bucket.Key)
+	if len(possibleFilters.Aggregations.IntegrationTypeFilter.Buckets) > 0 {
+		for _, bucket := range possibleFilters.Aggregations.IntegrationTypeFilter.Buckets {
+			integrationType := integration_type.ParseType(bucket.Key)
 			response.IntegrationType = append(response.IntegrationType, api.FilterWithMetadata{
-				Key:         connector.String(),
-				DisplayName: connector.String(),
+				Key:         integrationType.String(),
+				DisplayName: integrationType.String(),
 				Count:       utils.GetPointer(bucket.DocCount),
 			})
 		}
@@ -2128,10 +2127,10 @@ func (h *HttpHandler) GetComplianceResultDriftEventFilterValues(echoCtx echo.Con
 	}
 
 	for _, item := range possibleFilters.Aggregations.IntegrationIDFilter.Buckets {
-		if connection, ok := integrationMetadataMap[item.Key]; ok {
+		if integration, ok := integrationMetadataMap[item.Key]; ok {
 			response.IntegrationID = append(response.IntegrationID, api.FilterWithMetadata{
 				Key:         item.Key,
-				DisplayName: connection.Name,
+				DisplayName: integration.Name,
 				Count:       utils.GetPointer(item.DocCount),
 			})
 		} else {
@@ -2222,13 +2221,13 @@ func (h *HttpHandler) GetSingleComplianceResultDriftEvent(echoCtx echo.Context) 
 
 	apiFindingEvent := api.GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(*findingEvent)
 
-	connection, err := h.integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, findingEvent.IntegrationID)
+	integration, err := h.integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, findingEvent.IntegrationID)
 	if err != nil {
-		h.logger.Error("failed to get connection", zap.Error(err), zap.String("connection_id", findingEvent.IntegrationID))
+		h.logger.Error("failed to get integration", zap.Error(err), zap.String("integration_id", findingEvent.IntegrationID))
 		return err
 	}
-	apiFindingEvent.ProviderID = connection.ProviderID
-	apiFindingEvent.IntegrationName = connection.Name
+	apiFindingEvent.ProviderID = integration.ProviderID
+	apiFindingEvent.IntegrationName = integration.Name
 
 	if len(findingEvent.ResourceType) > 0 {
 		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
@@ -2268,8 +2267,8 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	integrationGroupId := req.Filters.ConnectionGroup
-	if len(req.Filters.IntegrationID) == 0 && len(req.Filters.ConnectionGroup) == 0 {
+	integrationGroupId := req.Filters.IntegrationGroup
+	if len(req.Filters.IntegrationID) == 0 && len(req.Filters.IntegrationGroup) == 0 {
 		integrationGroupId = []string{"active"}
 	}
 
@@ -2278,7 +2277,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return err
 	}
 
-	//req.Filters.IntegrationID, err = httpserver2.ResolveConnectionIDs(echoCtx, req.Filters.IntegrationID)
+	//req.Filters.IntegrationID, err = httpserver2.ResolveIntegrationIDs(echoCtx, req.Filters.IntegrationID)
 	//if err != nil {
 	//	return err
 	//}
@@ -2304,13 +2303,13 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 
 	integrations, err := h.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
 	if err != nil {
-		h.logger.Error("failed to get connections", zap.Error(err))
+		h.logger.Error("failed to get integrations", zap.Error(err))
 		return err
 	}
-	connectionMap := make(map[string]*integrationapi.Integration)
+	integrationMap := make(map[string]*integrationapi.Integration)
 	for _, integration := range integrations.Integrations {
 		integration := integration
-		connectionMap[integration.IntegrationID] = &integration
+		integrationMap[integration.IntegrationID] = &integration
 	}
 
 	resourceTypes, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole}, nil, nil, nil, false, nil, 10000, 1)
@@ -2356,9 +2355,9 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 
 	for _, resourceFinding := range resourceFindings {
 		apiRf := api.GetAPIResourceFinding(resourceFinding.Source)
-		if connection, ok := connectionMap[apiRf.IntegrationID]; ok {
-			apiRf.ProviderID = connection.IntegrationID
-			apiRf.IntegrationName = connection.Name
+		if integration, ok := integrationMap[apiRf.IntegrationID]; ok {
+			apiRf.ProviderID = integration.IntegrationID
+			apiRf.IntegrationName = integration.Name
 		}
 		if resourceType, ok := resourceTypeMap[strings.ToLower(apiRf.ResourceType)]; ok {
 			apiRf.ResourceTypeLabel = resourceType.ResourceLabel
@@ -2528,10 +2527,10 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			integrationId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			integrationId		query		[]string		false	"Integration IDs to filter by"
+//	@Param			integrationGroup		query		[]string		false	"Integration groups to filter by "
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
 //	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
 //	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
@@ -2546,10 +2545,10 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		return err
 	}
 	if len(integrationIDs) > 20 {
-		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+		return echo.NewHTTPError(http.StatusBadRequest, "too many integration IDs")
 	}
 
-	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
+	integrationTypes := httpserver2.QueryArrayParam(echoCtx, "integrationTypes")
 	resourceCollections := httpserver2.QueryArrayParam(echoCtx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := echoCtx.QueryParam("timeAt"); timeAtStr != "" {
@@ -2605,8 +2604,8 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 		return err
 	}
 	// tracer :
-	ctx, span3 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span3.SetName("new_PopulateConnectors(loop)")
+	ctx, span3 := tracer.Start(ctx, "new_PopulateIntegrationTypes(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span3.SetName("new_PopulateIntegrationTypes(loop)")
 	defer span3.End()
 
 	passedResourcesResult, err := es.GetPerBenchmarkResourceSeverityResult(ctx, h.logger, h.client, benchmarkIDs, integrationIDs, resourceCollections, nil, opengovernanceTypes.GetPassedComplianceStatuses())
@@ -2623,7 +2622,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 
 	for _, b := range benchmarks {
 		be := b.ToApi()
-		if len(connectors) > 0 && !utils.IncludesAny(be.IntegrationTypes, connectors) {
+		if len(integrationTypes) > 0 && !utils.IncludesAny(be.IntegrationTypes, integrationTypes) {
 			continue
 		}
 
@@ -2645,7 +2644,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 			for _, resourceCollection := range resourceCollections {
 				if len(integrationIDs) > 0 {
 					for _, integrationID := range integrationIDs {
-						addToResults(summaryAtTime.ResourceCollections[resourceCollection].Connections[integrationID])
+						addToResults(summaryAtTime.ResourceCollections[resourceCollection].Integrations[integrationID])
 					}
 				} else {
 					addToResults(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult)
@@ -2653,22 +2652,22 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 			}
 		} else if len(integrationIDs) > 0 {
 			for _, integrationID := range integrationIDs {
-				addToResults(summaryAtTime.Connections.Connections[integrationID])
+				addToResults(summaryAtTime.Integrations.Integrations[integrationID])
 			}
 		} else {
-			addToResults(summaryAtTime.Connections.BenchmarkResult)
+			addToResults(summaryAtTime.Integrations.BenchmarkResult)
 		}
 
-		topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
+		topIntegrations := make([]api.TopFieldRecord, 0, topAccountCount)
 		if topAccountCount > 0 && (csResult.FailedCount+csResult.PassedCount) > 0 {
-			topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
+			topFieldResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", integrationTypes,
 				nil, integrationIDs, nil, nil, []string{b.ID}, nil, nil,
 				opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 			if err != nil {
 				h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
 				return err
 			}
-			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors, nil,
+			topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", integrationTypes, nil,
 				integrationIDs, nil, nil, []string{b.ID}, nil, nil, opengovernanceTypes.GetComplianceStatuses(),
 				[]bool{true}, topAccountCount, nil, nil)
 			if err != nil {
@@ -2689,7 +2688,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 					IntegrationID: resIntegrationIDs,
 				})
 				if err != nil {
-					h.logger.Error("failed to get connections", zap.Error(err))
+					h.logger.Error("failed to get integrations", zap.Error(err))
 					return err
 				}
 				integrationMap := make(map[string]*integrationapi.Integration)
@@ -2699,7 +2698,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 				}
 
 				for _, item := range topFieldResponse.Aggregations.FieldFilter.Buckets {
-					topConnections = append(topConnections, api.TopFieldRecord{
+					topIntegrations = append(topIntegrations, api.TopFieldRecord{
 						Integration: integrationMap[item.Key],
 						Count:       item.DocCount,
 						TotalCount:  totalCountMap[item.Key],
@@ -2733,7 +2732,7 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 			CostImpact:              costImpact,
 			EvaluatedAt:             utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 			LastJobStatus:           "",
-			TopConnections:          topConnections,
+			TopIntegrations:         topIntegrations,
 		})
 	}
 	span3.End()
@@ -2749,10 +2748,10 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id		path		string			true	"Benchmark ID"
-//	@Param			integrationId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			integrationId		query		[]string		false	"integration IDs to filter by"
+//	@Param			integrationGroup		query		[]string		false	"integration groups to filter by "
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
 //	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
 //	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
 //	@Success		200					{object}	api.BenchmarkEvaluationSummary
@@ -2765,7 +2764,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		return err
 	}
 	if len(integrationIDs) > 20 {
-		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+		return echo.NewHTTPError(http.StatusBadRequest, "too many integration IDs")
 	}
 	topAccountCount := 3
 	if topAccountCountStr := echoCtx.QueryParam("topAccountCount"); topAccountCountStr != "" {
@@ -2776,7 +2775,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		topAccountCount = int(count)
 	}
 
-	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
+	integrationTypes := httpserver2.QueryArrayParam(echoCtx, "integrationTypes")
 	resourceCollections := httpserver2.QueryArrayParam(echoCtx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := echoCtx.QueryParam("timeAt"); timeAtStr != "" {
@@ -2808,8 +2807,8 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 
 	be := benchmark.ToApi()
 
-	if len(connectors) > 0 && !utils.IncludesAny(be.IntegrationTypes, connectors) {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
+	if len(integrationTypes) > 0 && !utils.IncludesAny(be.IntegrationTypes, integrationTypes) {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
 	}
 
 	controls, err := h.db.ListControlsByBenchmarkID(ctx, benchmarkID)
@@ -2847,7 +2846,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 	csResult := api.ComplianceStatusSummary{}
 	sResult := opengovernanceTypes.SeverityResult{}
 	controlSeverityResult := api.BenchmarkControlsSeverityStatus{}
-	connectionsResult := api.BenchmarkStatusResult{}
+	integrationsResult := api.BenchmarkStatusResult{}
 	var costImpact *float64
 	addToResults := func(resultGroup types.ResultGroup) {
 		csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
@@ -2862,36 +2861,36 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		for _, resourceCollection := range resourceCollections {
 			if len(integrationIDs) > 0 {
 				for _, integrationID := range integrationIDs {
-					addToResults(summaryAtTime.ResourceCollections[resourceCollection].Connections[integrationID])
-					connectionsResult.TotalCount++
-					if summaryAtTime.ResourceCollections[resourceCollection].Connections[integrationID].Result.IsFullyPassed() {
-						connectionsResult.PassedCount++
+					addToResults(summaryAtTime.ResourceCollections[resourceCollection].Integrations[integrationID])
+					integrationsResult.TotalCount++
+					if summaryAtTime.ResourceCollections[resourceCollection].Integrations[integrationID].Result.IsFullyPassed() {
+						integrationsResult.PassedCount++
 					}
 				}
 			} else {
 				addToResults(summaryAtTime.ResourceCollections[resourceCollection].BenchmarkResult)
-				for _, connectionResult := range summaryAtTime.ResourceCollections[resourceCollection].Connections {
-					connectionsResult.TotalCount++
-					if connectionResult.Result.IsFullyPassed() {
-						connectionsResult.PassedCount++
+				for _, integrationResult := range summaryAtTime.ResourceCollections[resourceCollection].Integrations {
+					integrationsResult.TotalCount++
+					if integrationResult.Result.IsFullyPassed() {
+						integrationsResult.PassedCount++
 					}
 				}
 			}
 		}
 	} else if len(integrationIDs) > 0 {
 		for _, integrationID := range integrationIDs {
-			addToResults(summaryAtTime.Connections.Connections[integrationID])
-			connectionsResult.TotalCount++
-			if summaryAtTime.Connections.Connections[integrationID].Result.IsFullyPassed() {
-				connectionsResult.PassedCount++
+			addToResults(summaryAtTime.Integrations.Integrations[integrationID])
+			integrationsResult.TotalCount++
+			if summaryAtTime.Integrations.Integrations[integrationID].Result.IsFullyPassed() {
+				integrationsResult.PassedCount++
 			}
 		}
 	} else {
-		addToResults(summaryAtTime.Connections.BenchmarkResult)
-		for _, connectionResult := range summaryAtTime.Connections.Connections {
-			connectionsResult.TotalCount++
-			if connectionResult.Result.IsFullyPassed() {
-				connectionsResult.PassedCount++
+		addToResults(summaryAtTime.Integrations.BenchmarkResult)
+		for _, integrationResult := range summaryAtTime.Integrations.Integrations {
+			integrationsResult.TotalCount++
+			if integrationResult.Result.IsFullyPassed() {
+				integrationsResult.PassedCount++
 			}
 		}
 	}
@@ -2907,9 +2906,9 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		lastJobStatus = string(lastJob.Status)
 	}
 
-	topConnections := make([]api.TopFieldRecord, 0, topAccountCount)
+	topIntegrations := make([]api.TopFieldRecord, 0, topAccountCount)
 	if topAccountCount > 0 {
-		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
+		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", integrationTypes,
 			nil, integrationIDs, nil, nil, []string{benchmark.ID}, nil, nil,
 			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
@@ -2917,7 +2916,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 			return err
 		}
 
-		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", connectors,
+		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", integrationTypes,
 			nil, integrationIDs, nil, nil, []string{benchmark.ID}, nil, nil,
 			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, topAccountCount, nil, nil)
 		if err != nil {
@@ -2938,7 +2937,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 				IntegrationID: resIntegrationIDs,
 			})
 			if err != nil {
-				h.logger.Error("failed to get connections", zap.Error(err))
+				h.logger.Error("failed to get integrations", zap.Error(err))
 				return err
 			}
 			integrationMap := make(map[string]*integrationapi.Integration)
@@ -2948,7 +2947,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 			}
 
 			for _, item := range res.Aggregations.FieldFilter.Buckets {
-				topConnections = append(topConnections, api.TopFieldRecord{
+				topIntegrations = append(topIntegrations, api.TopFieldRecord{
 					Integration: integrationMap[item.Key],
 					Count:       item.DocCount,
 					TotalCount:  totalCountMap[item.Key],
@@ -2979,7 +2978,7 @@ func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
 		Checks:                  sResult,
 		ControlsSeverityStatus:  controlSeverityResult,
 		ResourcesSeverityStatus: resourcesSeverityResult,
-		ConnectionsStatus:       connectionsResult,
+		IntegrationsStatus:      integrationsResult,
 		CostImpact:              costImpact,
 		EvaluatedAt:             utils.GetPointer(time.Unix(summaryAtTime.EvaluatedAtEpoch, 0)),
 		LastJobStatus:           lastJobStatus,
@@ -3037,8 +3036,8 @@ func (h *HttpHandler) populateBenchmarkControlSummary(ctx context.Context, bench
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
-//	@Param		integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by"
+//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		integrationGroup	query		[]string	false	"integration groups to filter by"
 //	@Param		timeAt			query		int			false	"timestamp for values in epoch seconds"
 //	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	api.BenchmarkControlSummary
@@ -3051,7 +3050,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 
 	integrationIDs, err := h.getIntegrationIdFilterFromParams(echoCtx)
 	if err != nil {
-		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		h.logger.Error("failed to get integration IDs", zap.Error(err))
 		return err
 	}
 	timeAt := time.Now()
@@ -3082,7 +3081,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 		queryIDs = append(queryIDs, control.Query.ID)
 	}
 
-	queries, err := h.db.GetQueriesIdAndConnector(ctx, queryIDs)
+	queries, err := h.db.GetQueriesIdAndIntegrationType(ctx, queryIDs)
 	if err != nil {
 		h.logger.Error("failed to fetch queries", zap.Error(err))
 		return err
@@ -3104,14 +3103,14 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 			result = types.ControlResult{Passed: true}
 		}
 		controlSummaryMap[control.ID] = api.ControlSummary{
-			Control:               control,
-			Passed:                result.Passed,
-			FailedResourcesCount:  result.FailedResourcesCount,
-			TotalResourcesCount:   result.TotalResourcesCount,
-			FailedConnectionCount: result.FailedConnectionCount,
-			TotalConnectionCount:  result.TotalConnectionCount,
-			CostImpact:            result.CostImpact,
-			EvaluatedAt:           time.Unix(evaluatedAt, 0),
+			Control:                control,
+			Passed:                 result.Passed,
+			FailedResourcesCount:   result.FailedResourcesCount,
+			TotalResourcesCount:    result.TotalResourcesCount,
+			FailedIntegrationCount: result.FailedIntegrationCount,
+			TotalIntegrationCount:  result.TotalIntegrationCount,
+			CostImpact:             result.CostImpact,
+			EvaluatedAt:            time.Unix(evaluatedAt, 0),
 		}
 	}
 
@@ -3144,8 +3143,8 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 //	@Produce	json
 //	@Param		benchmark_id	path		string		true	"Benchmark ID"
 //	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
 //	@Success	200				{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId} [get]
 func (h *HttpHandler) GetBenchmarkControl(echoCtx echo.Context) error {
@@ -3162,7 +3161,7 @@ func (h *HttpHandler) GetBenchmarkControl(echoCtx echo.Context) error {
 
 	integrationIDs, err := h.getIntegrationIdFilterFromParams(echoCtx)
 	if err != nil {
-		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		h.logger.Error("failed to get integration IDs", zap.Error(err))
 		return err
 	}
 
@@ -3230,10 +3229,10 @@ func (h *HttpHandler) populateControlsMap(ctx context.Context, benchmarkID strin
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id		path		string			true	"Benchmark ID"
-//	@Param			integrationId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			integrationId		query		[]string		false	"integration IDs to filter by"
+//	@Param			integrationGroup		query		[]string		false	"integration groups to filter by "
 //	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
 //	@Param			startTime			query		int				false	"timestamp for start of the chart in epoch seconds"
 //	@Param			endTime				query		int				false	"timestamp for end of the chart in epoch seconds"
 //	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
@@ -3246,9 +3245,9 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 		return err
 	}
 	if len(integrationIDs) > 20 {
-		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+		return echo.NewHTTPError(http.StatusBadRequest, "too many integration IDs")
 	}
-	connectors := httpserver2.QueryArrayParam(echoCtx, "connector")
+	integrationTypes := httpserver2.QueryArrayParam(echoCtx, "integrationTypes")
 	resourceCollections := httpserver2.QueryArrayParam(echoCtx, "resourceCollection")
 	endTime := time.Now()
 	if endTimeStr := echoCtx.QueryParam("endTime"); endTimeStr != "" {
@@ -3288,8 +3287,8 @@ func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
 	span1.End()
 	be := benchmark.ToApi()
 
-	if len(connectors) > 0 && !utils.IncludesAny(be.IntegrationTypes, connectors) {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
+	if len(integrationTypes) > 0 && !utils.IncludesAny(be.IntegrationTypes, integrationTypes) {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integrationType")
 	}
 
 	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(ctx, h.logger, h.client,
@@ -3367,7 +3366,7 @@ func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
 
 // ListControlsFiltered godoc
 //
-//	@Summary	List controls filtered by connector, benchmark, tags
+//	@Summary	List controls filtered by integrationType, benchmark, tags
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
@@ -3690,7 +3689,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 
 // ControlsFilteredSummary godoc
 //
-//	@Summary	List controls filtered by connector, benchmark, tags
+//	@Summary	List controls filtered by integrationType, benchmark, tags
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
@@ -3736,7 +3735,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		benchmarks = req.ParentBenchmark
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
+	controls, err := h.db.ListControlsByFilter(ctx, nil, req.IntegrationTypes, req.Severity, benchmarks, req.Tags, req.HasParameters,
 		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -3792,7 +3791,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 	}
 
 	var resultControls []api.ListControlsFilterResultControl
-	uniqueConnectors := make(map[string]bool)
+	uniqueIntegrationTypes := make(map[string]bool)
 	uniqueSeverities := make(map[string]bool)
 	uniquePrimaryTables := make(map[string]bool)
 	uniqueListOfTables := make(map[string]bool)
@@ -3830,7 +3829,7 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		}
 
 		for _, c := range apiControl.IntegrationType {
-			uniqueConnectors[c.String()] = true
+			uniqueIntegrationTypes[c.String()] = true
 		}
 		uniqueSeverities[apiControl.Severity.String()] = true
 		for _, t := range apiControl.Query.ListOfTables {
@@ -3861,12 +3860,12 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 		}
 	}
 	result := api.ControlsFilterSummaryResult{
-		ControlsCount: int64(len(resultControls)),
-		Connector:     mapToArray(uniqueConnectors),
-		Severity:      mapToArray(uniqueSeverities),
-		Tags:          uniqueTagsFinal,
-		PrimaryTable:  mapToArray(uniquePrimaryTables),
-		ListOfTables:  mapToArray(uniqueListOfTables),
+		ControlsCount:    int64(len(resultControls)),
+		IntegrationTypes: mapToArray(uniqueIntegrationTypes),
+		Severity:         mapToArray(uniqueSeverities),
+		Tags:             uniqueTagsFinal,
+		PrimaryTable:     mapToArray(uniquePrimaryTables),
+		ListOfTables:     mapToArray(uniqueListOfTables),
 	}
 
 	return echoCtx.JSON(http.StatusOK, result)
@@ -3972,8 +3971,8 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		controlId		query		[]string	false	"Control IDs to filter by"
-//	@Param		integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
 //	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Success	200				{object}	[]api.ControlSummary
 //	@Router		/compliance/api/v1/controls/summary [get]
@@ -3983,7 +3982,7 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver2.QueryArrayParam(echoCtx, "tag"))
 	integrationIDs, err := h.getIntegrationIdFilterFromParams(echoCtx)
 	if err != nil {
-		h.logger.Error("failed to get connection IDs", zap.Error(err))
+		h.logger.Error("failed to get integration IDs", zap.Error(err))
 		return err
 	}
 
@@ -4052,15 +4051,15 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 		}
 
 		controlSummary := api.ControlSummary{
-			Control:               apiControl,
-			ResourceType:          resourceType,
-			Passed:                result.Passed,
-			FailedResourcesCount:  result.FailedResourcesCount,
-			TotalResourcesCount:   result.TotalResourcesCount,
-			FailedConnectionCount: result.FailedConnectionCount,
-			TotalConnectionCount:  result.TotalConnectionCount,
-			CostImpact:            result.CostImpact,
-			EvaluatedAt:           time.Unix(evaluatedAt, 0),
+			Control:                apiControl,
+			ResourceType:           resourceType,
+			Passed:                 result.Passed,
+			FailedResourcesCount:   result.FailedResourcesCount,
+			TotalResourcesCount:    result.TotalResourcesCount,
+			FailedIntegrationCount: result.FailedIntegrationCount,
+			TotalIntegrationCount:  result.TotalIntegrationCount,
+			CostImpact:             result.CostImpact,
+			EvaluatedAt:            time.Unix(evaluatedAt, 0),
 		}
 		results = append(results, controlSummary)
 	}
@@ -4086,8 +4085,8 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		integrationGroup	query		[]string	false	"integrationion groups to filter by "
 //	@Success	200				{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/controls/{controlId}/summary [get]
 func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
@@ -4095,7 +4094,7 @@ func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 
 	controlID := echoCtx.Param("controlId")
 	integrationIds := httpserver2.QueryArrayParam(echoCtx, IntegrationIDParam)
-	//integrationIds, err := httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//integrationIds, err := httpserver2.ResolveIntegrationIDs(echoCtx, integrationIds)
 	//if err != nil {
 	//	return err
 	//}
@@ -4204,16 +4203,16 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 	}
 
 	controlSummary := api.ControlSummary{
-		Control:               apiControl,
-		ResourceType:          resourceType,
-		Benchmarks:            apiBenchmarks,
-		Passed:                result.Passed,
-		FailedResourcesCount:  result.FailedResourcesCount,
-		TotalResourcesCount:   result.TotalResourcesCount,
-		FailedConnectionCount: result.FailedConnectionCount,
-		TotalConnectionCount:  result.TotalConnectionCount,
-		CostImpact:            result.CostImpact,
-		EvaluatedAt:           time.Unix(evaluatedAt, 0),
+		Control:                apiControl,
+		ResourceType:           resourceType,
+		Benchmarks:             apiBenchmarks,
+		Passed:                 result.Passed,
+		FailedResourcesCount:   result.FailedResourcesCount,
+		TotalResourcesCount:    result.TotalResourcesCount,
+		FailedIntegrationCount: result.FailedIntegrationCount,
+		TotalIntegrationCount:  result.TotalIntegrationCount,
+		CostImpact:             result.CostImpact,
+		EvaluatedAt:            time.Unix(evaluatedAt, 0),
 	}
 
 	return &controlSummary, nil
@@ -4227,8 +4226,8 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 //	@Accept		json
 //	@Produce	json
 //	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		connectionGroup	query		[]string	false	"Connection groups to filter by "
+//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
 //	@Param		startTime		query		int			false	"timestamp for start of the chart in epoch seconds"
 //	@Param		endTime			query		int			false	"timestamp for end of the chart in epoch seconds"
 //	@Param		granularity		query		string		false	"granularity of the chart"	Enums(daily,monthly)	Default(daily)
@@ -4242,7 +4241,7 @@ func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
 		return err
 	}
 	if len(integrationIDs) > 20 {
-		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+		return echo.NewHTTPError(http.StatusBadRequest, "too many integration IDs")
 	}
 	endTime := time.Now()
 	if endTimeStr := echoCtx.QueryParam("timeAt"); endTimeStr != "" {
@@ -4292,11 +4291,11 @@ func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
 	var response []api.ControlTrendDatapoint
 	for _, datapoint := range dataPoints[control.ID] {
 		response = append(response, api.ControlTrendDatapoint{
-			Timestamp:             int(datapoint.DateEpoch),
-			FailedResourcesCount:  datapoint.FailedResourcesCount,
-			TotalResourcesCount:   datapoint.TotalResourcesCount,
-			FailedConnectionCount: datapoint.FailedConnectionCount,
-			TotalConnectionCount:  datapoint.TotalConnectionCount,
+			Timestamp:              int(datapoint.DateEpoch),
+			FailedResourcesCount:   datapoint.FailedResourcesCount,
+			TotalResourcesCount:    datapoint.TotalResourcesCount,
+			FailedIntegrationCount: datapoint.FailedIntegrationCount,
+			TotalIntegrationCount:  datapoint.TotalIntegrationCount,
 		})
 	}
 
@@ -4310,18 +4309,18 @@ func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
 // CreateBenchmarkAssignment godoc
 //
 //	@Summary		Create benchmark assignment
-//	@Description	Creating a benchmark assignment for a connection.
+//	@Description	Creating a benchmark assignment for a integration.
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id		path		string		true	"Benchmark ID"
-//	@Param			auto_assign			query		bool		false	"Auto enable benchmark for connections"
-//	@Param			integrationId		query		[]string	false	"Connection ID or 'all' for everything"
-//	@Param			connectionGroup		query		[]string	false	"Connection group"
+//	@Param			auto_assign			query		bool		false	"Auto enable benchmark for integrations"
+//	@Param			integrationId		query		[]string	false	"integration ID or 'all' for everything"
+//	@Param			integrationGroup		query		[]string	false	"integration group"
 //	@Param			resourceCollection	query		[]string	false	"Resource collection"
 //	@Success		200					{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [post]
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/integration [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4332,7 +4331,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 
 	resourceCollections := httpserver2.QueryArrayParam(echoCtx, "resourceCollection")
 	if len(integrationIDs) > 0 && len(resourceCollections) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
+		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both integration and resource collection")
 	}
 
 	autoAssignStr := echoCtx.QueryParam("auto_assign")
@@ -4428,9 +4427,9 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 
 			for _, integrationId := range integrationIDs {
 				result = append(result, api.BenchmarkAssignment{
-					BenchmarkId:  benchmarkId,
-					ConnectionId: utils.GetPointer(integrationId),
-					AssignedAt:   assignment.AssignedAt,
+					BenchmarkId:   benchmarkId,
+					IntegrationId: utils.GetPointer(integrationId),
+					AssignedAt:    assignment.AssignedAt,
 				})
 			}
 		}
@@ -4470,26 +4469,26 @@ func (h *HttpHandler) CreateBenchmarkAssignment(echoCtx echo.Context) error {
 		}
 		return echoCtx.JSON(http.StatusOK, result)
 	}
-	return echo.NewHTTPError(http.StatusBadRequest, "auto assign, connection or resource collection is required")
+	return echo.NewHTTPError(http.StatusBadRequest, "auto assign, integration or resource collection is required")
 }
 
-// ListAssignmentsByConnection godoc
+// ListAssignmentsByIntegration godoc
 //
-//	@Summary		Get list of benchmark assignments for a connection
-//	@Description	Retrieving all benchmark assigned to a connection with connection id
+//	@Summary		Get list of benchmark assignments for a integration
+//	@Description	Retrieving all benchmark assigned to a integration with integration id
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			connection_id	path		string	true	"Connection ID"
+//	@Param			integration_id	path		string	true	"integration ID"
 //	@Success		200				{object}	[]api.AssignedBenchmark
-//	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
-func (h *HttpHandler) ListAssignmentsByConnection(echoCtx echo.Context) error {
+//	@Router			/compliance/api/v1/assignments/integration/{integration_id} [get]
+func (h *HttpHandler) ListAssignmentsByIntegration(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	integrationId := echoCtx.Param("connection_id")
+	integrationId := echoCtx.Param("integration_id")
 	if integrationId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
+		return echo.NewHTTPError(http.StatusBadRequest, "integration id is empty")
 	}
 
 	if err := httpserver2.CheckAccessToConnectionID(echoCtx, integrationId); err != nil {
@@ -4500,19 +4499,19 @@ func (h *HttpHandler) ListAssignmentsByConnection(echoCtx echo.Context) error {
 	span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 	defer span1.End()
 
-	dbAssignments, err := h.db.GetBenchmarkAssignmentsByConnectionId(ctx, integrationId)
+	dbAssignments, err := h.db.GetBenchmarkAssignmentsByIntegrationId(ctx, integrationId)
 	if err != nil {
 		span1.RecordError(err)
 		span1.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", integrationId))
 		}
-		echoCtx.Logger().Errorf("find benchmark assignments by source %s: %v", integrationId, err)
+		echoCtx.Logger().Errorf("find benchmark assignments by integration type %s: %v", integrationId, err)
 		return err
 	}
 
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("connection ID", integrationId),
+		attribute.String("integration ID", integrationId),
 	))
 	span1.End()
 
@@ -4568,7 +4567,7 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(echoCtx echo.Context) 
 
 	resourceCollectionId := echoCtx.Param("resource_collection_id")
 	if resourceCollectionId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
+		return echo.NewHTTPError(http.StatusBadRequest, "integration id is empty")
 	}
 
 	ctx, span1 := tracer.Start(ctx, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
@@ -4587,7 +4586,7 @@ func (h *HttpHandler) ListAssignmentsByResourceCollection(echoCtx echo.Context) 
 	}
 
 	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("connection ID", resourceCollectionId),
+		attribute.String("integration ID", resourceCollectionId),
 	))
 	span1.End()
 
@@ -4650,7 +4649,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 
 	hctx := &httpclient.Context{UserRole: authApi.AdminRole}
 
-	var assignedConnections []api.BenchmarkAssignedConnection
+	var assignedIntegrations []api.BenchmarkAssignedIntegration
 
 	for _, c := range benchmark.IntegrationType {
 		integrations, err := h.integrationClient.ListIntegrations(hctx, []string{c})
@@ -4665,14 +4664,14 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 			if err != nil {
 				return err
 			}
-			ba := api.BenchmarkAssignedConnection{
+			ba := api.BenchmarkAssignedIntegration{
 				IntegrationID:   integration.IntegrationID,
 				ProviderID:      integration.ProviderID,
 				IntegrationName: integration.Name,
 				IntegrationType: integration_type.ParseType(c),
 				Status:          false,
 			}
-			assignedConnections = append(assignedConnections, ba)
+			assignedIntegrations = append(assignedIntegrations, ba)
 		}
 	}
 
@@ -4693,18 +4692,18 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 	span3.End()
 
 	if benchmark.AutoAssign {
-		for idx, r := range assignedConnections {
+		for idx, r := range assignedIntegrations {
 			r.Status = true
-			assignedConnections[idx] = r
+			assignedIntegrations[idx] = r
 		}
 	}
 
 	for _, assignment := range dbAssignments {
 		if assignment.IntegrationID != nil && !benchmark.AutoAssign {
-			for idx, r := range assignedConnections {
+			for idx, r := range assignedIntegrations {
 				if r.IntegrationID == *assignment.IntegrationID {
 					r.Status = true
-					assignedConnections[idx] = r
+					assignedIntegrations[idx] = r
 				}
 			}
 		}
@@ -4712,16 +4711,16 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 
 	resp := api.BenchmarkAssignedEntities{}
 
-	for _, item := range assignedConnections {
+	for _, item := range assignedIntegrations {
 		if httpserver2.CheckAccessToConnectionID(echoCtx, item.IntegrationID) != nil {
 			continue
 		}
-		resp.Connections = append(resp.Connections, item)
+		resp.Integrations = append(resp.Integrations, item)
 	}
 
-	for idx, conn := range resp.Connections {
+	for idx, conn := range resp.Integrations {
 
-		resp.Connections[idx] = conn
+		resp.Integrations[idx] = conn
 	}
 
 	return echoCtx.JSON(http.StatusOK, resp)
@@ -4730,17 +4729,17 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 // DeleteBenchmarkAssignment godoc
 //
 //	@Summary		Delete benchmark assignment
-//	@Description	Delete benchmark assignment with source id and benchmark id
+//	@Description	Delete benchmark assignment with integration id and benchmark id
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id		path	string		true	"Benchmark ID"
-//	@Param			integrationId		query	[]string	false	"Connection ID or 'all' for everything"
-//	@Param			connectionGroup		query	[]string	false	"Connection Group "
+//	@Param			integrationId		query	[]string	false	"integration ID or 'all' for everything"
+//	@Param			integrationGroup		query	[]string	false	"integration Group "
 //	@Param			resourceCollection	query	[]string	false	"Resource Collection"
 //	@Success		200
-//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [delete]
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/integration [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
@@ -4750,7 +4749,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 	}
 	resourceCollections := httpserver2.QueryArrayParam(echoCtx, "resourceCollection")
 	if len(integrationIDs) > 0 && len(resourceCollections) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both connection and resource collection")
+		return echo.NewHTTPError(http.StatusBadRequest, "cannot specify both integration and resource collection")
 	}
 
 	benchmarkId := echoCtx.Param("benchmark_id")
@@ -4868,7 +4867,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(echoCtx echo.Context) error {
 		span6.End()
 		return echoCtx.NoContent(http.StatusOK)
 	}
-	return echo.NewHTTPError(http.StatusBadRequest, "connection or resource collection is required")
+	return echo.NewHTTPError(http.StatusBadRequest, "integration or resource collection is required")
 }
 
 // ListBenchmarksFiltered godoc
@@ -5018,8 +5017,8 @@ func (h *HttpHandler) ListBenchmarksFiltered(echoCtx echo.Context) error {
 			UpdatedAt:        b.UpdatedAt,
 		}
 		if b.IntegrationType != nil {
-			if len(req.Connectors) > 0 {
-				if !listContainsList(b.IntegrationType, req.Connectors) {
+			if len(req.IntegrationTypes) > 0 {
+				if !listContainsList(b.IntegrationType, req.IntegrationTypes) {
 					continue
 				}
 			}
@@ -5176,8 +5175,8 @@ func (h *HttpHandler) ListBenchmarks(echoCtx echo.Context) error {
 	span1.End()
 
 	// tracer :
-	ctx, span2 := tracer.Start(ctx, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnectors(loop)")
+	ctx, span2 := tracer.Start(ctx, "new_PopulateIntegrationTypes(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_PopulateIntegrationTypes(loop)")
 	defer span2.End()
 
 	for _, b := range benchmarks {
@@ -5348,15 +5347,15 @@ func (h *HttpHandler) GetControl(echoCtx echo.Context) error {
 
 	pa := control.ToApi()
 	// trace :
-	ctx, span2 := tracer.Start(ctx, "new_PopulateConnector", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_PopulateConnector")
+	ctx, span2 := tracer.Start(ctx, "new_PopulateIntegrationType", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_PopulateIntegrationType")
 	defer span2.End()
 
-	err = control.PopulateConnector(ctx, h.db, &pa)
+	err = control.PopulateIntegrationType(ctx, h.db, &pa)
 	if err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
-		h.logger.Error("failed to populate connector", zap.Error(err), zap.String("controlId", controlId))
+		h.logger.Error("failed to populate integration type", zap.Error(err), zap.String("controlId", controlId))
 		return err
 	}
 	span2.End()
@@ -5804,7 +5803,7 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 	}
 
 	var err error
-	//integrationIds, err = httpserver2.ResolveConnectionIDs(echoCtx, integrationIds)
+	//integrationIds, err = httpserver2.ResolveIntegrationIDs(echoCtx, integrationIds)
 	//if err != nil {
 	//	return err
 	//}
@@ -6236,7 +6235,7 @@ func (h *HttpHandler) ComplianceSummaryOfIntegration(echoCtx echo.Context) error
 	}
 
 	for _, integrationID := range integrationIDs {
-		addToResults(summaryAtTime.Connections.Connections[integrationID])
+		addToResults(summaryAtTime.Integrations.Integrations[integrationID])
 	}
 
 	lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, benchmarkID)
@@ -6455,7 +6454,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			}
 		}
 
-		addToResults(summaryAtTime.Connections.BenchmarkResult)
+		addToResults(summaryAtTime.Integrations.BenchmarkResult)
 
 		lastJob, err := h.schedulerClient.GetLatestComplianceJobForBenchmark(&httpclient.Context{UserRole: authApi.AdminRole}, benchmark.ID)
 		if err != nil {
@@ -6469,7 +6468,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 			lastJobId = strconv.Itoa(int(lastJob.ID))
 		}
 
-		topConnections := make([]api.TopFieldRecord, 0, req.ShowTop)
+		topIntegrationsMap := make([]api.TopFieldRecord, 0, req.ShowTop)
 		if req.ShowTop > 0 {
 			res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
 				nil, nil, nil, nil, []string{benchmark.ID}, nil, nil,
@@ -6500,7 +6499,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 					IntegrationID: resIntegrationIDs,
 				})
 				if err != nil {
-					h.logger.Error("failed to get connections", zap.Error(err))
+					h.logger.Error("failed to get integrations", zap.Error(err))
 					return err
 				}
 				integrationMap := make(map[string]*integrationapi.Integration)
@@ -6516,7 +6515,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 					if _, ok := totalCountMap[item.Key]; !ok {
 						continue
 					}
-					topConnections = append(topConnections, api.TopFieldRecord{
+					topIntegrationsMap = append(topIntegrationsMap, api.TopFieldRecord{
 						Integration: integrationMap[item.Key],
 						Count:       item.DocCount,
 						TotalCount:  totalCountMap[item.Key],
@@ -6602,7 +6601,7 @@ func (h *HttpHandler) ComplianceSummaryOfBenchmark(echoCtx echo.Context) error {
 		resourcesSeverityResult.None.FailedCount = allResources.NoneCount - passedResource.NoneCount
 
 		var topIntegrations []api.TopIntegration
-		for _, tf := range topConnections {
+		for _, tf := range topIntegrationsMap {
 			if tf.Integration == nil {
 				continue
 			}
@@ -6745,9 +6744,9 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		}
 	}
 
-	addToResults(summaryAtTime.Connections.BenchmarkResult)
+	addToResults(summaryAtTime.Integrations.BenchmarkResult)
 
-	topConnections := make([]api.TopFieldRecord, 0, showTop)
+	topIntegrationsMap := make([]api.TopFieldRecord, 0, showTop)
 	if showTop > 0 {
 		res, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil, nil,
 			nil, nil, nil, []string{benchmarkId}, nil, nil, opengovernanceTypes.GetFailedComplianceStatuses(),
@@ -6778,7 +6777,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 				IntegrationID: resIntegrationIDs,
 			})
 			if err != nil {
-				h.logger.Error("failed to get connections", zap.Error(err))
+				h.logger.Error("failed to get integrations", zap.Error(err))
 				return err
 			}
 			integrationMap := make(map[string]*integrationapi.Integration)
@@ -6794,7 +6793,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 				if _, ok := totalCountMap[item.Key]; !ok {
 					continue
 				}
-				topConnections = append(topConnections, api.TopFieldRecord{
+				topIntegrationsMap = append(topIntegrationsMap, api.TopFieldRecord{
 					Integration: integrationMap[item.Key],
 					Count:       item.DocCount,
 					TotalCount:  totalCountMap[item.Key],
@@ -6880,7 +6879,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	resourcesSeverityResult.None.FailedCount = allResources.NoneCount - passedResource.NoneCount
 
 	var topIntegrations []api.TopIntegration
-	for _, tf := range topConnections {
+	for _, tf := range topIntegrationsMap {
 		if tf.Integration == nil {
 			continue
 		}
@@ -7372,7 +7371,7 @@ func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
 				csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
 			}
 
-			addToResults(summaryAtTime.Connections.BenchmarkResult)
+			addToResults(summaryAtTime.Integrations.BenchmarkResult)
 			var complianceScore float64
 			if csResult.TotalCount > 0 {
 				complianceScore = float64(csResult.PassedCount) / float64(csResult.TotalCount)

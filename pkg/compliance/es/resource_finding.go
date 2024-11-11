@@ -771,9 +771,9 @@ func GetPerFieldResourceComplianceResult(ctx context.Context, logger *zap.Logger
 	}
 
 	result := make(map[string]types.ComplianceStatusSummaryWithTotal)
-	for _, connectionBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
+	for _, integrationBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
 		complianceStatusSummary := types.ComplianceStatusSummaryWithTotal{}
-		for _, complianceBucket := range connectionBucket.ComplianceGroup.Buckets {
+		for _, complianceBucket := range integrationBucket.ComplianceGroup.Buckets {
 			complianceStatusSummary.TotalCount += complianceBucket.ResourceCount.DocCount
 
 			switch types.ParseComplianceStatus(strings.ToLower(complianceBucket.Key)) {
@@ -789,7 +789,7 @@ func GetPerFieldResourceComplianceResult(ctx context.Context, logger *zap.Logger
 				complianceStatusSummary.ErrorCount += complianceBucket.ResourceCount.DocCount
 			}
 		}
-		result[connectionBucket.Key] = complianceStatusSummary
+		result[integrationBucket.Key] = complianceStatusSummary
 	}
 
 	return result, nil
@@ -938,15 +938,15 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 	}
 
 	result := make(map[string]types.ComplianceStatusSummaryWithTotal)
-	for _, connectionBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
+	for _, integrationBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
 		complianceStatusSummary := types.ComplianceStatusSummaryWithTotal{
-			TotalCount: connectionBucket.ComplianceGroup.ResourceCount.DocCount,
+			TotalCount: integrationBucket.ComplianceGroup.ResourceCount.DocCount,
 			ComplianceStatusSummary: types.ComplianceStatusSummary{
-				AlarmCount: connectionBucket.ComplianceGroup.ResourceCount.DocCount,
+				AlarmCount: integrationBucket.ComplianceGroup.ResourceCount.DocCount,
 			},
 		}
 
-		result[connectionBucket.Key] = complianceStatusSummary
+		result[integrationBucket.Key] = complianceStatusSummary
 	}
 
 	return result, nil

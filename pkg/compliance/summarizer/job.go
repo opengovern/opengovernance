@@ -49,7 +49,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			BenchmarkID:      j.BenchmarkID,
 			JobID:            j.ID,
 			EvaluatedAtEpoch: j.CreatedAt.Unix(),
-			Connections: types2.BenchmarkSummaryResult{
+			Integrations: types2.BenchmarkSummaryResult{
 				BenchmarkResult: types2.ResultGroup{
 					Result: types2.Result{
 						QueryResult:    map[types.ComplianceStatus]int{},
@@ -59,7 +59,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 					ResourceTypes: map[string]types2.Result{},
 					Controls:      map[string]types2.ControlResult{},
 				},
-				Connections: map[string]types2.ResultGroup{},
+				Integrations: map[string]types2.ResultGroup{},
 			},
 			ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 		},
