@@ -3427,7 +3427,7 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 		}
 	}
 
-	controls, err := h.db.ListControlsByFilter(ctx, nil, req.Connector, req.Severity, benchmarks, req.Tags, req.HasParameters,
+	controls, err := h.db.ListControlsByFilter(ctx, nil, req.IntegrationTypes, req.Severity, benchmarks, req.Tags, req.HasParameters,
 		req.PrimaryTable, req.ListOfTables, nil)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

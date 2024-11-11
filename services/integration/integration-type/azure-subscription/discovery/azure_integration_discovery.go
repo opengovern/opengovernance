@@ -332,7 +332,7 @@ func AzureIntegrationDiscovery(config Config) ([]SubscriptionOutput, error) {
 			log.Fatalf("Failed to create client secret credential: %v", err)
 		}
 	} else {
-		log.Fatal("No valid authentication method found. Set AZURE_CLIENT_SECRET or AZURE_CLIENT_CERT_PATH.")
+		return nil, fmt.Errorf("no valid authentication method found. Set AZURE_CLIENT_SECRET or AZURE_CLIENT_CERT_PATH.")
 	}
 
 	// The credential check logic has been removed.

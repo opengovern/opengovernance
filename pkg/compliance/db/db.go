@@ -459,7 +459,7 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 
 	return s, nil
 }
-func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, connectors []string, severity []string, benchmarkIDs []string,
+func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, integrationTypes []string, severity []string, benchmarkIDs []string,
 	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]Control, error) {
 	var s []Control
 
@@ -482,12 +482,12 @@ func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, connect
 		}
 	}
 
-	for i, c := range connectors {
-		connectors[i] = strings.ToLower(c)
+	for i, c := range integrationTypes {
+		integrationTypes[i] = strings.ToLower(c)
 	}
 
-	if len(connectors) > 0 {
-		m = m.Where("controls.connector::text[] && ?", pq.Array(connectors))
+	if len(integrationTypes) > 0 {
+		m = m.Where("controls.integration_type::text[] && ?", pq.Array(integrationTypes))
 	}
 
 	if len(severity) > 0 {

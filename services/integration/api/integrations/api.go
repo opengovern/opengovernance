@@ -79,6 +79,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	contentType := c.Request().Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/form-data") {
+		h.logger.Info("file imported")
 		err := c.Request().ParseMultipartForm(10 << 20) // 10 MB max memory
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to parse multipart form")
@@ -91,7 +92,8 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 				if key == "integrationType" || key == "integration_type" {
 					req.IntegrationType = integration_type.ParseType(values[0])
 				} else {
-					formData[key] = values[0]
+					keys := strings.Split(key, ".")
+					formData[keys[1]] = values[0]
 				}
 			}
 		}
@@ -108,8 +110,8 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 				if err != nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to read uploaded file")
 				}
-
-				formData[key] = string(content)
+				keys := strings.Split(key, ".")
+				formData[keys[1]] = string(content)
 			}
 		}
 		req.Credentials = formData
