@@ -75,7 +75,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
-
+      - name: Go Back  to main Code Directory
+        working-directory: ../..
+        run: |
+          echo "Navigating to main directory..."
+          pwd
+          ls
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
