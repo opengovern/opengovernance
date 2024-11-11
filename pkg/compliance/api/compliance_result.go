@@ -116,28 +116,25 @@ func ParseComplianceStatuses(complianceStatuses []string) []ComplianceStatus {
 }
 
 type ComplianceResult struct {
-	ID                        string                         `json:"id" example:"1"`
-	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	EvaluatedAt               int64                          `json:"evaluatedAt" example:"1589395200"`
-	StateActive               bool                           `json:"stateActive" example:"true"`
-	ComplianceStatus          ComplianceStatus               `json:"complianceStatus" example:"alarm"`
-	Severity                  types.ComplianceResultSeverity `json:"severity" example:"low"`
-	Evaluator                 string                         `json:"evaluator" example:"steampipe-v0.5"`
-	IntegrationType           integration.Type               `json:"integrationType" example:"Azure"`
-	PlatformResourceID        string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceName              string                         `json:"resourceName" example:"vm-1"`
-	ResourceLocation          string                         `json:"resourceLocation" example:"eastus"`
-	ResourceType              string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	Reason                    string                         `json:"reason" example:"The VM is not using managed disks"`
-	CostImpact                *float64                       `json:"costImpact" example:"0.5"`
-	ComplianceJobID           uint                           `json:"complianceJobID" example:"1"`
-	ParentComplianceJobID     uint                           `json:"parentComplianceJobID" example:"1"`
-	ParentBenchmarkReferences []string                       `json:"parentBenchmarkReferences"`
-	ParentBenchmarks          []string                       `json:"parentBenchmarks"`
-	LastEvent                 time.Time                      `json:"lastEvent" example:"1589395200"`
+	ID                 string                         `json:"id" example:"1"`
+	BenchmarkID        string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	EvaluatedAt        int64                          `json:"evaluatedAt" example:"1589395200"`
+	StateActive        bool                           `json:"stateActive" example:"true"`
+	ComplianceStatus   ComplianceStatus               `json:"complianceStatus" example:"alarm"`
+	Severity           types.ComplianceResultSeverity `json:"severity" example:"low"`
+	IntegrationType    integration.Type               `json:"integrationType" example:"Azure"`
+	PlatformResourceID string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceName       string                         `json:"resourceName" example:"vm-1"`
+	ResourceType       string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	Reason             string                         `json:"reason" example:"The VM is not using managed disks"`
+	CostImpact         *float64                       `json:"costImpact" example:"0.5"`
+	RunnerID           uint                           `json:"runnerID" example:"1"`
+	ComplianceJobID    uint                           `json:"complianceJobID" example:"1"`
+	ControlPath        string                         `json:"controlPath" example:"aws_cis2/aws_cis2_1/unsecure_http"`
+	LastEvent          time.Time                      `json:"lastEvent" example:"1589395200"`
 
 	ResourceTypeName     string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
@@ -150,28 +147,25 @@ type ComplianceResult struct {
 
 func GetAPIComplianceResultFromESComplianceResult(complianceResult types.ComplianceResult) ComplianceResult {
 	f := ComplianceResult{
-		ID:                        complianceResult.EsID,
-		BenchmarkID:               complianceResult.BenchmarkID,
-		ControlID:                 complianceResult.ControlID,
-		IntegrationID:             complianceResult.IntegrationID,
-		EvaluatedAt:               complianceResult.EvaluatedAt,
-		StateActive:               complianceResult.StateActive,
-		ComplianceStatus:          "",
-		Severity:                  complianceResult.Severity,
-		Evaluator:                 complianceResult.Evaluator,
-		IntegrationType:           complianceResult.IntegrationType,
-		PlatformResourceID:        complianceResult.PlatformResourceID,
-		ResourceID:                complianceResult.ResourceID,
-		ResourceName:              complianceResult.ResourceName,
-		ResourceLocation:          complianceResult.ResourceLocation,
-		ResourceType:              complianceResult.ResourceType,
-		Reason:                    complianceResult.Reason,
-		CostImpact:                complianceResult.CostImpact,
-		ComplianceJobID:           complianceResult.ComplianceJobID,
-		ParentBenchmarkReferences: complianceResult.ParentBenchmarkReferences,
-		ParentComplianceJobID:     complianceResult.ParentComplianceJobID,
-		ParentBenchmarks:          complianceResult.ParentBenchmarks,
-		LastEvent:                 time.UnixMilli(complianceResult.LastTransition),
+		ID:                 complianceResult.EsID,
+		BenchmarkID:        complianceResult.BenchmarkID,
+		ControlID:          complianceResult.ControlID,
+		IntegrationID:      complianceResult.IntegrationID,
+		EvaluatedAt:        complianceResult.EvaluatedAt,
+		StateActive:        complianceResult.StateActive,
+		ComplianceStatus:   "",
+		Severity:           complianceResult.Severity,
+		IntegrationType:    complianceResult.IntegrationType,
+		PlatformResourceID: complianceResult.PlatformResourceID,
+		ResourceID:         complianceResult.ResourceID,
+		ResourceName:       complianceResult.ResourceName,
+		ResourceType:       complianceResult.ResourceType,
+		Reason:             complianceResult.Reason,
+		CostImpact:         complianceResult.CostImpact,
+		RunnerID:           complianceResult.RunnerID,
+		ComplianceJobID:    complianceResult.ComplianceJobID,
+		ControlPath:        complianceResult.ControlPath,
+		LastEvent:          time.UnixMilli(complianceResult.LastUpdatedAt),
 	}
 	if complianceResult.ComplianceStatus.IsPassed() {
 		f.ComplianceStatus = ComplianceStatusPassed

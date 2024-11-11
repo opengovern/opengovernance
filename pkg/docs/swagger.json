@@ -8791,6 +8791,10 @@
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
                 },
+                "controlPath": {
+                    "type": "string",
+                    "example": "aws_cis2/aws_cis2_1/unsecure_http"
+                },
                 "controlTitle": {
                     "type": "string"
                 },
@@ -8801,10 +8805,6 @@
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200
-                },
-                "evaluator": {
-                    "type": "string",
-                    "example": "steampipe-v0.5"
                 },
                 "id": {
                     "type": "string",
@@ -8836,22 +8836,6 @@
                         "Azure CIS v1.4.0"
                     ]
                 },
-                "parentBenchmarkReferences": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "parentBenchmarks": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "parentComplianceJobID": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "platformResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
@@ -8869,10 +8853,6 @@
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
-                "resourceLocation": {
-                    "type": "string",
-                    "example": "eastus"
-                },
                 "resourceName": {
                     "type": "string",
                     "example": "vm-1"
@@ -8884,6 +8864,10 @@
                 "resourceTypeName": {
                     "type": "string",
                     "example": "Virtual Machine"
+                },
+                "runnerID": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "severity": {
                     "allOf": [
@@ -8941,12 +8925,6 @@
                 "integrationType": {
                     "type": "string",
                     "example": "Azure"
-                },
-                "parentBenchmarkReferences": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "parentComplianceJobID": {
                     "type": "integer"

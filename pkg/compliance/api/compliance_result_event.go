@@ -26,15 +26,14 @@ type ComplianceResultDriftEvent struct {
 	EvaluatedAt              time.Time        `json:"evaluatedAt"`
 	Reason                   string           `json:"reason"`
 
-	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationType           integration.Type               `json:"integrationType" example:"Azure"`
-	Severity                  types.ComplianceResultSeverity `json:"severity" example:"low"`
-	PlatformResourceID        string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType              string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	ParentBenchmarkReferences []string                       `json:"parentBenchmarkReferences"`
+	BenchmarkID        string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationType    integration.Type               `json:"integrationType" example:"Azure"`
+	Severity           types.ComplianceResultSeverity `json:"severity" example:"low"`
+	PlatformResourceID string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType       string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 
 	// Fake fields (won't be stored in ES)
 	ResourceTypeName string `json:"resourceTypeName" example:"Virtual Machine"`
@@ -59,15 +58,14 @@ func GetAPIComplianceResultDriftEventFromESComplianceResultDriftEvent(compliance
 		EvaluatedAt:              time.UnixMilli(complianceResultDriftEvent.EvaluatedAt),
 		Reason:                   complianceResultDriftEvent.Reason,
 
-		BenchmarkID:               complianceResultDriftEvent.BenchmarkID,
-		ControlID:                 complianceResultDriftEvent.ControlID,
-		IntegrationID:             complianceResultDriftEvent.IntegrationID,
-		IntegrationType:           complianceResultDriftEvent.IntegrationType,
-		Severity:                  complianceResultDriftEvent.Severity,
-		PlatformResourceID:        complianceResultDriftEvent.PlatformResourceID,
-		ResourceID:                complianceResultDriftEvent.ResourceID,
-		ResourceType:              complianceResultDriftEvent.ResourceType,
-		ParentBenchmarkReferences: complianceResultDriftEvent.ParentBenchmarkReferences,
+		BenchmarkID:        complianceResultDriftEvent.BenchmarkID,
+		ControlID:          complianceResultDriftEvent.ControlID,
+		IntegrationID:      complianceResultDriftEvent.IntegrationID,
+		IntegrationType:    complianceResultDriftEvent.IntegrationType,
+		Severity:           complianceResultDriftEvent.Severity,
+		PlatformResourceID: complianceResultDriftEvent.PlatformResourceID,
+		ResourceID:         complianceResultDriftEvent.ResourceID,
+		ResourceType:       complianceResultDriftEvent.ResourceType,
 	}
 	if complianceResultDriftEvent.PreviousComplianceStatus.IsPassed() {
 		f.PreviousComplianceStatus = ComplianceStatusPassed

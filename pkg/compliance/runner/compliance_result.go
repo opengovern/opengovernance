@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 func GetResourceTypeFromTableName(tableName string, queryIntegrationType []integration.Type) (string, integration.Type, error) {
@@ -64,7 +65,7 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		}
 		resourceType := queryResourceType
 
-		var platformResourceID, integrationID, resourceID, resourceName, resourceLocation, reason string
+		var platformResourceID, integrationID, resourceID, resourceName, reason string
 		var costImpact *float64
 		var status types.ComplianceStatus
 		if v, ok := recordValue["og_resource_id"].(string); ok {
@@ -86,9 +87,6 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v
-		}
-		if v, ok := recordValue["location"].(string); ok {
-			resourceLocation = v
 		}
 		if v, ok := recordValue["reason"].(string); ok {
 			reason = v
@@ -154,28 +152,28 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 			continue
 		}
 
+		controlPath := strings.Join(append(benchmarkReferences, caller.ControlID), "/")
+
 		complianceResults = append(complianceResults, types.ComplianceResult{
-			BenchmarkID:               caller.RootBenchmark,
-			ControlID:                 caller.ControlID,
-			IntegrationID:             integrationID,
-			EvaluatedAt:               w.CreatedAt.UnixMilli(),
-			StateActive:               true,
-			ComplianceStatus:          status,
-			Severity:                  severity,
-			Evaluator:                 w.ExecutionPlan.Query.Engine,
-			IntegrationType:           integrationType,
-			PlatformResourceID:        platformResourceID,
-			ResourceID:                resourceID,
-			ResourceName:              resourceName,
-			ResourceLocation:          resourceLocation,
-			ResourceType:              resourceType,
-			Reason:                    reason,
-			CostImpact:                costImpact,
-			ComplianceJobID:           w.ID,
-			ParentComplianceJobID:     w.ParentJobID,
-			ParentBenchmarkReferences: benchmarkReferences,
-			ParentBenchmarks:          []string{caller.RootBenchmark},
-			LastTransition:            w.CreatedAt.UnixMilli(),
+			BenchmarkID:        caller.RootBenchmark,
+			ControlID:          caller.ControlID,
+			IntegrationID:      integrationID,
+			EvaluatedAt:        w.CreatedAt.UnixMilli(),
+			StateActive:        true,
+			ComplianceStatus:   status,
+			Severity:           severity,
+			IntegrationType:    integrationType,
+			PlatformResourceID: platformResourceID,
+			ResourceID:         resourceID,
+			ResourceName:       resourceName,
+			ResourceType:       resourceType,
+			Reason:             reason,
+			CostImpact:         costImpact,
+			RunnerID:           w.ID,
+			ComplianceJobID:    w.ParentJobID,
+			ControlPath:        controlPath,
+			ParentBenchmarks:   []string{caller.RootBenchmark},
+			LastUpdatedAt:      w.CreatedAt.UnixMilli(),
 		})
 	}
 	return complianceResults, nil

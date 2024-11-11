@@ -542,7 +542,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		controlFinding.ResourceName = lookupResource.ResourceName
 		complianceResult := api.GetAPIComplianceResultFromESComplianceResult(controlFinding)
 
-		for _, parentBenchmark := range complianceResult.ParentBenchmarks {
+		for _, parentBenchmark := range controlFinding.ParentBenchmarks {
 			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
 				complianceResult.ParentBenchmarkNames = append(complianceResult.ParentBenchmarkNames, benchmark.Title)
 			}

@@ -762,6 +762,9 @@ definitions:
       controlID:
         example: azure_cis_v140_7_5
         type: string
+      controlPath:
+        example: aws_cis2/aws_cis2_1/unsecure_http
+        type: string
       controlTitle:
         type: string
       costImpact:
@@ -770,9 +773,6 @@ definitions:
       evaluatedAt:
         example: 1589395200
         type: integer
-      evaluator:
-        example: steampipe-v0.5
-        type: string
       id:
         example: "1"
         type: string
@@ -795,17 +795,6 @@ definitions:
         items:
           type: string
         type: array
-      parentBenchmarkReferences:
-        items:
-          type: string
-        type: array
-      parentBenchmarks:
-        items:
-          type: string
-        type: array
-      parentComplianceJobID:
-        example: 1
-        type: integer
       platformResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
@@ -819,9 +808,6 @@ definitions:
       resourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
-      resourceLocation:
-        example: eastus
-        type: string
       resourceName:
         example: vm-1
         type: string
@@ -831,6 +817,9 @@ definitions:
       resourceTypeName:
         example: Virtual Machine
         type: string
+      runnerID:
+        example: 1
+        type: integer
       severity:
         allOf:
         - $ref: '#/definitions/types.ComplianceResultSeverity'
@@ -870,10 +859,6 @@ definitions:
       integrationType:
         example: Azure
         type: string
-      parentBenchmarkReferences:
-        items:
-          type: string
-        type: array
       parentComplianceJobID:
         type: integer
       platformResourceID:

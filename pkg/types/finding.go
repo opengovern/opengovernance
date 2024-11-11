@@ -19,15 +19,14 @@ type ComplianceResultDriftEvent struct {
 	EvaluatedAt              int64            `json:"evaluatedAt"`
 	Reason                   string           `json:"reason"`
 
-	BenchmarkID               string                   `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string                   `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID             string                   `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationType           integration.Type         `json:"integrationType" example:"Azure"`
-	Severity                  ComplianceResultSeverity `json:"severity" example:"low"`
-	PlatformResourceID        string                   `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string                   `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType              string                   `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	ParentBenchmarkReferences []string                 `json:"parentBenchmarkReferences"`
+	BenchmarkID        string                   `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                   `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                   `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationType    integration.Type         `json:"integrationType" example:"Azure"`
+	Severity           ComplianceResultSeverity `json:"severity" example:"low"`
+	PlatformResourceID string                   `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                   `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType       string                   `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 }
 
 func (r ComplianceResultDriftEvent) KeysAndIndex() ([]string, string) {
@@ -42,28 +41,26 @@ type ComplianceResult struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	BenchmarkID           string                   `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID             string                   `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID         string                   `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	EvaluatedAt           int64                    `json:"evaluatedAt" example:"1589395200"`
-	StateActive           bool                     `json:"stateActive" example:"true"`
-	ComplianceStatus      ComplianceStatus         `json:"complianceStatus" example:"alarm"`
-	Severity              ComplianceResultSeverity `json:"severity" example:"low"`
-	Evaluator             string                   `json:"evaluator" example:"steampipe-v0.5"`
-	IntegrationType       integration.Type         `json:"integrationType" example:"Azure"`
-	PlatformResourceID    string                   `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID            string                   `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceName          string                   `json:"resourceName" example:"vm-1"`
-	ResourceLocation      string                   `json:"resourceLocation" example:"eastus"`
-	ResourceType          string                   `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	Reason                string                   `json:"reason" example:"The VM is not using managed disks"`
-	CostImpact            *float64                 `json:"costImpact"`
-	ComplianceJobID       uint                     `json:"complianceJobID" example:"1"`
-	ParentComplianceJobID uint                     `json:"parentComplianceJobID" example:"1"`
-	LastTransition        int64                    `json:"lastTransition" example:"1589395200"`
+	BenchmarkID        string                   `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                   `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                   `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	EvaluatedAt        int64                    `json:"evaluatedAt" example:"1589395200"`
+	StateActive        bool                     `json:"stateActive" example:"true"`
+	ComplianceStatus   ComplianceStatus         `json:"complianceStatus" example:"alarm"`
+	Severity           ComplianceResultSeverity `json:"severity" example:"low"`
+	IntegrationType    integration.Type         `json:"integrationType" example:"Azure"`
+	PlatformResourceID string                   `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                   `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceName       string                   `json:"resourceName" example:"vm-1"`
+	ResourceType       string                   `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	Reason             string                   `json:"reason" example:"The VM is not using managed disks"`
+	CostImpact         *float64                 `json:"costImpact"`
+	ControlPath        string                   `json:"controlPath" example:"aws_cis2/aws_cis2_1/unsecure_http"`
+	RunnerID           uint                     `json:"runnerID" example:"1"`
+	ComplianceJobID    uint                     `json:"complianceJobID" example:"1"`
+	LastUpdatedAt      int64                    `json:"lastUpdatedAt" example:"1589395200"`
 
-	ParentBenchmarkReferences []string `json:"parentBenchmarkReferences"`
-	ParentBenchmarks          []string `json:"parentBenchmarks"`
+	ParentBenchmarks []string `json:"-"`
 }
 
 func (r ComplianceResult) KeysAndIndex() ([]string, string) {
