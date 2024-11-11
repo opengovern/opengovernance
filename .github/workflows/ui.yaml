@@ -53,8 +53,6 @@ jobs:
         working-directory: services/web-ui
         run: |
           echo "Navigating to code directory..."
-          pwd
-          ls
 
       - name: Install Dependencies
         run: npm install
@@ -76,7 +74,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
       - name: Go Back  to main Code Directory
-        working-directory: ../..
+        working-directory: ../
         run: |
           echo "Navigating to main directory..."
           pwd
@@ -84,7 +82,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
-          context: ./services/web-ui
+          context: .
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
