@@ -85,7 +85,7 @@ func (h *HttpHandler) getBenchmarkComplianceResultSummary(ctx context.Context, b
 			}
 		}
 		if complianceResultFilters != nil && len(complianceResultFilters.ResourceTypeID) > 0 {
-			complianceResultsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
+			complianceResultsResult.Results = make(map[opengovernanceTypes.ComplianceStatus]int)
 			for resourceType, result := range resultGroup.ResourceTypes {
 				if listContains(complianceResultFilters.ResourceTypeID, resourceType) {
 					for k, v := range result.QueryResult {
@@ -230,7 +230,7 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 				}
 			}
 			if req.ComplianceResultFilters != nil && len(req.ComplianceResultFilters.ResourceTypeID) > 0 {
-				complianceResultsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
+				complianceResultsResult.Results = make(map[opengovernanceTypes.ComplianceStatus]int)
 				for resourceType, result := range resultGroup.ResourceTypes {
 					if listContains(req.ComplianceResultFilters.ResourceTypeID, resourceType) {
 						for k, v := range result.QueryResult {

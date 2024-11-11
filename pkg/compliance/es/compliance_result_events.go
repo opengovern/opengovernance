@@ -75,12 +75,12 @@ func FetchComplianceResultDriftEventsByComplianceResultIDs(ctx context.Context, 
 }
 
 func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	complianceResultIDs []string, opengovernanceResourceIDs []string,
+	complianceResultIDs []string, platformResourceIDs []string,
 	provider []source.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string,
 	benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
-	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
+	stateActive []bool, complianceStatuses []types.ComplianceStatus,
 	sorts []api.ComplianceResultDriftEventsSort, pageSizeLimit int, searchAfter []any) ([]ComplianceResultDriftEventsQueryHit, int64, error) {
 	idx := types.ComplianceResultEventsIndex
 
@@ -91,9 +91,9 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 			requestSort = append(requestSort, map[string]any{
 				"connector": *sort.Connector,
 			})
-		case sort.OpenGovernanceResourceID != nil:
+		case sort.PlatformResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"opengovernanceResourceID": *sort.OpenGovernanceResourceID,
+				"platformResourceID": *sort.PlatformResourceID,
 			})
 
 		case sort.ResourceType != nil:
@@ -137,17 +137,17 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 					"order": *sort.Severity,
 				},
 			})
-		case sort.ConformanceStatus != nil:
+		case sort.ComplianceStatus != nil:
 			scriptSource :=
-				`if (params['_source']['conformanceStatus'] == 'alarm') {
+				`if (params['_source']['complianceStatus'] == 'alarm') {
 					return 5
-				} else if (params['_source']['conformanceStatus'] == 'error') {
+				} else if (params['_source']['complianceStatus'] == 'error') {
 					return 4
-				} else if (params['_source']['conformanceStatus'] == 'info') {
+				} else if (params['_source']['complianceStatus'] == 'info') {
 					return 3
-				} else if (params['_source']['conformanceStatus'] == 'skip') {
+				} else if (params['_source']['complianceStatus'] == 'skip') {
 					return 2
-				} else if (params['_source']['conformanceStatus'] == 'ok') {
+				} else if (params['_source']['complianceStatus'] == 'ok') {
 					return 1
 				} else {
 					return 1
@@ -159,7 +159,7 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 						"lang":   "painless",
 						"source": scriptSource,
 					},
-					"order": *sort.ConformanceStatus,
+					"order": *sort.ComplianceStatus,
 				},
 			})
 		case sort.StateActive != nil:
@@ -176,8 +176,8 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 	if len(complianceResultIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("complianceResultEsID", complianceResultIDs))
 	}
-	if len(opengovernanceResourceIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
+	if len(platformResourceIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("platformResourceID", platformResourceIDs))
 	}
 	if len(resourceTypes) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
@@ -195,12 +195,12 @@ func ComplianceResultDriftEventsQuery(ctx context.Context, logger *zap.Logger, c
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
-	if len(conformanceStatuses) > 0 {
-		strConformanceStatus := make([]string, 0)
-		for _, cr := range conformanceStatuses {
-			strConformanceStatus = append(strConformanceStatus, string(cr))
+	if len(complianceStatuses) > 0 {
+		strComplianceStatus := make([]string, 0)
+		for _, cr := range complianceStatuses {
+			strComplianceStatus = append(strComplianceStatus, string(cr))
 		}
-		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("complianceStatus", strComplianceStatus))
 	}
 	if len(integrationID) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
@@ -277,7 +277,7 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 		BenchmarkIDFilter        AggregationResult `json:"benchmark_id_filter"`
 		ResourceTypeFilter       AggregationResult `json:"resource_type_filter"`
 		ResourceCollectionFilter AggregationResult `json:"resource_collection_filter"`
-		ConformanceStatusFilter  AggregationResult `json:"conformance_status_filter"`
+		ComplianceStatusFilter   AggregationResult `json:"compliance_status_filter"`
 		StateActiveFilter        struct {
 			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
 			SumOtherDocCount        int `json:"sum_other_doc_count"`
@@ -290,10 +290,10 @@ type ComplianceResultDriftEventFiltersAggregationResponse struct {
 }
 
 func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	complianceResultIDs []string, opengovernanceResourceIDs []string, connector []source.Type, integrationID []string, notIntegrationID []string,
+	complianceResultIDs []string, platformResourceIDs []string, connector []source.Type, integrationID []string, notIntegrationID []string,
 	resourceTypes []string, benchmarkID []string, controlID []string, severity []types.ComplianceResultSeverity,
 	evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time,
-	stateActive []bool, conformanceStatuses []types.ConformanceStatus,
+	stateActive []bool, complianceStatuses []types.ComplianceStatus,
 ) (*ComplianceResultDriftEventFiltersAggregationResponse, error) {
 	idx := types.ComplianceResultEventsIndex
 
@@ -301,8 +301,8 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 	if len(complianceResultIDs) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("complianceResultEsID", complianceResultIDs))
 	}
-	if len(opengovernanceResourceIDs) > 0 {
-		filters = append(filters, opengovernance.NewTermsFilter("opengovernanceResourceID", opengovernanceResourceIDs))
+	if len(platformResourceIDs) > 0 {
+		filters = append(filters, opengovernance.NewTermsFilter("platformResourceID", platformResourceIDs))
 	}
 	if len(resourceTypes) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("resourceType", resourceTypes))
@@ -320,12 +320,12 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 		}
 		filters = append(filters, opengovernance.NewTermsFilter("severity", strSeverity))
 	}
-	if len(conformanceStatuses) > 0 {
-		strConformanceStatus := make([]string, 0)
-		for _, cr := range conformanceStatuses {
-			strConformanceStatus = append(strConformanceStatus, string(cr))
+	if len(complianceStatuses) > 0 {
+		strComplianceStatus := make([]string, 0)
+		for _, cr := range complianceStatuses {
+			strComplianceStatus = append(strComplianceStatus, string(cr))
 		}
-		filters = append(filters, opengovernance.NewTermsFilter("conformanceStatus", strConformanceStatus))
+		filters = append(filters, opengovernance.NewTermsFilter("complianceStatus", strComplianceStatus))
 	}
 	if len(integrationID) > 0 {
 		filters = append(filters, opengovernance.NewTermsFilter("integrationID", integrationID))
@@ -372,7 +372,7 @@ func ComplianceResultDriftEventsFiltersQuery(ctx context.Context, logger *zap.Lo
 		"benchmark_id_filter":        map[string]any{"terms": map[string]any{"field": "benchmarkID", "size": 1000}},
 		"control_id_filter":          map[string]any{"terms": map[string]any{"field": "controlID", "size": 1000}},
 		"severity_filter":            map[string]any{"terms": map[string]any{"field": "severity", "size": 1000}},
-		"conformance_status_filter":  map[string]any{"terms": map[string]any{"field": "conformanceStatus", "size": 1000}},
+		"compliance_status_filter":   map[string]any{"terms": map[string]any{"field": "complianceStatus", "size": 1000}},
 		"state_active_filter":        map[string]any{"terms": map[string]any{"field": "stateActive", "size": 1000}},
 	}
 	root["aggs"] = aggs
@@ -439,14 +439,14 @@ type ComplianceResultDriftEventsCountResponse struct {
 	PitID string `json:"pit_id"`
 }
 
-func ComplianceResultDriftEventsCount(ctx context.Context, client opengovernance.Client, benchmarkIDs []string, conformanceStatuses []types.ConformanceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
+func ComplianceResultDriftEventsCount(ctx context.Context, client opengovernance.Client, benchmarkIDs []string, complianceStatuses []types.ComplianceStatus, stateActives []bool, startTime, endTime *time.Time) (int64, error) {
 	idx := types.ComplianceResultEventsIndex
 
 	filters := make([]map[string]any, 0)
-	if len(conformanceStatuses) > 0 {
+	if len(complianceStatuses) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{
-				"conformanceStatus": conformanceStatuses,
+				"complianceStatus": complianceStatuses,
 			},
 		})
 	}

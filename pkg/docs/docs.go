@@ -1197,8 +1197,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
-                        "name": "conformanceStatus",
+                        "description": "ComplianceStatus to filter by defaults to all complianceStatus except passed",
+                        "name": "complianceStatus",
                         "in": "query"
                     },
                     {
@@ -1534,8 +1534,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
-                        "name": "conformanceStatus",
+                        "description": "ComplianceStatus to filter by defaults to all complianceStatus except passed",
+                        "name": "complianceStatus",
                         "in": "query"
                     },
                     {
@@ -1812,8 +1812,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "ConformanceStatus to filter by defaults to failed",
-                        "name": "conformanceStatus",
+                        "description": "ComplianceStatus to filter by defaults to failed",
+                        "name": "complianceStatus",
                         "in": "query"
                     }
                 ],
@@ -1895,8 +1895,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "ConformanceStatus to filter by defaults to all conformanceStatus except passed",
-                        "name": "conformanceStatus",
+                        "description": "ComplianceStatus to filter by defaults to all complianceStatus except passed",
+                        "name": "complianceStatus",
                         "in": "query"
                     },
                     {
@@ -3754,7 +3754,7 @@ const docTemplate = `{
             }
         },
         "/integration/api/v1/integrations/{IntegrationID}/healthcheck": {
-            "post": {
+            "put": {
                 "security": [
                     {
                         "BearerToken": []
@@ -4164,8 +4164,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
+                        "description": "Integration Type to filter by",
+                        "name": "integrationType",
                         "in": "query"
                     },
                     {
@@ -4882,8 +4882,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
+                        "description": "Integration type to filter by",
+                        "name": "integrationType",
                         "in": "query"
                     },
                     {
@@ -5860,722 +5860,6 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Reload views",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/catalog/metrics": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the list of metrics for catalog page.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List catalog metrics",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector",
-                        "name": "connector",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CatalogMetrics"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/connections/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving a list of connections summaries",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "connections"
-                ],
-                "summary": "List connections summaries",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter costs",
-                        "name": "filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection Groups",
-                        "name": "connectionGroups",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "DISABLED",
-                            "DISCOVERED",
-                            "IN_PROGRESS",
-                            "ONBOARD",
-                            "ARCHIVED"
-                        ],
-                        "type": "string",
-                        "description": "lifecycle state filter",
-                        "name": "lifecycleState",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "healthy",
-                            "unhealthy"
-                        ],
-                        "type": "string",
-                        "description": "health state filter",
-                        "name": "healthState",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "for quicker inquiry send this parameter as false, default: true",
-                        "name": "needCost",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "for quicker inquiry send this parameter as false, default: true",
-                        "name": "needResourceCount",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "onboard_date",
-                            "resource_count",
-                            "cost",
-                            "growth",
-                            "growth_rate",
-                            "cost_growth",
-                            "cost_growth_rate"
-                        ],
-                        "type": "string",
-                        "description": "column to sort by - default is cost",
-                        "name": "sortBy",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ListConnectionSummaryResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/connections/{connectionId}/state": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Change connection lifecycle state",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Connection ID",
-                        "name": "connectionId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/connector": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns list of all connectors",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List connectors",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/credential": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of credentials with their details",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List credentials",
-                "parameters": [
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "filter by connector type",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "healthy",
-                            "unhealthy"
-                        ],
-                        "type": "string",
-                        "description": "filter by health status",
-                        "name": "health",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "auto-azure",
-                                "auto-aws",
-                                "manual-aws-org",
-                                "manual-azure-spn"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "filter by credential type",
-                        "name": "credentialType",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 50,
-                        "description": "page size",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "page number",
-                        "name": "pageNumber",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ListCredentialResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/credential/{credentialId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving credential details by credential ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get Credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Credential ID",
-                        "name": "credentialId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Edit a credential by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Edit credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Credential ID",
-                        "name": "credentialId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.UpdateCredentialRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Remove a credential by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Delete credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "CredentialID",
-                        "name": "credentialId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/source/{sourceId}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Deleting a single source either AWS / Azure for the given source id.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Delete source",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Source ID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/source/{sourceId}/healthcheck": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get live source health status with given source ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get source health",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Source ID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Whether to update metadata or not",
-                        "name": "updateMetadata",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v2/credential": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Creating connection credentials",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Create connection credentials",
-                "parameters": [
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Request"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v3/connector": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns list of all connectors v2",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List connectors v2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tier (Community, Enterprise, (default both)",
-                        "name": "tier",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "PerPage",
-                        "name": "per_page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v3/integrations": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "List Integrations with filters",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "List Integrations",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "health state",
-                        "name": "health_state",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "connectors",
-                        "name": "connectors",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "integration tracker",
-                        "name": "integration_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "name regex",
-                        "name": "name_regex",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "id regex",
-                        "name": "id_regex",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "PerPage",
-                        "name": "per_page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/onboard/api/v3/sample/purge": {
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns all workspaces with owner id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "List all workspaces with owner id",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "ignore_source_ids",
-                        "name": "ignore_source_ids",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -8945,7 +8229,7 @@ const docTemplate = `{
                 "accountName": {
                     "type": "string"
                 },
-                "conformanceStatusesCount": {
+                "complianceStatusesCount": {
                     "type": "object",
                     "properties": {
                         "error": {
@@ -9245,8 +8529,8 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "conformanceStatusSummary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary"
+                "complianceStatusSummary": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary"
                 },
                 "connectionsStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkStatusResult"
@@ -9261,7 +8545,7 @@ const docTemplate = `{
                 "controlsSeverityStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkControlsSeverityStatus"
                 },
-                "costOptimization": {
+                "costImpact": {
                     "type": "number"
                 },
                 "createdAt": {
@@ -9441,8 +8725,8 @@ const docTemplate = `{
                 "checks": {
                     "$ref": "#/definitions/types.SeverityResult"
                 },
-                "conformanceStatusSummary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary"
+                "complianceStatusSummary": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary"
                 },
                 "controlsSeverityStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkControlsSeverityStatus"
@@ -9500,10 +8784,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
+                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
                         }
                     ],
                     "example": "alarm"
@@ -9512,20 +8796,20 @@ const docTemplate = `{
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
                 },
+                "controlPath": {
+                    "type": "string",
+                    "example": "aws_cis2/aws_cis2_1/unsecure_http"
+                },
                 "controlTitle": {
                     "type": "string"
                 },
-                "costOptimization": {
+                "costImpact": {
                     "type": "number",
                     "example": 0.5
                 },
                 "evaluatedAt": {
                     "type": "integer",
                     "example": 1589395200
-                },
-                "evaluator": {
-                    "type": "string",
-                    "example": "steampipe-v0.5"
                 },
                 "id": {
                     "type": "string",
@@ -9548,10 +8832,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1589395200"
                 },
-                "opengovernanceResourceID": {
-                    "type": "string",
-                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
-                },
                 "parentBenchmarkNames": {
                     "type": "array",
                     "items": {
@@ -9561,21 +8841,9 @@ const docTemplate = `{
                         "Azure CIS v1.4.0"
                     ]
                 },
-                "parentBenchmarkReferences": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "parentBenchmarks": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "parentComplianceJobID": {
-                    "type": "integer",
-                    "example": 1
+                "platformResourceID": {
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
                 "providerID": {
                     "description": "Connection ID",
@@ -9590,10 +8858,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
-                "resourceLocation": {
-                    "type": "string",
-                    "example": "eastus"
-                },
                 "resourceName": {
                     "type": "string",
                     "example": "vm-1"
@@ -9605,6 +8869,10 @@ const docTemplate = `{
                 "resourceTypeName": {
                     "type": "string",
                     "example": "Virtual Machine"
+                },
+                "runnerID": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "severity": {
                     "allOf": [
@@ -9637,8 +8905,8 @@ const docTemplate = `{
                 "complianceResultID": {
                     "type": "string"
                 },
-                "conformanceStatus": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
+                "complianceStatus": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
                 },
                 "controlID": {
                     "type": "string",
@@ -9663,21 +8931,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Azure"
                 },
-                "opengovernanceResourceID": {
-                    "type": "string",
-                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
-                },
-                "parentBenchmarkReferences": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "parentComplianceJobID": {
                     "type": "integer"
                 },
-                "previousConformanceStatus": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
+                "platformResourceID": {
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "previousComplianceStatus": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
                 },
                 "previousStateActive": {
                     "type": "boolean"
@@ -9748,22 +9010,13 @@ const docTemplate = `{
                         "8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"
                     ]
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
+                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
                     },
                     "example": [
                         "alarm"
-                    ]
-                },
-                "connectionGroup": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "healthy"
                     ]
                 },
                 "connector": {
@@ -9795,6 +9048,15 @@ const docTemplate = `{
                         }
                     }
                 },
+                "integrationGroup": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "active"
+                    ]
+                },
                 "integrationID": {
                     "type": "array",
                     "items": {
@@ -9813,7 +9075,7 @@ const docTemplate = `{
                         "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                     ]
                 },
-                "opengovernanceResourceID": {
+                "platformResourceID": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9860,7 +9122,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
                     }
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
@@ -9916,7 +9178,7 @@ const docTemplate = `{
                 "benchmarkID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "connector": {
@@ -9928,7 +9190,7 @@ const docTemplate = `{
                 "integrationID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "opengovernanceResourceID": {
+                "platformResourceID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "resourceType": {
@@ -9954,22 +9216,13 @@ const docTemplate = `{
                         "azure_cis_v140"
                     ]
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
+                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
                     },
                     "example": [
                         "alarm"
-                    ]
-                },
-                "connectionGroup": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "healthy"
                     ]
                 },
                 "controlID": {
@@ -9991,6 +9244,15 @@ const docTemplate = `{
                             "type": "integer"
                         }
                     }
+                },
+                "integrationGroup": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "active"
+                    ]
                 },
                 "integrationID": {
                     "type": "array",
@@ -10192,7 +9454,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
                     }
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata"
@@ -10282,7 +9544,7 @@ const docTemplate = `{
                 "benchmarkID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "conformanceStatus": {
+                "complianceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "controlID": {
@@ -10294,7 +9556,7 @@ const docTemplate = `{
                 "integrationType": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "opengovernanceResourceID": {
+                "platformResourceID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "resourceID": {
@@ -10317,7 +9579,7 @@ const docTemplate = `{
                 "benchmark_id": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "conformance_status": {
+                "compliance_status": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "control_id": {
@@ -10331,6 +9593,42 @@ const docTemplate = `{
                 },
                 "severity": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
+                }
+            }
+        },
+        "github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus": {
+            "type": "string",
+            "enum": [
+                "failed",
+                "passed"
+            ],
+            "x-enum-varnames": [
+                "ComplianceStatusFailed",
+                "ComplianceStatusPassed"
+            ]
+        },
+        "github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -10361,7 +9659,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "compliance_results_summary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2"
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2"
                 },
                 "compliance_score": {
                     "type": "number"
@@ -10373,7 +9671,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "cost_optimization": {
+                "cost_impact": {
                     "type": "number"
                 },
                 "issues_count": {
@@ -10444,7 +9742,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "compliance_results_summary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2"
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2"
                 },
                 "compliance_score": {
                     "type": "number"
@@ -10487,42 +9785,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.TopFiledRecordV2"
                     }
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus": {
-            "type": "string",
-            "enum": [
-                "failed",
-                "passed"
-            ],
-            "x-enum-varnames": [
-                "ConformanceStatusFailed",
-                "ConformanceStatusPassed"
-            ]
-        },
-        "github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary": {
-            "type": "object",
-            "properties": {
-                "failed": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2": {
-            "type": "object",
-            "properties": {
-                "failed": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "integer"
-                },
-                "total_count": {
-                    "type": "integer"
                 }
             }
         },
@@ -10636,7 +9898,7 @@ const docTemplate = `{
                 "control": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.Control"
                 },
-                "costOptimization": {
+                "costImpact": {
                     "type": "number"
                 },
                 "evaluatedAt": {
@@ -11392,7 +10654,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.GetSingleResourceFindingRequest": {
             "type": "object",
             "properties": {
-                "opengovernanceResourceId": {
+                "platformResourceID": {
                     "type": "string",
                     "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
@@ -11546,8 +10808,8 @@ const docTemplate = `{
                 "totalChecks": {
                     "$ref": "#/definitions/types.SeverityResult"
                 },
-                "totalConformanceStatusSummary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary"
+                "totalComplianceStatusSummary": {
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary"
                 }
             }
         },
@@ -11558,7 +10820,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "compliance_results_summary": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2"
+                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2"
                 },
                 "compliance_score": {
                     "type": "number"
@@ -11612,17 +10874,17 @@ const docTemplate = `{
                 "compliance_result_summary": {
                     "type": "boolean"
                 },
-                "connector": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "cursor": {
                     "type": "integer"
                 },
                 "has_parameters": {
                     "type": "boolean"
+                },
+                "integration_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "list_of_tables": {
                     "type": "array",
@@ -11700,7 +10962,7 @@ const docTemplate = `{
                         "compliant_resources": {
                             "type": "integer"
                         },
-                        "cost_optimization": {
+                        "cost_impact": {
                             "type": "number"
                         },
                         "impacted_resources": {
@@ -11952,7 +11214,7 @@ const docTemplate = `{
                 "integrationType": {
                     "type": "string"
                 },
-                "opengovernanceResourceID": {
+                "platformResourceID": {
                     "type": "string"
                 },
                 "providerID": {
@@ -11993,20 +11255,20 @@ const docTemplate = `{
                         "azure_cis_v140"
                     ]
                 },
+                "complianceStatus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus"
+                    },
+                    "example": [
+                        "alarm"
+                    ]
+                },
                 "compliance_job_id": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "conformanceStatus": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus"
-                    },
-                    "example": [
-                        "alarm"
-                    ]
                 },
                 "connectionGroup": {
                     "type": "array",
@@ -12015,15 +11277,6 @@ const docTemplate = `{
                     },
                     "example": [
                         "healthy"
-                    ]
-                },
-                "connector": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    },
-                    "example": [
-                        "Azure"
                     ]
                 },
                 "controlID": {
@@ -12053,6 +11306,15 @@ const docTemplate = `{
                     },
                     "example": [
                         "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
+                },
+                "integrationType": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Azure"
                     ]
                 },
                 "interval": {
@@ -12108,13 +11370,13 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.ResourceFindingsSort": {
             "type": "object",
             "properties": {
-                "conformanceStatus": {
+                "complianceStatus": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "failedCount": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
-                "opengovernanceResourceID": {
+                "platformResourceID": {
                     "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection"
                 },
                 "resourceLocation": {
@@ -12131,7 +11393,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_compliance_api.ServiceComplianceResultsSummary": {
             "type": "object",
             "properties": {
-                "conformanceStatusesCount": {
+                "complianceStatusesCount": {
                     "type": "object",
                     "properties": {
                         "failed": {
@@ -13576,17 +12838,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_opengovern_opengovernance_pkg_inventory_api.DirectionType": {
-            "type": "string",
-            "enum": [
-                "asc",
-                "desc"
-            ],
-            "x-enum-varnames": [
-                "DirectionAscending",
-                "DirectionDescending"
-            ]
-        },
         "github_com_opengovern_opengovernance_pkg_inventory_api.GetAsyncQueryRunResultResponse": {
             "type": "object",
             "properties": {
@@ -13794,6 +13045,12 @@ const docTemplate = `{
                 "has_parameters": {
                     "type": "boolean"
                 },
+                "integration_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "list_of_tables": {
                     "type": "array",
                     "items": {
@@ -13804,12 +13061,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "primary_table": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "providers": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -13827,7 +13078,7 @@ const docTemplate = `{
                 "tags_regex": {
                     "type": "string"
                 },
-                "titleFilter": {
+                "title_filter": {
                     "type": "string"
                 }
             }
@@ -13857,16 +13108,6 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_inventory_api.Metric": {
             "type": "object",
             "properties": {
-                "connectors": {
-                    "description": "Cloud Provider",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    },
-                    "example": [
-                        "[Azure]"
-                    ]
-                },
                 "count": {
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer",
@@ -13883,6 +13124,16 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "vms"
+                },
+                "integrationTypes": {
+                    "description": "Cloud Provider",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[Azure]"
+                    ]
                 },
                 "last_evaluated": {
                     "description": "Last time the metric was evaluated",
@@ -13929,16 +13180,16 @@ const docTemplate = `{
                     "description": "Category (Tags[category])",
                     "type": "string"
                 },
-                "connectors": {
-                    "description": "Provider",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
                 "id": {
                     "description": "Query Id",
                     "type": "string"
+                },
+                "integration_types": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "query": {
                     "description": "Query",
@@ -13960,19 +13211,19 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_pkg_inventory_api.NamedQueryItemV2": {
             "type": "object",
             "properties": {
-                "connectors": {
-                    "description": "Provider",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
                 "description": {
                     "type": "string"
                 },
                 "id": {
                     "description": "Query Id",
                     "type": "string"
+                },
+                "integration_types": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "query": {
                     "description": "Query",
@@ -14002,14 +13253,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "direction": {
+                    "type": "string",
                     "enum": [
                         "asc",
                         "desc"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_inventory_api.DirectionType"
-                        }
                     ]
                 },
                 "field": {
@@ -14123,12 +13370,6 @@ const docTemplate = `{
                 "connection_count": {
                     "type": "integer"
                 },
-                "connectors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -14143,6 +13384,12 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "integration_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "last_evaluated_at": {
                     "type": "string"
@@ -14293,20 +13540,16 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 0
                 },
-                "connector": {
-                    "description": "Cloud Provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
                 "count": {
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer",
                     "minimum": 0,
                     "example": 100
+                },
+                "integration_type": {
+                    "description": "Cloud Provider",
+                    "type": "string",
+                    "example": "Azure"
                 },
                 "logo_uri": {
                     "description": "Logo URI",
@@ -14788,533 +14031,6 @@ const docTemplate = `{
                 "MetadataKeySpendDiscoveryEnabled"
             ]
         },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.CatalogMetrics": {
-            "type": "object",
-            "properties": {
-                "connectionsEnabled": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 20
-                },
-                "healthyConnections": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 15
-                },
-                "inProgressConnections": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 5
-                },
-                "totalConnections": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 20
-                },
-                "unhealthyConnections": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 5
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.Connection": {
-            "type": "object",
-            "properties": {
-                "assetDiscovery": {
-                    "type": "boolean"
-                },
-                "assetDiscoveryMethod": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.AssetDiscoveryMethodType"
-                        }
-                    ],
-                    "example": "scheduled"
-                },
-                "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "cost": {
-                    "type": "number",
-                    "maximum": 10000000,
-                    "minimum": 0,
-                    "example": 1000
-                },
-                "credential": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential"
-                },
-                "credentialID": {
-                    "type": "string",
-                    "example": "7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"
-                },
-                "credentialName": {
-                    "type": "string"
-                },
-                "credentialType": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType"
-                        }
-                    ],
-                    "example": "manual"
-                },
-                "dailyCostAtEndTime": {
-                    "type": "number",
-                    "maximum": 10000000,
-                    "minimum": 0,
-                    "example": 1000
-                },
-                "dailyCostAtStartTime": {
-                    "type": "number",
-                    "maximum": 10000000,
-                    "minimum": 0,
-                    "example": 1000
-                },
-                "describeJobRunning": {
-                    "type": "boolean"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "This is an example connection"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "johndoe@example.com"
-                },
-                "healthReason": {
-                    "type": "string"
-                },
-                "healthState": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.HealthStatus"
-                        }
-                    ],
-                    "example": "healthy"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
-                "integrationName": {
-                    "type": "string",
-                    "example": "example-connection"
-                },
-                "lastHealthCheckTime": {
-                    "type": "string",
-                    "example": "2023-05-07T00:00:00Z"
-                },
-                "lastInventory": {
-                    "type": "string",
-                    "example": "2023-05-07T00:00:00Z"
-                },
-                "lifecycleState": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState"
-                        }
-                    ],
-                    "example": "enabled"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "oldResourceCount": {
-                    "type": "integer",
-                    "maximum": 1000000,
-                    "minimum": 0,
-                    "example": 100
-                },
-                "onboardDate": {
-                    "type": "string",
-                    "example": "2023-05-07T00:00:00Z"
-                },
-                "providerID": {
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
-                "resourceCount": {
-                    "type": "integer",
-                    "maximum": 1000000,
-                    "minimum": 0,
-                    "example": 100
-                },
-                "spendDiscovery": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState": {
-            "type": "string",
-            "enum": [
-                "ONBOARD",
-                "DISABLED",
-                "DISCOVERED",
-                "IN_PROGRESS",
-                "ARCHIVED"
-            ],
-            "x-enum-varnames": [
-                "ConnectionLifecycleStateOnboard",
-                "ConnectionLifecycleStateDisabled",
-                "ConnectionLifecycleStateDiscovered",
-                "ConnectionLifecycleStateInProgress",
-                "ConnectionLifecycleStateArchived"
-            ]
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount": {
-            "type": "object",
-            "properties": {
-                "allowNewConnections": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "autoOnboardSupport": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "connection_count": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 1024
-                },
-                "description": {
-                    "type": "string",
-                    "example": "This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"
-                },
-                "direction": {
-                    "$ref": "#/definitions/source.ConnectorDirectionType"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "label": {
-                    "type": "string",
-                    "example": "Azure"
-                },
-                "logo": {
-                    "type": "string",
-                    "example": "https://opengovernance.io/logo.png"
-                },
-                "maxConnectionLimit": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 10000
-                },
-                "name": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "shortDescription": {
-                    "type": "string",
-                    "example": "This is a short Description for this connector"
-                },
-                "status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.ConnectorStatus"
-                        }
-                    ],
-                    "example": "enabled"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "tier": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.Credential": {
-            "type": "object",
-            "properties": {
-                "archived_connections": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 0
-                },
-                "autoOnboardEnabled": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "config": {},
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection"
-                    }
-                },
-                "connectorType": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "AWS"
-                },
-                "credentialType": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType"
-                        }
-                    ],
-                    "example": "manual-aws-org"
-                },
-                "disabled_connections": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 0
-                },
-                "discovered_connections": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 50
-                },
-                "enabled": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "healthReason": {
-                    "type": "string",
-                    "example": ""
-                },
-                "healthStatus": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.HealthStatus"
-                        }
-                    ],
-                    "example": "healthy"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "1028642a-b22e-26ha-c5h2-22nl254678m5"
-                },
-                "lastHealthCheckTime": {
-                    "type": "string",
-                    "format": "date-time",
-                    "example": "2023-06-03T12:21:33.406928Z"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "name": {
-                    "type": "string",
-                    "example": "a-1mahsl7lzk"
-                },
-                "onboardDate": {
-                    "type": "string",
-                    "format": "date-time",
-                    "example": "2023-06-03T12:21:33.406928Z"
-                },
-                "onboard_connections": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 250
-                },
-                "spendDiscovery": {
-                    "type": "boolean"
-                },
-                "total_connections": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 300
-                },
-                "unhealthy_connections": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 50
-                },
-                "version": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType": {
-            "type": "string",
-            "enum": [
-                "auto-azure",
-                "auto-aws",
-                "manual-aws-org",
-                "manual-azure-spn"
-            ],
-            "x-enum-varnames": [
-                "CredentialTypeAutoAzure",
-                "CredentialTypeAutoAws",
-                "CredentialTypeManualAwsOrganization",
-                "CredentialTypeManualAzureSpn"
-            ]
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.ListConnectionSummaryResponse": {
-            "type": "object",
-            "properties": {
-                "connectionCount": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 10
-                },
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection"
-                    }
-                },
-                "totalArchivedCount": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 10
-                },
-                "totalCost": {
-                    "type": "number",
-                    "maximum": 10000000,
-                    "minimum": 0,
-                    "example": 1000
-                },
-                "totalDisabledCount": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 10
-                },
-                "totalDiscoveredCount": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 10
-                },
-                "totalOldResourceCount": {
-                    "type": "integer",
-                    "maximum": 1000000,
-                    "minimum": 0,
-                    "example": 100
-                },
-                "totalOnboardedCount": {
-                    "description": "Also includes in-progress",
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 10
-                },
-                "totalResourceCount": {
-                    "type": "integer",
-                    "maximum": 1000000,
-                    "minimum": 0,
-                    "example": 100
-                },
-                "totalUnhealthyCount": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0,
-                    "example": 10
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.ListCredentialResponse": {
-            "type": "object",
-            "properties": {
-                "credentials": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential"
-                    }
-                },
-                "totalCredentialCount": {
-                    "type": "integer",
-                    "maximum": 20,
-                    "minimum": 0,
-                    "example": 5
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api.UpdateCredentialRequest": {
-            "type": "object",
-            "properties": {
-                "config": {},
-                "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api_v2.AWSCredentialV2Config": {
-            "type": "object",
-            "properties": {
-                "accessKey": {
-                    "type": "string"
-                },
-                "accountID": {
-                    "type": "string"
-                },
-                "assumeRoleName": {
-                    "type": "string"
-                },
-                "externalId": {
-                    "type": "string"
-                },
-                "secretKey": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Request": {
-            "type": "object",
-            "properties": {
-                "awsConfig": {
-                    "$ref": "#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.AWSCredentialV2Config"
-                },
-                "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                }
-            }
-        },
-        "github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Response": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_opengovern_opengovernance_services_integration_api_models.AddIntegrationsRequest": {
             "type": "object",
             "properties": {
@@ -15361,7 +14077,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_services_integration_api_models.DiscoverIntegrationRequest": {
             "type": "object",
             "properties": {
-                "credentialID": {
+                "credential_id": {
                     "type": "string"
                 },
                 "credentials": {
@@ -15442,7 +14158,7 @@ const docTemplate = `{
         "github_com_opengovern_opengovernance_services_integration_api_models.IntegrationState": {
             "type": "string",
             "enum": [
-                "active",
+                "ACTIVE",
                 "INACTIVE",
                 "ARCHIVED"
             ],
@@ -16207,54 +14923,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "source.AssetDiscoveryMethodType": {
-            "type": "string",
-            "enum": [
-                "scheduled"
-            ],
-            "x-enum-varnames": [
-                "AssetDiscoveryMethodTypeScheduled"
-            ]
-        },
-        "source.ConnectorDirectionType": {
-            "type": "string",
-            "enum": [
-                "ingress",
-                "egress",
-                "both"
-            ],
-            "x-enum-varnames": [
-                "ConnectorDirectionTypeIngress",
-                "ConnectorDirectionTypeEgress",
-                "ConnectorDirectionTypeBoth"
-            ]
-        },
-        "source.ConnectorStatus": {
-            "type": "string",
-            "enum": [
-                "enabled",
-                "disabled",
-                "coming_soon"
-            ],
-            "x-enum-varnames": [
-                "ConnectorStatusEnabled",
-                "ConnectorStatusDisabled",
-                "ConnectorStatusComingSoon"
-            ]
-        },
-        "source.HealthStatus": {
-            "type": "string",
-            "enum": [
-                "",
-                "healthy",
-                "unhealthy"
-            ],
-            "x-enum-varnames": [
-                "HealthStatusNil",
-                "HealthStatusHealthy",
-                "HealthStatusUnhealthy"
-            ]
         },
         "source.Type": {
             "type": "string",

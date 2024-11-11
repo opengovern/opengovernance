@@ -76,13 +76,13 @@ type AccountsComplianceResultsSummary struct {
 		Low      int `json:"low"`
 		None     int `json:"none"`
 	} `json:"severitiesCount"`
-	ConformanceStatusesCount struct {
+	ComplianceStatusesCount struct {
 		Passed int `json:"passed"`
 		Failed int `json:"failed"`
 		Error  int `json:"error"`
 		Info   int `json:"info"`
 		Skip   int `json:"skip"`
-	} `json:"conformanceStatusesCount"`
+	} `json:"complianceStatusesCount"`
 	LastCheckTime time.Time `json:"lastCheckTime"`
 }
 

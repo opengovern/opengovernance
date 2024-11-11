@@ -450,7 +450,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			integrationType			query		[]string	false	"Integration type to filter by"
+//	@Param			integrationType		query		[]string	false	"Integration type to filter by"
 //	@Param			connectionId		query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup		query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"

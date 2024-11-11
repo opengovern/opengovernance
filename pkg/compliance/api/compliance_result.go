@@ -8,19 +8,19 @@ import (
 )
 
 type ComplianceResultFilters struct {
-	JobID             []string                         `json:"jobID"`
-	IntegrationType   []string                         `json:"integrationType" example:"Azure"`
-	ResourceID        []string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceTypeID    []string                         `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
-	IntegrationID     []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	NotIntegrationID  []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	IntegrationGroup  []string                         `json:"integrationGroup" example:"active"`
-	BenchmarkID       []string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID         []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	Severity          []types.ComplianceResultSeverity `json:"severity" example:"low"`
-	ConformanceStatus []ConformanceStatus              `json:"conformanceStatus" example:"alarm"`
-	StateActive       []bool                           `json:"stateActive" example:"true"`
-	LastEvent         struct {
+	JobID            []string                         `json:"jobID"`
+	IntegrationType  []string                         `json:"integrationType" example:"Azure"`
+	ResourceID       []string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceTypeID   []string                         `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
+	IntegrationID    []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	NotIntegrationID []string                         `json:"notIntegrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	IntegrationGroup []string                         `json:"integrationGroup" example:"active"`
+	BenchmarkID      []string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID        []string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	Severity         []types.ComplianceResultSeverity `json:"severity" example:"low"`
+	ComplianceStatus []ComplianceStatus               `json:"complianceStatus" example:"alarm"`
+	StateActive      []bool                           `json:"stateActive" example:"true"`
+	LastEvent        struct {
 		From *int64 `json:"from"`
 		To   *int64 `json:"to"`
 	} `json:"lastEvent"`
@@ -44,21 +44,21 @@ type ComplianceResultFiltersWithMetadata struct {
 	IntegrationID      []FilterWithMetadata `json:"integrationID"`
 	ResourceCollection []FilterWithMetadata `json:"resourceCollection"`
 	Severity           []FilterWithMetadata `json:"severity"`
-	ConformanceStatus  []FilterWithMetadata `json:"conformanceStatus"`
+	ComplianceStatus   []FilterWithMetadata `json:"complianceStatus"`
 	StateActive        []FilterWithMetadata `json:"stateActive"`
 }
 
 type ComplianceResultsSort struct {
-	IntegrationType          *SortDirection `json:"integrationType"`
-	ResourceID               *SortDirection `json:"resourceID"`
-	OpenGovernanceResourceID *SortDirection `json:"opengovernanceResourceID"`
-	ResourceTypeID           *SortDirection `json:"resourceTypeID"`
-	IntegrationID            *SortDirection `json:"integrationID"`
-	BenchmarkID              *SortDirection `json:"benchmarkID"`
-	ControlID                *SortDirection `json:"controlID"`
-	Severity                 *SortDirection `json:"severity"`
-	ConformanceStatus        *SortDirection `json:"conformanceStatus"`
-	StateActive              *SortDirection `json:"stateActive"`
+	IntegrationType    *SortDirection `json:"integrationType"`
+	ResourceID         *SortDirection `json:"resourceID"`
+	PlatformResourceID *SortDirection `json:"platformResourceID"`
+	ResourceTypeID     *SortDirection `json:"resourceTypeID"`
+	IntegrationID      *SortDirection `json:"integrationID"`
+	BenchmarkID        *SortDirection `json:"benchmarkID"`
+	ControlID          *SortDirection `json:"controlID"`
+	Severity           *SortDirection `json:"severity"`
+	ComplianceStatus   *SortDirection `json:"complianceStatus"`
+	StateActive        *SortDirection `json:"stateActive"`
 }
 
 type GetComplianceResultsRequest struct {
@@ -69,75 +69,72 @@ type GetComplianceResultsRequest struct {
 }
 
 type GetSingleComplianceResultRequest struct {
-	BenchmarkID              string `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                string `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID            string `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	OpenGovernanceResourceID string `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID               string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	BenchmarkID        string `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	PlatformResourceID string `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 }
 
 type GetSingleResourceFindingRequest struct {
-	OpenGovernanceResourceId string  `json:"opengovernanceResourceId" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceType             *string `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	PlatformResourceID string  `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceType       *string `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 }
 
-type ConformanceStatus string
+type ComplianceStatus string
 
 const (
-	ConformanceStatusFailed ConformanceStatus = "failed"
-	ConformanceStatusPassed ConformanceStatus = "passed"
+	ComplianceStatusFailed ComplianceStatus = "failed"
+	ComplianceStatusPassed ComplianceStatus = "passed"
 )
 
-func ListConformanceStatuses() []ConformanceStatus {
-	return []ConformanceStatus{ConformanceStatusFailed, ConformanceStatusPassed}
+func ListComplianceStatuses() []ComplianceStatus {
+	return []ComplianceStatus{ComplianceStatusFailed, ComplianceStatusPassed}
 }
 
-func (cs ConformanceStatus) GetEsConformanceStatuses() []types.ConformanceStatus {
+func (cs ComplianceStatus) GetEsComplianceStatuses() []types.ComplianceStatus {
 	switch cs {
-	case ConformanceStatusFailed:
-		return types.GetFailedConformanceStatuses()
-	case ConformanceStatusPassed:
-		return types.GetPassedConformanceStatuses()
+	case ComplianceStatusFailed:
+		return types.GetFailedComplianceStatuses()
+	case ComplianceStatusPassed:
+		return types.GetPassedComplianceStatuses()
 	}
 	return nil
 }
 
-func ParseConformanceStatuses(conformanceStatuses []string) []ConformanceStatus {
-	var result []ConformanceStatus
-	for _, cs := range conformanceStatuses {
+func ParseComplianceStatuses(complianceStatuses []string) []ComplianceStatus {
+	var result []ComplianceStatus
+	for _, cs := range complianceStatuses {
 		switch strings.ToLower(cs) {
-		case strings.ToLower(string(ConformanceStatusFailed)):
-			result = append(result, ConformanceStatusFailed)
-		case strings.ToLower(string(ConformanceStatusPassed)):
-			result = append(result, ConformanceStatusPassed)
+		case strings.ToLower(string(ComplianceStatusFailed)):
+			result = append(result, ComplianceStatusFailed)
+		case strings.ToLower(string(ComplianceStatusPassed)):
+			result = append(result, ComplianceStatusPassed)
 		}
 	}
 	return result
 }
 
 type ComplianceResult struct {
-	ID                        string                         `json:"id" example:"1"`
-	BenchmarkID               string                         `json:"benchmarkID" example:"azure_cis_v140"`
-	ControlID                 string                         `json:"controlID" example:"azure_cis_v140_7_5"`
-	IntegrationID             string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
-	EvaluatedAt               int64                          `json:"evaluatedAt" example:"1589395200"`
-	StateActive               bool                           `json:"stateActive" example:"true"`
-	ConformanceStatus         ConformanceStatus              `json:"conformanceStatus" example:"alarm"`
-	Severity                  types.ComplianceResultSeverity `json:"severity" example:"low"`
-	Evaluator                 string                         `json:"evaluator" example:"steampipe-v0.5"`
-	IntegrationType           integration.Type               `json:"integrationType" example:"Azure"`
-	OpenGovernanceResourceID  string                         `json:"opengovernanceResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceID                string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
-	ResourceName              string                         `json:"resourceName" example:"vm-1"`
-	ResourceLocation          string                         `json:"resourceLocation" example:"eastus"`
-	ResourceType              string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
-	Reason                    string                         `json:"reason" example:"The VM is not using managed disks"`
-	CostOptimization          *float64                       `json:"costOptimization" example:"0.5"`
-	ComplianceJobID           uint                           `json:"complianceJobID" example:"1"`
-	ParentComplianceJobID     uint                           `json:"parentComplianceJobID" example:"1"`
-	ParentBenchmarkReferences []string                       `json:"parentBenchmarkReferences"`
-	ParentBenchmarks          []string                       `json:"parentBenchmarks"`
-	LastEvent                 time.Time                      `json:"lastEvent" example:"1589395200"`
+	ID                 string                         `json:"id" example:"1"`
+	BenchmarkID        string                         `json:"benchmarkID" example:"azure_cis_v140"`
+	ControlID          string                         `json:"controlID" example:"azure_cis_v140_7_5"`
+	IntegrationID      string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	EvaluatedAt        int64                          `json:"evaluatedAt" example:"1589395200"`
+	StateActive        bool                           `json:"stateActive" example:"true"`
+	ComplianceStatus   ComplianceStatus               `json:"complianceStatus" example:"alarm"`
+	Severity           types.ComplianceResultSeverity `json:"severity" example:"low"`
+	IntegrationType    integration.Type               `json:"integrationType" example:"Azure"`
+	PlatformResourceID string                         `json:"platformResourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceID         string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
+	ResourceName       string                         `json:"resourceName" example:"vm-1"`
+	ResourceType       string                         `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	Reason             string                         `json:"reason" example:"The VM is not using managed disks"`
+	CostImpact         *float64                       `json:"costImpact" example:"0.5"`
+	RunnerID           uint                           `json:"runnerID" example:"1"`
+	ComplianceJobID    uint                           `json:"complianceJobID" example:"1"`
+	ControlPath        string                         `json:"controlPath" example:"aws_cis2/aws_cis2_1/unsecure_http"`
+	LastEvent          time.Time                      `json:"lastEvent" example:"1589395200"`
 
 	ResourceTypeName     string   `json:"resourceTypeName" example:"Virtual Machine"`
 	ParentBenchmarkNames []string `json:"parentBenchmarkNames" example:"Azure CIS v1.4.0"`
@@ -150,33 +147,30 @@ type ComplianceResult struct {
 
 func GetAPIComplianceResultFromESComplianceResult(complianceResult types.ComplianceResult) ComplianceResult {
 	f := ComplianceResult{
-		ID:                        complianceResult.EsID,
-		BenchmarkID:               complianceResult.BenchmarkID,
-		ControlID:                 complianceResult.ControlID,
-		IntegrationID:             complianceResult.IntegrationID,
-		EvaluatedAt:               complianceResult.EvaluatedAt,
-		StateActive:               complianceResult.StateActive,
-		ConformanceStatus:         "",
-		Severity:                  complianceResult.Severity,
-		Evaluator:                 complianceResult.Evaluator,
-		IntegrationType:           complianceResult.IntegrationType,
-		OpenGovernanceResourceID:  complianceResult.OpenGovernanceResourceID,
-		ResourceID:                complianceResult.ResourceID,
-		ResourceName:              complianceResult.ResourceName,
-		ResourceLocation:          complianceResult.ResourceLocation,
-		ResourceType:              complianceResult.ResourceType,
-		Reason:                    complianceResult.Reason,
-		CostOptimization:          complianceResult.CostOptimization,
-		ComplianceJobID:           complianceResult.ComplianceJobID,
-		ParentBenchmarkReferences: complianceResult.ParentBenchmarkReferences,
-		ParentComplianceJobID:     complianceResult.ParentComplianceJobID,
-		ParentBenchmarks:          complianceResult.ParentBenchmarks,
-		LastEvent:                 time.UnixMilli(complianceResult.LastTransition),
+		ID:                 complianceResult.EsID,
+		BenchmarkID:        complianceResult.BenchmarkID,
+		ControlID:          complianceResult.ControlID,
+		IntegrationID:      complianceResult.IntegrationID,
+		EvaluatedAt:        complianceResult.EvaluatedAt,
+		StateActive:        complianceResult.StateActive,
+		ComplianceStatus:   "",
+		Severity:           complianceResult.Severity,
+		IntegrationType:    complianceResult.IntegrationType,
+		PlatformResourceID: complianceResult.PlatformResourceID,
+		ResourceID:         complianceResult.ResourceID,
+		ResourceName:       complianceResult.ResourceName,
+		ResourceType:       complianceResult.ResourceType,
+		Reason:             complianceResult.Reason,
+		CostImpact:         complianceResult.CostImpact,
+		RunnerID:           complianceResult.RunnerID,
+		ComplianceJobID:    complianceResult.ComplianceJobID,
+		ControlPath:        complianceResult.ControlPath,
+		LastEvent:          time.UnixMilli(complianceResult.LastUpdatedAt),
 	}
-	if complianceResult.ConformanceStatus.IsPassed() {
-		f.ConformanceStatus = ConformanceStatusPassed
+	if complianceResult.ComplianceStatus.IsPassed() {
+		f.ComplianceStatus = ComplianceStatusPassed
 	} else {
-		f.ConformanceStatus = ConformanceStatusFailed
+		f.ComplianceStatus = ComplianceStatusFailed
 	}
 	if f.ResourceType == "" {
 		f.ResourceType = "Unknown"
@@ -209,10 +203,10 @@ type ServiceComplianceResultsSummary struct {
 		Low      int `json:"low"`
 		None     int `json:"none"`
 	} `json:"severitiesCount"`
-	ConformanceStatusesCount struct {
+	ComplianceStatusesCount struct {
 		Passed int `json:"passed"`
 		Failed int `json:"failed"`
-	} `json:"conformanceStatusesCount"`
+	} `json:"complianceStatusesCount"`
 }
 
 type GetServicesComplianceResultsSummaryResponse struct {
@@ -271,12 +265,12 @@ type IntegrationInfoFilter struct {
 }
 
 type ComplianceResultsSortV2 struct {
-	BenchmarkID       *SortDirection `json:"benchmark_id"`
-	ControlID         *SortDirection `json:"control_id"`
-	Severity          *SortDirection `json:"severity"`
-	ConformanceStatus *SortDirection `json:"conformance_status"`
-	ResourceType      *SortDirection `json:"resource_type"`
-	LastUpdated       *SortDirection `json:"last_updated"`
+	BenchmarkID      *SortDirection `json:"benchmark_id"`
+	ControlID        *SortDirection `json:"control_id"`
+	Severity         *SortDirection `json:"severity"`
+	ComplianceStatus *SortDirection `json:"compliance_status"`
+	ResourceType     *SortDirection `json:"resource_type"`
+	LastUpdated      *SortDirection `json:"last_updated"`
 }
 
 type GetComplianceResultsRequestV2 struct {

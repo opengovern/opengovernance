@@ -67,7 +67,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142
 	google.golang.org/grpc v1.67.0
 	google.golang.org/protobuf v1.34.2
-	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.6
@@ -235,7 +234,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/user v0.3.0 // indirect
-	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -305,6 +303,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -366,7 +366,7 @@ definitions:
         type: string
       accountName:
         type: string
-      conformanceStatusesCount:
+      complianceStatusesCount:
         properties:
           error:
             type: integer
@@ -579,8 +579,8 @@ definitions:
         items:
           type: string
         type: array
-      conformanceStatusSummary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary'
+      complianceStatusSummary:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary'
       connectionsStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkStatusResult'
       controls:
@@ -590,7 +590,7 @@ definitions:
         type: array
       controlsSeverityStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkControlsSeverityStatus'
-      costOptimization:
+      costImpact:
         type: number
       createdAt:
         description: Benchmark creation date
@@ -716,8 +716,8 @@ definitions:
     properties:
       checks:
         $ref: '#/definitions/types.SeverityResult'
-      conformanceStatusSummary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary'
+      complianceStatusSummary:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary'
       controlsSeverityStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.BenchmarkControlsSeverityStatus'
       timestamp:
@@ -755,24 +755,24 @@ definitions:
       complianceJobID:
         example: 1
         type: integer
-      conformanceStatus:
+      complianceStatus:
         allOf:
-        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
+        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
         example: alarm
       controlID:
         example: azure_cis_v140_7_5
         type: string
+      controlPath:
+        example: aws_cis2/aws_cis2_1/unsecure_http
+        type: string
       controlTitle:
         type: string
-      costOptimization:
+      costImpact:
         example: 0.5
         type: number
       evaluatedAt:
         example: 1589395200
         type: integer
-      evaluator:
-        example: steampipe-v0.5
-        type: string
       id:
         example: "1"
         type: string
@@ -789,26 +789,15 @@ definitions:
       lastEvent:
         example: "1589395200"
         type: string
-      opengovernanceResourceID:
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
-        type: string
       parentBenchmarkNames:
         example:
         - Azure CIS v1.4.0
         items:
           type: string
         type: array
-      parentBenchmarkReferences:
-        items:
-          type: string
-        type: array
-      parentBenchmarks:
-        items:
-          type: string
-        type: array
-      parentComplianceJobID:
-        example: 1
-        type: integer
+      platformResourceID:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
       providerID:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -819,9 +808,6 @@ definitions:
       resourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
-      resourceLocation:
-        example: eastus
-        type: string
       resourceName:
         example: vm-1
         type: string
@@ -831,6 +817,9 @@ definitions:
       resourceTypeName:
         example: Virtual Machine
         type: string
+      runnerID:
+        example: 1
+        type: integer
       severity:
         allOf:
         - $ref: '#/definitions/types.ComplianceResultSeverity'
@@ -851,8 +840,8 @@ definitions:
         type: integer
       complianceResultID:
         type: string
-      conformanceStatus:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
+      complianceStatus:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
       controlID:
         example: azure_cis_v140_7_5
         type: string
@@ -870,17 +859,13 @@ definitions:
       integrationType:
         example: Azure
         type: string
-      opengovernanceResourceID:
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
-        type: string
-      parentBenchmarkReferences:
-        items:
-          type: string
-        type: array
       parentComplianceJobID:
         type: integer
-      previousConformanceStatus:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
+      platformResourceID:
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      previousComplianceStatus:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
       previousStateActive:
         type: boolean
       providerID:
@@ -928,17 +913,11 @@ definitions:
         items:
           type: string
         type: array
-      conformanceStatus:
+      complianceStatus:
         example:
         - alarm
         items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
-        type: array
-      connectionGroup:
-        example:
-        - healthy
-        items:
-          type: string
+          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
         type: array
       connector:
         example:
@@ -959,6 +938,12 @@ definitions:
           to:
             type: integer
         type: object
+      integrationGroup:
+        example:
+        - active
+        items:
+          type: string
+        type: array
       integrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -971,7 +956,7 @@ definitions:
         items:
           type: string
         type: array
-      opengovernanceResourceID:
+      platformResourceID:
         example:
         - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         items:
@@ -1002,7 +987,7 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
-      conformanceStatus:
+      complianceStatus:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
@@ -1039,7 +1024,7 @@ definitions:
     properties:
       benchmarkID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      conformanceStatus:
+      complianceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       connector:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1047,7 +1032,7 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       integrationID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      opengovernanceResourceID:
+      platformResourceID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       resourceType:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1064,17 +1049,11 @@ definitions:
         items:
           type: string
         type: array
-      conformanceStatus:
+      complianceStatus:
         example:
         - alarm
         items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
-        type: array
-      connectionGroup:
-        example:
-        - healthy
-        items:
-          type: string
+          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
         type: array
       controlID:
         example:
@@ -1089,6 +1068,12 @@ definitions:
           to:
             type: integer
         type: object
+      integrationGroup:
+        example:
+        - active
+        items:
+          type: string
+        type: array
       integrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -1221,7 +1206,7 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
-      conformanceStatus:
+      complianceStatus:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.FilterWithMetadata'
         type: array
@@ -1280,7 +1265,7 @@ definitions:
     properties:
       benchmarkID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      conformanceStatus:
+      complianceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       controlID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1288,7 +1273,7 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       integrationType:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      opengovernanceResourceID:
+      platformResourceID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       resourceID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1303,7 +1288,7 @@ definitions:
     properties:
       benchmark_id:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      conformance_status:
+      compliance_status:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       control_id:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -1313,6 +1298,30 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       severity:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
+    type: object
+  github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus:
+    enum:
+    - failed
+    - passed
+    type: string
+    x-enum-varnames:
+    - ComplianceStatusFailed
+    - ComplianceStatusPassed
+  github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
+  github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+      total_count:
+        type: integer
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceSummaryOfBenchmarkRequest:
     properties:
@@ -1332,7 +1341,7 @@ definitions:
       benchmark_title:
         type: string
       compliance_results_summary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2'
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2'
       compliance_score:
         type: number
       connectors:
@@ -1340,7 +1349,7 @@ definitions:
         items:
           type: string
         type: array
-      cost_optimization:
+      cost_impact:
         type: number
       issues_count:
         type: integer
@@ -1387,7 +1396,7 @@ definitions:
       benchmark_id:
         type: string
       compliance_results_summary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2'
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2'
       compliance_score:
         type: number
       integration:
@@ -1416,30 +1425,6 @@ definitions:
         items:
           $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.TopFiledRecordV2'
         type: array
-    type: object
-  github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus:
-    enum:
-    - failed
-    - passed
-    type: string
-    x-enum-varnames:
-    - ConformanceStatusFailed
-    - ConformanceStatusPassed
-  github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-    type: object
-  github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-      total_count:
-        type: integer
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.Control:
     properties:
@@ -1528,7 +1513,7 @@ definitions:
         type: array
       control:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.Control'
-      costOptimization:
+      costImpact:
         type: number
       evaluatedAt:
         type: string
@@ -2026,7 +2011,7 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.GetSingleResourceFindingRequest:
     properties:
-      opengovernanceResourceId:
+      platformResourceID:
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
       resourceType:
@@ -2127,15 +2112,15 @@ definitions:
         type: array
       totalChecks:
         $ref: '#/definitions/types.SeverityResult'
-      totalConformanceStatusSummary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummary'
+      totalComplianceStatusSummary:
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummary'
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ListComplianceJobsHistoryItem:
     properties:
       benchmark_id:
         type: string
       compliance_results_summary:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatusSummaryV2'
+        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatusSummaryV2'
       compliance_score:
         type: number
       created_at:
@@ -2170,14 +2155,14 @@ definitions:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceResultFilters'
       compliance_result_summary:
         type: boolean
-      connector:
-        items:
-          type: string
-        type: array
       cursor:
         type: integer
       has_parameters:
         type: boolean
+      integration_types:
+        items:
+          type: string
+        type: array
       list_of_tables:
         items:
           type: string
@@ -2228,7 +2213,7 @@ definitions:
         properties:
           compliant_resources:
             type: integer
-          cost_optimization:
+          cost_impact:
             type: number
           impacted_resources:
             type: integer
@@ -2403,7 +2388,7 @@ definitions:
         type: string
       integrationType:
         type: string
-      opengovernanceResourceID:
+      platformResourceID:
         type: string
       providerID:
         description: Connection ID
@@ -2435,23 +2420,17 @@ definitions:
         items:
           type: string
         type: array
-      conformanceStatus:
+      complianceStatus:
         example:
         - alarm
         items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ConformanceStatus'
+          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.ComplianceStatus'
         type: array
       connectionGroup:
         example:
         - healthy
         items:
           type: string
-        type: array
-      connector:
-        example:
-        - Azure
-        items:
-          $ref: '#/definitions/source.Type'
         type: array
       controlID:
         example:
@@ -2469,6 +2448,12 @@ definitions:
       integrationID:
         example:
         - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        items:
+          type: string
+        type: array
+      integrationType:
+        example:
+        - Azure
         items:
           type: string
         type: array
@@ -2507,11 +2492,11 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ResourceFindingsSort:
     properties:
-      conformanceStatus:
+      complianceStatus:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       failedCount:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
-      opengovernanceResourceID:
+      platformResourceID:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
       resourceLocation:
         $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_compliance_api.SortDirection'
@@ -2522,7 +2507,7 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_compliance_api.ServiceComplianceResultsSummary:
     properties:
-      conformanceStatusesCount:
+      complianceStatusesCount:
         properties:
           failed:
             type: integer
@@ -3479,14 +3464,6 @@ definitions:
         minimum: 0
         type: integer
     type: object
-  github_com_opengovern_opengovernance_pkg_inventory_api.DirectionType:
-    enum:
-    - asc
-    - desc
-    type: string
-    x-enum-varnames:
-    - DirectionAscending
-    - DirectionDescending
   github_com_opengovern_opengovernance_pkg_inventory_api.GetAsyncQueryRunResultResponse:
     properties:
       columnNames:
@@ -3625,6 +3602,10 @@ definitions:
         type: integer
       has_parameters:
         type: boolean
+      integration_types:
+        items:
+          type: string
+        type: array
       list_of_tables:
         items:
           type: string
@@ -3632,10 +3613,6 @@ definitions:
       per_page:
         type: integer
       primary_table:
-        items:
-          type: string
-        type: array
-      providers:
         items:
           type: string
         type: array
@@ -3647,7 +3624,7 @@ definitions:
         type: object
       tags_regex:
         type: string
-      titleFilter:
+      title_filter:
         type: string
     type: object
   github_com_opengovern_opengovernance_pkg_inventory_api.ListResourceTypeCompositionResponse:
@@ -3667,13 +3644,6 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_inventory_api.Metric:
     properties:
-      connectors:
-        description: Cloud Provider
-        example:
-        - '[Azure]'
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       count:
         description: Number of Resources of this Resource Type - Metric
         example: 100
@@ -3688,6 +3658,13 @@ definitions:
       id:
         example: vms
         type: string
+      integrationTypes:
+        description: Cloud Provider
+        example:
+        - '[Azure]'
+        items:
+          type: string
+        type: array
       last_evaluated:
         description: Last time the metric was evaluated
         example: "2020-01-01T00:00:00Z"
@@ -3720,14 +3697,14 @@ definitions:
       category:
         description: Category (Tags[category])
         type: string
-      connectors:
-        description: Provider
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       id:
         description: Query Id
         type: string
+      integration_types:
+        description: Provider
+        items:
+          type: string
+        type: array
       query:
         description: Query
         type: string
@@ -3742,16 +3719,16 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_pkg_inventory_api.NamedQueryItemV2:
     properties:
-      connectors:
-        description: Provider
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       description:
         type: string
       id:
         description: Query Id
         type: string
+      integration_types:
+        description: Provider
+        items:
+          type: string
+        type: array
       query:
         allOf:
         - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_inventory_api.Query'
@@ -3770,11 +3747,10 @@ definitions:
   github_com_opengovern_opengovernance_pkg_inventory_api.NamedQuerySortItem:
     properties:
       direction:
-        allOf:
-        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_inventory_api.DirectionType'
         enum:
         - asc
         - desc
+        type: string
       field:
         description: fill this with column name
         type: string
@@ -3855,10 +3831,6 @@ definitions:
     properties:
       connection_count:
         type: integer
-      connectors:
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       created_at:
         type: string
       description:
@@ -3869,6 +3841,10 @@ definitions:
         type: array
       id:
         type: string
+      integration_types:
+        items:
+          type: string
+        type: array
       last_evaluated_at:
         type: string
       metric_count:
@@ -3971,16 +3947,15 @@ definitions:
         description: Number of Compliance that use this Resource Type - Metadata
         minimum: 0
         type: integer
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud Provider
-        example: Azure
       count:
         description: Number of Resources of this Resource Type - Metric
         example: 100
         minimum: 0
         type: integer
+      integration_type:
+        description: Cloud Provider
+        example: Azure
+        type: string
       logo_uri:
         description: Logo URI
         example: https://opengovernance.io/logo.png
@@ -4336,379 +4311,6 @@ definitions:
     - MetadataKeyAzureDiscoveryRequiredOnly
     - MetadataKeyAssetDiscoveryEnabled
     - MetadataKeySpendDiscoveryEnabled
-  github_com_opengovern_opengovernance_pkg_onboard_api.CatalogMetrics:
-    properties:
-      connectionsEnabled:
-        example: 20
-        minimum: 0
-        type: integer
-      healthyConnections:
-        example: 15
-        minimum: 0
-        type: integer
-      inProgressConnections:
-        example: 5
-        minimum: 0
-        type: integer
-      totalConnections:
-        example: 20
-        minimum: 0
-        type: integer
-      unhealthyConnections:
-        example: 5
-        minimum: 0
-        type: integer
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
-    properties:
-      state:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState'
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.Connection:
-    properties:
-      assetDiscovery:
-        type: boolean
-      assetDiscoveryMethod:
-        allOf:
-        - $ref: '#/definitions/source.AssetDiscoveryMethodType'
-        example: scheduled
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-      cost:
-        example: 1000
-        maximum: 10000000
-        minimum: 0
-        type: number
-      credential:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential'
-      credentialID:
-        example: 7r6123ac-ca1c-434f-b1a3-91w2w9d277c8
-        type: string
-      credentialName:
-        type: string
-      credentialType:
-        allOf:
-        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType'
-        example: manual
-      dailyCostAtEndTime:
-        example: 1000
-        maximum: 10000000
-        minimum: 0
-        type: number
-      dailyCostAtStartTime:
-        example: 1000
-        maximum: 10000000
-        minimum: 0
-        type: number
-      describeJobRunning:
-        type: boolean
-      description:
-        example: This is an example connection
-        type: string
-      email:
-        example: johndoe@example.com
-        type: string
-      healthReason:
-        type: string
-      healthState:
-        allOf:
-        - $ref: '#/definitions/source.HealthStatus'
-        example: healthy
-      id:
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      integrationName:
-        example: example-connection
-        type: string
-      lastHealthCheckTime:
-        example: "2023-05-07T00:00:00Z"
-        type: string
-      lastInventory:
-        example: "2023-05-07T00:00:00Z"
-        type: string
-      lifecycleState:
-        allOf:
-        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState'
-        example: enabled
-      metadata:
-        additionalProperties: {}
-        type: object
-      oldResourceCount:
-        example: 100
-        maximum: 1000000
-        minimum: 0
-        type: integer
-      onboardDate:
-        example: "2023-05-07T00:00:00Z"
-        type: string
-      providerID:
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      resourceCount:
-        example: 100
-        maximum: 1000000
-        minimum: 0
-        type: integer
-      spendDiscovery:
-        type: boolean
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.ConnectionLifecycleState:
-    enum:
-    - ONBOARD
-    - DISABLED
-    - DISCOVERED
-    - IN_PROGRESS
-    - ARCHIVED
-    type: string
-    x-enum-varnames:
-    - ConnectionLifecycleStateOnboard
-    - ConnectionLifecycleStateDisabled
-    - ConnectionLifecycleStateDiscovered
-    - ConnectionLifecycleStateInProgress
-    - ConnectionLifecycleStateArchived
-  github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount:
-    properties:
-      allowNewConnections:
-        example: true
-        type: boolean
-      autoOnboardSupport:
-        example: false
-        type: boolean
-      connection_count:
-        example: 1024
-        minimum: 0
-        type: integer
-      description:
-        example: This is a long volume of words for just showing the case of the description
-          for the demo and checking value purposes only and has no meaning whatsoever
-        type: string
-      direction:
-        $ref: '#/definitions/source.ConnectorDirectionType'
-      id:
-        type: integer
-      label:
-        example: Azure
-        type: string
-      logo:
-        example: https://opengovernance.io/logo.png
-        type: string
-      maxConnectionLimit:
-        example: 10000
-        minimum: 0
-        type: integer
-      name:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-      shortDescription:
-        example: This is a short Description for this connector
-        type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/source.ConnectorStatus'
-        example: enabled
-      tags:
-        additionalProperties: {}
-        type: object
-      tier:
-        type: string
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.Credential:
-    properties:
-      archived_connections:
-        example: 0
-        maximum: 1000
-        minimum: 0
-        type: integer
-      autoOnboardEnabled:
-        example: false
-        type: boolean
-      config: {}
-      connections:
-        items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection'
-        type: array
-      connectorType:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: AWS
-      credentialType:
-        allOf:
-        - $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType'
-        example: manual-aws-org
-      disabled_connections:
-        example: 0
-        maximum: 1000
-        minimum: 0
-        type: integer
-      discovered_connections:
-        example: 50
-        maximum: 100
-        minimum: 0
-        type: integer
-      enabled:
-        example: true
-        type: boolean
-      healthReason:
-        example: ""
-        type: string
-      healthStatus:
-        allOf:
-        - $ref: '#/definitions/source.HealthStatus'
-        example: healthy
-      id:
-        example: 1028642a-b22e-26ha-c5h2-22nl254678m5
-        type: string
-      lastHealthCheckTime:
-        example: "2023-06-03T12:21:33.406928Z"
-        format: date-time
-        type: string
-      metadata:
-        additionalProperties: {}
-        type: object
-      name:
-        example: a-1mahsl7lzk
-        type: string
-      onboard_connections:
-        example: 250
-        maximum: 1000
-        minimum: 0
-        type: integer
-      onboardDate:
-        example: "2023-06-03T12:21:33.406928Z"
-        format: date-time
-        type: string
-      spendDiscovery:
-        type: boolean
-      total_connections:
-        example: 300
-        maximum: 1000
-        minimum: 0
-        type: integer
-      unhealthy_connections:
-        example: 50
-        maximum: 100
-        minimum: 0
-        type: integer
-      version:
-        type: integer
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.CredentialType:
-    enum:
-    - auto-azure
-    - auto-aws
-    - manual-aws-org
-    - manual-azure-spn
-    type: string
-    x-enum-varnames:
-    - CredentialTypeAutoAzure
-    - CredentialTypeAutoAws
-    - CredentialTypeManualAwsOrganization
-    - CredentialTypeManualAzureSpn
-  github_com_opengovern_opengovernance_pkg_onboard_api.ListConnectionSummaryResponse:
-    properties:
-      connectionCount:
-        example: 10
-        maximum: 1000
-        minimum: 0
-        type: integer
-      connections:
-        items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection'
-        type: array
-      totalArchivedCount:
-        example: 10
-        maximum: 100
-        minimum: 0
-        type: integer
-      totalCost:
-        example: 1000
-        maximum: 10000000
-        minimum: 0
-        type: number
-      totalDisabledCount:
-        example: 10
-        maximum: 100
-        minimum: 0
-        type: integer
-      totalDiscoveredCount:
-        example: 10
-        maximum: 100
-        minimum: 0
-        type: integer
-      totalOldResourceCount:
-        example: 100
-        maximum: 1000000
-        minimum: 0
-        type: integer
-      totalOnboardedCount:
-        description: Also includes in-progress
-        example: 10
-        maximum: 100
-        minimum: 0
-        type: integer
-      totalResourceCount:
-        example: 100
-        maximum: 1000000
-        minimum: 0
-        type: integer
-      totalUnhealthyCount:
-        example: 10
-        maximum: 100
-        minimum: 0
-        type: integer
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.ListCredentialResponse:
-    properties:
-      credentials:
-        items:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential'
-        type: array
-      totalCredentialCount:
-        example: 5
-        maximum: 20
-        minimum: 0
-        type: integer
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api.UpdateCredentialRequest:
-    properties:
-      config: {}
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-      name:
-        type: string
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api_v2.AWSCredentialV2Config:
-    properties:
-      accessKey:
-        type: string
-      accountID:
-        type: string
-      assumeRoleName:
-        type: string
-      externalId:
-        type: string
-      secretKey:
-        type: string
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Request:
-    properties:
-      awsConfig:
-        $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.AWSCredentialV2Config'
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-    type: object
-  github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Response:
-    properties:
-      id:
-        type: string
-    type: object
   github_com_opengovern_opengovernance_services_integration_api_models.AddIntegrationsRequest:
     properties:
       credential_id:
@@ -4739,7 +4341,7 @@ definitions:
     type: object
   github_com_opengovern_opengovernance_services_integration_api_models.DiscoverIntegrationRequest:
     properties:
-      credentialID:
+      credential_id:
         type: string
       credentials:
         additionalProperties: {}
@@ -5301,42 +4903,6 @@ definitions:
           type: string
         type: object
     type: object
-  source.AssetDiscoveryMethodType:
-    enum:
-    - scheduled
-    type: string
-    x-enum-varnames:
-    - AssetDiscoveryMethodTypeScheduled
-  source.ConnectorDirectionType:
-    enum:
-    - ingress
-    - egress
-    - both
-    type: string
-    x-enum-varnames:
-    - ConnectorDirectionTypeIngress
-    - ConnectorDirectionTypeEgress
-    - ConnectorDirectionTypeBoth
-  source.ConnectorStatus:
-    enum:
-    - enabled
-    - disabled
-    - coming_soon
-    type: string
-    x-enum-varnames:
-    - ConnectorStatusEnabled
-    - ConnectorStatusDisabled
-    - ConnectorStatusComingSoon
-  source.HealthStatus:
-    enum:
-    - ""
-    - healthy
-    - unhealthy
-    type: string
-    x-enum-varnames:
-    - HealthStatusNil
-    - HealthStatusHealthy
-    - HealthStatusUnhealthy
   source.Type:
     enum:
     - ""
@@ -8009,14 +7575,14 @@ paths:
         name: severities
         type: array
       - collectionFormat: csv
-        description: ConformanceStatus to filter by defaults to failed
+        description: ComplianceStatus to filter by defaults to failed
         in: query
         items:
           enum:
           - failed
           - passed
           type: string
-        name: conformanceStatus
+        name: complianceStatus
         type: array
       produces:
       - application/json
@@ -8114,7 +7680,7 @@ paths:
         to filters.
       parameters:
       - collectionFormat: csv
-        description: ConformanceStatus to filter by defaults to all conformanceStatus
+        description: ComplianceStatus to filter by defaults to all complianceStatus
           except passed
         in: query
         items:
@@ -8122,7 +7688,7 @@ paths:
           - failed
           - passed
           type: string
-        name: conformanceStatus
+        name: complianceStatus
         type: array
       - collectionFormat: csv
         description: StateActive to filter by defaults to true
@@ -8336,7 +7902,7 @@ paths:
         name: severities
         type: array
       - collectionFormat: csv
-        description: ConformanceStatus to filter by defaults to all conformanceStatus
+        description: ComplianceStatus to filter by defaults to all complianceStatus
           except passed
         in: query
         items:
@@ -8344,7 +7910,7 @@ paths:
           - failed
           - passed
           type: string
-        name: conformanceStatus
+        name: complianceStatus
         type: array
       - collectionFormat: csv
         description: StateActive to filter by defaults to true
@@ -8416,7 +7982,7 @@ paths:
         to filters.
       parameters:
       - collectionFormat: csv
-        description: ConformanceStatus to filter by defaults to all conformanceStatus
+        description: ComplianceStatus to filter by defaults to all complianceStatus
           except passed
         in: query
         items:
@@ -8424,7 +7990,7 @@ paths:
           - failed
           - passed
           type: string
-        name: conformanceStatus
+        name: complianceStatus
         type: array
       - collectionFormat: csv
         description: BenchmarkID to filter by
@@ -9441,7 +9007,7 @@ paths:
       tags:
       - credentials
   /integration/api/v1/integrations/{IntegrationID}/healthcheck:
-    post:
+    put:
       description: Add integrations by given credential ID and integration IDs
       produces:
       - application/json
@@ -9849,7 +9415,7 @@ paths:
         name: metricType
         type: string
       - collectionFormat: csv
-        description: Connector type to filter by
+        description: Integration Type to filter by
         in: query
         items:
           enum:
@@ -9857,7 +9423,7 @@ paths:
           - AWS
           - Azure
           type: string
-        name: connector
+        name: integrationType
         type: array
       - collectionFormat: csv
         description: Connection IDs to filter by - mutually exclusive with connectionGroup
@@ -10337,11 +9903,11 @@ paths:
         analytic metrics.
       parameters:
       - collectionFormat: csv
-        description: Connector type to filter by
+        description: Integration type to filter by
         in: query
         items:
           type: string
-        name: connector
+        name: integrationType
         type: array
       - collectionFormat: csv
         description: Connection IDs to filter by - mutually exclusive with connectionGroup
@@ -10974,470 +10540,6 @@ paths:
       summary: Reload views
       tags:
       - compliance
-  /onboard/api/v1/catalog/metrics:
-    get:
-      description: Retrieving the list of metrics for catalog page.
-      parameters:
-      - collectionFormat: csv
-        description: Connector
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.CatalogMetrics'
-      security:
-      - BearerToken: []
-      summary: List catalog metrics
-      tags:
-      - onboard
-  /onboard/api/v1/connections/{connectionId}/state:
-    post:
-      parameters:
-      - description: Connection ID
-        in: path
-        name: connectionId
-        required: true
-        type: string
-      - description: Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ChangeConnectionLifecycleStateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Change connection lifecycle state
-      tags:
-      - onboard
-  /onboard/api/v1/connections/summary:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving a list of connections summaries
-      parameters:
-      - description: Filter costs
-        in: query
-        name: filter
-        type: string
-      - collectionFormat: csv
-        description: Connector
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - collectionFormat: csv
-        description: Connection Groups
-        in: query
-        items:
-          type: string
-        name: connectionGroups
-        type: array
-      - description: lifecycle state filter
-        enum:
-        - DISABLED
-        - DISCOVERED
-        - IN_PROGRESS
-        - ONBOARD
-        - ARCHIVED
-        in: query
-        name: lifecycleState
-        type: string
-      - description: health state filter
-        enum:
-        - healthy
-        - unhealthy
-        in: query
-        name: healthState
-        type: string
-      - description: page size - default is 20
-        in: query
-        name: pageSize
-        type: integer
-      - description: page number - default is 1
-        in: query
-        name: pageNumber
-        type: integer
-      - description: start time in unix seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: end time in unix seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: 'for quicker inquiry send this parameter as false, default: true'
-        in: query
-        name: needCost
-        type: boolean
-      - description: 'for quicker inquiry send this parameter as false, default: true'
-        in: query
-        name: needResourceCount
-        type: boolean
-      - description: column to sort by - default is cost
-        enum:
-        - onboard_date
-        - resource_count
-        - cost
-        - growth
-        - growth_rate
-        - cost_growth
-        - cost_growth_rate
-        in: query
-        name: sortBy
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ListConnectionSummaryResponse'
-      security:
-      - BearerToken: []
-      summary: List connections summaries
-      tags:
-      - connections
-  /onboard/api/v1/connector:
-    get:
-      description: Returns list of all connectors
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List connectors
-      tags:
-      - onboard
-  /onboard/api/v1/credential:
-    get:
-      description: Retrieving list of credentials with their details
-      parameters:
-      - description: filter by connector type
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        type: string
-      - description: filter by health status
-        enum:
-        - healthy
-        - unhealthy
-        in: query
-        name: health
-        type: string
-      - collectionFormat: csv
-        description: filter by credential type
-        in: query
-        items:
-          enum:
-          - auto-azure
-          - auto-aws
-          - manual-aws-org
-          - manual-azure-spn
-          type: string
-        name: credentialType
-        type: array
-      - default: 50
-        description: page size
-        in: query
-        name: pageSize
-        type: integer
-      - default: 1
-        description: page number
-        in: query
-        name: pageNumber
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ListCredentialResponse'
-      security:
-      - BearerToken: []
-      summary: List credentials
-      tags:
-      - onboard
-  /onboard/api/v1/credential/{credentialId}:
-    delete:
-      description: Remove a credential by ID
-      parameters:
-      - description: CredentialID
-        in: path
-        name: credentialId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Delete credential
-      tags:
-      - onboard
-    get:
-      description: Retrieving credential details by credential ID
-      parameters:
-      - description: Credential ID
-        in: path
-        name: credentialId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Credential'
-      security:
-      - BearerToken: []
-      summary: Get Credential
-      tags:
-      - onboard
-    put:
-      description: Edit a credential by ID
-      parameters:
-      - description: Credential ID
-        in: path
-        name: credentialId
-        required: true
-        type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.UpdateCredentialRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Edit credential
-      tags:
-      - onboard
-  /onboard/api/v1/source/{sourceId}:
-    delete:
-      description: Deleting a single source either AWS / Azure for the given source
-        id.
-      parameters:
-      - description: Source ID
-        in: path
-        name: sourceId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Delete source
-      tags:
-      - onboard
-  /onboard/api/v1/source/{sourceId}/healthcheck:
-    get:
-      description: Get live source health status with given source ID.
-      parameters:
-      - description: Source ID
-        in: path
-        name: sourceId
-        required: true
-        type: string
-      - default: true
-        description: Whether to update metadata or not
-        in: query
-        name: updateMetadata
-        type: boolean
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.Connection'
-      security:
-      - BearerToken: []
-      summary: Get source health
-      tags:
-      - onboard
-  /onboard/api/v2/credential:
-    post:
-      description: Creating connection credentials
-      parameters:
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Request'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api_v2.CreateCredentialV2Response'
-      security:
-      - BearerToken: []
-      summary: Create connection credentials
-      tags:
-      - onboard
-  /onboard/api/v3/connector:
-    get:
-      description: Returns list of all connectors v2
-      parameters:
-      - description: Tier (Community, Enterprise, (default both)
-        in: query
-        name: tier
-        type: string
-      - description: PerPage
-        in: query
-        name: per_page
-        type: integer
-      - description: Cursor
-        in: query
-        name: cursor
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List connectors v2
-      tags:
-      - onboard
-  /onboard/api/v3/integrations:
-    get:
-      description: List Integrations with filters
-      parameters:
-      - description: health state
-        in: query
-        name: health_state
-        type: string
-      - collectionFormat: csv
-        description: connectors
-        in: query
-        items:
-          type: string
-        name: connectors
-        type: array
-      - collectionFormat: csv
-        description: integration tracker
-        in: query
-        items:
-          type: string
-        name: integration_id
-        type: array
-      - description: name regex
-        in: query
-        name: name_regex
-        type: string
-      - description: id regex
-        in: query
-        name: id_regex
-        type: string
-      - description: PerPage
-        in: query
-        name: per_page
-        type: integer
-      - description: Cursor
-        in: query
-        name: cursor
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_opengovern_opengovernance_pkg_onboard_api.ConnectorCount'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List Integrations
-      tags:
-      - onboard
-  /onboard/api/v3/sample/purge:
-    put:
-      consumes:
-      - application/json
-      description: Returns all workspaces with owner id
-      parameters:
-      - collectionFormat: csv
-        description: ignore_source_ids
-        in: query
-        items:
-          type: string
-        name: ignore_source_ids
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: List all workspaces with owner id
-      tags:
-      - workspace
   /schedule/api/v1/analytics/trigger:
     put:
       description: Triggers an analytics job to run immediately
