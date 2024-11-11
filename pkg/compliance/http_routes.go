@@ -2341,7 +2341,7 @@ func (h *HttpHandler) ListResourceFindings(echoCtx echo.Context) error {
 		return echoCtx.JSON(http.StatusInternalServerError, "could not get Summary Job IDs")
 	}
 
-	resourceFindings, totalCount, err := es.ResourceFindingsQuery(ctx, h.logger, h.client, req.Filters.Connector, req.Filters.IntegrationID,
+	resourceFindings, totalCount, err := es.ResourceFindingsQuery(ctx, h.logger, h.client, req.Filters.IntegrationType, req.Filters.IntegrationID,
 		req.Filters.NotIntegrationID, req.Filters.ResourceCollection, req.Filters.ResourceTypeID, req.Filters.BenchmarkID,
 		req.Filters.ControlID, req.Filters.Severity, evaluatedAtFrom, evaluatedAtTo, esConformanceStatuses, req.Sort, req.Limit, req.AfterSortKey, summaryJobs)
 	if err != nil {
@@ -6949,10 +6949,10 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 
-	connectors, err := h.db.ListControlsUniqueConnectors(ctx)
+	integrationTypes, err := h.db.ListControlsUniqueIntegrationTypes(ctx)
 	if err != nil {
-		h.logger.Error("failed to get connectors list", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get connectors list")
+		h.logger.Error("failed to get integration types list", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration types list")
 	}
 
 	severities, err := h.db.ListControlsUniqueSeverity(ctx)
@@ -7001,7 +7001,7 @@ func (h *HttpHandler) ListControlsFilters(echoCtx echo.Context) error {
 	}
 
 	response := api.ListControlsFiltersResponse{
-		Provider:        connectors,
+		Provider:        integrationTypes,
 		Severity:        severities,
 		RootBenchmark:   rootBenchmarkIds,
 		ParentBenchmark: parentBenchmarks,

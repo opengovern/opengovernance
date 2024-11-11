@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
 )
@@ -70,7 +69,7 @@ func GetAPIResourceFinding(resourceFinding types.ResourceFinding) ResourceFindin
 
 type ResourceFindingFilters struct {
 	ComplianceJobId    []string                         `json:"compliance_job_id"`
-	Connector          []source.Type                    `json:"connector" example:"Azure"`
+	IntegrationType    []integration.Type               `json:"integrationType" example:"Azure"`
 	ResourceID         []string                         `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`
 	ResourceTypeID     []string                         `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`
 	IntegrationID      []string                         `json:"integrationID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`

@@ -893,18 +893,18 @@ func (db Database) UpdateBenchmarkTrackDriftEvents(ctx context.Context, benchmar
 	return nil
 }
 
-func (db Database) ListControlsUniqueConnectors(ctx context.Context) ([]string, error) {
-	var connectors []string
+func (db Database) ListControlsUniqueIntegrationTypes(ctx context.Context) ([]string, error) {
+	var integrationTypes []string
 
 	tx := db.Orm.WithContext(ctx).
 		Model(&Control{}).
-		Select("DISTINCT UNNEST(connector) AS unique_connector").
-		Scan(&connectors)
+		Select("DISTINCT UNNEST(integration_type) AS unique_integration_types").
+		Scan(&integrationTypes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	return connectors, nil
+	return integrationTypes, nil
 }
 
 func (db Database) ListControlsUniqueSeverity(ctx context.Context) ([]string, error) {
