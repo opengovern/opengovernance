@@ -208,7 +208,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
-				IntegrationType:    control.IntegrationTypeName,
+				IntegrationType:    control.IntegrationType,
 				Enabled:            true,
 				Benchmarks:         nil,
 				Severity:           types.ParseComplianceResultSeverity(control.Severity),
@@ -220,7 +220,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				q := db.Query{
 					ID:              control.ID,
 					QueryToExecute:  control.Query.QueryToExecute,
-					IntegrationType: control.IntegrationTypeName,
+					IntegrationType: control.IntegrationType,
 					PrimaryTable:    control.Query.PrimaryTable,
 					ListOfTables:    control.Query.ListOfTables,
 					Engine:          control.Query.Engine,
