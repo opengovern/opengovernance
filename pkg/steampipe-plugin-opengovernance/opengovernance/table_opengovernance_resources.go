@@ -11,7 +11,7 @@ import (
 
 func tablePlatformResources(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_resources",
+		Name:        "platform_resources",
 		Description: "OpenGovernance Resources",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
