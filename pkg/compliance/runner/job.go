@@ -146,6 +146,9 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		zap.Uint("job_id", j.ID),
 		zap.Int("res_count", len(res.Data)),
 		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
+		zap.Any("res", *res),
+		zap.String("query", j.ExecutionPlan.Query.QueryToExecute),
+		zap.String("query_id", j.ExecutionPlan.Query.ID),
 	)
 	totalComplianceResultCountMap := make(map[string]int)
 
