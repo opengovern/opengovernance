@@ -410,7 +410,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		}
 	}
 
-	err := h.DB.CreateJobSequencer(&model2.JobSequencer{
+	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
 		DependencySource: model2.JobSequencerJobTypeDescribe,
 		NextJob:          model2.JobSequencerJobTypeAnalytics,
