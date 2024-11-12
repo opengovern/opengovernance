@@ -3649,11 +3649,11 @@ definitions:
         example: 100
         type: integer
       finderPerConnectionQuery:
-        example: select * from og_resources where resource_type = 'aws::ec2::instance'
+        example: select * from platform_resources where resource_type = 'aws::ec2::instance'
           AND connection_id IN <CONNECTION_ID_LIST>
         type: string
       finderQuery:
-        example: select * from og_resources where resource_type = 'aws::ec2::instance'
+        example: select * from platform_resources where resource_type = 'aws::ec2::instance'
         type: string
       id:
         example: vms
@@ -4390,7 +4390,7 @@ definitions:
         example: UltraSightApplication
         type: string
       query:
-        example: SELECT og_id FROM og_integrations WHERE labels->'application' IS
+        example: SELECT og_id FROM platform_integrations WHERE labels->'application' IS
           NOT NULL AND labels->'application' @> '"UltraSight"'
         type: string
     type: object

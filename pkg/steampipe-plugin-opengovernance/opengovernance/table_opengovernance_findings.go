@@ -9,7 +9,7 @@ import (
 
 func tablePlatformFindings(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_findings",
+		Name:        "platform_findings",
 		Description: "OpenGovernance Compliance ComplianceResults",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

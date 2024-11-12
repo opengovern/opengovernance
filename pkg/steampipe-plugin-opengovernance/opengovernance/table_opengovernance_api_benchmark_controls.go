@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_api_benchmark_controls",
+		Name:        "platform_api_benchmark_controls",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

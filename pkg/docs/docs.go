@@ -13115,11 +13115,11 @@ const docTemplate = `{
                 },
                 "finderPerConnectionQuery": {
                     "type": "string",
-                    "example": "select * from og_resources where resource_type = 'aws::ec2::instance' AND connection_id IN \u003cCONNECTION_ID_LIST\u003e"
+                    "example": "select * from platform_resources where resource_type = 'aws::ec2::instance' AND connection_id IN \u003cCONNECTION_ID_LIST\u003e"
                 },
                 "finderQuery": {
                     "type": "string",
-                    "example": "select * from og_resources where resource_type = 'aws::ec2::instance'"
+                    "example": "select * from platform_resources where resource_type = 'aws::ec2::instance'"
                 },
                 "id": {
                     "type": "string",
@@ -14151,7 +14151,7 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string",
-                    "example": "SELECT og_id FROM og_integrations WHERE labels-\u003e'application' IS NOT NULL AND labels-\u003e'application' @\u003e '\"UltraSight\"'"
+                    "example": "SELECT og_id FROM platform_integrations WHERE labels-\u003e'application' IS NOT NULL AND labels-\u003e'application' @\u003e '\"UltraSight\"'"
                 }
             }
         },

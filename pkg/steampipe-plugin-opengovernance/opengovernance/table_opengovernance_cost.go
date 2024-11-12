@@ -9,7 +9,7 @@ import (
 
 func tablePlatformCost(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_cost",
+		Name:        "platform_cost",
 		Description: "Account-level cost of connections onboarded into platform",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
