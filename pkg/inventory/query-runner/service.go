@@ -31,7 +31,6 @@ type Config struct {
 	Metadata              config.OpenGovernanceService
 	EsSink                config.OpenGovernanceService
 	Steampipe             config.Postgres
-	PennywiseBaseURL      string `yaml:"pennywise_base_url"`
 	PrometheusPushAddress string
 }
 
@@ -64,7 +63,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
+	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe); err != nil {
 		return nil, err
 	}
 
