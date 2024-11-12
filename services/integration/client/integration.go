@@ -16,7 +16,7 @@ type IntegrationServiceClient interface {
 	ListIntegrationsByFilters(ctx *httpclient.Context, req models.ListIntegrationsRequest) (*models.ListIntegrationsResponse, error)
 	IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error)
 	GetCredential(ctx *httpclient.Context, credentialID string) (*models.Credential, error)
-	ListCredentials(ctx *httpclient.Context) (models.ListCredentialsResponse, error)
+	ListCredentials(ctx *httpclient.Context) (*models.ListCredentialsResponse, error)
 	GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error)
 	ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error)
 }
@@ -96,7 +96,7 @@ func (c *integrationClient) GetCredential(ctx *httpclient.Context, credentialID 
 	return response, nil
 }
 
-func (c *integrationClient) ListCredentials(ctx *httpclient.Context) (models.ListCredentialsResponse, error) {
+func (c *integrationClient) ListCredentials(ctx *httpclient.Context) (*models.ListCredentialsResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/credentials", c.baseURL)
 	var response models.ListCredentialsResponse
 
@@ -106,7 +106,7 @@ func (c *integrationClient) ListCredentials(ctx *httpclient.Context) (models.Lis
 		}
 		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
 func (c *integrationClient) IntegrationHealthcheck(ctx *httpclient.Context, integrationID string) (*models.Integration, error) {

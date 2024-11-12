@@ -54,6 +54,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get assets", zap.Error(err))
 		return err
 	}
 
@@ -64,6 +65,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get spends", zap.Error(err))
 		return err
 	}
 
@@ -74,6 +76,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get queries", zap.Error(err))
 		return err
 	}
 
