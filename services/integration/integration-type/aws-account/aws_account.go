@@ -19,7 +19,7 @@ func (i *AwsCloudAccountIntegration) GetConfiguration() interfaces.IntegrationCo
 		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         awsDescriberLocal.StreamName,
 
-		UISpecFileName: "aws-cloud.json",
+		UISpecFileName: "aws-cloud-account.json",
 	}
 }
 

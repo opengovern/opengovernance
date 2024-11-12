@@ -262,7 +262,7 @@
           "order": 2,
           "sortable": true,
           "filterable": true,
-          "info": "Creation timestamp.",
+          "info": "Timestamp when the integration was created.",
           "detail": false,
           "detail_order": 2
         },
@@ -273,9 +273,23 @@
           "order": 3,
           "sortable": true,
           "filterable": true,
-          "info": "Updating  timestap .",
+          "info": "Timestamp when the integration was last updated.",
           "detail": false,
           "detail_order": 3
+        },
+        {
+          "name": "credential_type",
+          "label": "Credential Type",
+          "fieldType": "text",
+          "required": true,
+          "order": 4,
+          "info": "Type of Credential used (SPN Password Based/SPN Certificate).",
+          "valueMap": {
+            "spn_password_based": "SPN Password Based",
+            "spn_certificate": "SPN Certificate"
+          },
+          "detail": false,
+          "detail_order": 4
         }
       ]
     },
