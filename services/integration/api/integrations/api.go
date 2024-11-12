@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	ioutil "io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	strconv "strconv"
 	strings "strings"
@@ -868,11 +869,39 @@ func (h API) GetIntegrationType(c echo.Context) error {
 func (h API) GetIntegrationTypeUiSpec(c echo.Context) error {
 	integrationTypeId := c.Param("integrationTypeId")
 
+	entries, err := os.ReadDir("/")
+	if err != nil {
+		h.logger.Error("failed to read dir", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read dir")
+	}
+
+	// Loop through entries
+	for _, entry := range entries {
+		if entry.IsDir() {
+			h.logger.Info("Directory:", zap.String("path", entry.Name()))
+		} else {
+			h.logger.Info("File:", zap.String("path", entry.Name()))
+		}
+	}
+
 	integrationType, ok := integration_type.IntegrationTypes[integration.Type(integrationTypeId)]
 	if !ok {
 		return echo.NewHTTPError(http.StatusNotFound, "invalid integration type")
 	}
-	integrationType.GetConfiguration()
+	cnf := integrationType.GetConfiguration()
 
-	return c.NoContent(http.StatusOK)
+	file, err := os.Open("/ui-specs/" + cnf.UISpecFileName)
+	if err != nil {
+		h.logger.Error("failed to open file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open file")
+	}
+	defer file.Close()
+
+	content, err := ioutil.ReadFile("/ui-specs/" + cnf.UISpecFileName)
+	if err != nil {
+		h.logger.Error("failed to read the file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read the file")
+	}
+
+	return c.JSON(http.StatusOK, content)
 }
