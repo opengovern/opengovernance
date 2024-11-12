@@ -405,6 +405,12 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 		return nil, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
 	}
 
+	w.logger.Info("runSqlWorkerJob QueryOutput",
+		zap.Uint("job_id", j.ID),
+		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
+		zap.String("query", j.ExecutionPlan.Query.QueryToExecute),
+		zap.String("query_id", j.ExecutionPlan.Query.ID),
+		zap.String("query", queryOutput.String()))
 	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
 		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID))
