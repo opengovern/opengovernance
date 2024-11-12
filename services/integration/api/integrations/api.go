@@ -903,5 +903,11 @@ func (h API) GetIntegrationTypeUiSpec(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read the file")
 	}
 
-	return c.JSON(http.StatusOK, content)
+	var result interface{}
+	if err := json.Unmarshal(content, &result); err != nil {
+		h.logger.Error("failed to unmarshal the file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal the file")
+	}
+
+	return c.JSON(http.StatusOK, result)
 }
