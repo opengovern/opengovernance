@@ -1,0 +1,146 @@
+{
+  "id": "entraid_directory",
+  "name": "EntraID Directory",
+  "description": "Handles connection to EntraID Directory service.",
+  "logo": "entraid.svg",
+  "help_text": "EntraID Directory integration allows you to manage and authenticate users within your organization's EntraID environment. [Learn more](https://docs.entraid.com).",
+  "credentialInputs": [
+    {
+      "type": "spn_password_based",
+      "label": "SPN Password Based",
+      "priority": 1,
+      "fields": [
+        {
+          "name": "tenant_id",
+          "label": "Tenant ID",
+          "inputType": "text",
+          "required": true,
+          "order": 1,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "Tenant ID must be a valid UUID."
+          },
+          "info": "Unique tenant identifier.",
+          "external_help_url": "https://docs.entraid.com/tenant-id"
+        },
+        {
+          "name": "client_id",
+          "label": "Client ID",
+          "inputType": "text",
+          "required": true,
+          "order": 2,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "Client ID must be a valid UUID."
+          },
+          "info": "Application's client identifier.",
+          "external_help_url": "https://docs.entraid.com/client-id"
+        },
+        {
+          "name": "spn_object_id",
+          "label": "SPN Object ID",
+          "inputType": "text",
+          "required": true,
+          "order": 3,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "SPN Object ID must be a valid UUID."
+          },
+          "info": "Service Principal Object ID.",
+          "external_help_url": "https://docs.entraid.com/spn-object-id"
+        },
+        {
+          "name": "client_password",
+          "label": "Client Password",
+          "inputType": "password",
+          "required": true,
+          "order": 4,
+          "validation": {
+            "minLength": 8,
+            "maxLength": 128,
+            "errorMessage": "Client Password must be between 8 and 128 characters."
+          },
+          "info": "Secure password for client authentication."
+        }
+      ]
+    },
+    {
+      "type": "spn_certificate",
+      "label": "SPN Certificate",
+      "priority": 2,
+      "fields": [
+        {
+          "name": "tenant_id",
+          "label": "Tenant ID",
+          "inputType": "text",
+          "required": true,
+          "order": 1,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "Tenant ID must be a valid UUID."
+          },
+          "info": "Unique tenant identifier.",
+          "external_help_url": "https://docs.entraid.com/tenant-id"
+        },
+        {
+          "name": "client_id",
+          "label": "Client ID",
+          "inputType": "text",
+          "required": true,
+          "order": 2,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "Client ID must be a valid UUID."
+          },
+          "info": "Application's client identifier.",
+          "external_help_url": "https://docs.entraid.com/client-id"
+        },
+        {
+          "name": "spn_object_id",
+          "label": "SPN Object ID",
+          "inputType": "text",
+          "required": true,
+          "order": 3,
+          "validation": {
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+            "errorMessage": "SPN Object ID must be a valid UUID."
+          },
+          "info": "Service Principal Object ID.",
+          "external_help_url": "https://docs.entraid.com/spn-object-id"
+        },
+        {
+          "name": "certificate",
+          "label": "Certificate (PEM Format)",
+          "inputType": "file",
+          "required": true,
+          "order": 4,
+          "validation": {
+            "fileTypes": [".pem"],
+            "maxFileSizeMB": 5,
+            "errorMessage": "Please upload a valid PEM certificate file not exceeding 5MB."
+          },
+          "info": "Upload your PEM formatted certificate.",
+          "external_help_url": "https://docs.entraid.com/certificate-upload"
+        },
+        {
+          "name": "certificate_password",
+          "label": "Certificate Password",
+          "inputType": "password",
+          "required": false,
+          "order": 5,
+          "validation": {
+            "minLength": 8,
+            "maxLength": 128,
+            "errorMessage": "Certificate Password must be between 8 and 128 characters."
+          },
+          "info": "Password for your certificate (if applicable).",
+          "external_help_url": "https://docs.entraid.com/certificate-password",
+          "conditional": {
+            "field": "certificate",
+            "isPresent": true
+          }
+        }
+      ]
+    }
+  ]
+}

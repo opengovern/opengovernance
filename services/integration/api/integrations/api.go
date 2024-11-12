@@ -61,6 +61,7 @@ func (h API) Register(g *echo.Group) {
 	types := g.Group("/types")
 	types.GET("", httpserver.AuthorizeHandler(h.ListIntegrationTypes, api.ViewerRole))
 	types.GET("/:integrationTypeId", httpserver.AuthorizeHandler(h.GetIntegrationType, api.ViewerRole))
+	types.GET("/:integrationTypeId/ui/spec", httpserver.AuthorizeHandler(h.GetIntegrationTypeUiSpec, api.ViewerRole))
 	types.DELETE("/:integrationTypeId", httpserver.AuthorizeHandler(h.DeleteIntegrationType, api.EditorRole))
 }
 
@@ -187,11 +188,10 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		credentialIDStr = credentialID.String()
 	}
 
-	if _, ok := integration_type.IntegrationTypes[integrationType]; !ok {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+	integration, ok := integration_type.IntegrationTypes[integrationType]
+	if !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integrationType")
 	}
-	createCredentialFunction := integration_type.IntegrationTypes[integrationType]
-	integration, err := createCredentialFunction()
 
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
@@ -267,8 +267,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
 	}
 
-	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, err := createCredentialFunction()
+	integration := integration_type.IntegrationTypes[req.IntegrationType]
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
@@ -381,11 +380,8 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
 	}
 
-	createCredentialFunction := integration_type.IntegrationTypes[integration.IntegrationType]
-	integrationType, err := createCredentialFunction()
-	if err != nil {
-		h.logger.Error("failed to create credential", zap.Error(err))
-	}
+	integrationType := integration_type.IntegrationTypes[integration.IntegrationType]
+
 	if integrationType == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
@@ -857,4 +853,26 @@ func (h API) GetIntegrationType(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 	}
 	return c.JSON(http.StatusOK, item)
+}
+
+// GetIntegrationTypeUiSpec godoc
+//
+//	@Summary		Get integration type UI Spec
+//	@Description	Get integration type UI Spec
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200
+//	@Param			integrationTypeId	path	string	true	"integrationTypeId"
+//	@Router			/integration/api/v1/integrations/types/{integrationTypeId}/ui/spec [get]
+func (h API) GetIntegrationTypeUiSpec(c echo.Context) error {
+	integrationTypeId := c.Param("integrationTypeId")
+
+	integrationType, ok := integration_type.IntegrationTypes[integration.Type(integrationTypeId)]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, "invalid integration type")
+	}
+	integrationType.GetConfiguration()
+
+	return c.NoContent(http.StatusOK)
 }

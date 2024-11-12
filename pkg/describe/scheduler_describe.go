@@ -207,12 +207,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 			s.logger.Error("integration type not found", zap.String("integrationType", string(integration.IntegrationType)))
 			continue
 		}
-		integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
-		if err != nil {
-			s.logger.Error("failed to get integration type", zap.String("integrationType", string(integration.IntegrationType)),
-				zap.String("spot", "ListDiscoveryResourceTypes"), zap.Error(err))
-			continue
-		}
+		integrationType := integration_type.IntegrationTypes[integration.IntegrationType]
 		resourceTypes, err := integrationType.GetResourceTypesByLabels(integration.Labels)
 		if err != nil {
 			s.logger.Error("failed to get integration resourceTypes", zap.String("integrationType", string(integration.IntegrationType)),
@@ -270,10 +265,11 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
 	removeResources bool, parentId *uint, createdBy string) (*model.DescribeIntegrationJob, error) {
 
-	integrationType, err := integration_type.IntegrationTypes[integration.IntegrationType]()
-	if err != nil {
-		return nil, err
+	integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
+	if !ok {
+		return nil, fmt.Errorf("integration type not found")
 	}
+
 	validResourceTypes, err := integrationType.GetResourceTypesByLabels(integration.Labels)
 	if err != nil {
 		return nil, err
@@ -372,10 +368,9 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
-	integrationType, err := integration_type.IntegrationTypes[dc.IntegrationType]()
-	if err != nil {
-		s.logger.Error("failed to get integrationType", zap.String("integration_type", string(dc.IntegrationType)), zap.Error(err))
-		return err
+	integrationType, ok := integration_type.IntegrationTypes[dc.IntegrationType]
+	if !ok {
+		return fmt.Errorf("integration type not found")
 	}
 
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
@@ -443,7 +438,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		return fmt.Errorf("failed to marshal cloud native req due to %w", err)
 	}
 
-	describerConfig := integrationType.GetDescriberConfiguration()
+	describerConfig := integrationType.GetConfiguration()
 
 	topic := describerConfig.NatsScheduledJobsTopic
 	if dc.TriggerType == enums.DescribeTriggerTypeManual {

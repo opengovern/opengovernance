@@ -13,15 +13,13 @@ import (
 
 type AwsCloudAccountIntegration struct{}
 
-func CreateAwsCloudAccountIntegration() (interfaces.IntegrationType, error) {
-	return &AwsCloudAccountIntegration{}, nil
-}
-
-func (i *AwsCloudAccountIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
-	return interfaces.DescriberConfiguration{
+func (i *AwsCloudAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         awsDescriberLocal.StreamName,
+
+		UISpecFileName: "aws-cloud.json",
 	}
 }
 
@@ -36,7 +34,7 @@ func (i *AwsCloudAccountIntegration) HealthCheck(jsonData []byte, providerId str
 		AccessKeyID:              credentials.AwsAccessKeyID,
 		SecretAccessKey:          credentials.AwsSecretAccessKey,
 		RoleNameInPrimaryAccount: credentials.RoleToAssumeInMainAccount,
-		CrossAccountRoleARN:      credentials.CrossAccountRoleName,
+		CrossAccountRoleARN:      labels["CrossAccountRoleARN"],
 		ExternalID:               credentials.ExternalID,
 	}, providerId)
 }

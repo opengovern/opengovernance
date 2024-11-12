@@ -341,13 +341,8 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 	}
 
 	if s.conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		for itName, it := range integration_type.IntegrationTypes {
-			integrationType, err := it()
-			if err != nil {
-				s.logger.Error("Failed to parse integration type", zap.Error(err))
-				return err
-			}
-			describerConfig := integrationType.GetDescriberConfiguration()
+		for itName, integrationType := range integration_type.IntegrationTypes {
+			describerConfig := integrationType.GetConfiguration()
 			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 200000); err != nil {
 				s.logger.Error("Failed to stream to local integration type queue", zap.String("integration_type", string(itName)), zap.Error(err))
 				return err

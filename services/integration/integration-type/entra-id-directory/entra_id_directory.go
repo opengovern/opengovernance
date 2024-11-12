@@ -11,15 +11,13 @@ import (
 
 type EntraIdDirectoryIntegration struct{}
 
-func CreateEntraidSubscriptionIntegration() (interfaces.IntegrationType, error) {
-	return &EntraIdDirectoryIntegration{}, nil
-}
-
-func (i *EntraIdDirectoryIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
-	return interfaces.DescriberConfiguration{
+func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic: entraidDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    entraidDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         entraidDescriberLocal.StreamName,
+
+		UISpecFileName: "entraid-directory.json",
 	}
 }
 

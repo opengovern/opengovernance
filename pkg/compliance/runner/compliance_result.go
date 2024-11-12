@@ -23,13 +23,9 @@ func GetResourceTypeFromTableName(tableName string, queryIntegrationType []integ
 	} else {
 		integrationType = ""
 	}
-	integrationTypeObj, ok := integration_type.IntegrationTypes[integrationType]
+	integration, ok := integration_type.IntegrationTypes[integrationType]
 	if !ok {
 		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
-	}
-	integration, err := integrationTypeObj()
-	if err != nil {
-		return "", "", echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration type")
 	}
 	return integration.GetResourceTypeFromTableName(tableName), integrationType, nil
 }
