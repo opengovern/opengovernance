@@ -857,6 +857,7 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 
 	integrations, err := integrationClient.ListIntegrations(ctx, nil)
 	if err != nil {
+		h.logger.Error("failed to list integrations", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
 	}
 
@@ -868,10 +869,11 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 
 	credentials, err := integrationClient.ListCredentials(ctx)
 	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
 	}
 	credentialsMap := make(map[string]bool)
-	for _, c := range credentials {
+	for _, c := range credentials.Credentials {
 		credentialsMap[c.ID] = true
 	}
 
