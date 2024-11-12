@@ -1,147 +1,124 @@
 {
-  "integration_type_id": "entraid_directory",
-  "integration_name": "EntraID Directory",
-  "help_text_md": "Manage and monitor your EntraID Directory integrations seamlessly. [Learn more](https://docs.entraid.com).",
-  "platform_documentation": "https://docs.microsoft.com/entraid",
-  "provider_documentation": "https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id",
-  "icon": "entraid.svg",
+  "integration_type_id": "aws_cloud_account",
+  "integration_name": "AWS Cloud Account",
+  "help_text_md": "AWS Cloud Account integration facilitates secure connections to your AWS resources. [Documentation](https://docs.aws.amazon.com).",
+  "platform_documentation": "https://docs.aws.amazon.com",
+  "provider_documentation": "https://aws.amazon.com",
+  "icon": "aws.svg",
   "discover": {
     "credentials": [
       {
-        "type": "spn_password_based",
-        "label": "SPN Password Based",
+        "type": "aws_single_account",
+        "label": "AWS Single Account",
         "priority": 1,
         "fields": [
           {
-            "name": "tenant_id",
-            "label": "Tenant ID",
+            "name": "aws_access_key_id",
+            "label": "AWS Access Key ID",
             "inputType": "text",
             "required": true,
             "order": 1,
             "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "Tenant ID must be a valid UUID."
+              "pattern": "^[A-Z0-9]{20}$",
+              "errorMessage": "AWS Access Key ID must be a 20-character uppercase alphanumeric string."
             },
-            "info": "Unique tenant identifier.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/quickstart-create-new-tenant"
+            "info": "Your AWS Access Key ID.",
+            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           },
           {
-            "name": "client_id",
-            "label": "Client ID",
-            "inputType": "text",
+            "name": "aws_secret_access_key",
+            "label": "AWS Secret Access Key",
+            "inputType": "password",
             "required": true,
             "order": 2,
             "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "Client ID must be a valid UUID."
+              "pattern": "^.{40}$",
+              "errorMessage": "AWS Secret Access Key must be a 40-character string."
             },
-            "info": "Application's client identifier.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/app-registrations"
-          },
-          {
-            "name": "spn_object_id",
-            "label": "SPN Object ID",
-            "inputType": "text",
-            "required": true,
-            "order": 3,
-            "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "SPN Object ID must be a valid UUID."
-            },
-            "info": "Service Principal Object ID.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-portal"
-          },
-          {
-            "name": "client_password",
-            "label": "Client Password",
-            "inputType": "password",
-            "required": true,
-            "order": 4,
-            "validation": {
-              "pattern": "^[A-Za-z0-9s$&+,:;=?@#|'<>.^*()%!-~]{8,128}$",
-              "errorMessage": "Client Password must be between 8 and 128 characters."
-            },
-            "info": "Secure password for client authentication."
+            "info": "Your AWS Secret Access Key.",
+            "external_help_url": "https://docs.aws.amazon.com/secret-access-key"
           }
         ]
       },
       {
-        "type": "spn_certificate",
-        "label": "SPN Certificate",
+        "type": "aws_multi_account",
+        "label": "AWS Multi-Account",
         "priority": 2,
         "fields": [
           {
-            "name": "tenant_id",
-            "label": "Tenant ID",
+            "name": "aws_access_key_id",
+            "label": "AWS Access Key ID",
             "inputType": "text",
             "required": true,
             "order": 1,
             "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "Tenant ID must be a valid UUID."
+              "pattern": "^[A-Z0-9]{20}$",
+              "errorMessage": "AWS Access Key ID must be a 20-character uppercase alphanumeric string."
             },
-            "info": "Unique tenant identifier.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/quickstart-create-new-tenant"
+            "info": "Your AWS Access Key ID.",
+            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           },
           {
-            "name": "client_id",
-            "label": "Client ID",
-            "inputType": "text",
+            "name": "aws_secret_access_key",
+            "label": "AWS Secret Access Key",
+            "inputType": "password",
             "required": true,
             "order": 2,
             "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "Client ID must be a valid UUID."
+              "pattern": "^.{40}$",
+              "errorMessage": "AWS Secret Access Key must be a 40-character string."
             },
-            "info": "Application's client identifier.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/app-registrations"
+            "info": "Your AWS Secret Access Key.",
+            "external_help_url": "https://docs.aws.amazon.com/secret-access-key"
           },
           {
-            "name": "spn_object_id",
-            "label": "SPN Object ID",
+            "name": "cross_account_role_name",
+            "label": "Cross-Account Role Name",
             "inputType": "text",
             "required": true,
+            "default": "OpenGovernanceRoles",
             "order": 3,
             "validation": {
-              "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
-              "errorMessage": "SPN Object ID must be a valid UUID."
+              "pattern": "^[\\w+=,.@-]{1,64}$",
+              "errorMessage": "Cross-Account Role Name must be 1-64 characters long and can include letters, numbers, and the following characters: +=,.@-"
             },
-            "info": "Service Principal Object ID.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-portal"
+            "info": "Name of the cross-account role (e.g., OpenGovernanceRoles).",
+            "external_help_url": "https://docs.aws.amazon.com/cross-account-role"
           },
           {
-            "name": "certificate",
-            "label": "Certificate (PEM Format)",
-            "inputType": "file",
-            "required": true,
+            "name": "role_to_assume_in_main_account",
+            "label": "Role to Assume in Main Account",
+            "inputType": "text",
+            "required": false,
+            "default": "OpenGovernanceRoles",
             "order": 4,
             "validation": {
-              "fileTypes": [".pem"],
-              "maxFileSizeMB": 5,
-              "errorMessage": "Please upload a valid PEM certificate file not exceeding 5MB."
+              "pattern": "^[\\w+=,.@-]{1,64}$",
+              "errorMessage": "Role to Assume in Main Account must be 1-64 characters long and can include letters, numbers, and the following characters: +=,.@-"
             },
-            "info": "Upload your PEM formatted certificate.",
-            "external_help_url": "https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-cert"
+            "info": "Name of the role to assume in the main account (e.g., OpenGovernanceRoles).",
+            "external_help_url": "https://docs.aws.amazon.com/role-to-assume"
           },
           {
-            "name": "certificate_password",
-            "label": "Certificate Password",
-            "inputType": "password",
+            "name": "external_id",
+            "label": "External ID",
+            "inputType": "text",
             "required": false,
             "order": 5,
             "validation": {
-              "pattern": "^[A-Za-z0-9s$&+,:;=?@#|'<>.^*()%!-~]{8,128}$",
-              "errorMessage": "Certificate Password must be between 8 and 128 characters."
+              "pattern": "^[a-zA-Z0-9-_]{1,100}$",
+              "errorMessage": "External ID must be 1-100 characters long and can include letters, numbers, hyphens, and underscores."
             },
-            "info": "Password for your certificate (if applicable)."
+            "info": "External ID for enhanced security.",
+            "external_help_url": "https://docs.aws.amazon.com/external-id"
           }
         ]
       }
     ],
     "integrations": [
       {
-        "label": "Azure Cloud Account",
-        "type": "azure_cloud_account",
+        "label": "AWS Cloud Account",
+        "type": "aws_cloud_account",
         "fields": [
           {
             "name": "uuid",
@@ -152,28 +129,28 @@
             "info": "Unique identifier (UUID) for the integration."
           },
           {
-            "name": "subscription_id",
-            "label": "Subscription ID",
+            "name": "account_id",
+            "label": "AWS Account ID",
             "fieldType": "text",
             "required": true,
             "order": 2,
-            "info": "Unique identifier for the Azure subscription."
+            "info": "Unique identifier for the AWS account."
           },
           {
-            "name": "subscription_name",
-            "label": "Subscription Name",
+            "name": "account_name",
+            "label": "Account Name",
             "fieldType": "text",
             "required": true,
             "order": 3,
-            "info": "Name of the Azure subscription."
+            "info": "Name of the AWS account."
           },
           {
-            "name": "resource_group",
-            "label": "Resource Group",
+            "name": "region",
+            "label": "Region",
             "fieldType": "text",
-            "required": false,
+            "required": true,
             "order": 4,
-            "info": "Azure resource group associated with the subscription."
+            "info": "AWS region associated with the account."
           },
           {
             "name": "credential_type",
@@ -181,10 +158,10 @@
             "fieldType": "text",
             "required": true,
             "order": 5,
-            "info": "Type of Credential used (SPN Password Based/SPN Certificate).",
+            "info": "Type of Credential used (Single Account/Multi-Account).",
             "valueMap": {
-              "spn_password_based": "SPN Password Based",
-              "spn_certificate": "SPN Certificate"
+              "aws_single_account": "Single Account",
+              "aws_multi_account": "Multi-Account"
             }
           },
           {
@@ -193,7 +170,7 @@
             "fieldType": "status",
             "required": true,
             "order": 6,
-            "info": "Current state of the Azure Cloud Account integration.",
+            "info": "Current state of the AWS Cloud Account integration.",
             "statusOptions": [
               {
                 "value": "ACTIVE",
@@ -207,7 +184,7 @@
               },
               {
                 "value": "ARCHIVED",
-                "label": "Archived",
+                "label": "Pending",
                 "color": "blue"
               }
             ]
@@ -283,13 +260,13 @@
           "fieldType": "text",
           "required": true,
           "order": 4,
-          "info": "Type of Credential used (SPN Password Based/SPN Certificate).",
+          "info": "Type of Credential used (Single Account/Multi-Account).",
           "valueMap": {
-            "spn_password_based": "SPN Password Based",
-            "spn_certificate": "SPN Certificate"
+            "aws_single_account": "Single Account",
+            "aws_multi_account": "Multi-Account"
           },
           "detail": false,
-          "detail_order": 4
+          "detail_order": 3
         }
       ]
     },
@@ -360,9 +337,11 @@
         "type": "update",
         "label": "Update",
         "editableFields": [
-          "client_password",
-          "certificate",
-          "certificate_password"
+          "aws_access_key_id",
+          "aws_secret_access_key",
+          "cross_account_role_name",
+          "role_to_assume_in_main_account",
+          "external_id"
         ]
       },
       {
@@ -384,7 +363,7 @@
         "type": "view",
         "label": "View"
       },
-
+     
       {
         "type": "delete",
         "label": "Delete",
