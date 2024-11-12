@@ -11,15 +11,13 @@ import (
 
 type AzureSubscriptionIntegration struct{}
 
-func CreateAzureSubscriptionIntegration() (interfaces.IntegrationType, error) {
-	return &AzureSubscriptionIntegration{}, nil
-}
-
-func (i *AzureSubscriptionIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
-	return interfaces.DescriberConfiguration{
+func (i *AzureSubscriptionIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic: azureDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    azureDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         azureDescriberLocal.StreamName,
+
+		UISpecFileName: "azure-subscription.json",
 	}
 }
 
