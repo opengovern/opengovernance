@@ -987,10 +987,8 @@ github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQ
 github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
 github.com/opencontainers/runc v1.2.0 h1:qke7ZVCmJcKrJVY2iHJVC+0kql9uYdkusOPsQOOeBw4=
 github.com/opencontainers/runc v1.2.0/go.mod h1:/PXzF0h531HTMsYQnmxXkBD7YaGShm/2zcRB79dksUc=
-github.com/opengovern/og-util v1.1.0 h1:bV2XKX8aIpJGC2CR4kh9CU/rJWPQed76gtVXM2zBDXM=
-github.com/opengovern/og-util v1.1.0/go.mod h1:dyn8rhmxq59o1jnbgGfmcUvW7iB/eN6OxoTUUx6jEHA=
-github.com/opengovern/og-util v1.1.1 h1:SXnPCNuhR9WxxupEa1hCtIOIh2Sy+MF80qVdpoxc58k=
-github.com/opengovern/og-util v1.1.1/go.mod h1:dyn8rhmxq59o1jnbgGfmcUvW7iB/eN6OxoTUUx6jEHA=
+github.com/opengovern/og-util v1.1.2 h1:o3KE8UBgcNZqHevZfiNC4Ly4Bo9r/T9IKUipinAyB80=
+github.com/opengovern/og-util v1.1.2/go.mod h1:dyn8rhmxq59o1jnbgGfmcUvW7iB/eN6OxoTUUx6jEHA=
 github.com/opengovern/plugin-aws v0.7.3 h1:76hZOjulNlgn4uaq5lq1/pmGmgJqvX1ZQbgqcQn03gI=
 github.com/opengovern/plugin-aws v0.7.3/go.mod h1:zfTMswfCyXZ0gD6SDCsmKg55LseXzeFzOH4jXn2QJVo=
 github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b h1:4xP98kDpOXUu6RcFJyZN63OeA2I26MLS+dEB9JWYQpY=

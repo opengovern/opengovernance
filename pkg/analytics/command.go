@@ -158,7 +158,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe, w.config.PennywiseBaseURL); err != nil {
+	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe); err != nil {
 		w.logger.Error("failed to populate steampipe config for opengovernance plugin", zap.Error(err))
 		return err
 	}
