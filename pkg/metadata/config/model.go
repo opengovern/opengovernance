@@ -8,7 +8,7 @@ import (
 type Config struct {
 	Postgres    koanf.Postgres              `yaml:"postgres" koanf:"postgres"`
 	Http        koanf.HttpServer            `yaml:"http" koanf:"http"`
-	Integration koanf.OpenGovernanceService `yaml:"integration" koanf:"onboard"`
+	Integration koanf.OpenGovernanceService `yaml:"integration" koanf:"integration"`
 	Scheduler   koanf.OpenGovernanceService `yaml:"scheduler" koanf:"scheduler"`
 	Compliance  koanf.OpenGovernanceService `yaml:"compliance" koanf:"compliance"`
 	Inventory   koanf.OpenGovernanceService `yaml:"inventory" koanf:"inventory"`
