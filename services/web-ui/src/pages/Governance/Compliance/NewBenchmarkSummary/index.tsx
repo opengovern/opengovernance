@@ -352,7 +352,7 @@ export default function NewBenchmarkSummary() {
                         return temp_data
                     }
                 })
-                const new_chart = temp_chart.filter((item) => {
+                const new_chart = temp_chart?.filter((item) => {
                     if (item) {
                         return item
                     }

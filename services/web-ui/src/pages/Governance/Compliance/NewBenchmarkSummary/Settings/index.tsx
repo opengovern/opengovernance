@@ -279,14 +279,13 @@ export default function Settings({
            auto_enable: status == 'auto-enable' ? true : false,
            disable: status == 'disabled' ? true : false,
        }
-       console.log(body)
        axios
            .post(
                `${url}/main/compliance/api/v3/benchmark/${id}/assign`,body,
                config
            )
            .then((res) => {
-                window.location.reload()
+                // window.location.reload()
            })
            .catch((err) => {
                setLoading(false)
@@ -295,9 +294,10 @@ export default function Settings({
            })
    }
     const ChangeStatusItem = (status: string,tracker_id: string) => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
-        setLoading(true)
-        setEnableStatus(status)
+        console.log("salan");
+        console.log(tracker_id);
+        setLoading(true);
+        setEnableStatus(status);
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -321,6 +321,7 @@ export default function Settings({
                 },
             ],
         }
+        console.log(body,"body");
         
         axios
             .post(
@@ -353,7 +354,7 @@ export default function Settings({
                         value={enableStatus}
                         className="gap-8"
                         onChange={({ detail }) => {
-                          ChangeStatus(detail?.value)
+                            ChangeStatus(detail?.value)
                         }}
                         items={[
                             {
@@ -417,29 +418,30 @@ export default function Settings({
                             {
                                 id: 'id',
                                 header: 'Id',
-                                cell: (item) => item?.integration?.id,
+                                cell: (item) =>
+                                    item?.integration?.integration_id,
                                 sortingField: 'id',
                                 isRowHeader: true,
                             },
                             {
                                 id: 'id_name',
                                 header: 'Name',
-                                cell: (item) => item?.integration?.id_name,
+                                cell: (item) => item?.integration?.name,
                                 sortingField: 'id',
                                 isRowHeader: true,
                             },
                             {
-                                id: 'integration',
-                                header: 'Integration',
-                                cell: (item) => item?.integration?.integration,
+                                id: 'provider_id',
+                                header: 'Provider ID',
+                                cell: (item) => item?.integration?.provider_id,
                                 sortingField: 'id',
                                 isRowHeader: true,
                             },
                             {
-                                id: 'integration_id',
-                                header: 'Integration Tracker',
+                                id: 'integration_type',
+                                header: 'Integration Type',
                                 cell: (item) =>
-                                    item?.integration?.integration_id,
+                                    item?.integration?.integration_type,
                                 sortingField: 'id',
                                 isRowHeader: true,
                             },
@@ -454,8 +456,9 @@ export default function Settings({
                                                 ChangeStatusItem(
                                                     e
                                                         ? 'auto-enable'
-                                                        : 'disabled'
-                                                        ,item?.integration?.integration_id
+                                                        : 'disabled',
+                                                    item?.integration
+                                                        ?.integration_id
                                                 )
                                             }}
                                             checked={item?.assigned}
@@ -468,9 +471,9 @@ export default function Settings({
                         ]}
                         columnDisplay={[
                             { id: 'id', visible: true },
-                            { id: 'id_name', visible: true },
-                            { id: 'integration', visible: true },
-                            { id: 'integration_id', visible: true },
+                            { id: 'name', visible: true },
+                            { id: 'provider_id', visible: true },
+                            { id: 'integration_type', visible: true },
                             { id: 'enable', visible: true },
                         ]}
                         enableKeyboardNavigation
