@@ -2,7 +2,7 @@
 
 
 import { Badge, FileUpload, FormField, Input } from "@cloudscape-design/components";
-import { CredentialDetailsField, CredentialInputField, Schema } from "./types";
+import {  CredentialField, Schema } from "./types";
 import { dateTimeDisplay } from "../../../utilities/dateDisplay";
 
 // For whole schema
@@ -21,7 +21,7 @@ export const GetActions=(type: number,schema: Schema | undefined)=>{
 
 export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
     if(type===1){
-        const fields = schema?.list.credentials.display.displayFields
+        const fields = schema?.render.credentials.fields
         return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
             return {
                 title: field.label,
@@ -36,7 +36,7 @@ export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
         
     }
 
-    const fields = schema?.list.integrations.display.displayFields
+    const fields = schema?.render.integrations.fields
   
 
     return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
@@ -54,7 +54,7 @@ export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
 
 export const GetTableColumnsDefintion=(type: number,schema: Schema | undefined)=>{
    if (type === 1) {
-       const fields = schema?.list.credentials.display.displayFields
+       const fields = schema?.render.credentials.fields
        return fields
            ?.sort((a, b) => a.order - b.order)
            .map((field) => {
@@ -65,7 +65,7 @@ export const GetTableColumnsDefintion=(type: number,schema: Schema | undefined)=
            })
    }
 
-   const fields = schema?.list.integrations.display.displayFields
+   const fields = schema?.render?.integrations?.fields
    return fields
        ?.sort((a, b) => a.order - b.order)
        .map((field) => {
@@ -78,30 +78,30 @@ export const GetTableColumnsDefintion=(type: number,schema: Schema | undefined)=
 
 export const GetView=(type: number,schema: Schema)=>{
     if(type===1){
-        return schema.view.credential_details
+        return schema.render.credentials
     }
 
-    return schema.view.integration_details
+    return schema.render.integrations
 }
 
 export const GetDetails=(type: number,schema: Schema)=>{
     if(type===1){
-        return schema.view.credential_details
+        return schema.render.credentials
     }
 
-    return schema.view.integration_details
+    return schema.render.integrations
 }
 
 export const GetDetailsFields=(type: number,schema: Schema)=>{
     if(type===1){
-        return schema.view.credential_details.fields.sort(
+        return schema.render.credentials.fields?.filter((field) => field.detail).sort(
             (a, b) => a.order - b.order
         )
     }
 
-    return schema.view.integration_details.fields.sort(
-        (a, b) => a.order - b.order
-    )
+    return schema.render.integrations.fields
+        .filter((field) => field.detail)
+        .sort((a, b) => a.order - b.order)
 }
 
 export const GetDetailsActions=(type: number,schema: Schema |undefined)=>{
@@ -117,10 +117,10 @@ export const GetDetailsActions=(type: number,schema: Schema |undefined)=>{
 
 export const GetDefaultPageSize=(type: number,schema: Schema)=>{
     if(type===1){
-        return schema.list.credentials.defaultPageSize
+        return schema.render.credentials.defaultPageSize
     }
 
-    return schema.list.integrations.defaultPageSize
+    return schema.render.integrations.defaultPageSize
 }
 
 export const GetLogo=(schema: Schema)=>{
@@ -128,16 +128,16 @@ export const GetLogo=(schema: Schema)=>{
 }
 
 export const GetDiscover=(schema : Schema | undefined)=>{
-    return schema?.discover.credentialInputs.sort((a,b)=>a.priority-b.priority)
+    return schema?.discover.credentials.sort((a,b)=>a.priority-b.priority)
 }
 
 export const GetDiscoverField = (schema: Schema | undefined, index: number) => {
-    return schema?.discover.credentialInputs[index].fields.sort(
+    return schema?.discover.credentials[index].fields.sort(
         (a, b) => a.order - b.order
     )
 }
 export const GetUpdateCredentialFields = (schema: Schema | undefined, index:number) => {
-    const fields = schema?.discover.credentialInputs[index].fields.sort(
+    const fields = schema?.discover.credentials[index].fields.sort(
         (a, b) => a.order - b.order
     )
     const editableFields = schema?.actions.credentials.filter((item: any)=>{
@@ -151,7 +151,7 @@ export const GetEditField = (schema: Schema | undefined, type: number) => {
         const actions = schema?.actions.credentials
         const edit_action = actions?.find((action) => action.type === 'update')
         const fields = edit_action?.editableFields
-        return schema?.view?.credential_details?.fields.filter((field) =>
+        return schema?.render?.credentials?.fields.filter((field) =>
             fields?.includes(field.name)
         )
 
@@ -159,7 +159,7 @@ export const GetEditField = (schema: Schema | undefined, type: number) => {
     const actions = schema?.actions.integrations
     const edit_action = actions?.find((action) => action.type === 'update')
     const fields = edit_action?.editableFields
-    return schema?.view?.integration_details?.fields.filter((field) =>
+    return schema?.render?.integrations?.fields.filter((field) =>
         fields?.includes(field.name)
     )
 
@@ -199,9 +199,13 @@ export const CheckFileSize=(file: File, size: number)=>{
     reader.onerror = (error) => reject(error);
   });
 }
-export const RenderInputField = (field: CredentialInputField ,setFunction : Function, value: any) => {
+export const RenderInputField = (
+    field: CredentialField,
+    setFunction: Function,
+    value: any
+) => {
     // handle tet and password
-    if(field.inputType == "text" || field.inputType == "password"){
+    if (field.inputType == 'text' || field.inputType == 'password') {
         return (
             <FormField
                 className="w-full"
@@ -222,15 +226,9 @@ export const RenderInputField = (field: CredentialInputField ,setFunction : Func
         )
     }
     // handle file
-    if(field.inputType == "file"){
-                
-
+    if (field.inputType == 'file') {
         return (
-            <FormField
-                className="w-full"
-                label={field.label}
-               
-            >
+            <FormField className="w-full" label={field.label}>
                 <FileUpload
                     className="w-full"
                     onChange={({ detail }) => setFunction(detail.value[0])}
@@ -247,25 +245,29 @@ export const RenderInputField = (field: CredentialInputField ,setFunction : Func
                     }}
                     showFileLastModified
                     showFileSize
-                   
-                   multiple
+                    multiple
                     showFileThumbnail
                     tokenLimit={3}
-                    accept={`${field.validation.fileTypes?.map((item)=>{
+                    accept={`${field.validation.fileTypes?.map((item) => {
                         return `${item},`
                     })}`}
-                    errorText={CheckFileSize(value, field.validation.maxFileSizeMB ?? 0) ? '' : field.validation.errorMessage}
+                    errorText={
+                        CheckFileSize(
+                            value,
+                            field.validation.maxFileSizeMB ?? 0
+                        )
+                            ? ''
+                            : field.validation.errorMessage
+                    }
                 />
             </FormField>
         )
     }
-
-
 }
 
 
 export const RenderUpdateField = (
-    field: CredentialInputField,
+    field: CredentialField,
     setFunction: Function,
     value: any
 ) => {
@@ -372,20 +374,22 @@ export const RenderTableField = (field: any, item: any) => {
 
 export const GetViewFields = (schema: Schema | undefined, type: number) => {
     if (type === 1) {
-        return schema?.view.credential_details.fields.sort(
-            (a, b) => a.order - b.order
-        )?.map((field) => {
-           return {
-               title: field.label,
-               dataIndex: field.name,
-               key: field.name,
-               type: field.fieldType,
-               statusOptions: field.statusOptions,
-           }
-        })
+        return schema?.render.credentials.fields
+            .filter((field) => field.detail)
+            .sort((a, b) => a.order - b.order)
+            ?.map((field) => {
+                return {
+                    title: field.label,
+                    dataIndex: field.name,
+                    key: field.name,
+                    type: field.fieldType,
+                    statusOptions: field.statusOptions,
+                }
+            })
     }
 
-    return schema?.view.integration_details.fields
+    return schema?.render.integrations.fields
+        .filter((field) => field.detail)
         .sort((a, b) => a.order - b.order)
         ?.map((field) => {
             return {
