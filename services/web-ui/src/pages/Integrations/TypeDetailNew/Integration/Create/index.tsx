@@ -10,7 +10,7 @@ import { useAtomValue } from 'jotai'
 
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { CredentialInput, Integration, Schema } from '../../types'
+import {  DiscoverCredential, Integration, Schema } from '../../types'
 
 import {
     Alert,
@@ -211,7 +211,7 @@ export default function CreateIntegration({
                             <>
                                 {GetDiscover(schema)?.map(
                                     (
-                                        credential: CredentialInput,
+                                        credential: DiscoverCredential,
                                         index: number
                                     ) => {
                                         return (
@@ -253,7 +253,6 @@ export default function CreateIntegration({
                                             >
                                                 Back
                                             </Button>
-
                                         </Flex>
                                     </>
                                 ) : (

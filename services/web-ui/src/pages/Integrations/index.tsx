@@ -148,7 +148,10 @@ export default function Integrations() {
                                                                     connector={
                                                                         connector.platform_name
                                                                     }
-                                                                    name ={connector?.name}
+                                                                    id={connector.id}
+                                                                    name={
+                                                                        connector?.name
+                                                                    }
                                                                     title={
                                                                         connector.label
                                                                     }

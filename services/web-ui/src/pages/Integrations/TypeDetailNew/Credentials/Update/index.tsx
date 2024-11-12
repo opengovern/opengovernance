@@ -10,7 +10,12 @@ import { useAtomValue } from 'jotai'
 
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { CredentialInput, Integration, Schema, Credentials } from '../../types'
+import {
+    DiscoverCredential,
+    Integration,
+    Schema,
+    Credentials,
+} from '../../types'
 
 import {
     Alert,
@@ -158,7 +163,7 @@ export default function UpdateCredentials({
                             <>
                                 {GetDiscover(schema)?.map(
                                     (
-                                        credential: CredentialInput,
+                                        credential: DiscoverCredential,
                                         index: number
                                     ) => {
                                         return (

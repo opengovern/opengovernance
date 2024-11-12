@@ -48,75 +48,48 @@ export default function TypeDetail() {
      
   
         
-        // let url = ''
-        // if (window.location.origin === 'http://localhost:3000') {
-        //     url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
-        // } else {
-        //     url = window.location.origin
-        // }
-        // // @ts-ignore
-        // const token = JSON.parse(localStorage.getItem('openg_auth')).token
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
 
-        // const config = {
-        //     headers: {
-        //         Authorization: `Bearer ${token}`,
-        //     },
-        // }
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+        console.log(state)
+     
+        axios
+            .get(
+                `${url}/main/integration/api/v1/integrations/types/${state.connector}/ui/spec `,
+              
+                config
+            )
+            .then((res) => {
+                const data = res.data
 
-        // const body = {
-        //     intergration_type: state.connector,
-        // }
-        // axios
-        //     .post(
-        //         `${url}/main/integration/api/v1/integrations/list`,
-        //         body,
-        //         config
-        //     )
-        //     .then((res) => {
-        //         const data = res.data
-
-        //         setRow(data)
-        //     })
-        //     .catch((err) => {
-        //         console.log(err)
-        //     })
-        return ``
+                setSchema(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
     }
     
     useEffect(()=>{
-        // setSchema(GetSchema())
-        console.log(GetSchema())
+        GetSchema()
+       
     },[])
 
 
     return (
         <>
-            <Tabs
-                tabs={[
-                    {
-                        id: '0',
-                        label: 'Integrations',
-                        content: (
-                            <IntegrationList
-                                schema={shcema}
-                                name={name}
-                                integration_type={state.connector}
-                            />
-                        ),
-                    },
-                    {
-                        id: '1',
-                        label: 'Credentials',
-                        content: (
-                            <CredentialsList
-                                schema={shcema}
-                                name={name}
-                                integration_type={state.connector}
-                            />
-                        ),
-                    },
-                ]}
-            />
+            <TopHeader breadCrumb={[name]} />
+
             {shcema && shcema?.integration_type_id ? (
                 <>
                     <Tabs
@@ -178,7 +151,6 @@ export default function TypeDetail() {
                     </Flex>
                 </>
             )}
-            <TopHeader breadCrumb={[name]} />
         </>
     )
 }
