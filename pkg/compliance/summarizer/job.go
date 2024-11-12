@@ -110,12 +110,16 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			return err
 		}
 
+		w.logger.Info("resource lookup result", zap.Any("platformResourceIDs", platformResourceIDs),
+			zap.Any("lookupResourcesMap", lookupResourcesMap))
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			var resource *es2.LookupResource
 			potentialResources := lookupResourcesMap[f.PlatformResourceID]
 			for _, r := range potentialResources {
 				r := r
+				w.logger.Info("potential resources", zap.Any("potentialResources", potentialResources),
+					zap.String("f.ResourceType", f.ResourceType), zap.String("r.ResourceType", r.ResourceType))
 				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
 					resource = &r
 					break
