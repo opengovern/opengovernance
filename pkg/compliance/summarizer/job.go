@@ -88,15 +88,6 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		for _, f := range page {
 			var resource *es2.LookupResource
 			potentialResources := lookupResourcesMap[f.PlatformResourceID]
-			//for _, r := range potentialResources {
-			//	r := r
-			//	w.logger.Info("potential resources", zap.Any("potentialResources", potentialResources),
-			//		zap.String("f.ResourceType", f.ResourceType), zap.String("r.ResourceType", r.ResourceType))
-			//	if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
-			//		resource = &r
-			//		break
-			//	}
-			//}
 			if len(potentialResources) > 0 {
 				resource = &potentialResources[0]
 			}
@@ -112,7 +103,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				continue
 			}
 			w.logger.Info("resource DONE", zap.String("platform_resource_id", resourceIdType))
-			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceIdType])
+			resourceFinding := jd.ResourcesFindings[resourceIdType]
 			keys, idx := resourceFinding.KeysAndIndex()
 			resourceFinding.EsID = es2.HashOf(keys...)
 			resourceFinding.EsIndex = idx

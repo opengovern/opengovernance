@@ -87,14 +87,6 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	jd.ResourcesFindings[resource.PlatformID] = resourceFinding
 }
 
-func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
-	resourceFinding.ResourceCollection = nil
-	for rcId := range resourceFinding.ResourceCollectionMap {
-		resourceFinding.ResourceCollection = append(resourceFinding.ResourceCollection, rcId)
-	}
-	return resourceFinding
-}
-
 func (jd *JobDocs) Summarize(logger *zap.Logger) {
 	jd.BenchmarkSummary.summarize()
 	for i, resourceFinding := range jd.ResourcesFindings {
