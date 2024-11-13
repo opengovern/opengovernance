@@ -23,7 +23,7 @@ type ClientAccessTokenCredential struct {
 
 func (c *ClientAccessTokenCredential) GetClient(ctx context.Context) (*github.Client, error) {
 	var client *github.Client
-	// Authentication with Github access token
+	// Authentication with GitHub access token
 	if strings.HasPrefix(c.Token, "ghp_") {
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: c.Token},
@@ -66,7 +66,7 @@ type ClientAppInstallationCredential struct {
 
 func (c *ClientAppInstallationCredential) GetClient(ctx context.Context) (*github.Client, error) {
 	var client *github.Client
-	// Authentication as Github APP Installation authentication
+	// Authentication as GitHub APP Installation authentication
 	ghAppId, err := strconv.ParseInt(c.AppId, 10, 64)
 	if err != nil {
 		return nil, err
@@ -120,27 +120,35 @@ func createClientDetail(ctx context.Context, config Config) (*github.Client, err
 	return nil, nil
 }
 
-type GithubClient struct {
-	ID           int64
-	Name         string
-	Type         string
-	ClientDetail *github.Client
-}
+//type GithubClient struct {
+//	ID           string
+//	Name         string
+//	Type         string
+//	ClientDetail *github.Client
+//}
+//
+//func newGithubClient(clientDetail *github.Client, providerID string) *GithubClient {
+//	return &GithubClient{
+//		ID:           providerID,
+//		ClientDetail: clientDetail,
+//	}
+//}
 
-func newGithubClient(clientDetail *github.Client) *GithubClient {
-	return &GithubClient{
-		ClientDetail: clientDetail,
-	}
-}
+//func (client *GithubClient) IsHealthy() (bool, error) {
+//	user, _, err := client.ClientDetail.Users.Get(context.Background(), "")
+//	if err != nil {
+//		return false, err
+//	}
+//	client.Name = *user.Login
+//	client.Type = *user.Type
+//	return true, nil
+//}
 
-func (client *GithubClient) IsHealthy() (bool, error) {
-	user, _, err := client.ClientDetail.Users.Get(context.Background(), "")
+func IsHealthy(client *github.Client) (bool, error) {
+	_, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
 		return false, err
 	}
-	client.ID = *user.ID
-	client.Name = *user.Login
-	client.Type = *user.Type
 	return true, nil
 }
 
@@ -150,6 +158,7 @@ type Config struct {
 	AppId          string `json:"app_id"`
 	InstallationId string `json:"installation_id"`
 	PrivateKeyPath string `json:"private_key_path"`
+	//AccountID      string `json:"account_id"`
 }
 
 func checkCredentials(config Config) error {
@@ -163,18 +172,26 @@ func checkCredentials(config Config) error {
 	return nil
 }
 
-func GithubIntegrationHealthcheck(config Config) (bool, error) {
+func GithubIntegrationHealthcheck(config Config) (bool, *github.Client, error) {
 	ctx := context.Background()
 	err := checkCredentials(config)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
-	clientDetail, err := createClientDetail(ctx, config)
+	client, err := createClientDetail(ctx, config)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
-	githubClient := newGithubClient(clientDetail)
-	return githubClient.IsHealthy()
+	//githubClient := newGithubClient(clientDetail, providerID)
+	//isHealthy, err := githubClient.IsHealthy()
+	//if err != nil {
+	//	return false, nil, err
+	//}
+	isHealthy, err := IsHealthy(client)
+	if err != nil {
+		return false, nil, err
+	}
+	return isHealthy, client, nil
 }
 
 // oauth2Transport is a http.RoundTripper that authenticates all requests
