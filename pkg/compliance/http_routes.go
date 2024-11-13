@@ -5724,10 +5724,15 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 		}
 	}
 
+	assignedCount := 0
 	var results []api.GetBenchmarkAssignmentsItem
 	for _, info := range integrationInfos {
 		results = append(results, info)
+		if info.Assigned {
+			assignedCount++
+		}
 	}
+
 	var status api.BenchmarkAssignmentStatus
 	if benchmark.AutoAssign {
 		status = api.BenchmarkAssignmentStatusAutoEnable
