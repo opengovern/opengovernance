@@ -669,8 +669,8 @@ func (h API) Get(c echo.Context) error {
 
 	integration, err := h.database.GetIntegration(IntegrationID)
 	if err != nil {
-		h.logger.Error("failed to get credential", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get credential")
+		h.logger.Error("failed to get integration", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration")
 	}
 
 	item, err := integration.ToApi()

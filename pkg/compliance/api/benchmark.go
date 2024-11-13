@@ -279,8 +279,8 @@ type IntegrationFilter struct {
 
 type IntegrationFilterRequest struct {
 	Integration []IntegrationFilter `json:"integration"`
-	AutoEnable  bool
-	Disable     bool
+	AutoEnable  bool                `json:"auto_enable"`
+	Disable     bool                `json:"disable"`
 }
 
 type SeveritySummary struct {
