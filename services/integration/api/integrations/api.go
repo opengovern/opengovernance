@@ -93,6 +93,8 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 			if len(values) > 0 {
 				if key == "integrationType" || key == "integration_type" {
 					req.IntegrationType = integration_type.ParseType(values[0])
+				} else if key == "credentialType" || key == "credential_type" {
+					req.CredentialType = values[0]
 				} else {
 					keys := strings.Split(key, ".")
 					formData[keys[1]] = values[0]
@@ -174,7 +176,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 		metadata := make(map[string]string)
 		metadataJsonData, err := json.Marshal(metadata)
-		credentialMetadataJsonb := pgtype.JSONB{}
+		credentialMetadataJsonb := pgtype.JSONB{}to
 		err = credentialMetadataJsonb.Set(metadataJsonData)
 		err = h.database.CreateCredential(&models2.Credential{
 			ID:              credentialID,
