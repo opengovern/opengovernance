@@ -324,8 +324,8 @@ export default function Events({ query }: ICount) {
                 columns={columns(isDemo)}
                 onRowClicked={(event: RowClickedEvent) => {
                     if (
-                        event.data.kaytuResourceID &&
-                        event.data.kaytuResourceID.length > 0
+                        event.data.platformResourceID 
+                     
                     ) {
                         setFinding(event.data)
                         setOpen(true)

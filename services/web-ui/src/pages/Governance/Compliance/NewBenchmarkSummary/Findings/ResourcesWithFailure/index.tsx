@@ -42,7 +42,7 @@ const columns = (isDemo: boolean) => {
                 >
                     <Text className="text-gray-800">{param.value}</Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data.kaytuResourceID}
+                        {param.data.platformResourceID}
                     </Text>
                 </Flex>
             ),
@@ -235,10 +235,7 @@ export default function ResourcesWithFailure({ query }: ICount) {
                 onCellClicked={(
                     event: RowClickedEvent<GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding>
                 ) => {
-                    if (
-                        event.data?.kaytuResourceID &&
-                        event.data?.kaytuResourceID.length > 0
-                    ) {
+                    if (event.data?.platformResourceID) {
                         setFinding(event.data)
                         setOpen(true)
                     } else {

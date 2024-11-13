@@ -57,7 +57,7 @@ const columns = (isDemo: boolean) => {
                 >
                     <Text className="text-gray-800">{param.value}</Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data.kaytuResourceID}
+                        {param.data.platformResourceID}
                     </Text>
                 </Flex>
             ),
@@ -357,10 +357,7 @@ export default function ResourcesWithFailure({ query }: ICount) {
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (
-                                row?.kaytuResourceID &&
-                                row?.kaytuResourceID.length > 0
-                            ) {
+                            if (row?.platformResourceID) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {
@@ -390,7 +387,7 @@ export default function ResourcesWithFailure({ query }: ICount) {
                                                     isDemo ? 'blur-sm' : ''
                                                 }
                                             >
-                                                {item.kaytuResourceID}
+                                                {item.platformResourceID}
                                             </Text>
                                         </Flex>
                                     </>

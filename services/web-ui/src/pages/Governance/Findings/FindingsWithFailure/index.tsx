@@ -455,7 +455,9 @@ export default function FindingsWithFailure({ query }: ICount) {
                             finding ? (
                                 <>
                                     <Flex justifyContent="start">
-                                        {getConnectorIcon(finding?.connector)}
+                                        {getConnectorIcon(
+                                            finding?.integrationType
+                                        )}
                                         <Title className="text-lg font-semibold ml-2 my-1">
                                             {finding?.resourceName}
                                         </Title>
@@ -497,10 +499,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (
-                                row.kaytuResourceID &&
-                                row.kaytuResourceID.length > 0
-                            ) {
+                            if (row.platformResourceID) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {

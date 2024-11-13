@@ -158,7 +158,7 @@ interface IuseScheduleApiV1ComplianceReEvaluateDetailState {
 export const useScheduleApiV1ComplianceReEvaluateDetail = (
     benchmarkId: string,
     query: {
-        connection_id: string[]
+        integrationID: string[]
 
         control_id?: string[]
     },
@@ -185,7 +185,7 @@ export const useScheduleApiV1ComplianceReEvaluateDetail = (
         abortCtrl: AbortController,
         reqbenchmarkId: string,
         reqquery: {
-            connection_id: string[]
+            integrationID: string[]
 
             control_id?: string[]
         },
@@ -281,7 +281,7 @@ export const useScheduleApiV1ComplianceReEvaluateDetail = (
     const sendNowWithParams = (
         reqbenchmarkId: string,
         reqquery: {
-            connection_id: string[]
+            integrationID: string[]
 
             control_id?: string[]
         },
@@ -317,7 +317,7 @@ interface IuseScheduleApiV1ComplianceReEvaluateUpdateState {
 export const useScheduleApiV1ComplianceReEvaluateUpdate = (
     benchmarkId: string,
     query: {
-        connection_id: string[]
+        integrationID: string[]
 
         control_id?: string[]
     },
@@ -344,7 +344,7 @@ export const useScheduleApiV1ComplianceReEvaluateUpdate = (
         abortCtrl: AbortController,
         reqbenchmarkId: string,
         reqquery: {
-            connection_id: string[]
+            integrationID: string[]
 
             control_id?: string[]
         },
@@ -440,7 +440,7 @@ export const useScheduleApiV1ComplianceReEvaluateUpdate = (
     const sendNowWithParams = (
         reqbenchmarkId: string,
         reqquery: {
-            connection_id: string[]
+            integrationID: string[]
 
             control_id?: string[]
         },
