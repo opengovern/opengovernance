@@ -74,7 +74,7 @@ const columns = (isDemo: boolean) => {
                                 : '')}
                     </Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data?.kaytuResourceID}
+                        {param.data?.platformResourceID}
                     </Text>
                 </Flex>
             ),
@@ -527,8 +527,8 @@ export default function ControlFindings({
                         onRowClick={(event) => {
                             const row = event.detail.item
                             if (
-                                row.kaytuResourceID &&
-                                row.kaytuResourceID.length > 0
+                                row.platformResourceID 
+                               
                             ) {
                                 setFinding(row)
                                 setOpen(true)

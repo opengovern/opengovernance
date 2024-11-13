@@ -61,7 +61,7 @@ export default function ResourceFindingDetail({
 }: IResourceFindingDetail) {
     const { response, isLoading, sendNow } =
         useComplianceApiV1FindingsResourceCreate(
-            { kaytuResourceId: resourceFinding?.kaytuResourceID || '' },
+            { platformResourceID: resourceFinding?.platformResourceID || '' },
             {},
             false
         )
@@ -81,7 +81,7 @@ export default function ResourceFindingDetail({
 
     const conformance = () => {
         if (showOnlyOneControl) {
-            return (finding?.conformanceStatus || 0) ===
+            return (finding?.complianceStatus || 0) ===
                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusFailed ? (
                 <Flex className="w-fit gap-1.5">
                     <XCircleIcon className="h-4 text-rose-600" />
@@ -135,13 +135,13 @@ export default function ResourceFindingDetail({
                             <>
                                 <StatusIndicator
                                     type={
-                                        control.conformanceStatus ===
+                                        control.complianceStatus ===
                                         GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed
                                             ? 'success'
                                             : 'error'
                                     }
                                 >
-                                    {control.conformanceStatus ===
+                                    {control.complianceStatus ===
                                     GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed
                                         ? 'Passed'
                                         : 'Failed'}
@@ -186,7 +186,7 @@ export default function ResourceFindingDetail({
                                 <Text
                                     className={` w-full text-start mb-0.5 truncate`}
                                 >
-                                    {resourceFinding?.kaytuResourceID}
+                                    {resourceFinding?.platformResourceID}
                                 </Text>
                             </>
                         ),

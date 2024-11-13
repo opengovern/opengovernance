@@ -68,14 +68,14 @@ export const getConnectorIcon = (
     className = ''
 ) => {
     const connectorIcon = () => {
-        if (String(connector).toLowerCase() === 'azure') {
+        if (String(connector).toLowerCase() === 'azure_subscription') {
             return AzureIcon
         }
         if (String(connector).toLowerCase() === 'aws_cloud_account') {
             return AWSIcon
         }
         if (connector?.length && connector?.length > 0) {
-            if (String(connector[0]).toLowerCase() === 'azure') {
+            if (String(connector[0]).toLowerCase() === 'azure_subscription') {
                 return AzureIcon
             }
             if (String(connector[0]).toLowerCase() === 'aws_cloud_account') {

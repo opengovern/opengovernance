@@ -82,7 +82,7 @@ export default function FindingDetail({
 }: IFindingDetail) {
     const { response, isLoading, sendNow } =
         useComplianceApiV1FindingsResourceCreate(
-            { kaytuResourceId: finding?.kaytuResourceID || '' },
+            { platformResourceID: finding?.platformResourceID || '' },
             {},
             false
         )
@@ -117,7 +117,7 @@ export default function FindingDetail({
     } = useScheduleApiV1ComplianceReEvaluateDetail(
         finding?.benchmarkID || '',
         {
-            connection_id: [finding?.connectionID || ''],
+            integrationID: [finding?.integrationID || ''],
             control_id: [finding?.controlID || ''],
         },
         {},
@@ -132,7 +132,7 @@ export default function FindingDetail({
     } = useScheduleApiV1ComplianceReEvaluateUpdate(
         finding?.benchmarkID || '',
         {
-            connection_id: [finding?.connectionID || ''],
+            integrationID: [finding?.integrationID || ''],
             control_id: [finding?.controlID || ''],
         },
         {},
@@ -196,11 +196,11 @@ export default function FindingDetail({
                                     label: 'Account',
                                     value: (
                                         <>
-                                            {finding?.providerConnectionName}
+                                            {finding?.integrationName}
                                             <Text
                                                 className={` w-full text-start mb-0.5 truncate`}
                                             >
-                                                {finding?.providerConnectionID}
+                                                {finding?.integrationID}
                                             </Text>
                                         </>
                                     ),
@@ -308,10 +308,10 @@ export default function FindingDetail({
                                                     ),
                                                 },
                                                 {
-                                                    label: 'Conformance Statu',
+                                                    label: 'Compliance Status',
                                                     value: (
                                                         <>
-                                                            {finding?.conformanceStatus ===
+                                                            {finding?.complianceStatus ===
                                                             GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed ? (
                                                                 <Flex className="w-fit gap-1.5">
                                                                     <CheckCircleIcon className="h-4 text-emerald-500" />

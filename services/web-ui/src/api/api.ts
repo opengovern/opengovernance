@@ -773,11 +773,11 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFinding {
     /** @example 1 */
     complianceJobID?: number
     /** @example "alarm" */
-    conformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus
+    complianceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus
     /** @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8" */
-    connectionID?: string
+    integrationID?: string
     /** @example "Azure" */
-    connector?: SourceType
+    integrationType?: SourceType
     /** @example "azure_cis_v140_7_5" */
     controlID?: string
     controlTitle?: string
@@ -790,7 +790,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFinding {
     /** @example "1" */
     id?: string
     /** @example "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1" */
-    kaytuResourceID?: string
+    platformResourceID?: string
     /** @example "1589395200" */
     lastEvent?: string
     /** @example ["Azure CIS v1.4.0"] */
@@ -803,12 +803,12 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFinding {
      * Connection ID
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
      */
-    providerConnectionID?: string
+    providerID?: string
     /**
      * Connection ID
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
      */
-    providerConnectionName?: string
+    integrationName?: string
     /** @example "The VM is not using managed disks" */
     reason?: string
     /** @example "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1" */
@@ -844,7 +844,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEvent {
     /** @example "8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8" */
     id?: string
     /** @example "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1" */
-    kaytuResourceID?: string
+    platformResourceID?: string
     parentBenchmarkReferences?: string[]
     parentComplianceJobID?: number
     previousConformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus
@@ -891,7 +891,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEventFilters 
     /** @example ["8e0f8e7a1b1c4e6fb7e49c6af9d2b1c8"] */
     findingID?: string[]
     /** @example ["/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"] */
-    kaytuResourceID?: string[]
+    platformResourceID?: string[]
     /** @example ["8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"] */
     notConnectionID?: string[]
     /** @example ["/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"] */
@@ -920,7 +920,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEventsSort {
     connectionID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     connector?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     controlID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
-    kaytuResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
+    platformResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceType?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     severity?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     stateActive?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
@@ -985,7 +985,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingsSort {
     connectionID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     connector?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     controlID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
-    kaytuResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
+    platformResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceTypeID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     severity?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
@@ -1034,7 +1034,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiGetServicesFindingsS
 
 export interface GithubComKaytuIoKaytuEnginePkgComplianceApiGetSingleResourceFindingRequest {
     /** @example "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1" */
-    kaytuResourceId?: string
+    platformResourceID?: string
     /** @example "Microsoft.Compute/virtualMachines" */
     resourceType?: string
 }
@@ -1116,7 +1116,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding {
     failedCount?: number
     findings?: GithubComKaytuIoKaytuEnginePkgComplianceApiFinding[]
     id?: string
-    kaytuResourceID?: string
+    platformResourceID?: string
     /**
      * Connection ID
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -1165,7 +1165,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFindingFilte
 export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFindingsSort {
     conformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     failedCount?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
-    kaytuResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
+    platformResourceID?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceLocation?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceName?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
     resourceType?: GithubComKaytuIoKaytuEnginePkgComplianceApiSortDirection
@@ -7508,7 +7508,7 @@ export class Api<
             benchmarkId: string,
             query: {
                 /** Connection ID */
-                connection_id: string[]
+                integrationID: string[]
                 /** Control ID */
                 control_id?: string[]
             },
@@ -7539,7 +7539,7 @@ export class Api<
             benchmarkId: string,
             query: {
                 /** Connection ID */
-                connection_id: string[]
+                integrationID: string[]
                 /** Control ID */
                 control_id?: string[]
             },

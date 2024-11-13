@@ -324,7 +324,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
     const filterOptions = [
         {
             id: 'conformance_status',
-            name: 'Conformance Status',
+            name: 'compliance Status',
             icon: CheckCircleIcon,
             component: (
                 <ConformanceStatus

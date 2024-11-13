@@ -74,7 +74,7 @@ const columns = (
                                 : '')}
                     </Text>
                     <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data?.kaytuResourceID}
+                        {param.data?.platformResourceID}
                     </Text>
                 </Flex>
             ),
@@ -206,7 +206,7 @@ const columns = (
                                         ? 1
                                         : -1
                                 })
-                                .map((f) => f.conformanceStatus)
+                                .map((f) => f.complianceStatus)
                                 .at(0)
                         )}
                     </Flex>
@@ -496,10 +496,7 @@ export default function ImpactedResources({
                         // @ts-ignore
                         onRowClick={(event) => {
                             const row = event.detail.item
-                            if (
-                                row?.kaytuResourceID &&
-                                row?.kaytuResourceID.length > 0
-                            ) {
+                            if (row?.platformResourceID) {
                                 setFinding(row)
                                 setOpen(true)
                             } else {
@@ -529,7 +526,7 @@ export default function ImpactedResources({
                                                     isDemo ? 'blur-sm' : ''
                                                 }
                                             >
-                                                {item.kaytuResourceID}
+                                                {item.platformResourceID}
                                             </Text>
                                         </Flex>
                                     </>
@@ -626,7 +623,7 @@ export default function ImpactedResources({
                                                     })
                                                     .map(
                                                         (f) =>
-                                                            f.conformanceStatus
+                                                            f.complianceStatus
                                                     )
                                                     .at(0)
                                             )}
