@@ -9,6 +9,7 @@ type Credential struct {
 	ID              string            `json:"id"`
 	Secret          string            `json:"secret"`
 	IntegrationType integration.Type  `json:"integration_type"`
+	CredentialType  string            `json:"credential_type"`
 	Metadata        map[string]string `json:"metadata"`
 	CreatedAt       time.Time         `json:"created_at"`
 	UpdatedAt       time.Time         `json:"updated_at"`

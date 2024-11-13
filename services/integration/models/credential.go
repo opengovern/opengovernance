@@ -14,6 +14,7 @@ import (
 type Credential struct {
 	ID              uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	IntegrationType integration.Type
+	CredentialType  string
 	Secret          string
 	Metadata        pgtype.JSONB
 
@@ -33,6 +34,7 @@ func (c *Credential) ToApi(returnSecret bool) (*models.Credential, error) {
 	credential := &models.Credential{
 		ID:              c.ID.String(),
 		IntegrationType: c.IntegrationType,
+		CredentialType:  c.CredentialType,
 		Metadata:        metadata,
 		CreatedAt:       c.CreatedAt,
 		UpdatedAt:       c.UpdatedAt,
