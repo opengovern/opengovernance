@@ -31,7 +31,7 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 					Require:   plugin.Optional,
 				},
 				{
-					Name:      "connection_id",
+					Name:      "integration_id",
 					Operators: []string{quals.QualOperatorEqual},
 					Require:   plugin.Optional,
 				},
@@ -46,10 +46,10 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromQual("benchmark_id"),
 			},
 			{
-				Name:        "connection_id",
+				Name:        "integration_id",
 				Type:        proto.ColumnType_STRING,
-				Description: "The connection IDs included in the benchmark summary",
-				Transform:   transform.FromQual("connection_id"),
+				Description: "The integration IDs included in the benchmark summary",
+				Transform:   transform.FromQual("integration_id"),
 			},
 			{
 				Name:        "time_at",
@@ -245,15 +245,15 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("ResourcesSeverityStatus.None.PassedCount"),
 			},
 			{
-				Name:        "connections_result_compliance_status_passed_count",
+				Name:        "integrations_result_compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
-				Description: "The number of checks that passed in the benchmark summary for the connection",
+				Description: "The number of checks that passed in the benchmark summary for the integration",
 				Transform:   transform.FromField("IntegrationsStatus.PassedCount"),
 			},
 			{
-				Name:        "connections_result_compliance_status_total_count",
+				Name:        "integrations_result_compliance_status_total_count",
 				Type:        proto.ColumnType_INT,
-				Description: "The total number of checks in the benchmark summary for the connection",
+				Description: "The total number of checks in the benchmark summary for the integration",
 				Transform:   transform.FromField("IntegrationsStatus.TotalCount"),
 			},
 			{

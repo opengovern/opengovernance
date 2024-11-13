@@ -28,19 +28,19 @@ func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	if d.Quals["time_at"] != nil {
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
-	var connectionIds []string
-	if d.EqualsQuals["connection_id"] != nil {
-		q := d.EqualsQuals["connection_id"]
+	var integrationIds []string
+	if d.EqualsQuals["integration_id"] != nil {
+		q := d.EqualsQuals["integration_id"]
 		if q.GetListValue() != nil {
 			for _, v := range q.GetListValue().Values {
-				connectionIds = append(connectionIds, v.GetStringValue())
+				integrationIds = append(integrationIds, v.GetStringValue())
 			}
 		} else {
-			connectionIds = []string{d.EqualsQuals["connection_id"].GetStringValue()}
+			integrationIds = []string{d.EqualsQuals["integration_id"].GetStringValue()}
 		}
 	}
 
-	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, connectionIds, timeAt)
+	res, err := complianceClient.GetBenchmarkSummary(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, integrationIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err
@@ -73,19 +73,19 @@ func ListBenchmarkControls(ctx context.Context, d *plugin.QueryData, _ *plugin.H
 	if d.Quals["time_at"] != nil {
 		timeAt = utils.GetPointer(d.EqualsQuals["time_at"].GetTimestampValue().AsTime())
 	}
-	var connectionIds []string
-	if d.EqualsQuals["connection_id"] != nil {
-		q := d.EqualsQuals["connection_id"]
+	var integrationIds []string
+	if d.EqualsQuals["integration_id"] != nil {
+		q := d.EqualsQuals["integration_id"]
 		if q.GetListValue() != nil {
 			for _, v := range q.GetListValue().Values {
-				connectionIds = append(connectionIds, v.GetStringValue())
+				integrationIds = append(integrationIds, v.GetStringValue())
 			}
 		} else {
-			connectionIds = []string{d.EqualsQuals["connection_id"].GetStringValue()}
+			integrationIds = []string{d.EqualsQuals["integration_id"].GetStringValue()}
 		}
 	}
 
-	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, connectionIds, timeAt)
+	apiRes, err := complianceClient.GetBenchmarkControls(&httpclient.Context{UserRole: api.AdminRole}, benchmarkId, integrationIds, timeAt)
 	if err != nil {
 		plugin.Logger(ctx).Error("GetBenchmarkSummary compliance client call failed", "error", err)
 		return nil, err

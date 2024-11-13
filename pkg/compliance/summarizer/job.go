@@ -5,17 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
+	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"strings"
-
-	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
 	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
-	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/types"
-	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.uber.org/zap"
 )
 
@@ -65,30 +61,6 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 		ResourcesFindings:       make(map[string]types.ResourceFinding),
 		ResourcesFindingsIsDone: make(map[string]bool),
-
-		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
-		IntegrationCache:        map[string]integrationApi.Integration{},
-	}
-
-	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
-	if err != nil {
-		w.logger.Error("failed to list resource collections", zap.Error(err))
-		return err
-	}
-	for _, rc := range resourceCollections {
-		rc := rc
-		jd.ResourceCollectionCache[rc.ID] = rc
-	}
-
-	integrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
-	if err != nil {
-		w.logger.Error("failed to list integrations", zap.Error(err))
-		return err
-	}
-	for _, c := range integrations.Integrations {
-		c := c
-		// use provider id instead of opengovernance id because we need that to check resource collections
-		jd.IntegrationCache[strings.ToLower(c.ProviderID)] = c
 	}
 
 	for page := 1; paginator.HasNext(); page++ {
@@ -116,24 +88,28 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		for _, f := range page {
 			var resource *es2.LookupResource
 			potentialResources := lookupResourcesMap[f.PlatformResourceID]
-			for _, r := range potentialResources {
-				r := r
-				w.logger.Info("potential resources", zap.Any("potentialResources", potentialResources),
-					zap.String("f.ResourceType", f.ResourceType), zap.String("r.ResourceType", r.ResourceType))
-				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
-					resource = &r
-					break
-				}
-			}
-
+			//for _, r := range potentialResources {
+			//	r := r
+			//	w.logger.Info("potential resources", zap.Any("potentialResources", potentialResources),
+			//		zap.String("f.ResourceType", f.ResourceType), zap.String("r.ResourceType", r.ResourceType))
+			//	if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
+			//		resource = &r
+			//		break
+			//	}
+			//}
+			resource = &potentialResources[0]
+			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
+				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
 		}
 
 		var docs []es2.Doc
 		for resourceIdType, isReady := range jd.ResourcesFindingsIsDone {
 			if !isReady {
+				w.logger.Info("resource NOT DONE", zap.String("platform_resource_id", resourceIdType))
 				continue
 			}
+			w.logger.Info("resource DONE", zap.String("platform_resource_id", resourceIdType))
 			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceIdType])
 			keys, idx := resourceFinding.KeysAndIndex()
 			resourceFinding.EsID = es2.HashOf(keys...)
