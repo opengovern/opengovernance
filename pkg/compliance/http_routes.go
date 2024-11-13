@@ -5736,7 +5736,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	var status api.BenchmarkAssignmentStatus
 	if benchmark.AutoAssign {
 		status = api.BenchmarkAssignmentStatusAutoEnable
-	} else if len(results) > 0 {
+	} else if assignedCount > 0 {
 		status = api.BenchmarkAssignmentStatusEnabled
 	} else {
 		status = api.BenchmarkAssignmentStatusDisabled
