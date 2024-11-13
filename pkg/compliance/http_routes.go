@@ -344,6 +344,9 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
 			}
 		}
+		if benchmark, ok := benchmarksMap[h.Source.BenchmarkID]; ok {
+			finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
+		}
 
 		if control, ok := controlsMap[finding.ControlID]; ok {
 			finding.ControlTitle = control.Title
