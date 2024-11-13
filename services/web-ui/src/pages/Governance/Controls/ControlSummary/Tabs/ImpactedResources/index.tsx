@@ -367,15 +367,15 @@ export default function ImpactedResources({
           .apiV1ResourceFindingsCreate({
               filters: {
                   controlID: [controlId || ''],
-                  conformanceStatus:
+                  complianceStatus:
                       conformanceFilter === undefined
                           ? [
                                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusPassed,
                                 GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus.ConformanceStatusFailed,
                             ]
                           : conformanceFilter,
-                // @ts-ignore
-                connectionGroup: ['healthy']
+                  // @ts-ignore
+                  integrationGroup: ['active'],
               },
               // sort: [],
               limit: 15,
@@ -387,13 +387,11 @@ export default function ImpactedResources({
           })
           .then((resp) => {
               setLoading(false)
-                if (resp.data.resourceFindings){
-                    setRows(resp.data.resourceFindings)
-
-                }
-                else{
-                    setRows([])
-                }
+              if (resp.data.resourceFindings) {
+                  setRows(resp.data.resourceFindings)
+              } else {
+                  setRows([])
+              }
               // @ts-ignore
 
               setTotalPage(Math.ceil(resp.data.totalCount / 15))
@@ -408,12 +406,12 @@ export default function ImpactedResources({
           })
           .catch((err) => {
               setLoading(false)
-                if (
-                    err.message !==
-                    "Cannot read properties of null (reading 'NaN')"
-                ) {
-                    setError(err.message)
-                }
+              if (
+                  err.message !==
+                  "Cannot read properties of null (reading 'NaN')"
+              ) {
+                  setError(err.message)
+              }
               setNotification({
                   text: 'Can not Connect to Server',
                   type: 'warning',

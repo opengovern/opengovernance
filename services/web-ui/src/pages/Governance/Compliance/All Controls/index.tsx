@@ -1071,7 +1071,7 @@ export default function AllControls() {
                                             <>
                                                 <Flex justifyContent="start">
                                                     {getConnectorIcon(
-                                                        selectedRow?.connector
+                                                        selectedRow?.integrationType
                                                     )}
                                                     <Title className="text-lg font-semibold ml-2 my-1">
                                                         {selectedRow?.title}
@@ -1128,9 +1128,10 @@ export default function AllControls() {
                                             maxWidth: 150,
                                         },
                                         {
-                                            id: 'connector',
-                                            header: 'Connector',
-                                            cell: (item) => item.connector,
+                                            id: 'integration_type',
+                                            header: 'Integration Type',
+                                            cell: (item) =>
+                                                item.integration_type,
                                             // sortingField: 'title',
                                             // minWidth: 400,
                                             maxWidth: 70,
@@ -1183,7 +1184,7 @@ export default function AllControls() {
                                             visible: true,
                                         },
                                         {
-                                            id: 'connector',
+                                            id: 'integration_type',
                                             visible: true,
                                         },
                                         // { id: 'query', visible: true },

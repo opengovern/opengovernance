@@ -313,16 +313,13 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
    const connectionGroup_data = [
        {
            label: 'Active',
-           value: 'ACTIVE',
+           value: 'active',
        },
        {
            label: 'Inactive',
-           value: 'INACTIVE',
+           value: 'inactive',
        },
-       {
-           label: 'Archived',
-           value: 'ARCHIVED',
-       },
+      
    ]
     const filterOptions = [
         {

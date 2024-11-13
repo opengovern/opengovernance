@@ -452,7 +452,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmark {
      * Benchmark connectors
      * @example ["[azure]"]
      */
-    connectors?: SourceType[]
+    integrationTypes?: SourceType[]
     /**
      * Benchmark controls
      * @example ["[azure_cis_v140_1_1"," azure_cis_v140_1_2]"]
@@ -1139,7 +1139,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFindingFilte
     /** @example ["azure_cis_v140"] */
     benchmarkID?: string[]
     /** @example ["alarm"] */
-    conformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus[]
+    complianceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus[]
     /** @example ["8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"] */
     connectionID?: string[]
     /** @example ["Azure"] */
@@ -2842,7 +2842,7 @@ export interface GithubComKaytuIoKaytuEnginePkgBenchmarkApiListV3ResponseTags {
 
 export interface GithubComKaytuIoKaytuEnginePkgControlDetailV3 {
     benchmarks: GithubComKaytuIoKaytuEnginePkgControlDetailV3Benchmarks
-    connector: string[]
+    integrationType: string[]
     description: string
     id: string
     query: GithubComKaytuIoKaytuEnginePkgControlDetailV3Query

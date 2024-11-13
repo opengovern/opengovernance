@@ -318,15 +318,11 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
     const connectionGroup_data = [
         {
             label: 'Active',
-            value: 'ACTIVE',
+            value: 'active',
         },
         {
             label: 'Inactive',
-            value: 'INACTIVE',
-        },
-        {
-            label: 'Archived',
-            value: 'ARCHIVED',
+            value: 'inactive',
         },
     ]
      const connector_data = [

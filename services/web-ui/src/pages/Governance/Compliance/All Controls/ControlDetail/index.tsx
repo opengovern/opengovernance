@@ -145,8 +145,8 @@ export default function ControlDetail({
                                                 },
 
                                                 {
-                                                    label: 'Connector',
-                                                    value: selectedItem?.connector?.map(
+                                                    label: 'Integration Type',
+                                                    value: selectedItem?.integrationType?.map(
                                                         (item, index) => {
                                                             return `${item} `
                                                         }
@@ -166,7 +166,10 @@ export default function ControlDetail({
                                                     label: 'Tags',
                                                     value: (
                                                         <>
-                                                            <Flex className='gap-2 flex-wrap' flexDirection='row'>
+                                                            <Flex
+                                                                className="gap-2 flex-wrap"
+                                                                flexDirection="row"
+                                                            >
                                                                 <>
                                                                     {Object.entries(
                                                                         selectedItem?.tags
@@ -373,23 +376,27 @@ export default function ControlDetail({
                                 id: '1',
                                 content: (
                                     <>
-                                    <KeyValuePairs 
-                                        columns={2}
-                                        items={[
-                                            {
-                                                label: 'Has Root',
-                                                value: selectedItem?.benchmarks?.roots?.length > 0 ? 'True' : 'False'
-                                            },
-                                            {
-                                                label: 'Full Paths',
-                                                value: selectedItem?.benchmarks?.fullPath?.map(
-                                                    (item, index) => {
-                                                        return `${item} `
-                                                    }
-                                                )
-                                            }
-                                        ]}
-                                    />
+                                        <KeyValuePairs
+                                            columns={2}
+                                            items={[
+                                                {
+                                                    label: 'Has Root',
+                                                    value:
+                                                        selectedItem?.benchmarks
+                                                            ?.roots?.length > 0
+                                                            ? 'True'
+                                                            : 'False',
+                                                },
+                                                {
+                                                    label: 'Full Paths',
+                                                    value: selectedItem?.benchmarks?.fullPath?.map(
+                                                        (item, index) => {
+                                                            return `${item} `
+                                                        }
+                                                    ),
+                                                },
+                                            ]}
+                                        />
                                         {/* <Grid
                                             className="w-full gap-4 mb-6"
                                             numItems={1}
