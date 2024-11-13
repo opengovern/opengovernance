@@ -81,7 +81,7 @@ var listFindingFilters = map[string]string{
 	"id":                "ID",
 	"benchmark_id":      "benchmarkID",
 	"policy_id":         "policyID",
-	"connection_id":     "connectionID",
+	"integration_id":    "integrationID",
 	"described_at":      "describedAt",
 	"evaluated_at":      "evaluatedAt",
 	"state_active":      "stateActive",

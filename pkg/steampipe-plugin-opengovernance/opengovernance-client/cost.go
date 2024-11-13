@@ -133,18 +133,18 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 			plugin.Logger(ctx).Warn("ListCostSummary: Page", v)
 			for _, connRes := range v.Integrations {
 				row := OpenGovernanceCostTableRow{
-					ConnectionID:   connRes.IntegrationID,
-					ConnectionName: connRes.IntegrationName,
-					Connector:      connRes.IntegrationType.String(),
-					Date:           v.Date,
-					DateEpoch:      v.DateEpoch,
-					Month:          v.Month,
-					Year:           v.Year,
-					MetricID:       v.MetricID,
-					MetricName:     v.MetricName,
-					CostValue:      connRes.CostValue,
-					PeriodStart:    time.UnixMilli(v.PeriodStart),
-					PeriodEnd:      time.UnixMilli(v.PeriodEnd),
+					IntegrationID:   connRes.IntegrationID,
+					IntegrationName: connRes.IntegrationName,
+					IntegrationType: connRes.IntegrationType.String(),
+					Date:            v.Date,
+					DateEpoch:       v.DateEpoch,
+					Month:           v.Month,
+					Year:            v.Year,
+					MetricID:        v.MetricID,
+					MetricName:      v.MetricName,
+					CostValue:       connRes.CostValue,
+					PeriodStart:     time.UnixMilli(v.PeriodStart),
+					PeriodEnd:       time.UnixMilli(v.PeriodEnd),
 				}
 				d.StreamListItem(ctx, row)
 			}
@@ -156,16 +156,16 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 type OpenGovernanceCostTableRow struct {
-	ConnectionID   string    `json:"connection_id"`
-	ConnectionName string    `json:"connection_name"`
-	Connector      string    `json:"connector"`
-	Date           string    `json:"date"`
-	DateEpoch      int64     `json:"date_epoch"`
-	Month          string    `json:"month"`
-	Year           string    `json:"year"`
-	MetricID       string    `json:"metric_id"`
-	MetricName     string    `json:"metric_name"`
-	CostValue      float64   `json:"cost_value"`
-	PeriodStart    time.Time `json:"period_start"`
-	PeriodEnd      time.Time `json:"period_end"`
+	IntegrationID   string    `json:"integration_id"`
+	IntegrationName string    `json:"integration_name"`
+	IntegrationType string    `json:"integration_type"`
+	Date            string    `json:"date"`
+	DateEpoch       int64     `json:"date_epoch"`
+	Month           string    `json:"month"`
+	Year            string    `json:"year"`
+	MetricID        string    `json:"metric_id"`
+	MetricName      string    `json:"metric_name"`
+	CostValue       float64   `json:"cost_value"`
+	PeriodStart     time.Time `json:"period_start"`
+	PeriodEnd       time.Time `json:"period_end"`
 }

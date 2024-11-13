@@ -2,11 +2,11 @@ package opengovernance_client
 
 import (
 	"context"
+	"github.com/opengovern/og-util/pkg/integration"
 	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
 	"runtime"
 
 	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
@@ -21,36 +21,26 @@ type Tag struct {
 }
 
 type LookupResource struct {
+	// PlatformID is the unique Global ID of the resource inside the platform
+	PlatformID string `json:"platform_id"`
 	// ResourceID is the globally unique ID of the resource.
 	ResourceID string `json:"resource_id"`
-	// Name is the name of the resource.
-	Name string `json:"name"`
-	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType source.Type `json:"source_type"`
+	// ResourceName is the name of the resource.
+	ResourceName string `json:"resource_name"`
+	// IntegrationType is the type of the integration source of the resource, i.e. AWS Cloud, Azure Cloud.
+	IntegrationType integration.Type `json:"integration_type"`
 	// ResourceType is the type of the resource.
 	ResourceType string `json:"resource_type"`
-	// ServiceName is the service of the resource.
-	ServiceName string `json:"service_name"`
-	// Category is the category of the resource.
-	Category string `json:"category"`
-	// ResourceGroup is the group of resource (Azure only)
-	ResourceGroup string `json:"resource_group"`
-	// Location is location/region of the resource
-	Location string `json:"location"`
-	// SourceID is aws account id or azure subscription id
-	SourceID string `json:"source_id"`
-	// ResourceJobID is the DescribeResourceJob ID that described this resource
-	ResourceJobID uint `json:"resource_job_id"`
-	// SourceJobID is the DescribeSourceJob ID that the ResourceJobID was created for
-	SourceJobID uint `json:"source_job_id"`
-	// ScheduleJobID
-	ScheduleJobID uint `json:"schedule_job_id"`
-	// CreatedAt is when the DescribeSourceJob is created
-	CreatedAt int64 `json:"created_at"`
+	// IntegrationID is aws account id or azure subscription id
+	IntegrationID string `json:"integration_id"`
 	// IsCommon
 	IsCommon bool `json:"is_common"`
 	// Tags
-	Tags []Tag `json:"tags"`
+	Tags []Tag `json:"canonical_tags"`
+	// DescribedBy is the resource describe job id
+	DescribedBy string `json:"described_by"`
+	// DescribedAt is when the DescribeSourceJob is created
+	DescribedAt int64 `json:"described_at"`
 }
 
 type LookupResourceHit struct {
@@ -121,9 +111,9 @@ func (p LookupResourcePaginator) NextPage(ctx context.Context) ([]LookupResource
 }
 
 var lookupMapping = map[string]string{
-	"connector":     "source_type",
-	"region":        "location",
-	"connection_id": "source_id",
+	"integration_type": "integration_type",
+	"region":           "location",
+	"integration_id":   "integration_id",
 }
 
 func ListLookupResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {

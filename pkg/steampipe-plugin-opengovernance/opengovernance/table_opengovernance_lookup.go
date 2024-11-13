@@ -19,7 +19,7 @@ func tablePlatformLookup(_ context.Context) *plugin.Table {
 			Hydrate: og_client.ListLookupResources,
 		},
 		Columns: []*plugin.Column{
-			{Name: "platform_id", Type: proto.ColumnType_STRING},
+			{Name: "platform_resource_id", Transform: transform.FromField("PlatformId"), Type: proto.ColumnType_STRING},
 			{Name: "resource_id", Type: proto.ColumnType_STRING},
 			{Name: "name", Type: proto.ColumnType_STRING},
 			{Name: "integration_type", Transform: transform.FromField("IntegrationType"), Type: proto.ColumnType_STRING},
