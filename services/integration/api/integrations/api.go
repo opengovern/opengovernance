@@ -179,6 +179,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		err = h.database.CreateCredential(&models2.Credential{
 			ID:              credentialID,
 			IntegrationType: req.IntegrationType,
+			CredentialType:  req.CredentialType,
 			Secret:          secret,
 			Metadata:        credentialMetadataJsonb,
 		})
