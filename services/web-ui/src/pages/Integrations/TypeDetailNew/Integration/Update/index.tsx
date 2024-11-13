@@ -10,7 +10,7 @@ import { useAtomValue } from 'jotai'
 
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { CredentialInput, Integration, Schema } from '../../types'
+import {  Integration, Schema } from '../../types'
 
 import {
     Alert,

@@ -381,40 +381,8 @@ export default function SettingsALLJobs() {
         operation: 'and',
     })
 
-    const { response } = useScheduleApiV1JobsCreate({
-        interval: "7 days",
-        pageStart: 0,
-        pageEnd: 1,
-    })
+  
 
-    useEffect(() => {
-        const temp =
-            response?.summaries
-                ?.map((v) => {
-                    return { label: v.status, value: v.status }
-                })
-                .filter(
-                    (thing, i, arr) =>
-                        arr.findIndex((t) => t.label === thing.label) === i
-                ) || []
-        setAllStatuses(temp)
-        const temp_option = []
-        temp.map((item) => {
-            temp_option.push({
-                propertyKey: 'job_status',
-                value: item.value,
-            })
-        })
-        jobTypes?.map((item) => {
-            temp_option.push({
-                propertyKey: 'job_type',
-                value: item.value,
-            })
-        }
-        )
-        setPropertyOptions(temp_option)
-
-    }, [response])
     const arrayToString = (arr: string[], title: string) => {
         let temp = ``
         arr.map((item, index) => {
@@ -483,6 +451,34 @@ export default function SettingsALLJobs() {
         api.schedule
             .apiV1JobsCreate(body)
             .then((resp) => {
+                const response = resp.data
+                const temp =
+                    response?.summaries
+                        ?.map((v) => {
+                            return { label: v.status, value: v.status }
+                        })
+                        .filter(
+                            (thing, i, arr) =>
+                                arr.findIndex(
+                                    (t) => t.label === thing.label
+                                ) === i
+                        ) || []
+                setAllStatuses(temp)
+                const temp_option = []
+                temp.map((item) => {
+                    temp_option.push({
+                        propertyKey: 'job_status',
+                        value: item.value,
+                    })
+                })
+                jobTypes?.map((item) => {
+                    temp_option.push({
+                        propertyKey: 'job_type',
+                        value: item.value,
+                    })
+                })
+                setPropertyOptions(temp_option)
+
                 if (resp.data.jobs) {
                     setJobs(resp.data.jobs)
                 } else {
