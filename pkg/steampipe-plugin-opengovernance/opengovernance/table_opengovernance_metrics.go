@@ -11,7 +11,7 @@ import (
 
 func tablePlatformMetrics(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_metrics",
+		Name:        "platform_metrics",
 		Description: "opengovernance Metrics",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

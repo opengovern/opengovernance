@@ -10,7 +10,7 @@ import (
 
 func tablePlatformLookup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_lookup",
+		Name:        "platform_lookup",
 		Description: "OpenGovernance Resource Lookup",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

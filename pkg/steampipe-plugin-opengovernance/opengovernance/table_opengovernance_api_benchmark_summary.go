@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_api_benchmark_summary",
+		Name:        "platform_api_benchmark_summary",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	ioutil "io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	strconv "strconv"
 	strings "strings"
@@ -61,6 +62,7 @@ func (h API) Register(g *echo.Group) {
 	types := g.Group("/types")
 	types.GET("", httpserver.AuthorizeHandler(h.ListIntegrationTypes, api.ViewerRole))
 	types.GET("/:integrationTypeId", httpserver.AuthorizeHandler(h.GetIntegrationType, api.ViewerRole))
+	types.GET("/:integrationTypeId/ui/spec", httpserver.AuthorizeHandler(h.GetIntegrationTypeUiSpec, api.ViewerRole))
 	types.DELETE("/:integrationTypeId", httpserver.AuthorizeHandler(h.DeleteIntegrationType, api.EditorRole))
 }
 
@@ -187,11 +189,10 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 		credentialIDStr = credentialID.String()
 	}
 
-	if _, ok := integration_type.IntegrationTypes[integrationType]; !ok {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type")
+	integration, ok := integration_type.IntegrationTypes[integrationType]
+	if !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid integrationType")
 	}
-	createCredentialFunction := integration_type.IntegrationTypes[integrationType]
-	integration, err := createCredentialFunction()
 
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
@@ -201,37 +202,13 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
-		annotations, err := integration.GetAnnotations(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get annotations", zap.Error(err))
-		}
-		annotationsJsonData, err := json.Marshal(annotations)
-		if err != nil {
-			return err
-		}
-		integrationAnnotationsJsonb := pgtype.JSONB{}
-		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
-		i.Annotations = integrationAnnotationsJsonb
-
-		labels, err := integration.GetLabels(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get labels", zap.Error(err))
-		}
-		labelsJsonData, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		i.Labels = integrationLabelsJsonb
-
 		integrationAPI, err := i.ToApi()
 		if err != nil {
 			h.logger.Error("failed to create integration api", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 		}
 
-		healthy, err := integration.HealthCheck(jsonData, integrationAPI.ProviderID, integrationAPI.Labels)
+		healthy, err := integration.HealthCheck(jsonData, integrationAPI.ProviderID, integrationAPI.Labels, integrationAPI.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			integrationAPI.State = models.IntegrationStateInactive
@@ -291,8 +268,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
 	}
 
-	createCredentialFunction := integration_type.IntegrationTypes[req.IntegrationType]
-	integration, err := createCredentialFunction()
+	integration := integration_type.IntegrationTypes[req.IntegrationType]
 	if integration == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
@@ -316,34 +292,31 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		i.CredentialID = credentialID
 
-		annotations, err := integration.GetAnnotations(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get annotations", zap.Error(err))
-		}
-		annotationsJsonData, err := json.Marshal(annotations)
-		if err != nil {
-			return err
-		}
-		integrationAnnotationsJsonb := pgtype.JSONB{}
-		err = integrationAnnotationsJsonb.Set(annotationsJsonData)
-		i.Annotations = integrationAnnotationsJsonb
-
-		labels, err := integration.GetLabels(jsonData)
-		if err != nil {
-			h.logger.Error("failed to get labels", zap.Error(err))
-		}
-		labelsJsonData, err := json.Marshal(labels)
-		if err != nil {
-			return err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		i.Labels = integrationLabelsJsonb
-
 		healthcheckTime := time.Now()
 		i.LastCheck = &healthcheckTime
 
-		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, labels)
+		if i.Labels.Status != pgtype.Present {
+			err = i.Labels.Set("{}")
+			if err != nil {
+				h.logger.Error("failed to set label", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to set label")
+			}
+		}
+
+		if i.Annotations.Status != pgtype.Present {
+			err = i.Annotations.Set("{}")
+			if err != nil {
+				h.logger.Error("failed to set annotations", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to set annotations")
+			}
+		}
+
+		iApi, err := i.ToApi()
+		if err != nil {
+			h.logger.Error("failed to create integration api", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
+		}
+		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, iApi.Labels, iApi.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			i.State = models2.IntegrationStateInactive
@@ -353,8 +326,8 @@ func (h API) AddIntegrations(c echo.Context) error {
 
 		err = h.database.CreateIntegration(&i)
 		if err != nil {
-			h.logger.Error("failed to create credential", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+			h.logger.Error("failed to create integration", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration")
 		}
 	}
 
@@ -408,11 +381,8 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
 	}
 
-	createCredentialFunction := integration_type.IntegrationTypes[integration.IntegrationType]
-	integrationType, err := createCredentialFunction()
-	if err != nil {
-		h.logger.Error("failed to create credential", zap.Error(err))
-	}
+	integrationType := integration_type.IntegrationTypes[integration.IntegrationType]
+
 	if integrationType == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
@@ -422,7 +392,7 @@ func (h API) IntegrationHealthcheck(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 	}
 
-	healthy, err := integrationType.HealthCheck(jsonData, integrationApi.ProviderID, integrationApi.Labels)
+	healthy, err := integrationType.HealthCheck(jsonData, integrationApi.ProviderID, integrationApi.Labels, integrationApi.Annotations)
 	if err != nil || !healthy {
 		h.logger.Error("healthcheck failed", zap.Error(err))
 		if integration.State != models2.IntegrationStateArchived {
@@ -884,4 +854,60 @@ func (h API) GetIntegrationType(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 	}
 	return c.JSON(http.StatusOK, item)
+}
+
+// GetIntegrationTypeUiSpec godoc
+//
+//	@Summary		Get integration type UI Spec
+//	@Description	Get integration type UI Spec
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200
+//	@Param			integrationTypeId	path	string	true	"integrationTypeId"
+//	@Router			/integration/api/v1/integrations/types/{integrationTypeId}/ui/spec [get]
+func (h API) GetIntegrationTypeUiSpec(c echo.Context) error {
+	integrationTypeId := c.Param("integrationTypeId")
+
+	entries, err := os.ReadDir("/")
+	if err != nil {
+		h.logger.Error("failed to read dir", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read dir")
+	}
+
+	// Loop through entries
+	for _, entry := range entries {
+		if entry.IsDir() {
+			h.logger.Info("Directory:", zap.String("path", entry.Name()))
+		} else {
+			h.logger.Info("File:", zap.String("path", entry.Name()))
+		}
+	}
+
+	integrationType, ok := integration_type.IntegrationTypes[integration.Type(integrationTypeId)]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, "invalid integration type")
+	}
+	cnf := integrationType.GetConfiguration()
+
+	file, err := os.Open("/ui-specs/" + cnf.UISpecFileName)
+	if err != nil {
+		h.logger.Error("failed to open file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open file")
+	}
+	defer file.Close()
+
+	content, err := ioutil.ReadFile("/ui-specs/" + cnf.UISpecFileName)
+	if err != nil {
+		h.logger.Error("failed to read the file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read the file")
+	}
+
+	var result interface{}
+	if err := json.Unmarshal(content, &result); err != nil {
+		h.logger.Error("failed to unmarshal the file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal the file")
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

@@ -11,31 +11,17 @@ import (
 
 type EntraIdDirectoryIntegration struct{}
 
-func CreateEntraidSubscriptionIntegration() (interfaces.IntegrationType, error) {
-	return &EntraIdDirectoryIntegration{}, nil
-}
-
-func (i *EntraIdDirectoryIntegration) GetDescriberConfiguration() interfaces.DescriberConfiguration {
-	return interfaces.DescriberConfiguration{
+func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic: entraidDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:    entraidDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         entraidDescriberLocal.StreamName,
+
+		UISpecFileName: "entraid-directory.json",
 	}
 }
 
-func (i *EntraIdDirectoryIntegration) GetAnnotations(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *EntraIdDirectoryIntegration) GetLabels(jsonData []byte) (map[string]string, error) {
-	annotations := make(map[string]string)
-
-	return annotations, nil
-}
-
-func (i *EntraIdDirectoryIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string) (bool, error) {
+func (i *EntraIdDirectoryIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
 	var configs entraidDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &configs)
 	if err != nil {

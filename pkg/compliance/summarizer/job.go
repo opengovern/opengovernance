@@ -99,23 +99,27 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			return err
 		}
 
-		resourceIds := make([]string, 0, len(page))
+		platformResourceIDs := make([]string, 0, len(page))
 		for _, f := range page {
-			resourceIds = append(resourceIds, f.PlatformResourceID)
+			platformResourceIDs = append(platformResourceIDs, f.PlatformResourceID)
 		}
 
-		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
+		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, platformResourceIDs)
 		if err != nil {
 			w.logger.Error("failed to fetch lookup resources", zap.Error(err))
 			return err
 		}
 
+		w.logger.Info("resource lookup result", zap.Any("platformResourceIDs", platformResourceIDs),
+			zap.Any("lookupResourcesMap", lookupResourcesMap))
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			var resource *es2.LookupResource
 			potentialResources := lookupResourcesMap[f.PlatformResourceID]
 			for _, r := range potentialResources {
 				r := r
+				w.logger.Info("potential resources", zap.Any("potentialResources", potentialResources),
+					zap.String("f.ResourceType", f.ResourceType), zap.String("r.ResourceType", r.ResourceType))
 				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
 					resource = &r
 					break

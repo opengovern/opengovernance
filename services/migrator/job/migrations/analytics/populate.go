@@ -54,6 +54,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get assets", zap.Error(err))
 		return err
 	}
 
@@ -64,6 +65,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get spends", zap.Error(err))
 		return err
 	}
 
@@ -74,6 +76,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return nil
 	})
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logger.Error("failed to get queries", zap.Error(err))
 		return err
 	}
 
@@ -171,11 +174,11 @@ func populateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 			tarr = append(tarr, fmt.Sprintf("'%s'", t))
 		}
 		if metricType == analyticsDB.MetricTypeSpend {
-			metric.FinderQuery = fmt.Sprintf(`select * from og_cost where service_name in (%s)`, strings.Join(tarr, ","))
-			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from og_cost where service_name in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
+			metric.FinderQuery = fmt.Sprintf(`select * from platform_cost where service_name in (%s)`, strings.Join(tarr, ","))
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from platform_cost where service_name in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
 		} else {
-			metric.FinderQuery = fmt.Sprintf(`select * from og_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
-			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from og_lookup where resource_type in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
+			metric.FinderQuery = fmt.Sprintf(`select * from platform_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
+			metric.FinderPerConnectionQuery = fmt.Sprintf(`select * from platform_lookup where resource_type in (%s) and connection_id IN (<CONNECTION_ID_LIST>)`, strings.Join(tarr, ","))
 		}
 	}
 

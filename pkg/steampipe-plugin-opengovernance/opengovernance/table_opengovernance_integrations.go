@@ -10,7 +10,7 @@ import (
 
 func tablePlatformConnections(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_integrations",
+		Name:        "platform_integrations",
 		Description: "OpenGovernance Integrations",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,

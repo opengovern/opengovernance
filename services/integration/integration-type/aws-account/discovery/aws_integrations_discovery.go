@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsarn "github.com/aws/aws-sdk-go-v2/aws/arn"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
@@ -20,53 +19,28 @@ const DefaultMaxAccounts = 500
 
 // Config represents the configuration loaded from the JSON file.
 type Config struct {
-	AWSAccessKeyID            string `json:"aws_access_key_id"`
-	AWSSecretAccessKey        string `json:"aws_secret_access_key"`
-	RoleToAssumeInMainAccount string `json:"role_to_assume_in_main_account,omitempty"`
-	CrossAccountRole          string `json:"cross_account_role,omitempty"`
-	ExternalID                string `json:"external_id,omitempty"`
-	MaxAccounts               int    `json:"max_accounts,omitempty"`
+	AWSAccessKeyID                string `json:"aws_access_key_id"`
+	AWSSecretAccessKey            string `json:"aws_secret_access_key"`
+	RoleNameToAssumeInMainAccount string `json:"role_name_to_assume_in_main_account,omitempty"`
+	CrossAccountRoleName          string `json:"cross_account_role_name,omitempty"`
+	ExternalID                    string `json:"external_id,omitempty"`
+	MaxAccounts                   int    `json:"max_accounts,omitempty"`
+}
+
+// AccountLabels holds the labels associated with each account.
+type AccountLabels struct {
+	AccountType           string `json:"account_type"` // "Organization Master", "Organization Member", or "Standalone"
+	CrossAccountRoleARN   string `json:"cross_account_role_arn,omitempty"`
+	RoleNameInMainAccount string `json:"role_name_in_main_account,omitempty"`
+	ExternalID            string `json:"external_id,omitempty"`
 }
 
 // AccountResult holds the result for each account.
 type AccountResult struct {
-	AccountID   string  `json:"account_id"`
-	AccountName string  `json:"account_name"`
-	AccountType string  `json:"account_type"` // "Organization Master", "Organization Member", or "Standalone"
-	Details     Details `json:"details"`
-}
-
-func AWSIntegrationDiscovery(cfg Config) ([]AccountResult, error) {
-	credentialType := "Single Account"
-
-	if cfg.CrossAccountRole != "" {
-		credentialType = "Multi-Account"
-	}
-
-	if credentialType == "Multi-Account" {
-		// Set MaxAccounts
-		maxAccounts := cfg.MaxAccounts
-		if maxAccounts == 0 {
-			maxAccounts = DefaultMaxAccounts
-		}
-
-		// Perform organization discovery
-		results, err := DiscoverOrganizationAccounts(cfg, maxAccounts)
-		if err != nil {
-			return nil, err
-		}
-		return results, nil
-	} else {
-		result, err := DiscoverSingleAccount(cfg)
-		if err != nil {
-			return nil, err
-		}
-		if result != nil {
-			return []AccountResult{*result}, nil
-		} else {
-			return []AccountResult{}, nil
-		}
-	}
+	AccountID   string        `json:"account_id"`
+	AccountName string        `json:"account_name"`
+	Labels      AccountLabels `json:"labels"`
+	Details     Details       `json:"details"`
 }
 
 // Details holds detailed information for each account.
@@ -88,13 +62,71 @@ var requiredPolicies = []string{
 	// Add more policy ARNs as needed
 }
 
-// GenerateAWSConfig creates an AWS configuration using the provided credentials provider.
-func GenerateAWSConfig(credsProvider aws.CredentialsProvider) (aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credsProvider),
-	)
-	if err != nil {
-		return aws.Config{}, fmt.Errorf("failed to load configuration: %v", err)
+func AWSIntegrationDiscovery(cfg Config) []AccountResult {
+	// Determine credential type
+	credentialType := "Single Account"
+
+	if cfg.CrossAccountRoleName != "" {
+		credentialType = "Multi-Account"
+	}
+
+	if credentialType == "Multi-Account" {
+		results := DiscoverOrganizationAccounts(cfg)
+		return results
+	} else {
+		result := DiscoverSingleAccount(cfg)
+		return []AccountResult{result}
+	}
+}
+
+// GenerateAWSConfig creates an AWS configuration using the provided credentials.
+// It can assume a role if roleNameToAssume is provided.
+func GenerateAWSConfig(awsAccessKeyID string, awsSecretAccessKey string, roleNameToAssume string, externalID string, accountID string) (aws.Config, error) {
+	// Step 1: Create base credentials provider
+	credsProvider := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+		awsAccessKeyID,
+		awsSecretAccessKey,
+		"",
+	))
+
+	// Step 2: Manually create the AWS Config struct with explicit credentials and region
+	cfg := aws.Config{
+		Region:      "us-east-2",
+		Credentials: credsProvider,
+	}
+
+	// Step 3: If a role is specified to assume, perform the AssumeRole operation
+	if roleNameToAssume != "" {
+		// Construct Role ARN
+		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleNameToAssume)
+
+		// Use STS client with the current config
+		stsClient := sts.NewFromConfig(cfg)
+
+		// Prepare AssumeRole input
+		input := &sts.AssumeRoleInput{
+			RoleArn:         aws.String(roleArn),
+			RoleSessionName: aws.String("GenerateAWSConfigSession"),
+		}
+		if externalID != "" {
+			input.ExternalId = aws.String(externalID)
+		}
+
+		// Perform AssumeRole
+		assumeRoleOutput, err := stsClient.AssumeRole(context.TODO(), input)
+		if err != nil {
+			return aws.Config{}, fmt.Errorf("failed to assume role: %v", err)
+		}
+
+		// Update credentials provider with assumed role credentials
+		credsProvider = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+			*assumeRoleOutput.Credentials.AccessKeyId,
+			*assumeRoleOutput.Credentials.SecretAccessKey,
+			*assumeRoleOutput.Credentials.SessionToken,
+		))
+
+		// Update the AWS Config with the new credentials
+		cfg.Credentials = credsProvider
 	}
 	return cfg, nil
 }
@@ -209,85 +241,64 @@ func parsePrincipalArn(principalArn string) (entityType string, entityName strin
 
 // DiscoverOrganizationAccounts retrieves all active accounts in an AWS Organization
 // and checks their accessibility and attached policies.
-func DiscoverOrganizationAccounts(cfg Config, maxAccounts int) ([]AccountResult, error) {
+func DiscoverOrganizationAccounts(cfg Config) []AccountResult {
 	var results []AccountResult
 
-	// Create initial AWS Config using provided credentials
+	// Step 1: Create base credentials provider
 	credsProvider := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 		cfg.AWSAccessKeyID,
 		cfg.AWSSecretAccessKey,
 		"",
 	))
 
-	awsCfg, err := GenerateAWSConfig(credsProvider)
-	if err != nil {
-		return nil, err
+	// Step 2: Manually create the AWS Config struct
+	initialCfg := aws.Config{
+		Region:      "us-east-2",
+		Credentials: credsProvider,
 	}
 
-	// Initialize STS client
-	stsClient := sts.NewFromConfig(awsCfg)
+	// Step 3: Get primary account ID using initial configuration
+	stsClient := sts.NewFromConfig(initialCfg)
 
-	// Retrieve Caller Identity to get main account details
 	identityOutput, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, err
+		fmt.Printf("Failed to get caller identity: %v\n", err)
+		return results
 	}
 
 	mainAccountID := *identityOutput.Account
-	mainAccountARN := *identityOutput.Arn
 
-	// Set credential type as Multi-Account by default
-	credentialType := "Multi-Account"
+	// Step 4: Generate AWS Config possibly with role assumption
+	awsCfg, err := GenerateAWSConfig(
+		cfg.AWSAccessKeyID,
+		cfg.AWSSecretAccessKey,
+		cfg.RoleNameToAssumeInMainAccount,
+		cfg.ExternalID,
+		mainAccountID,
+	)
+	if err != nil {
+		fmt.Printf("Failed to generate AWS config: %v\n", err)
+		return results
+	}
 
 	// Initialize Organizations client
 	orgClient := organizations.NewFromConfig(awsCfg)
 
 	// Attempt to describe the organization
-	// Discard orgOutput since it's not used
 	_, err = orgClient.DescribeOrganization(context.TODO(), &organizations.DescribeOrganizationInput{})
 	if err != nil {
-		return nil, err
-	}
-
-	// If RoleToAssumeInMainAccount is provided, assume that role
-	if cfg.RoleToAssumeInMainAccount != "" {
-		// Construct Role ARN for main account
-		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", mainAccountID, cfg.RoleToAssumeInMainAccount)
-		assumeRoleInput := &sts.AssumeRoleInput{
-			RoleArn:         aws.String(roleArn),
-			RoleSessionName: aws.String("AssumeMainAccountRoleSession"),
-		}
-
-		// Include ExternalID if provided
-		if cfg.ExternalID != "" {
-			assumeRoleInput.ExternalId = aws.String(cfg.ExternalID)
-		}
-
-		// Attempt to assume the role
-		assumeRoleOutput, err := stsClient.AssumeRole(context.TODO(), assumeRoleInput)
-		if err != nil {
-			return nil, err
-		}
-
-		// Create new AWS Config with assumed role credentials
-		credsProvider = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			*assumeRoleOutput.Credentials.AccessKeyId,
-			*assumeRoleOutput.Credentials.SecretAccessKey,
-			*assumeRoleOutput.Credentials.SessionToken,
-		))
-
-		awsCfg, err = GenerateAWSConfig(credsProvider)
-		if err != nil {
-			return nil, err
-		}
-
-		// Update STS client with new configuration
-		stsClient = sts.NewFromConfig(awsCfg)
+		fmt.Printf("This account is not an AWS Organizations management account or lacks permissions: %v\n", err)
+		return results
 	}
 
 	// Prepare to list accounts within the organization
 	listAccountsInput := &organizations.ListAccountsInput{
 		MaxResults: aws.Int32(20), // Default page size
+	}
+
+	maxAccounts := cfg.MaxAccounts
+	if maxAccounts == 0 {
+		maxAccounts = DefaultMaxAccounts
 	}
 
 	var accounts []organizationsTypes.Account
@@ -320,28 +331,36 @@ func DiscoverOrganizationAccounts(cfg Config, maxAccounts int) ([]AccountResult,
 		accountResult := AccountResult{
 			AccountID:   *acct.Id,
 			AccountName: *acct.Name,
+			Labels: AccountLabels{
+				ExternalID: cfg.ExternalID, // Include ExternalID if provided
+			},
 			Details: Details{
 				RequiredPolicies: requiredPolicies,
 				Email:            *acct.Email,
-				CredentialType:   credentialType,
+				CredentialType:   "Multi-Account",
 			},
 		}
 
 		// Determine the account type (Master or Member)
 		if *acct.Id == mainAccountID {
-			accountResult.AccountType = "Organization Master"
+			accountResult.Labels.AccountType = "Organization Master"
 		} else {
-			accountResult.AccountType = "Organization Member"
+			accountResult.Labels.AccountType = "Organization Member"
 		}
 
-		// Handle the main account separately if no role assumption is needed
-		if cfg.RoleToAssumeInMainAccount == "" && *acct.Id == mainAccountID {
+		// Handle the main account
+		if *acct.Id == mainAccountID {
 			// Mark account as accessible
 			accountResult.Details.IsAccessible = true
-			accountResult.Details.IamPrincipal = mainAccountARN // The IAM user's ARN
+			accountResult.Details.IamPrincipal = *identityOutput.Arn // The IAM user's ARN
 
-			// Check policies attached to the IAM user
-			attachedPolicies, missingPolicies, err := GetAttachedPolicies(awsCfg, mainAccountARN, requiredPolicies)
+			// Set RoleNameInMainAccount if role was assumed
+			if cfg.RoleNameToAssumeInMainAccount != "" {
+				accountResult.Labels.RoleNameInMainAccount = cfg.RoleNameToAssumeInMainAccount
+			}
+
+			// Check policies attached to the IAM user or assumed role
+			attachedPolicies, missingPolicies, err := GetAttachedPolicies(awsCfg, accountResult.Details.IamPrincipal, requiredPolicies)
 			if err != nil {
 				accountResult.Details.HasPolicies = false
 				accountResult.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
@@ -367,7 +386,7 @@ func DiscoverOrganizationAccounts(cfg Config, maxAccounts int) ([]AccountResult,
 
 		// For member accounts, attempt to assume the cross-account role
 		// Construct Role ARN for the member account
-		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", *acct.Id, cfg.CrossAccountRole)
+		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", *acct.Id, cfg.CrossAccountRoleName)
 
 		// Prepare AssumeRole input
 		assumeRoleInput := &sts.AssumeRoleInput{
@@ -395,28 +414,20 @@ func DiscoverOrganizationAccounts(cfg Config, maxAccounts int) ([]AccountResult,
 		// Mark account as accessible and record the assumed role ARN
 		accountResult.Details.IsAccessible = true
 		accountResult.Details.IamPrincipal = *assumeRoleOutput.AssumedRoleUser.Arn
+		accountResult.Labels.CrossAccountRoleARN = roleArn
 
-		// Create AWS Config with assumed role credentials
-		assumedCredsProvider := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			*assumeRoleOutput.Credentials.AccessKeyId,
-			*assumeRoleOutput.Credentials.SecretAccessKey,
-			*assumeRoleOutput.Credentials.SessionToken,
-		))
-
-		assumedCfg, err := GenerateAWSConfig(assumedCredsProvider)
-		if err != nil {
-			accountResult.Details.HasPolicies = false
-			accountResult.Details.Error = fmt.Sprintf("Failed to generate AWS config with assumed role: %v", err)
-			// Healthy remains false by default
-			results = append(results, accountResult)
-			continue
+		// Manually create AWS Config with assumed role credentials
+		assumedCfg := aws.Config{
+			Region: "us-east-2",
+			Credentials: aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+				*assumeRoleOutput.Credentials.AccessKeyId,
+				*assumeRoleOutput.Credentials.SecretAccessKey,
+				*assumeRoleOutput.Credentials.SessionToken,
+			)),
 		}
 
-		// Retrieve the ARN of the assumed role principal
-		principalArn := *assumeRoleOutput.AssumedRoleUser.Arn
-
 		// Check policies attached to the assumed role
-		attachedPolicies, missingPolicies, err := GetAttachedPolicies(assumedCfg, principalArn, requiredPolicies)
+		attachedPolicies, missingPolicies, err := GetAttachedPolicies(assumedCfg, accountResult.Details.IamPrincipal, requiredPolicies)
 		if err != nil {
 			accountResult.Details.HasPolicies = false
 			accountResult.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
@@ -439,40 +450,57 @@ func DiscoverOrganizationAccounts(cfg Config, maxAccounts int) ([]AccountResult,
 		results = append(results, accountResult)
 	}
 
-	return results, nil
+	return results
 }
 
 // DiscoverSingleAccount handles the case when credentials are only for a single account.
-func DiscoverSingleAccount(cfg Config) (*AccountResult, error) {
+func DiscoverSingleAccount(cfg Config) AccountResult {
 	var result AccountResult
 
-	// Create AWS Config
+	// Step 1: Create base credentials provider
 	credsProvider := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 		cfg.AWSAccessKeyID,
 		cfg.AWSSecretAccessKey,
 		"",
 	))
 
-	awsCfg, err := GenerateAWSConfig(credsProvider)
-	if err != nil {
-		return nil, err
+	// Step 2: Manually create the AWS Config struct
+	initialCfg := aws.Config{
+		Region:      "us-east-2",
+		Credentials: credsProvider,
 	}
 
-	// Get STS client
-	stsClient := sts.NewFromConfig(awsCfg)
+	// Step 3: Get primary account ID using initial configuration
+	stsClient := sts.NewFromConfig(initialCfg)
 
-	// Get Caller Identity
 	identityOutput, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, err
+		fmt.Printf("Failed to get caller identity: %v\n", err)
+		result.Details.Error = fmt.Sprintf("Failed to get caller identity: %v", err)
+		return result
 	}
 
 	accountID := *identityOutput.Account
 	accountARN := *identityOutput.Arn
 
+	// Step 4: Generate AWS Config possibly with role assumption
+	awsCfg, err := GenerateAWSConfig(
+		cfg.AWSAccessKeyID,
+		cfg.AWSSecretAccessKey,
+		cfg.RoleNameToAssumeInMainAccount,
+		cfg.ExternalID,
+		accountID,
+	)
+	if err != nil {
+		fmt.Printf("Failed to generate AWS config: %v\n", err)
+		result.Details.Error = fmt.Sprintf("Failed to generate AWS config: %v", err)
+		return result
+	}
+
 	result.AccountID = accountID
 	result.Details.RequiredPolicies = requiredPolicies
 	result.Details.CredentialType = "Single Account"
+	result.Labels.ExternalID = cfg.ExternalID // Include ExternalID if provided
 
 	// Try to get account alias as account name
 	iamClient := iam.NewFromConfig(awsCfg)
@@ -490,59 +518,35 @@ func DiscoverSingleAccount(cfg Config) (*AccountResult, error) {
 		// The account is part of an organization
 		if orgOutput.Organization != nil && orgOutput.Organization.MasterAccountId != nil {
 			if *orgOutput.Organization.MasterAccountId == accountID {
-				result.AccountType = "Organization Master"
+				result.Labels.AccountType = "Organization Master"
 			} else {
-				result.AccountType = "Organization Member"
+				result.Labels.AccountType = "Organization Member"
 			}
 		}
 	} else {
 		if strings.Contains(err.Error(), "AWSOrganizationsNotInUseException") {
-			result.AccountType = "Standalone"
+			result.Labels.AccountType = "Standalone"
 		} else {
-			result.AccountType = "Unknown"
+			result.Labels.AccountType = "Unknown"
 			result.Details.Error = fmt.Sprintf("Error describing organization: %v", err)
 		}
 	}
 
-	// Handle role assumption if role_to_assume_in_main_account is provided
-	if cfg.RoleToAssumeInMainAccount != "" {
-		// Assume the role in main account
-		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, cfg.RoleToAssumeInMainAccount)
-		input := &sts.AssumeRoleInput{
-			RoleArn:         aws.String(roleArn),
-			RoleSessionName: aws.String("AssumeRoleSession"),
-		}
+	// Handle role assumption if RoleNameToAssumeInMainAccount is provided
+	if cfg.RoleNameToAssumeInMainAccount != "" {
+		// Set RoleNameInMainAccount to the role used
+		result.Labels.RoleNameInMainAccount = cfg.RoleNameToAssumeInMainAccount
 
-		if cfg.ExternalID != "" {
-			input.ExternalId = aws.String(cfg.ExternalID)
-		}
-
-		assumeRoleOutput, err := stsClient.AssumeRole(context.TODO(), input)
+		// Get the assumed role ARN
+		stsClient = sts.NewFromConfig(awsCfg)
+		identityOutput, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{})
 		if err != nil {
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Error = fmt.Sprintf("Failed to assume role: %v", err)
-			result.Details.Healthy = false
-			return &result, nil
+			fmt.Printf("Failed to get caller identity: %v\n", err)
+			result.Details.Error = fmt.Sprintf("Failed to get caller identity: %v", err)
+			return result
 		}
 
-		// Update AWS Config with assumed role credentials
-		credsProvider = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			*assumeRoleOutput.Credentials.AccessKeyId,
-			*assumeRoleOutput.Credentials.SecretAccessKey,
-			*assumeRoleOutput.Credentials.SessionToken,
-		))
-
-		awsCfg, err = GenerateAWSConfig(credsProvider)
-		if err != nil {
-			result.Details.Error = fmt.Sprintf("Failed to generate AWS config with assumed role: %v", err)
-			result.Details.IsAccessible = false
-			result.Details.HasPolicies = false
-			result.Details.Healthy = false
-			return &result, nil
-		}
-
-		result.Details.IamPrincipal = *assumeRoleOutput.AssumedRoleUser.Arn
+		result.Details.IamPrincipal = *identityOutput.Arn
 	} else {
 		result.Details.IamPrincipal = accountARN
 	}
@@ -550,12 +554,11 @@ func DiscoverSingleAccount(cfg Config) (*AccountResult, error) {
 	// Check policies attached to the IAM user or assumed role
 	attachedPolicies, missingPolicies, err := GetAttachedPolicies(awsCfg, result.Details.IamPrincipal, requiredPolicies)
 	if err != nil {
-		return nil, err
-		//result.Details.HasPolicies = false
-		//result.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
-		//result.Details.IsAccessible = false
-		//result.Details.Healthy = false
-		//return &result, nil
+		result.Details.HasPolicies = false
+		result.Details.Error = fmt.Sprintf("Error checking policies: %v", err)
+		result.Details.IsAccessible = false
+		result.Details.Healthy = false
+		return result
 	}
 
 	result.Details.AttachedPolicies = attachedPolicies
@@ -569,5 +572,5 @@ func DiscoverSingleAccount(cfg Config) (*AccountResult, error) {
 	result.Details.IsAccessible = true
 	result.Details.Healthy = result.Details.IsAccessible && result.Details.HasPolicies
 
-	return &result, nil
+	return result
 }
