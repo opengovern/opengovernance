@@ -97,7 +97,9 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			//		break
 			//	}
 			//}
-			resource = &potentialResources[0]
+			if len(potentialResources) > 0 {
+				resource = &potentialResources[0]
+			}
 			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
