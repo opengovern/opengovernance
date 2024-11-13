@@ -217,10 +217,12 @@ export default function CreateIntegration({
                                         return (
                                             <>
                                                 <Button
-                                                    onClick={() =>
+                                                    onClick={() =>{
                                                         setSelectedCredential(
                                                             index
                                                         )
+                                                        setIntegration({...integration,credential_type:credential.label})
+                                                    }
                                                     }
                                                 >
                                                     {credential.label}

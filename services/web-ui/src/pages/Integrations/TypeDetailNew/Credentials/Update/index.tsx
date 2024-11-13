@@ -163,19 +163,24 @@ export default function UpdateCredentials({
                             <>
                                 {GetDiscover(schema)?.map(
                                     (
-                                        credential: DiscoverCredential,
+                                        cred: DiscoverCredential,
                                         index: number
                                     ) => {
                                         return (
                                             <>
                                                 <Button
-                                                    onClick={() =>
+                                                    onClick={() => {
                                                         setSelectedCredential(
                                                             index
                                                         )
-                                                    }
+                                                        setCredentials({
+                                                            ...credential,
+                                                            credential_type:
+                                                                cred.label,
+                                                        })
+                                                    }}
                                                 >
-                                                    {credential.label}
+                                                    {cred.label}
                                                 </Button>
                                             </>
                                         )
