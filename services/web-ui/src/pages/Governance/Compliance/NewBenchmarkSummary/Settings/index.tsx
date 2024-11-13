@@ -285,7 +285,7 @@ export default function Settings({
                config
            )
            .then((res) => {
-                // window.location.reload()
+                window.location.reload()
            })
            .catch((err) => {
                setLoading(false)
