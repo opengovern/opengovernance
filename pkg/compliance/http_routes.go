@@ -3526,9 +3526,10 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
 		}
 
-		controlSummary, err := h.getControlSummary(ctx, control.ID, nil, integrationIDs)
+		h.logger.Info("ListControlsByFilter", zap.Strings("benchmarks", benchmarks))
+		controlResult, _, err := es.BenchmarksControlSummary(ctx, h.logger, h.client, benchmarks, nil)
 		if err != nil {
-			return err
+			h.logger.Error("failed to fetch control result", zap.Error(err), zap.String("controlID", control.ID), zap.Any("benchmarkID", benchmarks))
 		}
 
 		if req.ComplianceResultSummary {
@@ -3558,10 +3559,10 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 			}{
 				IncidentCount:         incidentCount,
 				NonIncidentCount:      passingComplianceResultCount,
-				CompliantResources:    controlSummary.TotalResourcesCount - controlSummary.FailedResourcesCount,
-				NonCompliantResources: controlSummary.FailedResourcesCount,
-				ImpactedResources:     controlSummary.TotalResourcesCount,
-				CostImpact:            controlSummary.CostImpact,
+				CompliantResources:    controlResult[control.ID].TotalResourcesCount - controlResult[control.ID].FailedResourcesCount,
+				NonCompliantResources: controlResult[control.ID].FailedResourcesCount,
+				ImpactedResources:     controlResult[control.ID].TotalResourcesCount,
+				CostImpact:            controlResult[control.ID].CostImpact,
 			}
 		}
 
