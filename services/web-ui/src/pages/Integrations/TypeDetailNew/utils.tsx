@@ -375,7 +375,11 @@ export const RenderTableField = (field: any, item: any) => {
 export const GetViewFields = (schema: Schema | undefined, type: number) => {
     if (type === 1) {
         return schema?.render?.credentials?.fields
-            .filter((field) => field.detail)
+            .filter((field) => {
+                if(field.detail){
+                    return field
+                }
+            })
             .sort((a, b) => a.order - b.order)
             ?.map((field) => {
                 return {
@@ -387,9 +391,13 @@ export const GetViewFields = (schema: Schema | undefined, type: number) => {
                 }
             })
     }
-
+console.log(schema?.render?.integrations?.fields)
     return schema?.render?.integrations?.fields
-        .filter((field) => field.detail)
+        .filter((field) => {
+            if (field.detail) {
+                return field
+            }
+        })
         .sort((a, b) => a.order - b.order)
         ?.map((field) => {
             return {
