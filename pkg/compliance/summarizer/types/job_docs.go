@@ -53,15 +53,15 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	}
 
 	if jd.LastResourceIdType == "" {
-		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
-	} else if jd.LastResourceIdType != fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID) {
+		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID)
+	} else if jd.LastResourceIdType != fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID) {
 		jd.ResourcesFindingsIsDone[jd.LastResourceIdType] = true
-		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
+		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID)
 	}
-	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)]
+	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID)]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
-			PlatformResourceID:    resource.ResourceID,
+			PlatformResourceID:    resource.PlatformID,
 			ResourceType:          resource.ResourceType,
 			ResourceName:          resource.ResourceName,
 			IntegrationType:       resource.IntegrationType,
@@ -71,7 +71,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 			JobId:                 job.ID,
 			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
-		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
+		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID)] = false
 	} else {
 		resourceFinding.JobId = job.ID
 		resourceFinding.EvaluatedAt = job.CreatedAt.UnixMilli()
@@ -178,7 +178,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 		}
 	}
 
-	jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = resourceFinding
+	jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.PlatformID)] = resourceFinding
 }
 
 func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
