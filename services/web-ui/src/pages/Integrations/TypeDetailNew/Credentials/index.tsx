@@ -34,7 +34,7 @@ import UpdateCredentials from './Update'
 
 interface CredentialsListProps {
     name?: string
-    integration_type: string
+    integration_type?: string
     schema?: Schema
 }
 
@@ -374,7 +374,7 @@ export default function CredentialsList({
                                           }
                                           className="w-full"
                                       >
-                                          {name} Accounts{' '}
+                                          {name} Credentials{' '}
                                           <span className=" font-medium">
                                               ({total_count})
                                           </span>

@@ -13,7 +13,7 @@ interface IOthers {
         | GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFiltersWithMetadata
         | undefined
     condition: string
-    type: 'benchmarkID' | 'connectionID' | 'controlID' | 'resourceTypeID'
+    type: 'benchmarkID' | 'integrationID' | 'controlID' | 'resourceTypeID'
     onChange: (o: string[]) => void
 }
 

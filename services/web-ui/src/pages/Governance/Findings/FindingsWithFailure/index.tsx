@@ -357,7 +357,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                 benchmarkID: queries.benchmarkID,
                 severity: queries.severity,
                 resourceTypeID: queries.resourceTypeID,
-                conformanceStatus: queries.conformanceStatus,
+                complianceStatus: queries.conformanceStatus,
                 stateActive: queries.lifecycle,
                 jobID: queries?.jobID,
                 integrationGroup: queries.connectionGroup,
@@ -410,8 +410,8 @@ export default function FindingsWithFailure({ query }: ICount) {
 
                 setTotalCount(resp.data.totalCount)
                 // @ts-ignore
-                if (resp.data.findings) {
-                    setRows(resp.data.findings)
+                if (resp.data.complianceResults) {
+                    setRows(resp.data.complianceResults)
                 } else {
                     setRows([])
                 }
@@ -597,19 +597,19 @@ export default function FindingsWithFailure({ query }: ICount) {
                                 ),
                             },
                             {
-                                id: 'conformanceStatus',
+                                id: 'complianceStatus',
                                 header: 'Status',
                                 sortingField: 'severity',
                                 cell: (item) => (
                                     <Badge
                                         // @ts-ignore
                                         color={`${
-                                            item.conformanceStatus == 'passed'
+                                            item.complianceStatus == 'passed'
                                                 ? 'green'
                                                 : 'red'
                                         }`}
                                     >
-                                        {item.conformanceStatus}
+                                        {item.complianceStatus}
                                     </Badge>
                                 ),
                                 maxWidth: 50,
@@ -644,7 +644,7 @@ export default function FindingsWithFailure({ query }: ICount) {
                             { id: 'resourceName', visible: true },
                             { id: 'benchmarkID', visible: true },
                             { id: 'controlID', visible: true },
-                            { id: 'conformanceStatus', visible: true },
+                            { id: 'complianceStatus', visible: true },
                             { id: 'severity', visible: true },
                             { id: 'evaluatedAt', visible: true },
 

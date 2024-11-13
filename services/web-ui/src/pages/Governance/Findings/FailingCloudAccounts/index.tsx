@@ -165,7 +165,7 @@ export default function FailingCloudAccounts({ query }: ICount) {
     }
 
     const { response: accounts, isLoading: accountsLoading } =
-        useComplianceApiV1FindingsTopDetail('connectionID', 10000, topQuery)
+        useComplianceApiV1FindingsTopDetail('integrationID', 10000, topQuery)
     const [page, setPage] = useState(0)
 
     return (

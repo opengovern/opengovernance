@@ -435,7 +435,7 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
 
             defaultValue: [],
             onDelete: () => setConnectionID([]),
-            data: filters?.connectionID,
+            data: filters?.integrationID,
             types: ['findings', 'resources', 'events', 'controls', 'accounts'],
         },
         // {

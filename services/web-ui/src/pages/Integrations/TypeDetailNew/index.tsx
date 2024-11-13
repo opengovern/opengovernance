@@ -37,7 +37,7 @@ import { OpenGovernance } from '../../../icons/icons'
 export default function TypeDetail() {
     const navigate = useNavigate()
     const searchParams = useAtomValue(searchAtom)
-    const { name } = useParams()
+    const { type } = useParams()
     const { state } = useLocation()
     const [shcema, setSchema] = useState<Schema>()
     const [loading, setLoading] = useState<boolean>(false)
@@ -61,7 +61,7 @@ export default function TypeDetail() {
         
         axios
             .get(
-                `${url}/main/integration/api/v1/integrations/types/${state.connector}/ui/spec `,
+                `${url}/main/integration/api/v1/integrations/types/${type}/ui/spec `,
                 config
             )
             .then((res) => {
@@ -81,7 +81,7 @@ export default function TypeDetail() {
 
     return (
         <>
-            <TopHeader breadCrumb={[name]} />
+            <TopHeader breadCrumb={[type]} />
 
             {shcema && shcema?.integration_type_id ? (
                 <>
@@ -93,8 +93,8 @@ export default function TypeDetail() {
                                 content: (
                                     <IntegrationList
                                         schema={shcema}
-                                        name={name}
-                                        integration_type={state.connector}
+                                        name={state.name}
+                                        integration_type={type}
                                     />
                                 ),
                             },
@@ -104,8 +104,8 @@ export default function TypeDetail() {
                                 content: (
                                     <CredentialsList
                                         schema={shcema}
-                                        name={name}
-                                        integration_type={state.connector}
+                                        name={state.name}
+                                        integration_type={type}
                                     />
                                 ),
                             },
@@ -116,7 +116,7 @@ export default function TypeDetail() {
                 <>
                     {loading ? (
                         <>
-                        <Spinner/>
+                            <Spinner />
                         </>
                     ) : (
                         <>

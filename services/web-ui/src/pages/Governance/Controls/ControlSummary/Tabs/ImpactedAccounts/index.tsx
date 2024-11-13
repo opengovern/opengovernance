@@ -114,7 +114,7 @@ export const topConnections = (
 export default function ImpactedAccounts({ controlId }: IImpactedAccounts) {
     const isDemo = useAtomValue(isDemoAtom)
     const { response: accounts, isLoading: accountsLoading } =
-        useComplianceApiV1FindingsTopDetail('connectionID', 10000, {
+        useComplianceApiV1FindingsTopDetail('integrationID', 10000, {
             controlId: [String(controlId)],
         })
          const [page, setPage] = useState(0)
@@ -171,8 +171,8 @@ export default function ImpactedAccounts({ controlId }: IImpactedAccounts) {
                                         {
                                             // @ts-ignore
 
-                                            item?.Connection?.metadata
-                                                ?.account_name
+                                            item?.Integration?.name
+                                              
                                         }
                                     </>
                                 ),
@@ -188,8 +188,7 @@ export default function ImpactedAccounts({ controlId }: IImpactedAccounts) {
                                     <>
                                         {
                                             // @ts-ignore
-                                            item?.Connection?.metadata
-                                                ?.account_id
+                                            item?.Integration?.provider_id
                                         }
                                     </>
                                 ),
