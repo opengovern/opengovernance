@@ -90,5 +90,8 @@ func (i *AwsCloudAccountIntegration) GetResourceTypesByLabels(map[string]string)
 }
 
 func (i *AwsCloudAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
+	if v, ok := awsDescriberLocal.TablesToResourceTypes[tableName]; ok {
+		return v
+	}
 	return ""
 }

@@ -73,5 +73,9 @@ func (i *AzureSubscriptionIntegration) GetResourceTypesByLabels(map[string]strin
 }
 
 func (i *AzureSubscriptionIntegration) GetResourceTypeFromTableName(tableName string) string {
+	if v, ok := azureDescriberLocal.TablesToResourceTypes[tableName]; ok {
+		return v
+	}
+
 	return ""
 }
