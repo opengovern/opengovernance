@@ -72,5 +72,9 @@ func (i *EntraIdDirectoryIntegration) GetResourceTypesByLabels(map[string]string
 }
 
 func (i *EntraIdDirectoryIntegration) GetResourceTypeFromTableName(tableName string) string {
+	if v, ok := entraidDescriberLocal.TablesToResourceTypes[tableName]; ok {
+		return v
+	}
+
 	return ""
 }
