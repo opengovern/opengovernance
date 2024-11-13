@@ -229,7 +229,7 @@
           "sortable": true,
           "filterable": true,
           "info": "ID.",
-          "detail": false,
+          "detail": true,
           "detail_order": 1
         },
         {
@@ -240,7 +240,7 @@
           "sortable": true,
           "filterable": true,
           "info": "Timestamp when the integration was created.",
-          "detail": false,
+          "detail": true,
           "detail_order": 2
         },
         {
@@ -251,7 +251,7 @@
           "sortable": true,
           "filterable": true,
           "info": "Timestamp when the integration was last updated.",
-          "detail": false,
+          "detail": true,
           "detail_order": 3
         },
         {
@@ -265,7 +265,7 @@
             "aws_single_account": "Single Account",
             "aws_multi_account": "Multi-Account"
           },
-          "detail": false,
+          "detail": true,
           "detail_order": 3
         }
       ]
@@ -281,7 +281,7 @@
           "sortable": true,
           "filterable": true,
           "info": "Name.",
-          "detail": false,
+          "detail": true,
           "detail_order": 1
         },
 
@@ -293,7 +293,7 @@
           "sortable": true,
           "filterable": true,
           "info": "Provider ID.",
-          "detail": false,
+          "detail": true,
           "detail_order": 2
         },
         {
@@ -303,7 +303,7 @@
           "order": 3,
           "sortable": true,
           "filterable": true,
-          "detail": false,
+          "detail": true,
           "detail_order": 3,
           "info": "Current state of the Azure Subscription integration.",
           "statusOptions": [
