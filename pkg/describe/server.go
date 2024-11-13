@@ -696,7 +696,7 @@ func (h HttpServer) getBenchmarkChildrenControls(benchmarkID string) ([]string, 
 //	@Produce		json
 //	@Success		200
 //	@Param			benchmark_id	path	string		true	"Benchmark ID"
-//	@Param			connection_id	query	[]string	true	"Connection ID"
+//	@Param			integrationID	query	[]string	true	"Connection ID"
 //	@Param			control_id		query	[]string	false	"Control ID"
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [put]
 func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
@@ -705,13 +705,13 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 		userID = "system"
 	}
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
-	if len(connectionIDs) == 0 {
+	integrationID := httpserver.QueryArrayParam(ctx, "integrationID")
+	if len(integrationID) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
 	}
 	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, integrationID, controlIDs)
 	if err != nil {
 		return err
 	}
@@ -764,19 +764,19 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Param			benchmark_id	path		string		true	"Benchmark ID"
-//	@Param			connection_id	query		[]string	true	"Connection ID"
+//	@Param			integrationID	query		[]string	true	"Connection ID"
 //	@Param			control_id		query		[]string	false	"Control ID"
 //	@Success		200				{object}	api.JobSeqCheckResponse
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [get]
 func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
-	if len(connectionIDs) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
+	integrationID := httpserver.QueryArrayParam(ctx, "integrationID")
+	if len(integrationID) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "integrationID is required")
 	}
 	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, integrationID, controlIDs)
 	if err != nil {
 		return err
 	}
