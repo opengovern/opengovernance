@@ -176,7 +176,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 
 		metadata := make(map[string]string)
 		metadataJsonData, err := json.Marshal(metadata)
-		credentialMetadataJsonb := pgtype.JSONB{}to
+		credentialMetadataJsonb := pgtype.JSONB{}
 		err = credentialMetadataJsonb.Set(metadataJsonData)
 		err = h.database.CreateCredential(&models2.Credential{
 			ID:              credentialID,
