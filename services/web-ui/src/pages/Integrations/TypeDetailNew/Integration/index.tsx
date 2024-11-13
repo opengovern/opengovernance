@@ -426,7 +426,7 @@ export default function IntegrationList({
                                         }
                                         className="w-full"
                                     >
-                                        {name} Accounts{' '}
+                                        {name} Integrations{' '}
                                         <span className=" font-medium">
                                             ({total_count})
                                         </span>

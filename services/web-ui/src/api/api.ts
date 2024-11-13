@@ -932,7 +932,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFilters {
     /** @example ["alarm"] */
     conformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus[]
     /** @example ["8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"] */
-    connectionID?: string[]
+    integrationID?: string[]
     /** @example ["Azure"] */
     connector?: SourceType[]
     /** @example ["azure_cis_v140_7_5"] */
@@ -963,7 +963,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFilters {
 export interface GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFiltersWithMetadata {
     benchmarkID?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
     conformanceStatus?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
-    connectionID?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
+    integrationID?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
     connector?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
     controlID?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
     resourceCollection?: GithubComKaytuIoKaytuEnginePkgComplianceApiFilterWithMetadata[]
@@ -5265,14 +5265,14 @@ export class Api<
         apiV1FindingsTopDetail: (
             field:
                 | 'resourceType'
-                | 'connectionID'
+                | 'integrationID'
                 | 'resourceID'
                 | 'service'
                 | 'controlID',
             count: number,
             query?: {
                 /** Connection IDs to filter by (inclusive) */
-                connectionId?: string[]
+                integrationID?: string[]
                 /** Connection IDs to filter by (exclusive) */
                 notConnectionId?: string[]
                 /** Connection groups to filter by  */
@@ -5380,7 +5380,7 @@ export class Api<
          */
         apiV1FindingsCountDetail: (
             benchmarkId: string,
-            field: 'resourceType' | 'connectionID' | 'resourceID' | 'service',
+            field: 'resourceType' | 'integrationID' | 'resourceID' | 'service',
             query?: {
                 /** Connection IDs to filter by */
                 connectionId?: string[]

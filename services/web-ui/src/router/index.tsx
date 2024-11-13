@@ -236,7 +236,7 @@ const authRoutes = [
  
     {
         key: 'connector detail',
-        path: '/integrations/:name',
+        path: '/integrations/:type',
         element: <TypeDetail />,
     },
 

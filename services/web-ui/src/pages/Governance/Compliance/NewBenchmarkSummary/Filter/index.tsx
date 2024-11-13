@@ -243,7 +243,7 @@ export default function Filter({ onApply, type ,id}: IFilters) {
                     defaultValue={[]}
                     data={filters}
                     condition={connectionCon}
-                    type="connectionID"
+                    type="integrationID"
                     onChange={(o) => setConnectionID(o)}
                 />
             ),
@@ -252,7 +252,7 @@ export default function Filter({ onApply, type ,id}: IFilters) {
             value: connectionID,
             defaultValue: [],
             onDelete: () => setConnectionID([]),
-            data: filters?.connectionID,
+            data: filters?.integrationID,
             types: ['findings', 'resources', 'events', 'controls', 'accounts'],
         },
         // {

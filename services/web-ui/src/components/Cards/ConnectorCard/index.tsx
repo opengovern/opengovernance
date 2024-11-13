@@ -144,7 +144,7 @@ export default function ConnectorCard({
 
     const onClick = () => {
         if (status === 'enabled' && (count || 0) > 0) {
-            navigate(`${name}`, { state: { connector,id } })
+            navigate(`${connector}`, { state: { name, id } })
             return
         }
         if (status === 'first-time') {
@@ -157,10 +157,10 @@ export default function ConnectorCard({
             tier ===
             GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
         ) {
-            navigate(`${name}`, { state: { connector, id } })
+            navigate(`${connector}`, { state: { name, id } })
             return
         }
-        navigate(`${name}/../../request-access?connector=${title}`) // it's a hack!
+        navigate(`${connector}/../../request-access?connector=${title}`) // it's a hack!
     }
 
     return (
