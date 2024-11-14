@@ -1,6 +1,6 @@
 {
-    "short_name": "OpenGovernance",
-    "name": "OpenGovernance app",
+    "short_name": "OpenComply",
+    "name": "OpenComply app",
     "icons": [
         {
             "src": "windows11/SmallTile.scale-100.png",
@@ -452,11 +452,11 @@
         }
     ],
     "start_url": "/",
-    "scope": "https://app.opengovernance.io/",
+    "scope": "https://app.OpenComply.io/",
     "display": "standalone",
     "theme_color": "#0D2239",
     "background_color": "#F3F4F6",
-    "id": "OpenGovernance",
+    "id": "OpenComply",
     "description": "Manage your clouds like a PRO!",
     "dir": "ltr",
     "lang": "en",

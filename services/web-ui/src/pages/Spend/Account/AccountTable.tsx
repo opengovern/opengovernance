@@ -334,7 +334,7 @@ export default function AccountTable({
                 },
                 {
                     field: 'dimensionId',
-                    headerName: 'OpenGovernance Connection ID',
+                    headerName: 'OpenComply Connection ID',
                     type: 'string',
                     width: 150,
                     pinned: true,
