@@ -2,6 +2,7 @@ package github_account
 
 import (
 	"encoding/json"
+	"github.com/jackc/pgtype"
 	githubDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/github-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/github-account/discovery"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/github-account/healthcheck"
@@ -44,7 +45,6 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	if err != nil {
 		return nil, err
 	}
-
 	var integrations []models.Integration
 	accounts, err := discovery.GithubIntegrationDiscovery(discovery.Config{
 		Token:          credentials.Token,
@@ -54,12 +54,24 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		PrivateKeyPath: credentials.PrivateKeyPath,
 	})
 	for _, a := range accounts {
+		labels := map[string]string{
+			"AccountType": a.Type,
+		}
+		labelsJsonData, err := json.Marshal(labels)
+		if err != nil {
+			return nil, err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		if err != nil {
+			return nil, err
+		}
 		integrations = append(integrations, models.Integration{
 			ProviderID: a.ID,
 			Name:       a.Name,
+			Labels:     integrationLabelsJsonb,
 		})
 	}
-
 	return integrations, nil
 }
 
@@ -68,5 +80,9 @@ func (i *GithubAccountIntegration) GetResourceTypesByLabels(map[string]string) (
 }
 
 func (i *GithubAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
+	if v, ok := githubDescriberLocal.TablesToResourceTypes[tableName]; ok {
+		return v
+	}
+
 	return ""
 }

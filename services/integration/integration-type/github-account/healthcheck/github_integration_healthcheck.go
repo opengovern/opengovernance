@@ -120,30 +120,6 @@ func createClientDetail(ctx context.Context, config Config) (*github.Client, err
 	return nil, nil
 }
 
-//type GithubClient struct {
-//	ID           string
-//	Name         string
-//	Type         string
-//	ClientDetail *github.Client
-//}
-//
-//func newGithubClient(clientDetail *github.Client, providerID string) *GithubClient {
-//	return &GithubClient{
-//		ID:           providerID,
-//		ClientDetail: clientDetail,
-//	}
-//}
-
-//func (client *GithubClient) IsHealthy() (bool, error) {
-//	user, _, err := client.ClientDetail.Users.Get(context.Background(), "")
-//	if err != nil {
-//		return false, err
-//	}
-//	client.Name = *user.Login
-//	client.Type = *user.Type
-//	return true, nil
-//}
-
 func IsHealthy(client *github.Client) (bool, error) {
 	_, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
@@ -158,7 +134,6 @@ type Config struct {
 	AppId          string `json:"app_id"`
 	InstallationId string `json:"installation_id"`
 	PrivateKeyPath string `json:"private_key_path"`
-	//AccountID      string `json:"account_id"`
 }
 
 func checkCredentials(config Config) error {
@@ -182,11 +157,6 @@ func GithubIntegrationHealthcheck(config Config) (bool, *github.Client, error) {
 	if err != nil {
 		return false, nil, err
 	}
-	//githubClient := newGithubClient(clientDetail, providerID)
-	//isHealthy, err := githubClient.IsHealthy()
-	//if err != nil {
-	//	return false, nil, err
-	//}
 	isHealthy, err := IsHealthy(client)
 	if err != nil {
 		return false, nil, err
