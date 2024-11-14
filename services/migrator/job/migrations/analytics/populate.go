@@ -238,7 +238,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 	tx := dbc.Begin()
 	defer tx.Rollback()
 
-	logger.Info("Query Update", zap.String("id", id), zap.Any("tags", item.Tags))
+	// logger.Info("Query Update", zap.String("id", id), zap.Any("tags", item.Tags))
 
 	err = tx.Model(&inventory.NamedQuery{}).Where("id = ?", id).Unscoped().Delete(&inventory.NamedQuery{}).Error
 	if err != nil {
@@ -338,7 +338,7 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
-	logger.Info("parsed the tags", zap.String("id", id), zap.Any("tags", tags))
+	// logger.Info("parsed the tags", zap.String("id", id), zap.Any("tags", tags))
 
 	if len(tags) > 0 {
 		for _, tag := range tags {
@@ -349,13 +349,13 @@ func populateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 			}
 		}
 	}
-	logger.Info("inserted tags", zap.String("id", id))
+	// logger.Info("inserted tags", zap.String("id", id))
 	err = tx.Commit().Error
 	if err != nil {
 		logger.Error("failure in commit", zap.Error(err))
 		return err
 	}
-	logger.Info("commit finish", zap.String("id", id))
+	// logger.Info("commit finish", zap.String("id", id))
 
 	return nil
 }

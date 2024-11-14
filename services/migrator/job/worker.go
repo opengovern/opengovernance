@@ -11,6 +11,7 @@ import (
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"go.uber.org/zap"
 	"time"
+	"github.com/opengovern/opengovernance/services/migrator/job/types"
 )
 
 type GitConfig struct {
@@ -89,8 +90,12 @@ func InitializeJob(
 			return nil, err
 		}
 	}
-
+	if(conf.IsManual){
 	w.commitRefs, err = GitClone(conf, logger)
+	}else{
+		w.commitRefs ="no fetch"
+
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failure while running git clone: %w", err)
 	}
@@ -111,7 +116,13 @@ func (w *Job) Run(ctx context.Context) error {
 		return err
 	}
 	jobsStatus := make(map[string]model.JobInfo)
-	for name, _ := range migrations {
+	var migrationList map[string]types.Migration
+	if(w.conf.IsManual){
+		migrationList = manualMigrations
+	}else{
+		migrationList = migrations
+	}
+	for name, _ := range migrationList {
 		jobsStatus[name] = model.JobInfo{
 			MigrationJobName: name,
 			Status:           model.JobStatusPending,
@@ -123,7 +134,7 @@ func (w *Job) Run(ctx context.Context) error {
 	err = w.updateJob(m, m.Status, jobsStatus)
 
 	hasFailed := false
-	for name, mig := range migrations {
+	for name, mig := range migrationList {
 		w.logger.Info("running migration", zap.String("migrationName", name))
 
 		jobsStatus, err = getJobsStatus(m)

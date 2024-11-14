@@ -54,55 +54,55 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 	if err != nil {
 		g.logger.Warn("failed to load manual remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
+		// g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
 	}
 
 	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "cli"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	guardrailRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "guardrail"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	programmaticRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "programmatic"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "noncompliance-cost"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "usefulness-example"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "explanation"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
 	} else {
-		g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
+		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	g.logger.Info("extracting controls", zap.Int("manualRemediationMap", len(manualRemediationMap)),
-		zap.Int("cliRemediationMap", len(cliRemediationMap)), zap.Int("guardrailRemediationMap", len(guardrailRemediationMap)),
-		zap.Int("programmaticRemediationMap", len(programmaticRemediationMap)), zap.Int("noncomplianceCostMap", len(noncomplianceCostMap)),
-		zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
+	// g.logger.Info("extracting controls", zap.Int("manualRemediationMap", len(manualRemediationMap)),
+	// 	zap.Int("cliRemediationMap", len(cliRemediationMap)), zap.Int("guardrailRemediationMap", len(guardrailRemediationMap)),
+	// 	zap.Int("programmaticRemediationMap", len(programmaticRemediationMap)), zap.Int("noncomplianceCostMap", len(noncomplianceCostMap)),
+	// 	zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
 
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
 		//if g.Comparison != nil {
@@ -277,7 +277,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	if err != nil {
 		return err
 	}
-	g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
+	// g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
 
 	children := map[string][]string{}
 	for _, o := range benchmarks {
@@ -331,7 +331,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		g.benchmarks = append(g.benchmarks, b)
 		children[o.ID] = o.Children
 	}
-	g.logger.Info("Extracted benchmarks 2", zap.Int("count", len(g.benchmarks)))
+	// g.logger.Info("Extracted benchmarks 2", zap.Int("count", len(g.benchmarks)))
 
 	for idx, benchmark := range g.benchmarks {
 		for _, childID := range children[benchmark.ID] {
@@ -347,7 +347,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		}
 		g.benchmarks[idx] = benchmark
 	}
-	g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
+	// g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
 
 	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
 	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
