@@ -15,6 +15,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	"github.com/opengovern/opengovernance/services/migrator/config"
+	"go.uber.org/zap"
 )
 func Unzip(src, dest,url string) error {
     r, err := zip.OpenReader(src)
@@ -114,7 +115,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
-	refs := make([]string, 0, 2)
+	// refs := make([]string, 0, 2)
     URL := gitConfig.AnalyticsGitURL
     resp, err := http.Get(URL)
     if err != nil {
