@@ -267,7 +267,7 @@ export PGPASSWORD='postgres'
 set "PGPASSWORD=postgres"
 PGPASSWORD="postgres"
 pg_restore -h localhost -p 5432 -U postgres -d $authDatabaseName -v "$authDatabaseName.bak";
-pg_restore -h localhost -p 5432 -U postgres -d $onboardDatabaseName -v "$onboardDatabaseName.bak";
+pg_restore -h localhost -p 5432 -U postgres -d $integrationDatabaseName -v "$integrationDatabaseName.bak";
 pg_restore -h localhost -p 5432 -U postgres -d $inventoryDatabaseName -v "$inventoryDatabaseName.bak";
 pg_restore -h localhost -p 5432 -U postgres -d $complianceDatabaseName -v "$complianceDatabaseName.bak";
 pg_restore -h localhost -p 5432 -U postgres -d $metadataDatabaseName -v "$metadataDatabaseName.bak";
