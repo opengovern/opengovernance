@@ -134,7 +134,7 @@ func (w *Job) Run(ctx context.Context) error {
 	err = w.updateJob(m, m.Status, jobsStatus)
 
 	hasFailed := false
-	for name, mig := range migrations {
+	for name, mig := range migrationList {
 		w.logger.Info("running migration", zap.String("migrationName", name))
 
 		jobsStatus, err = getJobsStatus(m)
