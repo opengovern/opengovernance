@@ -42,7 +42,7 @@ func Unzip(src, dest,url string) error {
             }
         }()
         var path string
-
+        
         if(index == 0){
              path = filepath.Join(dest)
 		}else{
@@ -61,7 +61,7 @@ func Unzip(src, dest,url string) error {
 			if(index != 0){
   os.MkdirAll(path, f.Mode())
 			}
-
+          
         } else {
             os.MkdirAll(filepath.Dir(path), f.Mode())
             f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
@@ -116,8 +116,7 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	logger.Info("using git repo", zap.String("url", gitConfig.AnalyticsGitURL))
 
 	// refs := make([]string, 0, 2)
-	URL := gitConfig.AnalyticsGitURL
-
+    URL := gitConfig.AnalyticsGitURL
     resp, err := http.Get(URL)
     if err != nil {
         logger.Error("err: %s", zap.Error(err))
@@ -144,34 +143,45 @@ func GitClone(conf config.MigratorConfig, logger *zap.Logger) (string, error) {
 	Unzip("test.zip", config.ConfigzGitPath,URL)
 
 	os.Remove("test.zip")
+	os.RemoveAll(config.ConfigzGitPath)
+    // logger.Info("finished fetching configz data")
 
-	
-	logger.Info("finished fetching configz data")
+	// res, err := git2.CloneRepository(logger, gitConfig.AnalyticsGitURL, config.ConfigzGitPath)
+	// if err != nil {
+	// 	logger.Error("failed to clone repository", zap.Error(err))
+	// 	return "", err
+	// }
 
-	
+	// logger.Info("finished fetching configz data")
+
+	// ref, err := res.Head()
+	// if err != nil {
+	// 	logger.Error("failed to get head", zap.Error(err))
+	// 	return "", err
+	// }
+	// refs = append(refs, ref.Hash().String())
+
 	// logger.Info("using git repo for enrichmentor", zap.String("url", gitConfig.ControlEnrichmentGitURL))
 
-	// os.RemoveAll(config.ControlEnrichmentGitPath)
-	// URL = gitConfig.ControlEnrichmentGitURL
-	// resp, err = http.Get(URL)
-	//  if err != nil {
-    //     logger.Error("err: %s", zap.Error(err))
-    // }
+	//os.RemoveAll(config.ControlEnrichmentGitPath)
+	//
+	//res, err = git2.CloneRepository(logger, gitConfig.ControlEnrichmentGitURL, config.ControlEnrichmentGitPath)
+	//if err != nil {
+	//	logger.Error("failed to clone repository", zap.Error(err))
+	//	return "", err
+	//}
+	//ref, err = res.Head()
+	//if err != nil {
+	//	logger.Error("failed to get head", zap.Error(err))
+	//	return "", err
+	//}
+	//refs = append(refs, ref.Hash().String())
 
+	// refsJson, err := json.Marshal(refs)
+	// if err != nil {
+	// 	logger.Error("failed to marshal refs", zap.Error(err))
+	// 	return "", err
+	// }
 
-    // defer resp.Body.Close()
-    // // Create the file
-    // out, err = os.Create("test1.zip")
-    // if err != nil {
-    //     logger.Error("err: %s", zap.Error(err))
-    // }
-    // defer out.Close()
-
-    // // Write the body to file
-    // _, err = io.Copy(out, resp.Body)
-	// logger.Error("err: %s", zap.Error(err))
-	// Unzip("test1.zip", config.ControlEnrichmentGitPath)
-	// os.Remove("test1.zip")
-	// logger.Info("finished fetching control enrichment data")
 	return string("both completed need releases"), nil
 }
