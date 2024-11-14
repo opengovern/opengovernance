@@ -157,7 +157,7 @@ const columns = (isDemo: boolean) => {
         },
         {
             field: 'connectionID',
-            headerName: 'OpenGovernance connection ID',
+            headerName: 'OpenComply connection ID',
             type: 'string',
             hide: true,
             enableRowGroup: true,

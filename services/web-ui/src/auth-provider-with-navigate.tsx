@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button, Card, Flex, Text, TextInput, Title } from '@tremor/react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './utilities/auth'
-import { KaytuDarkIconBig, OpenGovernanceBig } from './icons/icons'
+import {  OpenGovernanceBig } from './icons/icons'
 import { authHostname } from './api/ApiConfig'
 
 interface IAuthProviderWithNavigate {

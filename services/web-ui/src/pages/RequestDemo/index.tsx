@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { Flex, Grid, Text, Title } from '@tremor/react'
-import { KaytuDarkIconBig } from '../../icons/icons'
+import { OpenGovernanceBig } from '../../icons/icons'
 
 export default function RequestDemo() {
     return (
@@ -17,7 +17,7 @@ export default function RequestDemo() {
                     justifyContent="start"
                     alignItems="start"
                 >
-                    <KaytuDarkIconBig className="w-32 mb-9" />
+                    <OpenGovernanceBig className="w-32 mb-9" />
                     <Title className="text-gray-800 text-2xl mb-6">
                         Manage Complexity
                     </Title>
@@ -69,7 +69,7 @@ export default function RequestDemo() {
                         <span className="font-bold text-gray-800">
                             Book a Demo
                         </span>{' '}
-                        to navigate OpenGovernance product
+                        to navigate OpenComply product
                     </Text>
                     <Flex
                         flexDirection="row"
