@@ -37,3 +37,24 @@ func (c Client) GetIntegrationByID(ctx context.Context, opengovernanceId string,
 	}
 	return &result, nil
 }
+
+func (c Client) ListIntegrationGroups(ctx context.Context) ([]integration.IntegrationGroup, error) {
+	var result []integration.IntegrationGroup
+	err := c.db.Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c Client) GetIntegrationGroupByName(ctx context.Context, name string) (*integration.IntegrationGroup, error) {
+	var result integration.IntegrationGroup
+	err := c.db.Where("name = ?", name).First(&result).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &result, nil
+}

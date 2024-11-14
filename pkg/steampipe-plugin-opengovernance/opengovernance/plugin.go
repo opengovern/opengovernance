@@ -21,6 +21,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 			"platform_lookup":                 tablePlatformLookup(ctx),
 			"platform_cost":                   tablePlatformCost(ctx),
 			"platform_integrations":           tablePlatformConnections(ctx),
+			"platform_integration_groups":     tablePlatformIntegrationGroups(ctx),
 			"platform_metrics":                tablePlatformMetrics(ctx),
 			"platform_api_benchmark_summary":  tablePlatformApiBenchmarkSummary(ctx),
 			"platform_api_benchmark_controls": tablePlatformApiBenchmarkControls(ctx),
