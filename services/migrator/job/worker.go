@@ -115,6 +115,8 @@ func (w *Job) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	w.logger.Info("Starting migration job", zap.String("manual status", m.ID))
+
 	jobsStatus := make(map[string]model.JobInfo)
 	var migrationList map[string]types.Migration
 	if(w.conf.IsManual){
