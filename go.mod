@@ -41,7 +41,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.36.0
 	github.com/open-policy-agent/opa v0.69.0
-	github.com/opengovern/og-util v1.1.4
+	github.com/opengovern/og-util v1.1.5
 	github.com/opengovern/plugin-aws v0.7.3
 	github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b
 	github.com/opengovern/plugin-kubernetes-internal v0.18.12
