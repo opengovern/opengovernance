@@ -3,9 +3,10 @@ package compliance
 import (
 	"context"
 	"fmt"
+
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/compliance/db"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/services/compliance/db"
+	"github.com/opengovern/opengovernance/services/metadata/models"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 

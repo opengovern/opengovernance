@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"errors"
-	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
+
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )

@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
+	"github.com/opengovern/opengovernance/services/compliance/summarizer"
 )
 
 func main() {

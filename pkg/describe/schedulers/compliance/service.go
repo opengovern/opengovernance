@@ -2,15 +2,16 @@ package compliance
 
 import (
 	"context"
-	"github.com/opengovern/og-util/pkg/jq"
 	"time"
+
+	"github.com/opengovern/og-util/pkg/jq"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/pkg/compliance/client"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/compliance/client"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 )

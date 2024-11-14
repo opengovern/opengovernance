@@ -3,19 +3,20 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/goccy/go-yaml"
-	"github.com/jackc/pgtype"
-	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/opengovernance/pkg/compliance/db"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/pkg/types"
-	"github.com/opengovern/opengovernance/services/migrator/job/git"
-	"go.uber.org/zap"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/goccy/go-yaml"
+	"github.com/jackc/pgtype"
+	"github.com/opengovern/og-util/pkg/model"
+	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opengovernance/services/compliance/db"
+	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opengovernance/services/migrator/job/git"
+	"go.uber.org/zap"
 )
 
 type GitParser struct {

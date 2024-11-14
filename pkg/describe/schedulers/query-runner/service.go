@@ -2,17 +2,18 @@ package query_runner
 
 import (
 	"context"
-	"github.com/opengovern/og-util/pkg/jq"
-	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"time"
+
+	"github.com/opengovern/og-util/pkg/jq"
+	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/ticker"
-	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
 	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
-	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
+	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
 	"go.uber.org/zap"
 )
 

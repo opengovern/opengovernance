@@ -2,20 +2,21 @@ package opengovernance
 
 import (
 	"context"
-	authApi "github.com/opengovern/og-util/pkg/api"
-	"github.com/opengovern/og-util/pkg/httpclient"
-	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/utils/dag"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	"go.uber.org/zap"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
+	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/utils/dag"
+	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/metadata/client"
+	"github.com/opengovern/opengovernance/services/metadata/models"
+	"go.uber.org/zap"
 )
 
 func newZapLogger() (*zap.Logger, error) {

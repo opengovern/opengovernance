@@ -12,8 +12,8 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
+	"github.com/opengovern/opengovernance/services/metadata/client"
+	"github.com/opengovern/opengovernance/services/metadata/models"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 )

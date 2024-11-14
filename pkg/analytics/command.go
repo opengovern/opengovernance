@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/jq"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
@@ -17,7 +18,7 @@ import (
 	workerConfig "github.com/opengovern/opengovernance/pkg/analytics/config"
 	"github.com/opengovern/opengovernance/pkg/analytics/db"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
-	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
+	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
