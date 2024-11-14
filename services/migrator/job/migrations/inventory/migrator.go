@@ -4,18 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/opengovern/og-util/pkg/model"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/inventory"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	"github.com/opengovern/opengovernance/services/inventory"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"os"
-	"path"
-	"strings"
 )
 
 type ResourceType struct {

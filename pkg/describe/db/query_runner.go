@@ -3,8 +3,9 @@ package db
 import (
 	"errors"
 	"fmt"
+
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 	"gorm.io/gorm"
 )
 

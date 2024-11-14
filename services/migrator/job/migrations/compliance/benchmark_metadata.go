@@ -1,7 +1,7 @@
 package compliance
 
 import (
-	"github.com/opengovern/opengovernance/pkg/compliance/db"
+	"github.com/opengovern/opengovernance/services/compliance/db"
 )
 
 type BenchmarkControlsCache struct {

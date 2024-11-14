@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/opengovern/opengovernance/pkg/auth"
 	"os"
 	"os/signal"
 	"syscall"
-	
+
+	"github.com/opengovern/opengovernance/services/auth"
 )
 
 func main() {

@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
-	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/ticker"
 	"github.com/opengovern/opengovernance/pkg/analytics"
 	analyticsApi "github.com/opengovern/opengovernance/pkg/analytics/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
+	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
