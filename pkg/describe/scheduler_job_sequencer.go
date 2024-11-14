@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/pkg/compliance/api"
-	"github.com/opengovern/opengovernance/pkg/compliance/runner"
-	"time"
+	"github.com/opengovern/opengovernance/services/compliance/api"
+	"github.com/opengovern/opengovernance/services/compliance/runner"
 
 	"github.com/opengovern/og-util/pkg/ticker"
 	describeApi "github.com/opengovern/opengovernance/pkg/describe/api"

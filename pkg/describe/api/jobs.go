@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/opengovern/opengovernance/pkg/analytics/api"
-	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"time"
+
+	"github.com/opengovern/opengovernance/pkg/analytics/api"
+	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 )
 
 type JobType string

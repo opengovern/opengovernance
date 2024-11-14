@@ -3,14 +3,15 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"golang.org/x/net/context"
 
-	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
-	"github.com/opengovern/opengovernance/pkg/compliance/runner"
+	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
+	"github.com/opengovern/opengovernance/services/compliance/runner"
 	"go.uber.org/zap"
 )
 

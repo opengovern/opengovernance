@@ -1,15 +1,16 @@
 package compliance
 
 import (
+	"time"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/integration"
-	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
+	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
-	"time"
 
-	"github.com/opengovern/opengovernance/pkg/compliance/runner"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/services/compliance/runner"
 	"go.uber.org/zap"
 )
 

@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
 	"os"
 	"os/signal"
 	"syscall"
+
+	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 )
 
 func main() {

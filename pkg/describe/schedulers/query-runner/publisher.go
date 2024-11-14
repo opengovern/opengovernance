@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"text/template"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 	"go.uber.org/zap"
-	"text/template"
 )
 
 func (s *JobScheduler) runPublisher(ctx context.Context) error {

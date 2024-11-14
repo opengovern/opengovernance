@@ -2,11 +2,12 @@ package discovery
 
 import (
 	"context"
+
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/compliance/client"
 	config2 "github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/compliance/client"
 	"go.uber.org/zap"
 )
 

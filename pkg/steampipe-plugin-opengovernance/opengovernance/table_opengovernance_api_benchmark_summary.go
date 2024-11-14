@@ -2,13 +2,14 @@ package opengovernance
 
 import (
 	"context"
-	compliance "github.com/opengovern/opengovernance/pkg/compliance/api"
+	"time"
+
 	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	compliance "github.com/opengovern/opengovernance/services/compliance/api"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
-	"time"
 )
 
 func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
