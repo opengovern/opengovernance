@@ -76,7 +76,7 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 		return err
 	}
 
-	err = s.db.UpdateComplianceJobsTimedOut(24)
+	err = s.db.UpdateComplianceJobsTimedOut(12)
 	if err != nil {
 		s.logger.Error("failed to update compliance jobs timed out", zap.Error(err))
 		return err
