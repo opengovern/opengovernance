@@ -143,7 +143,7 @@ export default function App() {
                             </Title>
                             <Text className="mb-6 text-center">
                                 Your session has expired. Please log in again to
-                                continue accessing OpenGovernance platform
+                                continue accessing OpenComply platform
                             </Text>
                             <Button
                                 icon={ArrowPathIcon}
@@ -189,9 +189,12 @@ export default function App() {
                     </Card>
                 </Flex>
             )}
-            <Modal visible={roleAccess} onDismiss={() => {
-                setRoleAccess(false)
-            }}>
+            <Modal
+                visible={roleAccess}
+                onDismiss={() => {
+                    setRoleAccess(false)
+                }}
+            >
                 <Flex
                     flexDirection="col"
                     justifyContent="center"
@@ -205,10 +208,12 @@ export default function App() {
                         You do not have permission to access this page. Please
                         contact your administrator for more information.
                     </Text>
-                    <Button icon={XMarkIcon} onClick={() => {
-                setRoleAccess(false)
-
-                    }}>
+                    <Button
+                        icon={XMarkIcon}
+                        onClick={() => {
+                            setRoleAccess(false)
+                        }}
+                    >
                         Close
                     </Button>
                 </Flex>
