@@ -73,10 +73,12 @@ func (s *SealHandler) initVault(ctx context.Context) bool {
 		}
 		keysSecret.StringData["root-token"] = initRes.RootToken
 
+		s.logger.Info("vault initialized creating unseal keys secret")
 		_, err = s.kubeClientset.CoreV1().Secrets(s.cfg.OpengovernanceNamespace).Create(ctx, &keysSecret, metav1.CreateOptions{})
 		if err != nil && !k8serrors.IsAlreadyExists(err) {
 			s.logger.Fatal("failed to create vault unseal keys secret", zap.Error(err), zap.Strings("keys", initRes.Keys))
-		} else if k8serrors.IsAlreadyExists(err) {
+		} else if k8serrors.IsAlreadyExists(err) && len(initRes.Keys) > 0 {
+			s.logger.Info("vault unseal keys secret already exists, updating")
 			_, err := s.kubeClientset.CoreV1().Secrets(s.cfg.OpengovernanceNamespace).Update(ctx, &keysSecret, metav1.UpdateOptions{})
 			if err != nil {
 				s.logger.Fatal("failed to update vault unseal keys secret", zap.Error(err), zap.Strings("keys", initRes.Keys))
@@ -116,14 +118,14 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 		s.logger.Error("failed to unseal vault", zap.Error(err))
 	}
 	if unsealed != nil && err == nil {
-		unsealed <- struct{}{}
-		close(unsealed)
-		unsealed = nil
 		rootToken := keysSecret.Data["root-token"]
 		err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
 		if err != nil {
 			s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
 		}
+		unsealed <- struct{}{}
+		close(unsealed)
+		unsealed = nil
 	}
 
 	for {
@@ -137,14 +139,14 @@ func (s *SealHandler) unsealChecker(ctx context.Context, initKuber bool, unseale
 				continue
 			}
 			if unsealed != nil {
-				unsealed <- struct{}{}
-				close(unsealed)
-				unsealed = nil
 				rootToken := keysSecret.Data["root-token"]
 				err = s.vaultSealHandler.SetupKuberAuth(ctx, string(rootToken))
 				if err != nil {
 					s.logger.Error("failed to setup kubernetes auth", zap.Error(err))
 				}
+				unsealed <- struct{}{}
+				close(unsealed)
+				unsealed = nil
 			}
 		}
 	}
