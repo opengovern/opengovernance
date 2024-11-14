@@ -9,7 +9,7 @@ import (
 
 func tablePlatformCost(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_cost",
+		Name:        "platform_cost",
 		Description: "Account-level cost of connections onboarded into platform",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -18,9 +18,9 @@ func tablePlatformCost(_ context.Context) *plugin.Table {
 			Hydrate: og_client.ListCostSummary,
 		},
 		Columns: []*plugin.Column{
-			{Name: "connection_id", Type: proto.ColumnType_STRING},
-			{Name: "connection_name", Type: proto.ColumnType_STRING},
-			{Name: "connector", Type: proto.ColumnType_STRING},
+			{Name: "integration_id", Type: proto.ColumnType_STRING},
+			{Name: "integration_name", Type: proto.ColumnType_STRING},
+			{Name: "integration_type", Type: proto.ColumnType_STRING},
 			{Name: "date", Type: proto.ColumnType_STRING},
 			{Name: "date_epoch", Type: proto.ColumnType_INT},
 			{Name: "month", Type: proto.ColumnType_STRING},

@@ -208,23 +208,23 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				Title:              control.Title,
 				Description:        control.Description,
 				Tags:               tags,
-				Connector:          control.Connector,
+				IntegrationType:    control.IntegrationType,
 				Enabled:            true,
 				Benchmarks:         nil,
-				Severity:           types.ParseFindingSeverity(control.Severity),
+				Severity:           types.ParseComplianceResultSeverity(control.Severity),
 				ManualVerification: control.ManualVerification,
 				Managed:            control.Managed,
 			}
 
 			if control.Query != nil {
 				q := db.Query{
-					ID:             control.ID,
-					QueryToExecute: control.Query.QueryToExecute,
-					Connector:      control.Connector,
-					PrimaryTable:   control.Query.PrimaryTable,
-					ListOfTables:   control.Query.ListOfTables,
-					Engine:         control.Query.Engine,
-					Global:         control.Query.Global,
+					ID:              control.ID,
+					QueryToExecute:  control.Query.QueryToExecute,
+					IntegrationType: control.IntegrationType,
+					PrimaryTable:    control.Query.PrimaryTable,
+					ListOfTables:    control.Query.ListOfTables,
+					Engine:          control.Query.Engine,
+					Global:          control.Query.Global,
 				}
 				g.controlsQueries[control.ID] = q
 				for _, parameter := range control.Query.Parameters {
@@ -292,22 +292,10 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			})
 		}
 
-		var connectors []string
-		if len(o.Connectors) > 0 {
-			connectors = o.Connectors
-		} else {
-			if strings.HasPrefix(o.ID, "aws_") {
-				connectors = []string{"AWS"}
-			} else if strings.HasPrefix(o.ID, "azure_") {
-				connectors = []string{"Azure"}
-			}
-		}
-
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
-			Connector:         connectors,
 			Description:       o.Description,
 			AutoAssign:        o.AutoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
@@ -328,9 +316,18 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			}
 		}
 
-		if len(o.Controls) != len(b.Controls) {
-			//fmt.Printf("could not find some controls, %d != %d", len(o.Controls), len(b.Controls))
+		integrationTypes := make(map[string]bool)
+		for _, c := range b.Controls {
+			for _, it := range c.IntegrationType {
+				integrationTypes[it] = true
+			}
 		}
+		var integrationTypesList []string
+		for k, _ := range integrationTypes {
+			integrationTypesList = append(integrationTypesList, k)
+		}
+		b.IntegrationType = integrationTypesList
+
 		g.benchmarks = append(g.benchmarks, b)
 		children[o.ID] = o.Children
 	}
@@ -352,29 +349,29 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	}
 	// g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
 
-	g.benchmarks, _ = fillBenchmarksConnectors(g.benchmarks)
-	// g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
+	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
+	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
 
 	return nil
 }
 
-func fillBenchmarksConnectors(benchmarks []db.Benchmark) ([]db.Benchmark, []string) {
-	var connectors []string
-	connectorMap := make(map[string]bool)
+func fillBenchmarksIntegrationTypes(benchmarks []db.Benchmark) ([]db.Benchmark, []string) {
+	var integrationTypes []string
+	integrationTypesMap := make(map[string]bool)
 
 	for idx, benchmark := range benchmarks {
-		if benchmark.Connector == nil {
-			benchmark.Children, benchmark.Connector = fillBenchmarksConnectors(benchmark.Children)
+		if benchmark.IntegrationType == nil {
+			benchmark.Children, benchmark.IntegrationType = fillBenchmarksIntegrationTypes(benchmark.Children)
 			benchmarks[idx] = benchmark
 		}
-		for _, c := range benchmark.Connector {
-			if _, ok := connectorMap[c]; !ok {
-				connectors = append(connectors, c)
-				connectorMap[c] = true
+		for _, c := range benchmark.IntegrationType {
+			if _, ok := integrationTypesMap[c]; !ok {
+				integrationTypes = append(integrationTypes, c)
+				integrationTypesMap[c] = true
 			}
 		}
 	}
-	return benchmarks, connectors
+	return benchmarks, integrationTypes
 }
 
 func (g *GitParser) CheckForDuplicate() error {
@@ -504,8 +501,9 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 		}
 
 		g.queryViews = append(g.queryViews, models.QueryView{
-			ID:    obj.ID,
-			Query: obj.Query,
+			ID:           obj.ID,
+			Query:        obj.Query,
+			Dependencies: obj.Dependencies,
 		})
 
 		return nil

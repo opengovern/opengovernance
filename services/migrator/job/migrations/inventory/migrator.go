@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/model"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/inventory"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/migrator/config"
 	"github.com/opengovern/opengovernance/services/migrator/db"
 	"go.uber.org/zap"
@@ -76,7 +76,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAWS).Unscoped().Delete(&inventory.ResourceType{}).Error
+		err := tx.Model(&inventory.ResourceType{}).Where("integration_type = ?", integration_type.IntegrationTypeAWSAccount).Unscoped().Delete(&inventory.ResourceType{}).Error
 		if err != nil {
 			logger.Error("failed to delete aws resource types", zap.Error(err))
 			return err
@@ -86,11 +86,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&inventory.ResourceType{
-				Connector:     source.CloudAWS,
-				ResourceType:  resourceType.ResourceName,
-				ResourceLabel: resourceType.ResourceLabel,
-				ServiceName:   strings.ToLower(resourceType.ServiceName),
-				DoSummarize:   !resourceType.IgnoreSummarize,
+				IntegrationType: integration_type.IntegrationTypeAWSAccount,
+				ResourceType:    resourceType.ResourceName,
+				ResourceLabel:   resourceType.ResourceLabel,
+				ServiceName:     strings.ToLower(resourceType.ServiceName),
+				DoSummarize:     !resourceType.IgnoreSummarize,
 			}).Error
 			if err != nil {
 				logger.Error("failed to create aws resource type", zap.Error(err))
@@ -118,7 +118,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAzure).Unscoped().Delete(&inventory.ResourceType{}).Error
+		err := tx.Model(&inventory.ResourceType{}).Where("integration_type = ?", integration_type.IntegrationTypeAzureSubscription).Unscoped().Delete(&inventory.ResourceType{}).Error
 		if err != nil {
 			logger.Error("failed to delete azure resource types", zap.Error(err))
 			return err
@@ -127,11 +127,11 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&inventory.ResourceType{
-				Connector:     source.CloudAzure,
-				ResourceType:  resourceType.ResourceName,
-				ResourceLabel: resourceType.ResourceLabel,
-				ServiceName:   strings.ToLower(resourceType.ServiceName),
-				DoSummarize:   !resourceType.IgnoreSummarize,
+				IntegrationType: integration_type.IntegrationTypeAzureSubscription,
+				ResourceType:    resourceType.ResourceName,
+				ResourceLabel:   resourceType.ResourceLabel,
+				ServiceName:     strings.ToLower(resourceType.ServiceName),
+				DoSummarize:     !resourceType.IgnoreSummarize,
 			}).Error
 			if err != nil {
 				logger.Error("failed to create azure resource type", zap.Error(err))

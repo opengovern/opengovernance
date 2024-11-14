@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -15,7 +16,6 @@ import (
 	"github.com/opengovern/og-util/pkg/model"
 	"github.com/opengovern/opengovernance/pkg/types"
 
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 
 	"gorm.io/gorm"
@@ -24,7 +24,7 @@ import (
 type BenchmarkAssignment struct {
 	gorm.Model
 	BenchmarkId        string  `gorm:"index:idx_benchmark_source; index:idx_benchmark_rc; not null"`
-	ConnectionId       *string `gorm:"index:idx_benchmark_source"`
+	IntegrationID      *string `gorm:"index:idx_benchmark_source"`
 	ResourceCollection *string `gorm:"index:idx_benchmark_rc"`
 	AssignedAt         time.Time
 }
@@ -46,7 +46,7 @@ type Benchmark struct {
 	ID                string `gorm:"primarykey"`
 	Title             string
 	DisplayCode       string
-	Connector         pq.StringArray `gorm:"type:text[]"`
+	IntegrationType   pq.StringArray `gorm:"type:text[]"`
 	Description       string
 	LogoURI           string
 	Category          string
@@ -80,8 +80,8 @@ func (b Benchmark) ToApi() api.Benchmark {
 		UpdatedAt:         b.UpdatedAt,
 		Tags:              b.GetTagsMap(),
 	}
-	if b.Connector != nil {
-		ba.Connectors = source.ParseTypes(b.Connector)
+	if b.IntegrationType != nil {
+		ba.IntegrationTypes = b.IntegrationType
 	}
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
@@ -145,13 +145,13 @@ type Control struct {
 	Tags    []ControlTag        `gorm:"foreignKey:ControlID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap map[string][]string `gorm:"-:all"`
 
-	Connector          pq.StringArray `gorm:"type:text[]"`
+	IntegrationType    pq.StringArray `gorm:"type:text[]"`
 	DocumentURI        string
 	Enabled            bool
 	QueryID            *string
 	Query              *Query      `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:SET NULL"`
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_controls;"`
-	Severity           types.FindingSeverity
+	Severity           types.ComplianceResultSeverity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time
@@ -167,7 +167,7 @@ func (p Control) ToApi() api.Control {
 		Explanation:        "",
 		NonComplianceCost:  "",
 		UsefulExample:      "",
-		Connector:          nil,
+		IntegrationType:    nil,
 		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
 		Severity:           p.Severity,
@@ -222,9 +222,9 @@ func (p Control) GetTagsMap() map[string][]string {
 	return p.tagsMap
 }
 
-func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.Control) error {
-	tracer := otel.Tracer("PopulateConnector")
-	if api.Connector == nil || len(api.Connector) > 0 {
+func (p *Control) PopulateIntegrationType(ctx context.Context, db Database, api *api.Control) error {
+	tracer := otel.Tracer("PopulateIntegrationType")
+	if api.IntegrationType == nil || len(api.IntegrationType) > 0 {
 		return nil
 	}
 
@@ -250,9 +250,9 @@ func (p *Control) PopulateConnector(ctx context.Context, db Database, api *api.C
 		return fmt.Errorf("query %s not found", *p.QueryID)
 	}
 
-	ty := source.ParseTypes(query.Connector)
+	ty := query.IntegrationType
 
-	api.Connector = ty
+	api.IntegrationType = ty
 	return nil
 }
 
@@ -280,31 +280,31 @@ func (qp QueryParameter) ToApi() api.QueryParameter {
 }
 
 type Query struct {
-	ID             string `gorm:"primaryKey"`
-	QueryToExecute string
-	Connector      pq.StringArray `gorm:"type:text[]"`
-	PrimaryTable   *string
-	ListOfTables   pq.StringArray `gorm:"type:text[]"`
-	Engine         string
-	Controls       []Control        `gorm:"foreignKey:QueryID"`
-	Parameters     []QueryParameter `gorm:"foreignKey:QueryID"`
-	Global         bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID              string `gorm:"primaryKey"`
+	QueryToExecute  string
+	IntegrationType pq.StringArray `gorm:"type:text[]"`
+	PrimaryTable    *string
+	ListOfTables    pq.StringArray `gorm:"type:text[]"`
+	Engine          string
+	Controls        []Control        `gorm:"foreignKey:QueryID"`
+	Parameters      []QueryParameter `gorm:"foreignKey:QueryID"`
+	Global          bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (q Query) ToApi() api.Query {
 	query := api.Query{
-		ID:             q.ID,
-		QueryToExecute: q.QueryToExecute,
-		Connector:      source.ParseTypes(q.Connector),
-		ListOfTables:   q.ListOfTables,
-		PrimaryTable:   q.PrimaryTable,
-		Engine:         q.Engine,
-		Parameters:     make([]api.QueryParameter, 0, len(q.Parameters)),
-		Global:         q.Global,
-		CreatedAt:      q.CreatedAt,
-		UpdatedAt:      q.UpdatedAt,
+		ID:              q.ID,
+		QueryToExecute:  q.QueryToExecute,
+		IntegrationType: integration_type.ParseTypes(q.IntegrationType),
+		ListOfTables:    q.ListOfTables,
+		PrimaryTable:    q.PrimaryTable,
+		Engine:          q.Engine,
+		Parameters:      make([]api.QueryParameter, 0, len(q.Parameters)),
+		Global:          q.Global,
+		CreatedAt:       q.CreatedAt,
+		UpdatedAt:       q.UpdatedAt,
 	}
 	for _, p := range q.Parameters {
 		query.Parameters = append(query.Parameters, p.ToApi())

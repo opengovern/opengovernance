@@ -81,7 +81,7 @@ func (db Database) ListRootBenchmarks(ctx context.Context, tags map[string][]str
 
 // ListBenchmarksFiltered returns all benchmarks with the associated filters
 func (db Database) ListBenchmarksFiltered(ctx context.Context, titleRegex *string, root bool, tags map[string][]string, parentBenchmarkId []string,
-	assigned *bool, isBaseline *bool, connectionIds []string) ([]Benchmark, error) {
+	assigned *bool, isBaseline *bool, integrationIds []string) ([]Benchmark, error) {
 	var benchmarks []Benchmark
 	tx := db.Orm.WithContext(ctx).Model(&Benchmark{}).Preload(clause.Associations)
 
@@ -108,9 +108,9 @@ func (db Database) ListBenchmarksFiltered(ctx context.Context, titleRegex *strin
 			tx = tx.Where("(NOT EXISTS (SELECT 1 FROM benchmark_assignments WHERE benchmark_assignments.benchmark_id = benchmarks.id) OR benchmarks.auto_assign = true)")
 		}
 	}
-	if len(connectionIds) > 0 {
-		tx = tx.Where("(EXISTS (SELECT 1 FROM benchmark_assignments WHERE benchmark_assignments.connection_id IN ? AND benchmark_assignments.benchmark_id = benchmarks.id) OR benchmarks.auto_assign = true)",
-			connectionIds)
+	if len(integrationIds) > 0 {
+		tx = tx.Where("(EXISTS (SELECT 1 FROM benchmark_assignments WHERE benchmark_assignments.integration_id IN ? AND benchmark_assignments.benchmark_id = benchmarks.id) OR benchmarks.auto_assign = true)",
+			integrationIds)
 	}
 
 	if len(tags) > 0 {
@@ -459,7 +459,7 @@ func (db Database) ListControlsByBenchmarkID(ctx context.Context, benchmarkID st
 
 	return s, nil
 }
-func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, connectors []string, severity []string, benchmarkIDs []string,
+func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, integrationTypes []string, severity []string, benchmarkIDs []string,
 	tagFilters map[string][]string, hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]Control, error) {
 	var s []Control
 
@@ -482,12 +482,12 @@ func (db Database) ListControlsByFilter(ctx context.Context, controlIDs, connect
 		}
 	}
 
-	for i, c := range connectors {
-		connectors[i] = strings.ToLower(c)
+	for i, c := range integrationTypes {
+		integrationTypes[i] = strings.ToLower(c)
 	}
 
-	if len(connectors) > 0 {
-		m = m.Where("controls.connector::text[] && ?", pq.Array(connectors))
+	if len(integrationTypes) > 0 {
+		m = m.Where("controls.integration_type::text[] && ?", pq.Array(integrationTypes))
 	}
 
 	if len(severity) > 0 {
@@ -689,10 +689,10 @@ func (db Database) GetQueries(ctx context.Context, queryIDs []string) ([]Query, 
 	return s, nil
 }
 
-func (db Database) GetQueriesIdAndConnector(ctx context.Context, queryIDs []string) ([]Query, error) {
+func (db Database) GetQueriesIdAndIntegrationType(ctx context.Context, queryIDs []string) ([]Query, error) {
 	var s []Query
 	tx := db.Orm.WithContext(ctx).Model(&Query{}).
-		Select("id, connector").
+		Select("id, integration_type").
 		Where("id IN ?", queryIDs).
 		Find(&s)
 	if tx.Error != nil {
@@ -713,8 +713,8 @@ func (db Database) CleanupAllBenchmarkAssignments() error {
 
 func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *BenchmarkAssignment) error {
 	tx := db.Orm.WithContext(ctx).Where(BenchmarkAssignment{
-		BenchmarkId:  assignment.BenchmarkId,
-		ConnectionId: assignment.ConnectionId,
+		BenchmarkId:   assignment.BenchmarkId,
+		IntegrationID: assignment.IntegrationID,
 	}).FirstOrCreate(assignment)
 
 	if tx.Error != nil {
@@ -724,10 +724,10 @@ func (db Database) AddBenchmarkAssignment(ctx context.Context, assignment *Bench
 	return nil
 }
 
-func (db Database) GetBenchmarkAssignmentsByConnectionId(ctx context.Context, connectionId string) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsByIntegrationId(ctx context.Context, integrationId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
 	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).
-		Where(BenchmarkAssignment{ConnectionId: &connectionId}).
+		Where(BenchmarkAssignment{IntegrationID: &integrationId}).
 		Where("resource_collection IS NULL").Scan(&s)
 
 	if tx.Error != nil {
@@ -741,7 +741,7 @@ func (db Database) GetBenchmarkAssignmentsByResourceCollectionId(ctx context.Con
 	var s []BenchmarkAssignment
 	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).
 		Where(BenchmarkAssignment{ResourceCollection: &resourceCollectionId}).
-		Where("connection_id IS NULL").Scan(&s)
+		Where("integration_id IS NULL").Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -775,11 +775,11 @@ func (db Database) ListBenchmarkAssignments(ctx context.Context) ([]BenchmarkAss
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) (*BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, integrationId, resourceCollectionId *string) (*BenchmarkAssignment, error) {
 	var s BenchmarkAssignment
 	tx := db.Orm.WithContext(ctx).Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
-		ConnectionId:       connectionId,
+		IntegrationID:      integrationId,
 		ResourceCollection: resourceCollectionId,
 	}).Scan(&s)
 
@@ -804,10 +804,10 @@ func (db Database) GetBenchmarkAssignmentsCount() ([]BenchmarkAssignmentsCount, 
 	return results, nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, connectionId, resourceCollectionId *string) error {
+func (db Database) DeleteBenchmarkAssignmentByIds(ctx context.Context, benchmarkId string, integrationId, resourceCollectionId *string) error {
 	tx := db.Orm.WithContext(ctx).Unscoped().Where(BenchmarkAssignment{
 		BenchmarkId:        benchmarkId,
-		ConnectionId:       connectionId,
+		IntegrationID:      integrationId,
 		ResourceCollection: resourceCollectionId,
 	}).Delete(&BenchmarkAssignment{})
 
@@ -893,18 +893,18 @@ func (db Database) UpdateBenchmarkTrackDriftEvents(ctx context.Context, benchmar
 	return nil
 }
 
-func (db Database) ListControlsUniqueConnectors(ctx context.Context) ([]string, error) {
-	var connectors []string
+func (db Database) ListControlsUniqueIntegrationTypes(ctx context.Context) ([]string, error) {
+	var integrationTypes []string
 
 	tx := db.Orm.WithContext(ctx).
 		Model(&Control{}).
-		Select("DISTINCT UNNEST(connector) AS unique_connector").
-		Scan(&connectors)
+		Select("DISTINCT UNNEST(integration_type) AS unique_integration_types").
+		Scan(&integrationTypes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	return connectors, nil
+	return integrationTypes, nil
 }
 
 func (db Database) ListControlsUniqueSeverity(ctx context.Context) ([]string, error) {

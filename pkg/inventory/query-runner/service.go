@@ -17,7 +17,6 @@ import (
 	complianceClient "github.com/opengovern/opengovernance/pkg/compliance/client"
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
@@ -32,7 +31,6 @@ type Config struct {
 	Metadata              config.OpenGovernanceService
 	EsSink                config.OpenGovernanceService
 	Steampipe             config.Postgres
-	PennywiseBaseURL      string `yaml:"pennywise_base_url"`
 	PrometheusPushAddress string
 }
 
@@ -43,7 +41,6 @@ type Worker struct {
 	esClient         opengovernance.Client
 	jq               *jq.JobQueue
 	complianceClient complianceClient.ComplianceServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
 	metadataClient   metadataClient.MetadataServiceClient
 	sinkClient       esSinkClient.EsSinkServiceClient
@@ -66,7 +63,7 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe, config.PennywiseBaseURL); err != nil {
+	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +103,6 @@ func NewWorker(
 		esClient:         esClient,
 		jq:               jq,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
-		onboardClient:    onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
 		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),

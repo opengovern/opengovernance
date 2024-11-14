@@ -11,13 +11,13 @@ import (
 )
 
 type FindingHit struct {
-	ID      string        `json:"_id"`
-	Score   float64       `json:"_score"`
-	Index   string        `json:"_index"`
-	Type    string        `json:"_type"`
-	Version int64         `json:"_version,omitempty"`
-	Source  types.Finding `json:"_source"`
-	Sort    []any         `json:"sort"`
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  types.ComplianceResult `json:"_source"`
+	Sort    []any                  `json:"sort"`
 }
 
 type FindingHits struct {
@@ -35,7 +35,7 @@ type FindingPaginator struct {
 }
 
 func (k Client) NewFindingPaginator(filters []es.BoolFilter, limit *int64) (FindingPaginator, error) {
-	paginator, err := es.NewPaginator(k.ES.ES(), types.FindingsIndex, filters, limit)
+	paginator, err := es.NewPaginator(k.ES.ES(), types.ComplianceResultsIndex, filters, limit)
 	if err != nil {
 		return FindingPaginator{}, err
 	}
@@ -55,14 +55,14 @@ func (p FindingPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p FindingPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
+func (p FindingPaginator) NextPage(ctx context.Context) ([]types.ComplianceResult, error) {
 	var response FindingSearchResponse
 	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []types.Finding
+	var values []types.ComplianceResult
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}
@@ -81,7 +81,7 @@ var listFindingFilters = map[string]string{
 	"id":                "ID",
 	"benchmark_id":      "benchmarkID",
 	"policy_id":         "policyID",
-	"connection_id":     "connectionID",
+	"integration_id":    "integrationID",
 	"described_at":      "describedAt",
 	"evaluated_at":      "evaluatedAt",
 	"state_active":      "stateActive",

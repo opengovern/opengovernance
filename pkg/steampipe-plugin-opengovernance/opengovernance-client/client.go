@@ -6,7 +6,6 @@ import (
 )
 
 type Client struct {
-	ES          essdk.Client
-	PG          pgsdk.Client
-	PGInventory pgsdk.Client
+	ES essdk.Client
+	PG pgsdk.Client
 }

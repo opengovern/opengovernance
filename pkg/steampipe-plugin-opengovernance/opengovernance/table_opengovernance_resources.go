@@ -11,7 +11,7 @@ import (
 
 func tablePlatformResources(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_resources",
+		Name:        "platform_resources",
 		Description: "OpenGovernance Resources",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -26,14 +26,14 @@ func tablePlatformResources(_ context.Context) *plugin.Table {
 			},
 		},
 		Columns: []*plugin.Column{
-			{Name: "resource_id", Transform: transform.FromField("ID"), Type: proto.ColumnType_STRING},
-			{Name: "resource_arn", Transform: transform.FromField("ARN"), Type: proto.ColumnType_STRING},
-			{Name: "connection_id", Transform: transform.FromField("SourceID"), Type: proto.ColumnType_STRING},
-			{Name: "connector", Transform: transform.FromField("SourceType"), Type: proto.ColumnType_STRING},
+			{Name: "platform_id", Type: proto.ColumnType_STRING},
+			{Name: "resource_id", Type: proto.ColumnType_STRING},
+			{Name: "integration_id", Type: proto.ColumnType_STRING},
+			{Name: "integration_type", Type: proto.ColumnType_STRING},
 			{Name: "resource_type", Type: proto.ColumnType_STRING},
-			{Name: "name", Transform: transform.FromField("Metadata.Name"), Type: proto.ColumnType_STRING},
-			{Name: "region", Transform: transform.From(getResourceRegion), Type: proto.ColumnType_STRING},
-			{Name: "created_at", Transform: transform.From(fixTime), Type: proto.ColumnType_TIMESTAMP},
+			{Name: "resource_name", Type: proto.ColumnType_STRING},
+			{Name: "described_by", Type: proto.ColumnType_STRING},
+			{Name: "described_at", Transform: transform.From(fixTime), Type: proto.ColumnType_TIMESTAMP},
 			{Name: "description", Type: proto.ColumnType_JSON},
 		},
 	}
@@ -41,7 +41,7 @@ func tablePlatformResources(_ context.Context) *plugin.Table {
 
 func fixTime(ctx context.Context, d *transform.TransformData) (interface{}, error) {
 	resource := d.HydrateItem.(og_client.Resource)
-	t := time.UnixMilli(resource.CreatedAt)
+	t := time.UnixMilli(resource.DescribedAt)
 	return t.Format("2006-01-02T15:04:05"), nil
 }
 

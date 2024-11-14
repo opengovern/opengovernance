@@ -1,16 +1,16 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/analytics/db"
 )
 
 type CostTrendDatapoint struct {
 	Cost                                    float64           `json:"cost" minimum:"0"`
 	CostStacked                             []CostStackedItem `json:"costStacked" minimum:"0"`
-	TotalDescribedConnectionCount           int64             `json:"totalConnectionCount"`
+	TotalDescribedConnectionCount           int64             `json:"totalIntegrationCount"`
 	TotalSuccessfulDescribedConnectionCount int64             `json:"totalSuccessfulDescribedConnectionCount"`
 	Date                                    time.Time         `json:"date" format:"date-time"`
 }
@@ -35,14 +35,14 @@ type ListServicesCostTrendDatapoint struct {
 }
 
 type CostMetric struct {
-	Connector                []source.Type `json:"connector" example:"Azure"`
-	CostDimensionName        string        `json:"cost_dimension_name" example:"microsoft.compute/disks"`
-	CostDimensionID          string        `json:"cost_dimension_id" example:"microsoft_compute_disks"`
-	TotalCost                *float64      `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
-	DailyCostAtStartTime     *float64      `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
-	DailyCostAtEndTime       *float64      `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
-	FinderQuery              string        `json:"finderQuery"`
-	FinderPerConnectionQuery string        `json:"finderPerConnectionQuery"`
+	IntegrationType          []integration.Type `json:"integration_types" example:"Azure"`
+	CostDimensionName        string             `json:"cost_dimension_name" example:"microsoft.compute/disks"`
+	CostDimensionID          string             `json:"cost_dimension_id" example:"microsoft_compute_disks"`
+	TotalCost                *float64           `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
+	DailyCostAtStartTime     *float64           `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
+	DailyCostAtEndTime       *float64           `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
+	FinderQuery              string             `json:"finderQuery"`
+	FinderPerConnectionQuery string             `json:"finderPerConnectionQuery"`
 }
 
 type ListCostMetricsResponse struct {
@@ -53,7 +53,7 @@ type ListCostMetricsResponse struct {
 
 type AnalyticsMetric struct {
 	ID                       string              `json:"id"`
-	Connectors               []source.Type       `json:"connectors"`
+	IntegrationType          []integration.Type  `json:"integrationTypes"`
 	Type                     db.MetricType       `json:"type"`
 	Name                     string              `json:"name"`
 	Query                    string              `json:"query"`
@@ -86,17 +86,17 @@ const (
 )
 
 type SpendTableRow struct {
-	DimensionID   string             `json:"dimensionId" example:"compute"`
-	AccountID     string             `json:"accountID" example:"1239042"`
-	Connector     source.Type        `json:"connector" example:"AWS"`
-	Category      string             `json:"category" example:"Compute"`
-	DimensionName string             `json:"dimensionName" example:"Compute"`
-	CostValue     map[string]float64 `json:"costValue"`
+	DimensionID     string             `json:"dimensionId" example:"compute"`
+	AccountID       string             `json:"accountID" example:"1239042"`
+	IntegrationType integration.Type   `json:"integrationType" example:"AWS"`
+	Category        string             `json:"category" example:"Compute"`
+	DimensionName   string             `json:"dimensionName" example:"Compute"`
+	CostValue       map[string]float64 `json:"costValue"`
 }
 
 type AssetTableRow struct {
-	DimensionID   string             `json:"dimensionId" example:"compute"`
-	DimensionName string             `json:"dimensionName" example:"Compute"`
-	ResourceCount map[string]float64 `json:"resourceCount"`
-	Connector     source.Type        `json:"connector"`
+	DimensionID     string             `json:"dimensionId" example:"compute"`
+	DimensionName   string             `json:"dimensionName" example:"Compute"`
+	ResourceCount   map[string]float64 `json:"resourceCount"`
+	IntegrationType integration.Type   `json:"integrationType"`
 }

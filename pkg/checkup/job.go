@@ -9,8 +9,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/opengovern/opengovernance/pkg/checkup/api"
-	"github.com/opengovern/opengovernance/pkg/onboard/client"
-	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/integration/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -42,7 +41,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(integrationClient client.IntegrationServiceClient, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -76,49 +75,26 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 
 	// Healthcheck
 	logger.Info("starting healthcheck")
-	connections, err := onboardClient.ListSources(&httpclient.Context{
+	integrations, err := integrationClient.ListIntegrations(&httpclient.Context{
 		UserRole: authAPI.EditorRole,
 	}, nil)
 	if err != nil {
 		logger.Error("failed to get connections list from onboard service", zap.Error(err))
 		fail(fmt.Errorf("failed to get connections list from onboard service: %w", err))
 	} else {
-		for _, connectionObj := range connections {
-			if connectionObj.LastHealthCheckTime.Add(8 * time.Hour).After(time.Now()) {
-				logger.Info("skipping source health check", zap.String("source_id", connectionObj.ID.String()))
+		for _, integrationObj := range integrations.Integrations {
+			if integrationObj.LastCheck != nil && integrationObj.LastCheck.Add(8*time.Hour).After(time.Now()) {
+				logger.Info("skipping integration health check", zap.String("integration_id", integrationObj.IntegrationID))
 				continue
 			}
-			logger.Info("checking source health", zap.String("source_id", connectionObj.ID.String()))
-			_, err := onboardClient.GetSourceHealthcheck(&httpclient.Context{
+			logger.Info("checking integration health", zap.String("integration_id", integrationObj.IntegrationID))
+			_, err := integrationClient.IntegrationHealthcheck(&httpclient.Context{
 				UserRole: authAPI.EditorRole,
-			}, connectionObj.ID.String(), true)
+			}, integrationObj.IntegrationID)
 			if err != nil {
-				logger.Error("failed to check source health", zap.String("source_id", connectionObj.ID.String()), zap.Error(err))
-				fail(fmt.Errorf("failed to check source health %s: %w", connectionObj.ID.String(), err))
+				logger.Error("failed to check integration health", zap.String("integration_id", integrationObj.IntegrationID), zap.Error(err))
+				fail(fmt.Errorf("failed to check source health %s: %w", integrationObj.IntegrationID, err))
 			}
-		}
-	}
-
-	// Auto Onboard
-	logger.Info("starting auto onboard")
-	credentials, err := onboardClient.ListCredentials(&httpclient.Context{
-		UserRole: authAPI.EditorRole,
-	}, nil, nil, utils.GetPointer("healthy"), 10000, 1)
-	if err != nil {
-		logger.Error("failed to get credentials list from onboard service", zap.Error(err))
-		fail(fmt.Errorf("failed to get credentials list from onboard service: %w", err))
-	}
-	for _, cred := range credentials.Credentials {
-		if !cred.AutoOnboardEnabled {
-			continue
-		}
-		logger.Info("triggering auto onboard", zap.String("credential_id", cred.ID))
-		_, err := onboardClient.TriggerAutoOnboard(&httpclient.Context{
-			UserRole: authAPI.EditorRole,
-		}, cred.ID)
-		if err != nil {
-			logger.Error("failed to trigger auto onboard", zap.String("credential_id", cred.ID), zap.Error(err))
-			fail(fmt.Errorf("failed to trigger auto onboard for credential %s: %w", cred.ID, err))
 		}
 	}
 

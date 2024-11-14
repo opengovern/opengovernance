@@ -14,8 +14,9 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	runner2 "github.com/opengovern/opengovernance/pkg/compliance/runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
+	"github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/sony/sonyflake"
 	"net/http"
 	"regexp"
@@ -24,30 +25,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opengovern/og-aws-describer/aws"
-	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
-	awsSteampipe "github.com/opengovern/og-aws-describer/pkg/steampipe"
-	"github.com/opengovern/og-azure-describer/azure"
-	azureSteampipe "github.com/opengovern/og-azure-describer/pkg/steampipe"
-	"github.com/opengovern/og-util/pkg/source"
 	analyticsapi "github.com/opengovern/opengovernance/pkg/analytics/api"
 	complianceapi "github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	model2 "github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
-	onboardapi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type HttpServer struct {
-	Address       string
-	DB            db.Database
-	Scheduler     *Scheduler
-	onboardClient onboardClient.OnboardServiceClient
-	kubeClient    k8sclient.Client
+	Address    string
+	DB         db.Database
+	Scheduler  *Scheduler
+	kubeClient k8sclient.Client
 }
 
 func NewHTTPServer(
@@ -80,7 +73,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.ViewerRole))
 	v1.GET("/describe/all/jobs/state", httpserver.AuthorizeHandler(h.GetDescribeAllJobsStatus, apiAuth.ViewerRole))
 
-	v1.GET("/discovery/resourcetypes/list", httpserver.AuthorizeHandler(h.GetDiscoveryResourceTypeList, apiAuth.ViewerRole))
 	v1.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobs, apiAuth.ViewerRole))
 	v1.GET("/jobs/bydate", httpserver.AuthorizeHandler(h.CountJobsByDate, apiAuth.ViewerRole))
 
@@ -135,7 +127,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	var jobs []api.Job
 
-	srcs, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
+	srcs, err := h.Scheduler.integrationClient.ListIntegrations(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		return err
 	}
@@ -147,7 +139,7 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 
 	sortBy := "id"
 	switch request.SortBy {
-	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
+	case api.JobSort_ByIntegrationID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus:
 		sortBy = string(request.SortBy)
 	}
 
@@ -178,9 +170,9 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 		return err
 	}
 	for _, job := range describeJobs {
-		var jobSRC onboardapi.Connection
-		for _, src := range srcs {
-			if src.ID.String() == job.ConnectionID {
+		var jobSRC integrationapi.Integration
+		for _, src := range srcs.Integrations {
+			if src.IntegrationID == job.ConnectionID {
 				jobSRC = src
 			}
 		}
@@ -199,8 +191,8 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 			UpdatedAt:              job.UpdatedAt,
 			Type:                   api.JobType(job.JobType),
 			ConnectionID:           job.ConnectionID,
-			ConnectionProviderID:   jobSRC.ConnectionID,
-			ConnectionProviderName: jobSRC.ConnectionName,
+			ConnectionProviderID:   jobSRC.ProviderID,
+			ConnectionProviderName: jobSRC.Name,
 			Title:                  job.Title,
 			Status:                 job.Status,
 			FailureReason:          job.FailureMessage,
@@ -291,108 +283,6 @@ func (h HttpServer) ListJobs(ctx echo.Context) error {
 	})
 }
 
-var (
-	awsResourceTypeReg, _   = regexp.Compile("aws::[a-z0-9-_/]+::[a-z0-9-_/]+")
-	azureResourceTypeReg, _ = regexp.Compile("microsoft.[a-z0-9-_/]+")
-)
-
-var (
-	awsTableReg, _   = regexp.Compile("aws_[a-z0-9_]+")
-	azureTableReg, _ = regexp.Compile("azure_[a-z0-9_]+")
-)
-
-func getResourceTypeFromTableNameLower(tableName string, queryConnector source.Type) string {
-	switch queryConnector {
-	case source.CloudAWS:
-		return awsSteampipe.ExtractResourceType(tableName)
-	case source.CloudAzure:
-		return azureSteampipe.ExtractResourceType(tableName)
-	default:
-		resourceType := awsSteampipe.ExtractResourceType(tableName)
-		if resourceType == "" {
-			resourceType = azureSteampipe.ExtractResourceType(tableName)
-		}
-		return resourceType
-	}
-}
-
-func getResourceTypeFromTableName(tableName string, queryConnector source.Type) string {
-	switch queryConnector {
-	case source.CloudAWS:
-		rt := awsSteampipe.GetResourceTypeByTableName(tableName)
-		if rt != "" {
-			for k, _ := range awsSteampipe.AWSDescriptionMap {
-				if strings.ToLower(k) == strings.ToLower(rt) {
-					return k
-				}
-			}
-		}
-	case source.CloudAzure:
-		rt := azureSteampipe.GetResourceTypeByTableName(tableName)
-		if rt != "" {
-			for k, _ := range azureSteampipe.AzureDescriptionMap {
-				if strings.ToLower(k) == strings.ToLower(rt) {
-					return k
-				}
-			}
-		}
-	default:
-		rt := awsSteampipe.GetResourceTypeByTableName(tableName)
-		if rt != "" {
-			for k, _ := range awsSteampipe.AWSDescriptionMap {
-				if strings.ToLower(k) == strings.ToLower(rt) {
-					return k
-				}
-			}
-		}
-		rt = azureSteampipe.GetResourceTypeByTableName(tableName)
-		if rt != "" {
-			for k, _ := range azureSteampipe.AzureDescriptionMap {
-				if strings.ToLower(k) == strings.ToLower(rt) {
-					return k
-				}
-			}
-		}
-	}
-	return ""
-}
-
-func extractResourceTypes(query string, connectors []source.Type) []string {
-	var result []string
-
-	for _, connector := range connectors {
-		if connector == source.CloudAWS {
-			awsTables := awsResourceTypeReg.FindAllString(query, -1)
-			result = append(result, awsTables...)
-
-			awsTables = awsTableReg.FindAllString(query, -1)
-			for _, table := range awsTables {
-				resourceType := getResourceTypeFromTableNameLower(table, source.CloudAWS)
-				if resourceType == "" {
-					resourceType = table
-				}
-				result = append(result, resourceType)
-			}
-		}
-
-		if connector == source.CloudAzure {
-			azureTables := azureTableReg.FindAllString(query, -1)
-			for _, table := range azureTables {
-				resourceType := getResourceTypeFromTableNameLower(table, source.CloudAzure)
-				if resourceType == "" {
-					resourceType = table
-				}
-				result = append(result, resourceType)
-			}
-
-			azureTables = azureResourceTypeReg.FindAllString(query, -1)
-			result = append(result, azureTables...)
-		}
-	}
-
-	return result
-}
-
 func UniqueArray[T any](arr []T) []T {
 	m := make(map[string]T)
 	for _, item := range arr {
@@ -407,22 +297,6 @@ func UniqueArray[T any](arr []T) []T {
 		resp = append(resp, v)
 	}
 	return resp
-}
-
-// GetDiscoveryResourceTypeList godoc
-//
-//	@Summary	List all resource types that will be discovered
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Produce	json
-//	@Success	200	{object}	api.ListDiscoveryResourceTypes
-//	@Router		/schedule/api/v1/discovery/resourcetypes/list [get]
-func (h HttpServer) GetDiscoveryResourceTypeList(ctx echo.Context) error {
-	result, err := h.Scheduler.ListDiscoveryResourceTypes()
-	if err != nil {
-		return err
-	}
-	return ctx.JSON(http.StatusOK, result)
 }
 
 func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
@@ -477,8 +351,6 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
-	forceFull := ctx.QueryParam("force_full") == "true"
-	costDiscovery := ctx.QueryParam("cost_discovery") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
 	userID := httpserver.GetUserID(ctx)
 	if userID == "" {
@@ -488,15 +360,16 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	ctx2 := &httpclient.Context{UserRole: apiAuth.AdminRole}
 	ctx2.Ctx = ctx.Request().Context()
 
-	var srcs []onboardapi.Connection
+	var srcs []integrationapi.Integration
 	if connectionID == "all" {
 		var err error
-		srcs, err = h.Scheduler.onboardClient.ListSources(ctx2, nil)
+		integrationsResp, err := h.Scheduler.integrationClient.ListIntegrations(ctx2, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+		srcs = integrationsResp.Integrations
 	} else {
-		src, err := h.Scheduler.onboardClient.GetSource(ctx2, connectionID)
+		src, err := h.Scheduler.integrationClient.GetIntegration(ctx2, connectionID)
 		if err != nil || src == nil {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -504,55 +377,30 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 				return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 			}
 		}
-		srcs = []onboardapi.Connection{*src}
+		srcs = []integrationapi.Integration{*src}
 	}
 
 	dependencyIDs := make([]int64, 0)
+	var err error
 	for _, src := range srcs {
+		integrationType, ok := integration_type.IntegrationTypes[src.IntegrationType]
+		if !ok {
+			return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
+		}
+
 		resourceTypes := ctx.QueryParams()["resource_type"]
 
 		if resourceTypes == nil {
-			if costDiscovery {
-				switch src.Connector {
-				case source.CloudAWS:
-					resourceTypes = []string{"AWS::CostExplorer::ByServiceDaily"}
-				case source.CloudAzure:
-					resourceTypes = []string{"Microsoft.CostManagement/CostByResourceType"}
-				}
-			} else {
-				switch src.Connector {
-				case source.CloudAWS:
-					if forceFull {
-						resourceTypes = aws.ListResourceTypes()
-					} else {
-						resourceTypes = aws.ListFastDiscoveryResourceTypes()
-					}
-				case source.CloudAzure:
-					if forceFull {
-						resourceTypes = azure.ListResourceTypes()
-					} else {
-						resourceTypes = azure.ListFastDiscoveryResourceTypes()
-					}
-				}
+			resourceTypes, err = integrationType.GetResourceTypesByLabels(src.Labels)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
 			}
 		}
 
 		for _, resourceType := range resourceTypes {
-			switch src.Connector {
-			case source.CloudAWS:
-				if _, err := aws.GetResourceType(resourceType); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
-				}
-			case source.CloudAzure:
-				if _, err := azure.GetResourceType(resourceType); err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
-				}
-			}
-			if !src.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type for connection: %s", resourceType))
-			}
 			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil, userID)
-			if err == ErrJobInProgress {
+			if err != nil && errors.Is(err, ErrJobInProgress) {
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
 			}
 			if err != nil {
@@ -562,7 +410,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		}
 	}
 
-	err := h.DB.CreateJobSequencer(&model2.JobSequencer{
+	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
 		DependencySource: model2.JobSequencerJobTypeDescribe,
 		NextJob:          model2.JobSequencerJobTypeAnalytics,
@@ -577,69 +425,40 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 
 func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	resourceTypes := httpserver.QueryArrayParam(ctx, "resource_type")
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	forceFull := ctx.QueryParam("force_full") == "true"
+	connectors := httpserver.QueryArrayParam(ctx, "connector")
 	userID := httpserver.GetUserID(ctx)
 	if userID == "" {
 		userID = "system"
 	}
 
-	//err := h.Scheduler.CheckWorkspaceResourceLimit()
-	//if err != nil {
-	//	h.Scheduler.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
-	//	DescribeJobsCount.WithLabelValues("failure").Inc()
-	//	if err == ErrMaxResourceCountExceeded {
-	//		return ctx.JSON(http.StatusNotAcceptable, api.ErrorResponse{Message: err.Error()})
-	//	}
-	//	return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-	//}
-	//
-	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, connectors)
+	integrations, err := h.Scheduler.integrationClient.ListIntegrations(&httpclient.Context{UserRole: apiAuth.AdminRole}, connectors)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 	}
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
+	for _, integration := range integrations.Integrations {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
+		}
+		integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
+		if !ok {
+			return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
 		}
 		rtToDescribe := resourceTypes
 
 		if len(rtToDescribe) == 0 {
-			switch connection.Connector {
-			case source.CloudAWS:
-				if forceFull {
-					rtToDescribe = aws.ListResourceTypes()
-				} else {
-					rtToDescribe = aws.ListFastDiscoveryResourceTypes()
-				}
-			case source.CloudAzure:
-				if forceFull {
-					rtToDescribe = azure.ListResourceTypes()
-				} else {
-					rtToDescribe = azure.ListFastDiscoveryResourceTypes()
-				}
+			resourceTypes, err = integrationType.GetResourceTypesByLabels(integration.Labels)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
 			}
 		}
 
 		for _, resourceType := range rtToDescribe {
-			switch connection.Connector {
-			case source.CloudAWS:
-				if _, err := aws.GetResourceType(resourceType); err != nil {
-					continue
-				}
-			case source.CloudAzure:
-				if _, err := azure.GetResourceType(resourceType); err != nil {
-					continue
-				}
-			}
-			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
-				continue
-			}
-			_, err = h.Scheduler.describe(connection, resourceType, false, false, false, nil, userID)
+			_, err = h.Scheduler.describe(integration, resourceType, false, false, false, nil, userID)
 			if err != nil {
-				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			}
 		}
 	}
@@ -800,61 +619,38 @@ func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) err
 }
 
 type ReEvaluateDescribeJob struct {
-	Connection   onboardapi.Connection
+	Integration  integrationapi.Integration
 	ResourceType string
 }
 
 func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, controlIDs []string) (*model2.JobSequencerJobTypeBenchmarkRunnerParameters, []ReEvaluateDescribeJob, error) {
-	var controls []complianceapi.Control
-	var err error
-	if len(controlIDs) == 0 {
-		controlIDs, err = h.getBenchmarkChildrenControls(benchmarkID)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	controls, err = h.Scheduler.complianceClient.ListControl(&httpclient.Context{UserRole: apiAuth.AdminRole}, controlIDs, nil)
-	if err != nil {
-		h.Scheduler.logger.Error("failed to get controls", zap.Error(err))
-		return nil, nil, err
-	}
-	if len(controls) == 0 {
-		return nil, nil, echo.NewHTTPError(http.StatusBadRequest, "invalid control_id")
-	}
-
-	requiredTables := make(map[string]bool)
-	for _, control := range controls {
-		for _, table := range control.Query.ListOfTables {
-			requiredTables[table] = true
-		}
-	}
-	requiredResourceTypes := make([]string, 0, len(requiredTables))
-	for table := range requiredTables {
-		for _, provider := range source.List {
-			resourceType := getResourceTypeFromTableName(table, provider)
-			if resourceType != "" {
-				requiredResourceTypes = append(requiredResourceTypes, resourceType)
-				break
-			}
-		}
-	}
-	if len(requiredResourceTypes) == 0 {
-		return nil, nil, echo.NewHTTPError(http.StatusNotFound, "no resource type found for controls")
-	}
-
-	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, connectionIDs)
+	integrations, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(&httpclient.Context{UserRole: apiAuth.AdminRole}, integrationapi.ListIntegrationsRequest{
+		IntegrationID: connectionIDs,
+	})
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
 		return nil, nil, err
 	}
 	var describeJobs []ReEvaluateDescribeJob
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
+	// TODO: filter needed resource types for tables for controls queries
+	for _, integration := range integrations.Integrations {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
 		}
-		for _, resourceType := range requiredResourceTypes {
+		integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown integration type")
+		}
+
+		possibleRt, err := integrationType.GetResourceTypesByLabels(integration.Labels)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to get resource types by labels")
+		}
+
+		for _, resourceType := range possibleRt {
 			describeJobs = append(describeJobs, ReEvaluateDescribeJob{
-				Connection:   connection,
+				Integration:  integration,
 				ResourceType: resourceType,
 			})
 		}
@@ -900,7 +696,7 @@ func (h HttpServer) getBenchmarkChildrenControls(benchmarkID string) ([]string, 
 //	@Produce		json
 //	@Success		200
 //	@Param			benchmark_id	path	string		true	"Benchmark ID"
-//	@Param			connection_id	query	[]string	true	"Connection ID"
+//	@Param			integrationID	query	[]string	true	"Connection ID"
 //	@Param			control_id		query	[]string	false	"Control ID"
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [put]
 func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
@@ -909,13 +705,13 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 		userID = "system"
 	}
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
-	if len(connectionIDs) == 0 {
+	integrationID := httpserver.QueryArrayParam(ctx, "integrationID")
+	if len(integrationID) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
 	}
 	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, integrationID, controlIDs)
 	if err != nil {
 		return err
 	}
@@ -937,9 +733,9 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.describe(describeJob.Connection, describeJob.ResourceType, false, false, false, nil, userID)
+		daj, err := h.Scheduler.describe(describeJob.Integration, describeJob.ResourceType, false, false, false, nil, userID)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
 		}
 		dependencyIDs = append(dependencyIDs, int64(daj.ID))
@@ -968,28 +764,28 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Param			benchmark_id	path		string		true	"Benchmark ID"
-//	@Param			connection_id	query		[]string	true	"Connection ID"
+//	@Param			integrationID	query		[]string	true	"Connection ID"
 //	@Param			control_id		query		[]string	false	"Control ID"
 //	@Success		200				{object}	api.JobSeqCheckResponse
 //	@Router			/schedule/api/v1/compliance/re-evaluate/{benchmark_id} [get]
 func (h HttpServer) CheckReEvaluateComplianceJob(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connection_id")
-	if len(connectionIDs) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection_id is required")
+	integrationID := httpserver.QueryArrayParam(ctx, "integrationID")
+	if len(integrationID) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "integrationID is required")
 	}
 	controlIDs := httpserver.QueryArrayParam(ctx, "control_id")
 
-	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, connectionIDs, controlIDs)
+	jobParameters, describeJobs, err := h.getReEvaluateParams(benchmarkID, integrationID, controlIDs)
 	if err != nil {
 		return err
 	}
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.db.GetLastDescribeConnectionJob(describeJob.Connection.ID.String(), describeJob.ResourceType)
+		daj, err := h.Scheduler.db.GetLastDescribeIntegrationJob(describeJob.Integration.IntegrationID, describeJob.ResourceType)
 		if err != nil {
-			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", describeJob.Connection.ID.String()), zap.Error(err))
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
 		}
 		dependencyIDs = append(dependencyIDs, int64(daj.ID))
@@ -1134,7 +930,7 @@ func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
 func (h HttpServer) GetConnectionDescribeStatus(ctx echo.Context) error {
 	connectionID := ctx.QueryParam("connection_id")
 
-	status, err := h.DB.GetConnectionDescribeStatus(connectionID)
+	status, err := h.DB.GetIntegrationDescribeStatus(connectionID)
 	if err != nil {
 		return err
 	}
@@ -1142,7 +938,7 @@ func (h HttpServer) GetConnectionDescribeStatus(ctx echo.Context) error {
 }
 
 func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
-	status, err := h.DB.ListAllPendingConnection()
+	status, err := h.DB.ListAllPendingIntegration()
 	if err != nil {
 		return err
 	}
@@ -1159,7 +955,7 @@ func (h HttpServer) GetDescribeAllJobsStatus(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.DescribeAllJobsStatusNoJobToRun)
 	}
 
-	pendingDiscoveryTypes, err := h.DB.ListAllFirstTryPendingConnection()
+	pendingDiscoveryTypes, err := h.DB.ListAllFirstTryPendingIntegration()
 	if err != nil {
 		return err
 	}
@@ -1292,11 +1088,10 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 	}
 	for _, j := range jobs {
 		jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
-			JobId:         j.ID,
-			DiscoveryType: string(j.DiscoveryType),
-			ResourceType:  j.ResourceType,
-			JobStatus:     j.Status,
-			DateTime:      j.UpdatedAt,
+			JobId:        j.ID,
+			ResourceType: j.ResourceType,
+			JobStatus:    j.Status,
+			DateTime:     j.UpdatedAt,
 		})
 	}
 	if request.SortBy != nil {
@@ -1308,10 +1103,6 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 		case "datetime":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
-			})
-		case "discoverytype":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -1439,40 +1230,46 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+				h.Scheduler.logger.Error("failed to get integration", zap.Any("integration", info), zap.Error(err))
+				return echo.NewHTTPError(http.StatusBadRequest, "failed to get integration")
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	var connectionInfo []api.IntegrationInfo
 	var connectionIDs []string
-	for _, c := range connections {
+	for _, c := range integrations {
 		connectionInfo = append(connectionInfo, api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
-		connectionIDs = append(connectionIDs, c.ID.String())
+		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
 
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.AdminRole}, benchmarkID)
@@ -1534,40 +1331,45 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
+			return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	var connectionInfo []api.IntegrationInfo
 	var connectionIDs []string
-	for _, c := range connections {
+	for _, c := range integrations {
 		connectionInfo = append(connectionInfo, api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
-		connectionIDs = append(connectionIDs, c.ID.String())
+		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
 
 	var benchmarks []complianceapi.Benchmark
@@ -1648,35 +1450,39 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please provide at least one connection info")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
-				h.Scheduler.logger.Error("failed to get source", zap.String("source id", *info.IntegrationTracker), zap.Error(err))
+				h.Scheduler.logger.Error("failed to get source", zap.String("source id", *info.IntegrationID), zap.Error(err))
 				return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get source", zap.Any("source", info), zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, "failed to get source")
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	var jobs []api.RunDiscoveryJob
-	for _, connection := range connections {
-		if !connection.IsEnabled() {
+	for _, integration := range integrations {
+		if integration.State != integrationapi.IntegrationStateActive {
 			continue
 		}
 		rtToDescribe := request.ResourceTypes
@@ -1686,8 +1492,8 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		}
 		integrationDiscovery := &model2.IntegrationDiscovery{
 			TriggerID:     uint(triggerId),
-			ConnectionID:  connection.ID.String(),
-			AccountID:     connection.ConnectionID,
+			ConnectionID:  integration.IntegrationID,
+			AccountID:     integration.ProviderID,
 			TriggerType:   enums.DescribeTriggerTypeManual,
 			TriggeredBy:   userID,
 			DiscoveryType: discoveryType,
@@ -1699,47 +1505,39 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration discovery")
 		}
 
+		integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
+		if !ok {
+			return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
+		}
+
+		possibleRt, err := integrationType.GetResourceTypesByLabels(integration.Labels)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
+		}
 		if len(rtToDescribe) == 0 {
-			switch connection.Connector {
-			case source.CloudAWS:
-				if request.ForceFull {
-					rtToDescribe = aws.ListResourceTypes()
-				} else {
-					rtToDescribe = aws.ListFastDiscoveryResourceTypes()
-				}
-			case source.CloudAzure:
-				if request.ForceFull {
-					rtToDescribe = azure.ListResourceTypes()
-				} else {
-					rtToDescribe = azure.ListFastDiscoveryResourceTypes()
-				}
-			}
+			rtToDescribe = possibleRt
 		}
 
 		for _, resourceType := range rtToDescribe {
-			switch connection.Connector {
-			case source.CloudAWS:
-				if _, err := aws.GetResourceType(resourceType); err != nil {
-					continue
-				}
-			case source.CloudAzure:
-				if _, err := azure.GetResourceType(resourceType); err != nil {
-					continue
+			isOK := false
+			for _, rt := range possibleRt {
+				if rt == resourceType {
+					isOK = true
 				}
 			}
-			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
+			if !isOK {
 				continue
 			}
-
 			var status, failureReason string
-			job, err := h.Scheduler.describe(connection, resourceType, false, false, false, &integrationDiscovery.ID, userID)
+			job, err := h.Scheduler.describe(integration, resourceType, false, false, false, &integrationDiscovery.ID, userID)
 			if err != nil {
 				if err.Error() == "job already in progress" {
-					tmpJob, err := h.Scheduler.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
+					tmpJob, err := h.Scheduler.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
 					if err != nil {
-						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
+						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", integration.IntegrationID), zap.Error(err))
 					}
-					h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+					h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 					status = "FAILED"
 					failureReason = fmt.Sprintf("job already in progress: %v", tmpJob.ID)
 				} else {
@@ -1763,10 +1561,10 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				Status:        status,
 				FailureReason: failureReason,
 				IntegrationInfo: api.IntegrationInfo{
-					IntegrationTracker: connection.ID.String(),
-					Integration:        connection.Connector.String(),
-					ID:                 connection.ConnectionID,
-					IDName:             connection.ConnectionName,
+					IntegrationID:   integration.IntegrationID,
+					IntegrationType: string(integration.IntegrationType),
+					ProviderID:      integration.ProviderID,
+					Name:            integration.Name,
 				},
 			})
 		}
@@ -1795,7 +1593,7 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, j.ConnectionID)
+	connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -1803,16 +1601,15 @@ func (h HttpServer) GetDescribeJobStatus(ctx echo.Context) error {
 	jobsResult := api.GetDescribeJobStatusResponse{
 		JobId: j.ID,
 		IntegrationInfo: api.IntegrationInfo{
-			IntegrationTracker: connection.ID.String(),
-			Integration:        connection.Connector.String(),
-			ID:                 connection.ConnectionID,
-			IDName:             connection.ConnectionName,
+			IntegrationID:   connection.IntegrationID,
+			IntegrationType: string(connection.IntegrationType),
+			ProviderID:      connection.ProviderID,
+			Name:            connection.Name,
 		},
-		DiscoveryType: string(j.DiscoveryType),
-		ResourceType:  j.ResourceType,
-		JobStatus:     string(j.Status),
-		CreatedAt:     j.CreatedAt,
-		UpdatedAt:     j.UpdatedAt,
+		ResourceType: j.ResourceType,
+		JobStatus:    string(j.Status),
+		CreatedAt:    j.CreatedAt,
+		UpdatedAt:    j.UpdatedAt,
 	}
 
 	return ctx.JSON(http.StatusOK, jobsResult)
@@ -1842,15 +1639,15 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	}
 
 	var connectionInfo api.IntegrationInfo
-	connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, j.ConnectionID)
+	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	connectionInfo = api.IntegrationInfo{
-		IntegrationTracker: connection.ID.String(),
-		Integration:        connection.Connector.String(),
-		ID:                 connection.ConnectionID,
-		IDName:             connection.ConnectionName,
+		IntegrationID:   integration.IntegrationID,
+		IntegrationType: string(integration.IntegrationType),
+		ProviderID:      integration.ProviderID,
+		Name:            integration.Name,
 	}
 
 	jobsResult := api.GetComplianceJobStatusResponse{
@@ -1950,40 +1747,44 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
-	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+	for _, c := range integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
-		connectionIDs = append(connectionIDs, c.ID.String())
+		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
@@ -1995,13 +1796,12 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	}
 	for _, j := range jobs {
 		jobResult := api.GetDescribeJobsHistoryResponse{
-			JobId:         j.ID,
-			DiscoveryType: string(j.DiscoveryType),
-			ResourceType:  j.ResourceType,
-			JobStatus:     j.Status,
-			DateTime:      j.UpdatedAt,
+			JobId:        j.ID,
+			ResourceType: j.ResourceType,
+			JobStatus:    j.Status,
+			DateTime:     j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.ConnectionID]; ok {
+		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			jobResult.IntegrationInfo = &info
 		}
 		jobsResults = append(jobsResults, jobResult)
@@ -2015,10 +1815,6 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 		case "datetime":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
-			})
-		case "discoverytype":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -2067,40 +1863,44 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
-	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+	for _, c := range integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
-		connectionIDs = append(connectionIDs, c.ID.String())
+		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
 
 	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
@@ -2116,7 +1916,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			JobStatus:   j.Status.ToApi(),
 			DateTime:    j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.ConnectionID]; ok {
+		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			jobResult.IntegrationInfo = info
 		}
 
@@ -2182,46 +1982,50 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			if connection != nil {
-				connections = append(connections, *connection)
+				integrations = append(integrations, *connection)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
-	for _, c := range connections {
-		connectionIDs = append(connectionIDs, c.ID.String())
+	for _, c := range integrations {
+		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
-	connections2, err := h.Scheduler.onboardClient.ListSources(clientCtx, nil)
+	connections2, err := h.Scheduler.integrationClient.ListIntegrations(clientCtx, nil)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	for _, c := range connections2 {
-		connectionInfo[c.ID.String()] = api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+	for _, c := range connections2.Integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 	}
 
@@ -2247,7 +2051,7 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			CreatedAt:   j.CreatedAt,
 			UpdatedAt:   j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.ConnectionID]; ok {
+		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			item.IntegrationInfo = info
 			item.NumberOfIntegrations = 1
 		}
@@ -2319,19 +2123,21 @@ func (h HttpServer) BenchmarkAuditHistoryIntegrations(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance jobs integrations")
 	}
 
-	connections, err := h.Scheduler.onboardClient.GetSources(clientCtx, connectionIDs)
+	connections, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx, integrationapi.ListIntegrationsRequest{
+		IntegrationID: connectionIDs,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var integrations []api.IntegrationInfo
 
-	for _, c := range connections {
+	for _, c := range connections.Integrations {
 		integrations = append(integrations, api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		})
 	}
 
@@ -2356,29 +2162,33 @@ func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connection onboardapi.Connection
-	if request.IntegrationInfo.IntegrationTracker != nil {
-		connectionTmp, err := h.Scheduler.onboardClient.GetSource(clientCtx, *request.IntegrationInfo.IntegrationTracker)
+	var integration integrationapi.Integration
+	if request.IntegrationInfo.IntegrationID != nil {
+		connectionTmp, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *request.IntegrationInfo.IntegrationID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		if connectionTmp != nil {
-			connection = *connectionTmp
+			integration = *connectionTmp
 		}
 	} else {
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         request.IntegrationInfo.Integration,
-				ProviderNameRegex: request.IntegrationInfo.IDName,
-				ProviderIdRegex:   request.IntegrationInfo.ID,
+		var integrationTypes []string
+		if request.IntegrationInfo.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *request.IntegrationInfo.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       request.IntegrationInfo.Name,
+				ProviderIDRegex: request.IntegrationInfo.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connection = connectionsTmp[0]
+		integration = connectionsTmp.Integrations[0]
 	}
 
-	job, err := h.DB.ListDescribeJobs(connection.ID.String())
+	job, err := h.DB.ListDescribeJobs(integration.IntegrationID)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get describe jobs", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get describe jobs")
@@ -2515,44 +2325,48 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			if connection != nil {
-				connections = append(connections, *connection)
+			if integration != nil {
+				integrations = append(integrations, *integration)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
-	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+	for _, c := range integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
 	}
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
 
 	for _, c := range connectionInfo {
-		jobs, err := h.DB.ListDescribeJobsByFilters(nil, []string{c.IntegrationTracker}, request.ResourceType,
+		jobs, err := h.DB.ListDescribeJobsByFilters(nil, []string{c.IntegrationID}, request.ResourceType,
 			request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -2560,7 +2374,6 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 		for _, j := range jobs {
 			jobsResults = append(jobsResults, api.GetDescribeJobsHistoryResponse{
 				JobId:           j.ID,
-				DiscoveryType:   string(j.DiscoveryType),
 				ResourceType:    j.ResourceType,
 				JobStatus:       j.Status,
 				DateTime:        j.UpdatedAt,
@@ -2578,10 +2391,6 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 		case "datetime":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
-			})
-		case "discoverytype":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DiscoveryType < jobsResults[j].DiscoveryType
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -2630,60 +2439,64 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections onboardapi.Connection
-	if request.IntegrationInfo.IntegrationTracker != nil {
-		connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *request.IntegrationInfo.IntegrationTracker)
+	var integrations integrationapi.Integration
+	if request.IntegrationInfo.IntegrationID != nil {
+		connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *request.IntegrationInfo.IntegrationID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		if connection != nil {
-			connections = *connection
+			integrations = *connection
 		}
 	} else {
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         request.IntegrationInfo.Integration,
-				ProviderNameRegex: request.IntegrationInfo.IDName,
-				ProviderIdRegex:   request.IntegrationInfo.ID,
+		var integrationTypes []string
+		if request.IntegrationInfo.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *request.IntegrationInfo.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       request.IntegrationInfo.Name,
+				ProviderIDRegex: request.IntegrationInfo.ProviderID,
 			})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = connectionsTmp[0]
+		integrations = connectionsTmp.Integrations[0]
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
-	connectionInfo[connections.ID.String()] = api.IntegrationInfo{
-		IntegrationTracker: connections.ID.String(),
-		Integration:        connections.Connector.String(),
-		IDName:             connections.ConnectionName,
-		ID:                 connections.ConnectionID,
+	connectionInfo[integrations.IntegrationID] = api.IntegrationInfo{
+		IntegrationID:   integrations.IntegrationID,
+		IntegrationType: string(integrations.IntegrationType),
+		Name:            integrations.Name,
+		ProviderID:      integrations.ProviderID,
 	}
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
 	for _, c := range connectionInfo {
-		jobs, err := h.DB.ListComplianceJobsByFilters([]string{c.IntegrationTracker}, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
+		jobs, err := h.DB.ListComplianceJobsByFilters([]string{c.IntegrationID}, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		for _, j := range jobs {
 			var jobIntegrations api.IntegrationInfo
-			if info, ok := connectionInfo[j.ConnectionID]; ok {
+			if info, ok := connectionInfo[j.IntegrationID]; ok {
 				jobIntegrations = info
 			} else {
-				connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, j.ConnectionID)
+				integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
-				if connection != nil {
+				if integration != nil {
 					info = api.IntegrationInfo{
-						IntegrationTracker: connection.ID.String(),
-						Integration:        connection.Connector.String(),
-						IDName:             connection.ConnectionName,
-						ID:                 connection.ConnectionID,
+						IntegrationID:   integration.IntegrationID,
+						IntegrationType: string(integration.IntegrationType),
+						Name:            integration.Name,
+						ProviderID:      integration.ProviderID,
 					}
-					connectionInfo[j.ConnectionID] = info
+					connectionInfo[j.IntegrationID] = info
 					jobIntegrations = info
 				}
 			}
@@ -2826,7 +2639,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
 		}
 		if job.Status == api.DescribeResourceJobCreated {
-			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2835,11 +2648,17 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 			job.Status == api.DescribeResourceJobSucceeded || job.Status == api.DescribeResourceJobTimeout {
 			return echo.NewHTTPError(http.StatusOK, "job is already finished")
 		} else if job.Status == api.DescribeResourceJobQueued {
-			err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), awsDescriberLocal.StreamName, job.NatsSequenceNumber)
+			integrationType, ok := integration_type.IntegrationTypes[job.IntegrationType]
+			if !ok {
+				return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
+			}
+
+			integrationConfig := integrationType.GetConfiguration()
+			err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), integrationConfig.NatsStreamName, job.NatsSequenceNumber)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+			err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2909,38 +2728,43 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 	case "job_id":
 		jobIDs = request.JobId
 	case "integration_info":
-		var connections []onboardapi.Connection
+		var integrations []integrationapi.Integration
 		for _, info := range request.IntegrationInfo {
-			if info.IntegrationTracker != nil {
-				connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if info.IntegrationID != nil {
+				connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
 				if connection != nil {
-					connections = append(connections, *connection)
+					integrations = append(integrations, *connection)
 				}
 				continue
 			}
-			connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-				onboardapi.GetSourceByFiltersRequest{
-					Connector:         info.Integration,
-					ProviderNameRegex: info.IDName,
-					ProviderIdRegex:   info.ID,
+			var integrationTypes []string
+			if info.IntegrationType != nil {
+				integrationTypes = append(integrationTypes, *info.IntegrationType)
+			}
+			connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+				integrationapi.ListIntegrationsRequest{
+					IntegrationType: integrationTypes,
+					NameRegex:       info.Name,
+					ProviderIDRegex: info.ProviderID,
 				})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			connections = append(connections, connectionsTmp...)
+			integrations = append(integrations, connectionsTmp.Integrations[0])
+
 		}
 
-		connectionIDsMap := make(map[string]bool)
-		for _, c := range connections {
-			connectionIDsMap[c.ID.String()] = true
+		IntegrationIDsMap := make(map[string]bool)
+		for _, c := range integrations {
+			IntegrationIDsMap[c.IntegrationID] = true
 		}
-		var connectionIDs []string
+		var integrationIDs []string
 		switch strings.ToLower(request.JobType) {
 		case "compliance":
-			jobs, err := h.DB.ListPendingComplianceJobsByConnectionID(connectionIDs)
+			jobs, err := h.DB.ListPendingComplianceJobsByIntegrationID(integrationIDs)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -2948,7 +2772,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
 		case "discovery":
-			jobs, err := h.DB.ListPendingDescribeJobsByFilters(connectionIDs, nil, nil, nil, nil, nil)
+			jobs, err := h.DB.ListPendingDescribeJobsByFilters(integrationIDs, nil, nil, nil, nil)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -3104,7 +2928,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				break
 			}
 			if job.Status == api.DescribeResourceJobCreated {
-				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 				if err != nil {
 					failureReason = err.Error()
 					break
@@ -3116,12 +2940,18 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				failureReason = "job is already finished"
 				break
 			} else if job.Status == api.DescribeResourceJobQueued {
-				err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), awsDescriberLocal.StreamName, job.NatsSequenceNumber)
+				integrationType, ok := integration_type.IntegrationTypes[job.IntegrationType]
+				if !ok {
+					return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
+				}
+
+				integrationConfig := integrationType.GetConfiguration()
+				err = h.Scheduler.jq.DeleteMessage(ctx.Request().Context(), integrationConfig.NatsStreamName, job.NatsSequenceNumber)
 				if err != nil {
 					failureReason = err.Error()
 					break
 				}
-				err = h.DB.UpdateDescribeConnectionJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
+				err = h.DB.UpdateDescribeIntegrationJobStatus(job.ID, api.DescribeResourceJobCanceled, "", "", 0, 0)
 				if err != nil {
 					failureReason = err.Error()
 					break
@@ -3242,7 +3072,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 
 	sortBy := "id"
 	switch request.SortBy {
-	case api.JobSort_ByConnectionID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus, api.JobSort_ByCreatedAt,
+	case api.JobSort_ByIntegrationID, api.JobSort_ByJobID, api.JobSort_ByJobType, api.JobSort_ByStatus, api.JobSort_ByCreatedAt,
 		api.JobSort_ByUpdatedAt:
 		sortBy = string(request.SortBy)
 	}
@@ -3324,38 +3154,43 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 			}
 		}
 	case "integration_info":
-		var connections []onboardapi.Connection
+		var integrations []integrationapi.Integration
 		for _, info := range request.IntegrationInfo {
-			if info.IntegrationTracker != nil {
-				connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+			if info.IntegrationID != nil {
+				connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 				if err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 				}
 				if connection != nil {
-					connections = append(connections, *connection)
+					integrations = append(integrations, *connection)
 				}
 				continue
 			}
-			connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-				onboardapi.GetSourceByFiltersRequest{
-					Connector:         info.Integration,
-					ProviderNameRegex: info.IDName,
-					ProviderIdRegex:   info.ID,
+
+			var integrationTypes []string
+			if info.IntegrationType != nil {
+				integrationTypes = append(integrationTypes, *info.IntegrationType)
+			}
+			connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+				integrationapi.ListIntegrationsRequest{
+					IntegrationType: integrationTypes,
+					NameRegex:       info.Name,
+					ProviderIDRegex: info.ProviderID,
 				})
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
-			connections = append(connections, connectionsTmp...)
+			integrations = append(integrations, connectionsTmp.Integrations...)
 		}
 
 		connectionIDsMap := make(map[string]bool)
-		for _, c := range connections {
-			connectionIDsMap[c.ID.String()] = true
+		for _, c := range integrations {
+			connectionIDsMap[c.IntegrationID] = true
 		}
 		var connectionIDs []string
 		switch strings.ToLower(request.JobType) {
 		case "compliance":
-			jobs, err := h.DB.ListComplianceJobsByConnectionID(connectionIDs)
+			jobs, err := h.DB.ListComplianceJobsByIntegrationID(connectionIDs)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
@@ -3703,7 +3538,7 @@ func convertInterval(input string) (string, error) {
 //	@Produce	json
 //	@Success	200	{object}	api.RunQueryResponse
 //	@Router		/schedule/api/v3/query/{query_id}/run [put]
-func (h *HttpServer) RunQuery(ctx echo.Context) error {
+func (h HttpServer) RunQuery(ctx echo.Context) error {
 	queryId := ctx.Param("query_id")
 
 	userID := httpserver.GetUserID(ctx)
@@ -3744,32 +3579,32 @@ func (h *HttpServer) RunQuery(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200
 //	@Router			/schedule/api/v3/sample/purge [put]
-func (s *HttpServer) PurgeSampleData(c echo.Context) error {
-	err := s.DB.CleanupAllDescribeConnectionJobs()
+func (h HttpServer) PurgeSampleData(c echo.Context) error {
+	err := h.DB.CleanupAllDescribeIntegrationJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete describe connection jobs")
 	}
-	err = s.DB.CleanupAllQueryRunnerJobs()
+	err = h.DB.CleanupAllQueryRunnerJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete query runner jobs")
 	}
-	err = s.DB.CleanupAllComplianceJobs()
+	err = h.DB.CleanupAllComplianceJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance jobs")
 	}
-	err = s.DB.CleanupAllComplianceSummarizerJobs()
+	err = h.DB.CleanupAllComplianceSummarizerJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance summarizer jobs")
 	}
-	err = s.DB.CleanupAllComplianceRunners()
+	err = h.DB.CleanupAllComplianceRunners()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance runners")
 	}
-	err = s.DB.CleanupAllCheckupJobs()
+	err = h.DB.CleanupAllCheckupJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete checkup jobs")
 	}
-	err = s.DB.CleanupAllAnalyticsJobs()
+	err = h.DB.CleanupAllAnalyticsJobs()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete analytics jobs")
 	}
@@ -3795,52 +3630,56 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var connections []onboardapi.Connection
+	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
-		if info.IntegrationTracker != nil {
-			connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, *info.IntegrationTracker)
+		if info.IntegrationID != nil {
+			connection, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
 			if connection != nil {
-				connections = append(connections, *connection)
+				integrations = append(integrations, *connection)
 			}
 			continue
 		}
-		connectionsTmp, err := h.Scheduler.onboardClient.ListSourcesByFilters(clientCtx,
-			onboardapi.GetSourceByFiltersRequest{
-				Connector:         info.Integration,
-				ProviderNameRegex: info.IDName,
-				ProviderIdRegex:   info.ID,
+		var integrationTypes []string
+		if info.IntegrationType != nil {
+			integrationTypes = append(integrationTypes, *info.IntegrationType)
+		}
+		connectionsTmp, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx,
+			integrationapi.ListIntegrationsRequest{
+				IntegrationType: integrationTypes,
+				NameRegex:       info.Name,
+				ProviderIDRegex: info.ProviderID,
 			})
 		if err != nil {
-			h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		connections = append(connections, connectionsTmp...)
+		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 	var err error
-	if len(connections) == 0 {
-		connections, err = h.Scheduler.onboardClient.ListSources(clientCtx, nil)
+	if len(integrations) == 0 {
+		integrationsTmp, err := h.Scheduler.integrationClient.ListIntegrations(clientCtx, nil)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+		integrations = integrationsTmp.Integrations
 	}
 
 	connectionInfo := make(map[string]api.IntegrationInfo)
-	var connectionIDs []string
-	for _, c := range connections {
-		connectionInfo[c.ID.String()] = api.IntegrationInfo{
-			IntegrationTracker: c.ID.String(),
-			Integration:        c.Connector.String(),
-			IDName:             c.ConnectionName,
-			ID:                 c.ConnectionID,
+	var IntegrationIDs []string
+	for _, c := range integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationID:   c.IntegrationID,
+			IntegrationType: string(c.IntegrationType),
+			Name:            c.Name,
+			ProviderID:      c.ProviderID,
 		}
-		connectionIDs = append(connectionIDs, c.ID.String())
+		IntegrationIDs = append(IntegrationIDs, c.IntegrationID)
 	}
 
-	integrationDiscoveries, err := h.DB.ListIntegrationDiscovery(request.TriggerID, connectionIDs)
+	integrationDiscoveries, err := h.DB.ListIntegrationDiscovery(request.TriggerID, IntegrationIDs)
 	if err != nil {
 		h.Scheduler.logger.Error("cannot find integration discoveries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "cannot find integration discoveries")
@@ -3860,64 +3699,64 @@ func (h HttpServer) GetIntegrationDiscoveryProgress(ctx echo.Context) error {
 	triggerIdProgressSummary := &api.DiscoveryProgressStatusSummary{}
 	integrationsDiscoveryProgressStatus := make(map[string]api.IntegrationDiscoveryProgressStatus)
 	for _, j := range jobs {
-		if _, ok := integrationsDiscoveryProgressStatus[j.ConnectionID]; !ok {
-			integrationsDiscoveryProgressStatus[j.ConnectionID] = api.IntegrationDiscoveryProgressStatus{
-				Integration:             connectionInfo[j.ConnectionID],
+		if _, ok := integrationsDiscoveryProgressStatus[j.IntegrationID]; !ok {
+			integrationsDiscoveryProgressStatus[j.IntegrationID] = api.IntegrationDiscoveryProgressStatus{
+				Integration:             connectionInfo[j.IntegrationID],
 				ProgressStatusBreakdown: &api.DiscoveryProgressStatusBreakdown{},
 				ProgressStatusSummary:   &api.DiscoveryProgressStatusSummary{},
 			}
 		}
 		switch j.Status {
 		case api.DescribeResourceJobCreated:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CreatedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CreatedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.CreatedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.CreatedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.CreatedCount = triggerIdProgressBreakdown.CreatedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobQueued:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.QueuedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.QueuedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.QueuedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.QueuedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.QueuedCount = triggerIdProgressBreakdown.QueuedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobInProgress:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.InProgressCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.InProgressCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.InProgressCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.InProgressCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.InProgressCount = triggerIdProgressBreakdown.InProgressCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobOldResourceDeletion:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.OldResourceDeletionCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.OldResourceDeletionCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.OldResourceDeletionCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.OldResourceDeletionCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.OldResourceDeletionCount = triggerIdProgressBreakdown.OldResourceDeletionCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobTimeout:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.TimeoutCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.TimeoutCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.TimeoutCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.TimeoutCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.TimeoutCount = triggerIdProgressBreakdown.TimeoutCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobFailed:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.FailedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.FailedCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.FailedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.FailedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.FailedCount = triggerIdProgressBreakdown.FailedCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobSucceeded:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.SucceededCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.SucceededCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.SucceededCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.SucceededCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.SucceededCount = triggerIdProgressBreakdown.SucceededCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
 		case api.DescribeResourceJobRemovingResources:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.RemovingResourcesCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.RemovingResourcesCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.RemovingResourcesCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.RemovingResourcesCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
 			triggerIdProgressBreakdown.RemovingResourcesCount = triggerIdProgressBreakdown.RemovingResourcesCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 		case api.DescribeResourceJobCanceled:
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CanceledCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusBreakdown.CanceledCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.TotalCount + 1
-			integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.ConnectionID].ProgressStatusSummary.ProcessedCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.CanceledCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusBreakdown.CanceledCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.TotalCount + 1
+			integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount = integrationsDiscoveryProgressStatus[j.IntegrationID].ProgressStatusSummary.ProcessedCount + 1
 			triggerIdProgressBreakdown.CanceledCount = triggerIdProgressBreakdown.CanceledCount + 1
 			triggerIdProgressSummary.TotalCount = triggerIdProgressSummary.TotalCount + 1
 			triggerIdProgressSummary.ProcessedCount = triggerIdProgressSummary.ProcessedCount + 1
@@ -3995,7 +3834,7 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 		for _, c := range j.ConnectionIDs {
 			connectionIdsMap[c] = true
 			integrations = append(integrations, api.IntegrationInfo{
-				IntegrationTracker: c,
+				IntegrationID: c,
 			})
 		}
 		items = append(items, api.ListComplianceJobsHistoryItem{
@@ -4014,18 +3853,20 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 		connectionIds = append(connectionIds, k)
 	}
 
-	connections, err := h.Scheduler.onboardClient.GetSources(clientCtx, connectionIds)
+	integrations, err := h.Scheduler.integrationClient.ListIntegrationsByFilters(clientCtx, integrationapi.ListIntegrationsRequest{
+		IntegrationID: connectionIds,
+	})
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get connections", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integrations info")
 	}
 	integrationsMap := make(map[string]api.IntegrationInfo)
-	for _, c := range connections {
-		integrationsMap[c.ID.String()] = api.IntegrationInfo{
-			Integration:        c.Connector.String(),
-			ID:                 c.ConnectionID,
-			IDName:             c.ConnectionName,
-			IntegrationTracker: c.ID.String(),
+	for _, c := range integrations.Integrations {
+		integrationsMap[c.IntegrationID] = api.IntegrationInfo{
+			IntegrationType: string(c.IntegrationType),
+			ProviderID:      c.ProviderID,
+			Name:            c.Name,
+			IntegrationID:   c.IntegrationID,
 		}
 	}
 	sort.Slice(items, func(i, j int) bool {
@@ -4043,7 +3884,7 @@ func (h HttpServer) ListComplianceJobsHistory(ctx echo.Context) error {
 
 	for i, j := range items {
 		for ii, integration := range j.Integrations {
-			if integrationData, ok := integrationsMap[integration.IntegrationTracker]; ok {
+			if integrationData, ok := integrationsMap[integration.IntegrationID]; ok {
 				items[i].Integrations[ii] = integrationData
 			}
 		}

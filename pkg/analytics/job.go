@@ -10,9 +10,10 @@ import (
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/og-util/pkg/source"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"math"
 	"net/http"
 	"reflect"
@@ -30,8 +31,6 @@ import (
 	describeApi "github.com/opengovern/opengovernance/pkg/describe/api"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +49,7 @@ func (j *Job) Do(
 	jq *jq.JobQueue,
 	db db.Database,
 	steampipeConn *steampipe.Database,
-	onboardClient onboardClient.OnboardServiceClient,
+	integrationClient integrationClient.IntegrationServiceClient,
 	schedulerClient describeClient.SchedulerServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient,
 	sinkClient esSinkClient.EsSinkServiceClient,
@@ -101,46 +100,43 @@ func (j *Job) Do(
 	}
 	defer steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
 
-	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, onboardClient, sinkClient, inventoryClient, logger, config); err != nil {
+	if err := j.Run(ctx, jq, db, encodedResourceCollectionFilters, steampipeConn, schedulerClient, integrationClient, sinkClient, inventoryClient, logger, config); err != nil {
 		fail(err)
 	}
 
 	if config.DoTelemetry {
 		// send telemetry
-		j.SendTelemetry(ctx, logger, config, onboardClient, inventoryClient)
+		j.SendTelemetry(ctx, logger, config, integrationClient, inventoryClient)
 	}
 
 	return result
 }
 
-func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig, onboardClient onboardClient.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient) {
+func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig, integrationClient integrationClient.IntegrationServiceClient, inventoryClient inventoryClient.InventoryServiceClient) {
 	now := time.Now()
 
 	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
 
 	req := shared_entities.CspmUsageRequest{
-		GatherTimestamp:        now,
-		Hostname:               workerConfig.TelemetryHostname,
-		AwsAccountCount:        0,
-		AzureSubscriptionCount: 0,
-		ApproximateSpend:       0,
+		GatherTimestamp:      now,
+		Hostname:             workerConfig.TelemetryHostname,
+		IntegrationTypeCount: make(map[string]int),
+		ApproximateSpend:     0,
 	}
 
-	connections, err := onboardClient.ListSources(&httpCtx, nil)
+	integrations, err := integrationClient.ListIntegrations(&httpCtx, nil)
 	if err != nil {
 		logger.Error("failed to list sources", zap.Error(err))
 		return
 	}
-	for _, conn := range connections {
-		switch conn.Connector {
-		case source.CloudAWS:
-			req.AwsAccountCount++
-		case source.CloudAzure:
-			req.AzureSubscriptionCount++
+	for _, integration := range integrations.Integrations {
+		if _, ok := req.IntegrationTypeCount[integration.IntegrationType.String()]; !ok {
+			req.IntegrationTypeCount[integration.IntegrationType.String()] = 0
 		}
+		req.IntegrationTypeCount[integration.IntegrationType.String()] += 1
 	}
 
-	connData, err := inventoryClient.ListConnectionsData(&httpCtx, nil, nil,
+	connData, err := inventoryClient.ListIntegrationsData(&httpCtx, nil, nil,
 		utils.GetPointer(now.AddDate(0, -1, 0)), &now, nil, true, false)
 	if err != nil {
 		logger.Error("failed to list connections data", zap.Error(err))
@@ -170,14 +166,14 @@ func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfi
 	logger.Info("sent telemetry", zap.String("url", url))
 }
 
-func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
+func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics([]db.AnalyticMetricStatus{db.AnalyticMetricStatusActive, db.AnalyticMetricStatusInvisible})
 	if err != nil {
 		return err
 	}
 
-	connectionCache := map[string]onboardApi.Connection{}
+	integrationCache := map[string]integrationApi.Integration{}
 
 	for _, metric := range metrics {
 		switch metric.Type {
@@ -211,12 +207,12 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				jq,
 				steampipeDB,
 				encodedResourceCollectionFilters,
-				onboardClient,
+				integrationClient,
 				sinkClient,
 				inventoryClient,
 				logger,
 				metric,
-				connectionCache,
+				integrationCache,
 				startTime,
 				status,
 				config,
@@ -260,12 +256,12 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 				ctx,
 				jq,
 				steampipeDB,
-				onboardClient,
+				integrationClient,
 				sinkClient,
 				inventoryClient,
 				logger,
 				metric,
-				connectionCache,
+				integrationCache,
 				status,
 				config,
 			)
@@ -278,12 +274,12 @@ func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encoded
 }
 
 func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steampipeDB *steampipe.Database, metric db.AnalyticMetric,
-	connectionCache map[string]onboardApi.Connection,
+	integrationCache map[string]integrationApi.Integration,
 	status []describeApi.DescribeStatus,
-	onboardClient onboardClient.OnboardServiceClient,
+	integrationClient integrationClient.IntegrationServiceClient,
 	inventoryClient inventoryClient.InventoryServiceClient) (
-	*resource.ConnectionMetricTrendSummaryResult,
-	*resource.ConnectorMetricTrendSummaryResult,
+	*resource.IntegrationMetricTrendSummaryResult,
+	*resource.IntegrationTypeMetricTrendSummaryResult,
 	error,
 ) {
 	var res *steampipe.Result
@@ -320,8 +316,8 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 	logger.Info("assets ==== ", zap.Int("count", len(res.Data)))
 
 	totalCount := 0
-	perConnection := make(map[string]resource.PerConnectionMetricTrendSummary)
-	perConnector := make(map[string]resource.PerConnectorMetricTrendSummary)
+	perConnection := make(map[string]resource.PerIntegrationMetricTrendSummary)
+	perConnector := make(map[string]resource.PerIntegrationTypeMetricTrendSummary)
 
 	connectorCount := map[string]int64{}
 	connectorSuccessCount := map[string]int64{}
@@ -337,7 +333,7 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 			return nil, nil, fmt.Errorf("invalid query: %s", metric.Query)
 		}
 
-		connectionId, ok := record[0].(string)
+		integrationID, ok := record[0].(string)
 		if !ok {
 			return nil, nil, fmt.Errorf("invalid format for connectionId: [%s] %v", reflect.TypeOf(record[0]), record[0])
 		}
@@ -347,106 +343,106 @@ func (j *Job) DoSingleAssetMetric(ctx context.Context, logger *zap.Logger, steam
 			return nil, nil, fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
 
-		var conn *onboardApi.Connection
-		if cached, ok := connectionCache[connectionId]; ok {
-			conn = &cached
+		var integration *integrationApi.Integration
+		if cached, ok := integrationCache[integrationID]; ok {
+			integration = &cached
 		} else {
 			ctx2 := &httpclient.Context{UserRole: authApi.AdminRole}
 			ctx2.Ctx = ctx
-			conn, err = onboardClient.GetSource(ctx2, connectionId)
+			integration, err = integrationClient.GetIntegration(ctx2, integrationID)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
 					continue
 				}
-				return nil, nil, fmt.Errorf("GetSource id=%s err=%v", connectionId, err)
+				return nil, nil, fmt.Errorf("GetIntegration id=%s err=%v", integrationID, err)
 			}
-			if conn == nil {
-				return nil, nil, fmt.Errorf("connection not found: %s", connectionId)
+			if integration == nil {
+				return nil, nil, fmt.Errorf("integration not found: %s", integrationID)
 			}
 
-			connectionCache[connectionId] = *conn
+			integrationCache[integrationID] = *integration
 		}
 
 		isJobSuccessful := true
 		for _, st := range status {
-			if st.ConnectionID == conn.ID.String() {
+			if st.ConnectionID == integration.IntegrationID {
 				if st.Status == describeApi.DescribeResourceJobFailed || st.Status == describeApi.DescribeResourceJobTimeout {
 					isJobSuccessful = false
 				}
 			}
 		}
 
-		if v, ok := perConnection[conn.ID.String()]; ok {
+		if v, ok := perConnection[integration.IntegrationID]; ok {
 			v.ResourceCount += int(count)
-			perConnection[conn.ID.String()] = v
+			perConnection[integration.IntegrationID] = v
 		} else {
-			vn := resource.PerConnectionMetricTrendSummary{
-				ConnectionID:    conn.ID.String(),
-				ConnectionName:  conn.ConnectionName,
-				Connector:       conn.Connector,
+			vn := resource.PerIntegrationMetricTrendSummary{
+				IntegrationID:   integration.IntegrationID,
+				IntegrationName: integration.Name,
+				IntegrationType: integration.IntegrationType,
 				ResourceCount:   int(count),
 				IsJobSuccessful: isJobSuccessful,
 			}
-			perConnection[conn.ID.String()] = vn
+			perConnection[integration.IntegrationID] = vn
 		}
 
-		if v, ok := perConnector[conn.Connector.String()]; ok {
+		if v, ok := perConnector[integration.IntegrationType.String()]; ok {
 			v.ResourceCount += int(count)
-			perConnector[conn.Connector.String()] = v
+			perConnector[integration.IntegrationType.String()] = v
 		} else {
-			vn := resource.PerConnectorMetricTrendSummary{
-				Connector:                  conn.Connector,
-				ResourceCount:              int(count),
-				TotalConnections:           connectorCount[string(conn.Connector)],
-				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+			vn := resource.PerIntegrationTypeMetricTrendSummary{
+				IntegrationType:                 integration.IntegrationType,
+				ResourceCount:                   int(count),
+				TotalIntegrationTypes:           connectorCount[integration.IntegrationType.String()],
+				TotalSuccessfulIntegrationTypes: connectorSuccessCount[integration.IntegrationType.String()],
 			}
-			perConnector[conn.Connector.String()] = vn
+			perConnector[integration.IntegrationType.String()] = vn
 		}
 		totalCount += int(count)
 	}
-	perConnectionArray := make([]resource.PerConnectionMetricTrendSummary, 0, len(perConnection))
+	perConnectionArray := make([]resource.PerIntegrationMetricTrendSummary, 0, len(perConnection))
 	for _, v := range perConnection {
 		perConnectionArray = append(perConnectionArray, v)
 	}
-	perConnectorArray := make([]resource.PerConnectorMetricTrendSummary, 0, len(perConnector))
+	perConnectorArray := make([]resource.PerIntegrationTypeMetricTrendSummary, 0, len(perConnector))
 	for _, v := range perConnector {
 		perConnectorArray = append(perConnectorArray, v)
 	}
 	logger.Info("assets ==== ", zap.String("metric_id", metric.ID), zap.Int("totalCount", totalCount))
 
-	return &resource.ConnectionMetricTrendSummaryResult{
+	return &resource.IntegrationMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
-			Connections:        perConnectionArray,
-		}, &resource.ConnectorMetricTrendSummaryResult{
+			Integrations:       perConnectionArray,
+		}, &resource.IntegrationTypeMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
-			Connectors:         perConnectorArray,
+			IntegrationTypes:   perConnectorArray,
 		}, nil
 }
 
-func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
-	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
+func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, encodedResourceCollectionFilters map[string]string, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, integrationCache map[string]integrationApi.Integration, startTime time.Time, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+	connectionMetricTrendSummary := resource.IntegrationMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
 		Month:               startTime.Format("2006-01"),
 		Year:                startTime.Format("2006"),
 		MetricID:            metric.ID,
 		MetricName:          metric.Name,
-		Connections:         nil,
+		Integrations:        nil,
 		ResourceCollections: nil,
 	}
-	connectorMetricTrendSummary := resource.ConnectorMetricTrendSummary{
+	connectorMetricTrendSummary := resource.IntegrationTypeMetricTrendSummary{
 		EvaluatedAt:         startTime.UnixMilli(),
 		Date:                startTime.Format("2006-01-02"),
 		Month:               startTime.Format("2006-01"),
 		Year:                startTime.Format("2006"),
 		MetricID:            metric.ID,
 		MetricName:          metric.Name,
-		Connectors:          nil,
+		IntegrationTypes:    nil,
 		ResourceCollections: nil,
 	}
 	if len(encodedResourceCollectionFilters) > 0 {
-		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectionMetricTrendSummaryResult)
-		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
+		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.IntegrationMetricTrendSummaryResult)
+		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.IntegrationTypeMetricTrendSummaryResult)
 
 		for rcId, encodedFilter := range encodedResourceCollectionFilters {
 			err := steampipeDB.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters, encodedFilter)
@@ -455,7 +451,7 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 					zap.String("resource_collection", rcId))
 				return err
 			}
-			perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient, inventoryClient)
+			perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, integrationCache, status, integrationClient, inventoryClient)
 			if err != nil {
 				logger.Error("failed to do single asset metric for rc", zap.Error(err), zap.String("metric", metric.ID), zap.String("resource_collection_filters", encodedFilter))
 				return err
@@ -469,13 +465,13 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
 			return err
 		}
-		perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, connectionCache, status, onboardClient, inventoryClient)
+		perConnection, perConnector, err := j.DoSingleAssetMetric(ctx, logger, steampipeDB, metric, integrationCache, status, integrationClient, inventoryClient)
 		if err != nil {
 			logger.Error("failed to do single asset metric", zap.Error(err), zap.String("metric", metric.ID))
 			return err
 		}
-		connectionMetricTrendSummary.Connections = perConnection
-		connectorMetricTrendSummary.Connectors = perConnector
+		connectionMetricTrendSummary.Integrations = perConnection
+		connectorMetricTrendSummary.IntegrationTypes = perConnector
 	}
 
 	keys, idx := connectionMetricTrendSummary.KeysAndIndex()
@@ -500,8 +496,8 @@ func (j *Job) DoAssetMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	return nil
 }
 
-func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, onboardClient onboardClient.OnboardServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
-	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
+func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *steampipe.Database, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]integrationApi.Integration, status []describeApi.DescribeStatus, conf config.WorkerConfig) error {
+	connectionResultMap := map[string]spend.IntegrationMetricTrendSummary{}
 	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
@@ -553,9 +549,9 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			return fmt.Errorf("invalid query: %s", query)
 		}
 
-		connectionID, ok := record[0].(string)
+		integrationID, ok := record[0].(string)
 		if !ok {
-			return fmt.Errorf("invalid format for connectionID: [%s] %v", reflect.TypeOf(record[0]), record[0])
+			return fmt.Errorf("invalid format for integrationID: [%s] %v", reflect.TypeOf(record[0]), record[0])
 		}
 		date, ok := record[1].(string)
 		if !ok {
@@ -566,28 +562,28 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
 
-		var conn *onboardApi.Connection
-		if cached, ok := connectionCache[connectionID]; ok {
-			conn = &cached
+		var integration *integrationApi.Integration
+		if cached, ok := connectionCache[integrationID]; ok {
+			integration = &cached
 		} else {
-			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionID)
+			integration, err = integrationClient.GetIntegration(&httpclient.Context{UserRole: authApi.AdminRole}, integrationID)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
-					logger.Warn("data fro connection found but got source not found", zap.String("connectionID", connectionID))
+					logger.Warn("data fro connection found but got source not found", zap.String("integrationID", integrationID))
 					continue
 				}
-				return fmt.Errorf("GetSource id=%s err=%v", connectionID, err)
+				return fmt.Errorf("GetIntegration id=%s err=%v", integrationID, err)
 			}
-			if conn == nil {
-				return fmt.Errorf("connection not found: %s", connectionID)
+			if integration == nil {
+				return fmt.Errorf("integration not found: %s", integrationID)
 			}
 
-			connectionCache[connectionID] = *conn
+			connectionCache[integrationID] = *integration
 		}
 
 		isJobSuccessful := true
 		for _, st := range status {
-			if st.ConnectionID == conn.ID.String() {
+			if st.ConnectionID == integration.IntegrationID {
 				if st.Status == describeApi.DescribeResourceJobFailed || st.Status == describeApi.DescribeResourceJobTimeout {
 					isJobSuccessful = false
 				}
@@ -609,23 +605,23 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 
 		if v, ok := connectionResultMap[date]; ok {
 			v.TotalCostValue += sum
-			if v2, ok2 := v.ConnectionsMap[conn.ID.String()]; ok2 {
+			if v2, ok2 := v.IntegrationsMap[integration.IntegrationID]; ok2 {
 				v2.CostValue += sum
 				v2.IsJobSuccessful = isJobSuccessful
-				v.ConnectionsMap[conn.ID.String()] = v2
+				v.IntegrationsMap[integration.IntegrationID] = v2
 			} else {
-				v.ConnectionsMap[conn.ID.String()] = spend.PerConnectionMetricTrendSummary{
+				v.IntegrationsMap[integration.IntegrationID] = spend.PerIntegrationMetricTrendSummary{
 					DateEpoch:       dateTimestamp.UnixMilli(),
-					ConnectionID:    conn.ID.String(),
-					ConnectionName:  conn.ConnectionName,
-					Connector:       conn.Connector,
+					IntegrationID:   integration.IntegrationID,
+					IntegrationName: integration.Name,
+					IntegrationType: integration.IntegrationType,
 					CostValue:       sum,
 					IsJobSuccessful: isJobSuccessful,
 				}
 			}
 			connectionResultMap[date] = v
 		} else {
-			vn := spend.ConnectionMetricTrendSummary{
+			vn := spend.IntegrationMetricTrendSummary{
 				Date:           dateTimestamp.Format("2006-01-02"),
 				DateEpoch:      dateTimestamp.UnixMilli(),
 				Month:          dateTimestamp.Format("2006-01"),
@@ -636,12 +632,12 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 				PeriodEnd:      endTime.UnixMilli(),
 				EvaluatedAt:    time.Now().UnixMilli(),
 				TotalCostValue: sum,
-				ConnectionsMap: map[string]spend.PerConnectionMetricTrendSummary{
-					conn.ID.String(): {
+				IntegrationsMap: map[string]spend.PerIntegrationMetricTrendSummary{
+					integration.IntegrationID: {
 						DateEpoch:       dateTimestamp.UnixMilli(),
-						ConnectionID:    conn.ID.String(),
-						ConnectionName:  conn.ConnectionName,
-						Connector:       conn.Connector,
+						IntegrationID:   integration.IntegrationID,
+						IntegrationName: integration.Name,
+						IntegrationType: integration.IntegrationType,
 						CostValue:       sum,
 						IsJobSuccessful: isJobSuccessful,
 					},
@@ -652,18 +648,18 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 
 		if v, ok := connectorResultMap[date]; ok {
 			v.TotalCostValue += sum
-			if v2, ok2 := v.ConnectorsMap[conn.Connector.String()]; ok2 {
+			if v2, ok2 := v.ConnectorsMap[integration.IntegrationType.String()]; ok2 {
 				v2.CostValue += sum
-				v2.TotalConnections = connectorCount[string(conn.Connector)]
-				v2.TotalSuccessfulConnections = connectorSuccessCount[string(conn.Connector)]
-				v.ConnectorsMap[conn.Connector.String()] = v2
+				v2.TotalConnections = connectorCount[integration.IntegrationType.String()]
+				v2.TotalSuccessfulConnections = connectorSuccessCount[integration.IntegrationType.String()]
+				v.ConnectorsMap[integration.IntegrationType.String()] = v2
 			} else {
-				v.ConnectorsMap[conn.Connector.String()] = spend.PerConnectorMetricTrendSummary{
+				v.ConnectorsMap[integration.IntegrationType.String()] = spend.PerConnectorMetricTrendSummary{
 					DateEpoch:                  dateTimestamp.UnixMilli(),
-					Connector:                  conn.Connector,
+					Connector:                  integration.IntegrationType,
 					CostValue:                  sum,
-					TotalConnections:           connectorCount[string(conn.Connector)],
-					TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+					TotalConnections:           connectorCount[integration.IntegrationType.String()],
+					TotalSuccessfulConnections: connectorSuccessCount[integration.IntegrationType.String()],
 				}
 			}
 			connectorResultMap[date] = v
@@ -681,12 +677,12 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 
 				TotalCostValue: sum,
 				ConnectorsMap: map[string]spend.PerConnectorMetricTrendSummary{
-					conn.Connector.String(): {
+					integration.IntegrationType.String(): {
 						DateEpoch:                  dateTimestamp.UnixMilli(),
-						Connector:                  conn.Connector,
+						Connector:                  integration.IntegrationType,
 						CostValue:                  sum,
-						TotalConnections:           connectorCount[string(conn.Connector)],
-						TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+						TotalConnections:           connectorCount[integration.IntegrationType.String()],
+						TotalSuccessfulConnections: connectorSuccessCount[integration.IntegrationType.String()],
 					},
 				},
 			}
@@ -695,8 +691,8 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	}
 	var msgs []es.Doc
 	for _, item := range connectionResultMap {
-		for _, v := range item.ConnectionsMap {
-			item.Connections = append(item.Connections, v)
+		for _, v := range item.IntegrationsMap {
+			item.Integrations = append(item.Integrations, v)
 		}
 		keys, idx := item.KeysAndIndex()
 		item.EsID = es.HashOf(keys...)
@@ -706,7 +702,7 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	}
 	for _, item := range connectorResultMap {
 		for _, v := range item.ConnectorsMap {
-			item.Connectors = append(item.Connectors, v)
+			item.IntegrationTypes = append(item.IntegrationTypes, v)
 		}
 		keys, idx := item.KeysAndIndex()
 		item.EsID = es.HashOf(keys...)
@@ -722,6 +718,6 @@ func (j *Job) DoSpendMetric(ctx context.Context, jq *jq.JobQueue, steampipeDB *s
 	logger.Info("done with spend metric",
 		zap.String("metric", metric.ID),
 		zap.Int("connector_count", len(connectorResultMap)),
-		zap.Int("connection_count", len(connectionResultMap)))
+		zap.Int("integration_count", len(connectionResultMap)))
 	return nil
 }

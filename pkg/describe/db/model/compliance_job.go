@@ -38,7 +38,7 @@ type ComplianceJob struct {
 	BenchmarkID         string
 	Status              ComplianceJobStatus
 	AreAllRunnersQueued bool
-	ConnectionID        string
+	IntegrationID       string
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
 	CreatedBy           string
@@ -59,7 +59,7 @@ type ComplianceRunner struct {
 	Callers              string
 	BenchmarkID          string
 	QueryID              string
-	ConnectionID         *string
+	IntegrationID        *string
 	ResourceCollectionID *string
 	ParentJobID          uint `gorm:"index"`
 
@@ -75,8 +75,8 @@ type ComplianceRunner struct {
 
 func (cr *ComplianceRunner) GetKeyIdentifier() string {
 	cid := "all"
-	if cr.ConnectionID != nil {
-		cid = *cr.ConnectionID
+	if cr.IntegrationID != nil {
+		cid = *cr.IntegrationID
 	}
 	return fmt.Sprintf("%s-%s-%s-%d", cr.BenchmarkID, cr.QueryID, cid, cr.ParentJobID)
 }

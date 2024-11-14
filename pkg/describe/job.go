@@ -1,10 +1,10 @@
 package describe
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/describe/enums"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -33,17 +33,17 @@ const (
 )
 
 type DescribeJob struct {
-	JobID         uint // DescribeResourceJob ID
-	ScheduleJobID uint
-	ParentJobID   uint // DescribeSourceJob ID
-	ResourceType  string
-	SourceID      string
-	AccountID     string
-	DescribedAt   int64
-	SourceType    source.Type
-	CipherText    string
-	TriggerType   enums.DescribeTriggerType
-	RetryCounter  uint
+	JobID           uint // DescribeResourceJob ID
+	ScheduleJobID   uint
+	ParentJobID     uint // DescribeSourceJob ID
+	ResourceType    string
+	IntegrationID   string
+	ProviderID      string
+	DescribedAt     int64
+	IntegrationType integration.Type
+	CipherText      string
+	TriggerType     enums.DescribeTriggerType
+	RetryCounter    uint
 }
 
 type DescribeJobResult struct {

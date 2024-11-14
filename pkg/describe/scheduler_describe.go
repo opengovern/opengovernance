@@ -5,36 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
-	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
-	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
 	apiAuth "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/integration/integration-type"
 	"math/rand"
-	"net/http"
-	"sort"
-	"strings"
 	"time"
 
-	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/opengovern/og-aws-describer/aws"
-	"github.com/opengovern/og-azure-describer/azure"
 	"github.com/opengovern/og-util/pkg/concurrency"
 	"github.com/opengovern/og-util/pkg/describe"
 	"github.com/opengovern/og-util/pkg/describe/enums"
-	"github.com/opengovern/og-util/pkg/source"
-	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/ticker"
 	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	apiDescribe "github.com/opengovern/opengovernance/pkg/describe/api"
-	"github.com/opengovern/opengovernance/pkg/describe/config"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"github.com/opengovern/opengovernance/pkg/describe/es"
-	apiOnboard "github.com/opengovern/opengovernance/pkg/onboard/api"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -47,8 +33,9 @@ const (
 var ErrJobInProgress = errors.New("job already in progress")
 
 type CloudNativeCall struct {
-	dc  model.DescribeConnectionJob
-	src *apiOnboard.Connection
+	dc   model.DescribeIntegrationJob
+	src  *integrationapi.Integration
+	cred *integrationapi.Credential
 }
 
 func (s *Scheduler) RunDescribeJobScheduler(ctx context.Context) {
@@ -66,9 +53,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
-	count, err := s.db.CountQueuedDescribeConnectionJobs(manuals)
+	count, err := s.db.CountQueuedDescribeIntegrationJobs(manuals)
 	if err != nil {
-		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
+		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeIntegrationJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "queue_length").Inc()
 		return err
 	}
@@ -81,7 +68,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
-	count, err = s.db.CountDescribeConnectionJobsRunOverLast10Minutes(manuals)
+	count, err = s.db.CountDescribeIntegrationJobsRunOverLast10Minutes(manuals)
 	if err != nil {
 		s.logger.Error("failed to get last hour length", zap.String("spot", "CountDescribeConnectionJobsRunOverLastHour"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "last_hour_length").Inc()
@@ -96,7 +83,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 		DescribePublishingBlocked.WithLabelValues("hour queued").Set(0)
 	}
 
-	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall), manuals)
+	dcs, err := s.db.ListRandomCreatedDescribeIntegrationJobs(ctx, int(s.MaxConcurrentCall), manuals)
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_error").Inc()
@@ -140,36 +127,35 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context, manuals boo
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
 	wp := concurrency.NewWorkPool(len(dcs))
-	srcMap := map[string]*apiOnboard.Connection{}
+	integrationsMap := map[string]*integrationapi.Integration{}
 	for _, dc := range dcs {
-		var src *apiOnboard.Connection
-		if v, ok := srcMap[dc.ConnectionID]; ok {
-			src = v
+		var integration *integrationapi.Integration
+		if v, ok := integrationsMap[dc.IntegrationID]; ok {
+			integration = v
 		} else {
-			src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.AdminRole}, dc.ConnectionID)
+			integration, err = s.integrationClient.GetIntegration(&httpclient.Context{UserRole: apiAuth.AdminRole}, dc.IntegrationID) // TODO: change service
 			if err != nil {
-				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
+				s.logger.Error("failed to get integration", zap.String("spot", "GetIntegrationByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure", "get_integration").Inc()
 				return err
 			}
 
-			if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
-				strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
-				// cost on org
-			} else {
-				if !src.IsEnabled() {
-					continue
-				}
-			}
-			srcMap[dc.ConnectionID] = src
+			integrationsMap[dc.IntegrationID] = integration
+		}
 
+		credential, err := s.integrationClient.GetCredential(&httpclient.Context{UserRole: apiAuth.AdminRole}, integration.CredentialID)
+		if err != nil {
+			s.logger.Error("failed to get credential", zap.String("spot", "GetCredentialByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
+			DescribeResourceJobsCount.WithLabelValues("failure", "get_credential").Inc()
+			return err
 		}
 		c := CloudNativeCall{
-			dc:  dc,
-			src: src,
+			dc:   dc,
+			src:  integration,
+			cred: credential,
 		}
 		wp.AddJob(func() (interface{}, error) {
-			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string))
+			err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.cred.Secret, c.src)
 			if err != nil {
 				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 				DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
@@ -207,76 +193,36 @@ func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context, manuals bool) {
 }
 
 func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
-	//err := s.CheckWorkspaceResourceLimit()
-	//if err != nil {
-	//	s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
-	//	DescribeJobsCount.WithLabelValues("failure").Inc()
-	//	return
-	//}
-	//
 	s.logger.Info("running describe job scheduler")
-	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
+	integrations, err := s.integrationClient.ListIntegrations(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
 	if err != nil {
 		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	rts, err := s.ListDiscoveryResourceTypes()
-	if err != nil {
-		s.logger.Error("failed to get list of resource types", zap.String("spot", "ListDiscoveryResourceTypes"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	for _, connection := range connections {
-		s.logger.Info("running describe job scheduler for connection", zap.String("connection_id", connection.ID.String()))
-		var resourceTypes []string
-		switch connection.Connector {
-		case source.CloudAWS:
-			awsRts := aws.GetResourceTypesMap()
-			for _, rt := range rts.AWSResourceTypes {
-				if _, ok := awsRts[rt]; ok {
-					resourceTypes = append(resourceTypes, rt)
-				}
-			}
-		case source.CloudAzure:
-			azureRts := azure.GetResourceTypesMap()
-			for _, rt := range rts.AzureResourceTypes {
-				if _, ok := azureRts[rt]; ok {
-					resourceTypes = append(resourceTypes, rt)
-				}
-			}
+	for _, integration := range integrations.Integrations {
+		s.logger.Info("running describe job scheduler for integration", zap.String("IntegrationID", integration.IntegrationID))
+		if _, ok := integration_type.IntegrationTypes[integration.IntegrationType]; !ok {
+			s.logger.Error("integration type not found", zap.String("integrationType", string(integration.IntegrationType)))
+			continue
+		}
+		integrationType := integration_type.IntegrationTypes[integration.IntegrationType]
+		resourceTypes, err := integrationType.GetResourceTypesByLabels(integration.Labels)
+		if err != nil {
+			s.logger.Error("failed to get integration resourceTypes", zap.String("integrationType", string(integration.IntegrationType)),
+				zap.String("spot", "ListDiscoveryResourceTypes"), zap.Error(err))
+			continue
 		}
 
 		s.logger.Info("running describe job scheduler for connection for number of resource types",
-			zap.String("connection_id", connection.ID.String()),
-			zap.String("connector", connection.Connector.String()),
+			zap.String("integration_id", integration.IntegrationID),
+			zap.String("integration_type", string(integration.IntegrationType)),
 			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
 		for _, resourceType := range resourceTypes {
-			if !connection.GetSupportedResourceTypeMap()[strings.ToLower(resourceType)] {
-				s.logger.Warn("resource type is not supported on this connection, skipping describe", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType))
-				continue
-			}
-
-			if len(connections) == 0 {
-				continue
-			}
-
-			removeResourcesAzure := azureAdOnlyOnOneConnection(connections, connection, resourceType)
-			removeResourcesAWS := awsOnlyOnOneConnection(connections, connection, resourceType)
-			_, err = s.describe(connection, resourceType, true, false, removeResourcesAzure || removeResourcesAWS, nil, "system")
+			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
 			if err != nil {
-				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
-			}
-		}
-
-		if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
-			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
-				UserRole: apiAuth.EditorRole,
-			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
-			if err != nil {
-				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				s.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.String("resource_type", resourceType), zap.Error(err))
 			}
 		}
 	}
@@ -289,75 +235,12 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
-
-func azureAdOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiOnboard.Connection, resourceType string) bool {
-	if connection.Connector != source.CloudAzure {
-		return false
-	}
-
-	if steampipe.ExtractPlugin(resourceType) != steampipe.SteampipePluginAzureAD {
-		return false
-	}
-
-	connectionTenantID := connection.TenantID()
-	if connectionTenantID != "" {
-		var connectionIDs []string
-		for _, c := range connections {
-			if c.HealthState == source.HealthStatusUnhealthy {
-				continue
-			}
-
-			if c.TenantID() == connectionTenantID {
-				connectionIDs = append(connectionIDs, c.ID.String())
-			}
-		}
-
-		if len(connectionIDs) == 0 {
-			return false
-		}
-
-		sort.Strings(connectionIDs)
-
-		if connection.ID.String() != connectionIDs[0] {
-			return true
-		}
-	}
-	return false
-}
-
-func awsOnlyOnOneConnection(connections []apiOnboard.Connection, connection apiOnboard.Connection, resourceType string) bool {
-	if connection.Connector != source.CloudAWS {
-		return false
-	}
-
-	if connection.CredentialType != apiOnboard.CredentialTypeManualAwsOrganization {
-		return false
-	}
-
-	if !strings.HasPrefix(resourceType, "AWS::IdentityStore::") {
-		return false
-	}
-
-	var AccountType string
-	if accountType, ok := connection.Metadata["account_type"]; ok {
-		if accountTypeStr, ok := accountType.(string); ok {
-			AccountType = accountTypeStr
-		}
-	}
-
-	if AccountType == "" {
-		return false
-	}
-
-	return AccountType != "organization_manager"
-}
-
 func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
 	defer span.End()
 
-	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	fdcs, err := s.db.GetFailedDescribeIntegrationJobs(ctx)
 	if err != nil {
 		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 		return err
@@ -366,35 +249,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	retryCount := 0
 
 	for _, failedJob := range fdcs {
-		var isFastDiscovery, isCostDiscovery bool
-
-		switch failedJob.Connector {
-		case source.CloudAWS:
-			resourceType, err := aws.GetResourceType(failedJob.ResourceType)
-			if err != nil {
-				return fmt.Errorf("failed to get aws resource type due to: %v", err)
-			}
-			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
-		case source.CloudAzure:
-			resourceType, err := azure.GetResourceType(failedJob.ResourceType)
-			if err != nil {
-				return fmt.Errorf("failed to get aws resource type due to: %v", err)
-			}
-			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
-		}
-
-		describeCycle := s.fullDiscoveryIntervalHours
-		if isFastDiscovery {
-			describeCycle = s.describeIntervalHours
-		} else if isCostDiscovery {
-			describeCycle = s.costDiscoveryIntervalHours
-		}
-
-		if failedJob.CreatedAt.Before(time.Now().Add(-1 * describeCycle)) {
-			continue
-		}
-
-		err = s.db.RetryDescribeConnectionJob(failedJob.ID)
+		err = s.db.RetryDescribeIntegrationJob(failedJob.ID)
 		if err != nil {
 			return err
 		}
@@ -407,71 +262,39 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool,
-	removeResources bool, parentId *uint, createdBy string) (*model.DescribeConnectionJob, error) {
-	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
-		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
-		// cost on org
-	} else {
-		if !connection.IsEnabled() {
-			return nil, nil
-		}
+func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
+	removeResources bool, parentId *uint, createdBy string) (*model.DescribeIntegrationJob, error) {
+
+	integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
+	if !ok {
+		return nil, fmt.Errorf("integration type not found")
 	}
 
-	job, err := s.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
+	validResourceTypes, err := integrationType.GetResourceTypesByLabels(integration.Labels)
 	if err != nil {
-		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
+		return nil, err
+	}
+	valid := false
+	for _, rt := range validResourceTypes {
+		if rt == resourceType {
+			valid = true
+		}
+	}
+	if !valid {
+		return nil, fmt.Errorf("invalid resource type for integration type: %s - %s", resourceType, integration.IntegrationType)
+	}
+
+	job, err := s.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
+	if err != nil {
+		s.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}
 
-	discoveryType := model.DiscoveryType_Full
-	if connection.Connector == source.CloudAWS {
-		rt, _ := aws.GetResourceType(resourceType)
-		if rt != nil {
-			if rt.FastDiscovery {
-				discoveryType = model.DiscoveryType_Fast
-			} else if rt.CostDiscovery {
-				discoveryType = model.DiscoveryType_Cost
-			}
-		}
-	} else if connection.Connector == source.CloudAzure {
-		rt, _ := azure.GetResourceType(resourceType)
-		if rt != nil {
-			if rt.FastDiscovery {
-				discoveryType = model.DiscoveryType_Fast
-			} else if rt.CostDiscovery {
-				discoveryType = model.DiscoveryType_Cost
-			}
-		}
-	}
-
+	// TODO: get resource type list from integration type and annotations
 	if job != nil {
 		if scheduled {
-			interval := s.fullDiscoveryIntervalHours
-			if connection.Connector == source.CloudAWS {
-				rt, _ := aws.GetResourceType(resourceType)
-				if rt != nil {
-					if rt.FastDiscovery {
-						discoveryType = model.DiscoveryType_Fast
-						interval = s.describeIntervalHours
-					} else if rt.CostDiscovery {
-						discoveryType = model.DiscoveryType_Cost
-						interval = s.costDiscoveryIntervalHours
-					}
-				}
-			} else if connection.Connector == source.CloudAzure {
-				rt, _ := azure.GetResourceType(resourceType)
-				if rt != nil {
-					if rt.FastDiscovery {
-						discoveryType = model.DiscoveryType_Fast
-						interval = s.describeIntervalHours
-					} else if rt.CostDiscovery {
-						discoveryType = model.DiscoveryType_Cost
-						interval = s.costDiscoveryIntervalHours
-					}
-				}
-			}
+			interval := s.discoveryIntervalHours
 
 			if job.UpdatedAt.After(time.Now().Add(-interval)) {
 				return nil, nil
@@ -486,54 +309,38 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		}
 	}
 
-	if connection.LastHealthCheckTime.Before(time.Now().Add(-1 * 24 * time.Hour)) {
-		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+	if integration.LastCheck == nil || integration.LastCheck.Before(time.Now().Add(-1*24*time.Hour)) {
+		healthCheckedSrc, err := s.integrationClient.IntegrationHealthcheck(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
-		}, connection.ID.String(), false)
+		}, integration.IntegrationID)
 		if err != nil {
-			s.logger.Error("failed to get source healthcheck", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			s.logger.Error("failed to get integration healthcheck", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return nil, err
 		}
-		connection = *healthCheckedSrc
+		integration = *healthCheckedSrc
 	}
 
-	if scheduled && connection.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return nil, errors.New("asset discovery is not scheduled")
-	}
-
-	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
-		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
-		// cost on org
-	} else {
-		if (connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
-			connection.HealthState != source.HealthStatusHealthy {
-			// DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			// return errors.New("connection is not healthy or disabled")
-			return nil, errors.New("connection is not healthy")
-		}
+	if integration.State != integrationapi.IntegrationStateActive {
+		return nil, errors.New("connection is not active")
 	}
 
 	triggerType := enums.DescribeTriggerTypeScheduled
-	if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
-		triggerType = enums.DescribeTriggerTypeInitialDiscovery
-	}
+
 	if !scheduled {
 		triggerType = enums.DescribeTriggerTypeManual
 	}
 	if costFullDiscovery {
 		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
-	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("connectionID", connection.ID.String()), zap.String("resourceType", resourceType))
-	daj := newDescribeConnectionJob(connection, resourceType, triggerType, discoveryType, parentId, createdBy)
+	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("IntegrationID", integration.IntegrationID), zap.String("resourceType", resourceType))
+	daj := newDescribeConnectionJob(integration, resourceType, triggerType, parentId, createdBy)
 	if removeResources {
 		daj.Status = apiDescribe.DescribeResourceJobRemovingResources
 	}
-	err = s.db.CreateDescribeConnectionJob(&daj)
+	err = s.db.CreateDescribeIntegrationJob(&daj)
 	if err != nil {
-		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("connection_id", connection.ID.String()), zap.Error(err))
+		s.logger.Error("failed to create describe resource job", zap.String("resource_type", resourceType), zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return nil, err
 	}
@@ -542,28 +349,35 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	return &daj, nil
 }
 
-func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType,
-	discoveryType model.DiscoveryType, parentId *uint, createdBy string) model.DescribeConnectionJob {
-	return model.DescribeConnectionJob{
-		CreatedBy:     createdBy,
-		ParentID:      parentId,
-		ConnectionID:  a.ID.String(),
-		Connector:     a.Connector,
-		AccountID:     a.ConnectionID,
-		TriggerType:   triggerType,
-		ResourceType:  resourceType,
-		Status:        apiDescribe.DescribeResourceJobCreated,
-		DiscoveryType: discoveryType,
+func newDescribeConnectionJob(a integrationapi.Integration, resourceType string, triggerType enums.DescribeTriggerType,
+	parentId *uint, createdBy string) model.DescribeIntegrationJob {
+	return model.DescribeIntegrationJob{
+		CreatedBy:       createdBy,
+		ParentID:        parentId,
+		IntegrationID:   a.IntegrationID,
+		IntegrationType: a.IntegrationType,
+		ProviderID:      a.ProviderID,
+		TriggerType:     triggerType,
+		ResourceType:    resourceType,
+		Status:          apiDescribe.DescribeResourceJobCreated,
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeIntegrationJob, cipherText string,
+	integration *integrationapi.Integration) error {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
+	integrationType, ok := integration_type.IntegrationTypes[dc.IntegrationType]
+	if !ok {
+		return fmt.Errorf("integration type not found")
+	}
+
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("jobID", dc.ID),
-		zap.String("connectionID", dc.ConnectionID),
+		zap.String("IntegrationID", dc.IntegrationID),
+		zap.String("ProviderID", dc.ProviderID),
+		zap.String("integrationType", string(dc.IntegrationType)),
 		zap.String("resourceType", dc.ResourceType),
 	)
 
@@ -577,22 +391,24 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		VaultConfig: s.conf.Vault,
 
 		DescribeJob: describe.DescribeJob{
-			JobID:        dc.ID,
-			ResourceType: dc.ResourceType,
-			SourceID:     dc.ConnectionID,
-			AccountID:    dc.AccountID,
-			DescribedAt:  dc.CreatedAt.UnixMilli(),
-			SourceType:   dc.Connector,
-			CipherText:   cipherText,
-			TriggerType:  dc.TriggerType,
-			RetryCounter: 0,
+			JobID:                  dc.ID,
+			ResourceType:           dc.ResourceType,
+			IntegrationID:          dc.IntegrationID,
+			ProviderID:             dc.ProviderID,
+			DescribedAt:            dc.CreatedAt.UnixMilli(),
+			IntegrationType:        dc.IntegrationType,
+			CipherText:             cipherText,
+			IntegrationLabels:      integration.Labels,
+			IntegrationAnnotations: integration.Annotations,
+			TriggerType:            dc.TriggerType,
+			RetryCounter:           0,
 		},
 	}
 
-	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
+	if err := s.db.QueueDescribeIntegrationJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
-			zap.String("connectionID", dc.ConnectionID),
+			zap.String("IntegrationID", dc.IntegrationID),
 			zap.String("resourceType", dc.ResourceType),
 			zap.Error(err),
 		)
@@ -600,11 +416,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	isFailed := false
 	defer func() {
 		if isFailed {
-			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
+			err := s.db.UpdateDescribeIntegrationJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),
-					zap.String("connectionID", dc.ConnectionID),
+					zap.String("IntegrationID", dc.IntegrationID),
 					zap.String("resourceType", dc.ResourceType),
 					zap.Error(err),
 				)
@@ -612,213 +428,66 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		}
 	}()
 
-	switch s.conf.ServerlessProvider {
-	case config.ServerlessProviderTypeAWSLambda.String():
-		lambdaPayload, err := json.Marshal(input)
-		if err != nil {
-			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
-		}
-		invokeOutput, err := s.lambdaClient.Invoke(ctx, &lambda.InvokeInput{
-			FunctionName:   awsSdk.String(fmt.Sprintf("og-%s-describer", strings.ToLower(dc.Connector.String()))),
-			LogType:        types.LogTypeTail,
-			Payload:        lambdaPayload,
-			InvocationType: types.InvocationTypeEvent,
-		})
-		if err != nil {
-			s.logger.Error("failed to invoke lambda function",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to invoke lambda function due to %v", err)
-		}
-
-		if invokeOutput.FunctionError != nil {
-			s.logger.Info("lambda function function error",
-				zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
-		}
-		if invokeOutput.LogResult != nil {
-			s.logger.Info("lambda function log result",
-				zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
-		}
-
-		s.logger.Info("lambda function payload",
-			zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
-		resBody := invokeOutput.Payload
-
-		if invokeOutput.StatusCode == http.StatusTooManyRequests {
-			s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			isFailed = true
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
-		}
-
-		if invokeOutput.StatusCode != http.StatusAccepted {
-			s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			isFailed = true
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
-		}
-	case config.ServerlessProviderTypeAzureFunctions.String():
-		eventHubPayload, err := json.Marshal(input)
-		if err != nil {
-			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			isFailed = true
-			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
-		}
-		sender, err := s.serviceBusClient.NewSender(fmt.Sprintf("og-%s-describer", strings.ToLower(dc.Connector.String())), nil)
-		if err != nil {
-			s.logger.Error("failed to create service bus sender",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to create service bus sender due to %v", err)
-		}
-		defer sender.Close(ctx)
-		err = sender.SendMessage(ctx, &azservicebus.Message{
-			Body:        eventHubPayload,
-			ContentType: utils.GetPointer("application/json"),
-		}, nil)
-		if err != nil {
-			s.logger.Error("failed to send message to service bus",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to send message to service bus due to %v", err)
-		}
-		err = sender.Close(ctx)
-		if err != nil {
-			s.logger.Error("failed to close service bus sender",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
-			isFailed = true
-			return fmt.Errorf("failed to close service bus sender due to %v", err)
-		}
-	case config.ServerlessProviderTypeLocal.String():
-		input.EndpointAuth = false
-		input.JobEndpoint = s.describeJobLocalEndpoint
-		input.DeliverEndpoint = s.describeDeliverLocalEndpoint
-		natsPayload, err := json.Marshal(input)
-		if err != nil {
-			s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			isFailed = true
-			return fmt.Errorf("failed to marshal cloud native req due to %w", err)
-		}
-		switch input.DescribeJob.SourceType {
-		case source.CloudAWS:
-			topic := awsDescriberLocal.JobQueueTopic
-			if dc.TriggerType == enums.DescribeTriggerTypeManual {
-				topic = awsDescriberLocal.JobQueueTopicManuals
-			}
-			seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
-			if err != nil {
-				if err.Error() == "nats: no response from stream" {
-					err = s.SetupNatsStreams(ctx)
-					if err != nil {
-						s.logger.Error("Failed to setup nats streams", zap.Error(err))
-						return err
-					}
-					seqNum, err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("aws-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
-					if err != nil {
-						s.logger.Error("failed to produce message to jetstream",
-							zap.Uint("jobID", dc.ID),
-							zap.String("connectionID", dc.ConnectionID),
-							zap.String("resourceType", dc.ResourceType),
-							zap.Error(err),
-						)
-						isFailed = true
-						return fmt.Errorf("failed to produce message to jetstream due to %v", err)
-					}
-				} else {
-					s.logger.Error("failed to produce message to jetstream",
-						zap.Uint("jobID", dc.ID),
-						zap.String("connectionID", dc.ConnectionID),
-						zap.String("resourceType", dc.ResourceType),
-						zap.Error(err),
-						zap.String("error message", err.Error()),
-					)
-					isFailed = true
-					return fmt.Errorf("failed to produce message to jetstream due to %v", err)
-				}
-			}
-			if seqNum != nil {
-				if err := s.db.UpdateDescribeConnectionJobNatsSeqNum(dc.ID, *seqNum); err != nil {
-					s.logger.Error("failed to UpdateDescribeConnectionJobNatsSeqNum",
-						zap.Uint("jobID", dc.ID),
-						zap.Uint64("seqNum", *seqNum),
-						zap.Error(err),
-					)
-				}
-			}
-		case source.CloudAzure:
-			topic := azureDescriberLocal.JobQueueTopic
-			if dc.TriggerType == enums.DescribeTriggerTypeManual {
-				topic = azureDescriberLocal.JobQueueTopicManuals
-			}
-			seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
-			if err != nil {
-				if err.Error() == "nats: no response from stream" {
-					err = s.SetupNatsStreams(ctx)
-					if err != nil {
-						s.logger.Error("Failed to setup nats streams", zap.Error(err))
-						return err
-					}
-					seqNum, err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("azure-%d-%d", input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
-					if err != nil {
-						s.logger.Error("failed to produce message to jetstream",
-							zap.Uint("jobID", dc.ID),
-							zap.String("connectionID", dc.ConnectionID),
-							zap.String("resourceType", dc.ResourceType),
-							zap.Error(err),
-						)
-						isFailed = true
-						return fmt.Errorf("failed to produce message to jetstream due to %v", err)
-					}
-				} else {
-					s.logger.Error("failed to produce message to jetstream",
-						zap.Uint("jobID", dc.ID),
-						zap.String("connectionID", dc.ConnectionID),
-						zap.String("resourceType", dc.ResourceType),
-						zap.Error(err),
-						zap.String("error message", err.Error()),
-					)
-					isFailed = true
-					return fmt.Errorf("failed to produce message to jetstream due to %v", err)
-				}
-			}
-			if seqNum != nil {
-				if err := s.db.UpdateDescribeConnectionJobNatsSeqNum(dc.ID, *seqNum); err != nil {
-					s.logger.Error("failed to UpdateDescribeConnectionJobNatsSeqNum",
-						zap.Uint("jobID", dc.ID),
-						zap.Uint64("seqNum", *seqNum),
-						zap.Error(err),
-					)
-				}
-			}
-		default:
-			s.logger.Error("unknown source type", zap.String("sourceType", input.DescribeJob.SourceType.String()), zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			isFailed = true
-			return fmt.Errorf("unknown source type: %s", input.DescribeJob.SourceType.String())
-		}
-	default:
-		s.logger.Error("unknown serverless provider", zap.String("provider", s.conf.ServerlessProvider))
+	input.EndpointAuth = false
+	input.JobEndpoint = s.describeJobLocalEndpoint
+	input.DeliverEndpoint = s.describeDeliverLocalEndpoint
+	natsPayload, err := json.Marshal(input)
+	if err != nil {
+		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("IntegrationID", dc.IntegrationID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
 		isFailed = true
-		return fmt.Errorf("unknown serverless provider: %s", s.conf.ServerlessProvider)
+		return fmt.Errorf("failed to marshal cloud native req due to %w", err)
+	}
+
+	describerConfig := integrationType.GetConfiguration()
+
+	topic := describerConfig.NatsScheduledJobsTopic
+	if dc.TriggerType == enums.DescribeTriggerTypeManual {
+		topic = describerConfig.NatsManualJobsTopic
+	}
+	seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("%s-%d-%d", dc.IntegrationType, input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+	if err != nil {
+		if err.Error() == "nats: no response from stream" {
+			err = s.SetupNatsStreams(ctx)
+			if err != nil {
+				s.logger.Error("Failed to setup nats streams", zap.Error(err))
+				return err
+			}
+			seqNum, err = s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("%s-%d-%d", dc.IntegrationType, input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
+			if err != nil {
+				s.logger.Error("failed to produce message to jetstream",
+					zap.Uint("jobID", dc.ID),
+					zap.String("IntegrationID", dc.IntegrationID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+				isFailed = true
+				return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+			}
+		} else {
+			s.logger.Error("failed to produce message to jetstream",
+				zap.Uint("jobID", dc.ID),
+				zap.String("IntegrationID", dc.IntegrationID),
+				zap.String("resourceType", dc.ResourceType),
+				zap.Error(err),
+				zap.String("error message", err.Error()),
+			)
+			isFailed = true
+			return fmt.Errorf("failed to produce message to jetstream due to %v", err)
+		}
+	}
+	if seqNum != nil {
+		if err := s.db.UpdateDescribeIntegrationJobNatsSeqNum(dc.ID, *seqNum); err != nil {
+			s.logger.Error("failed to UpdateDescribeIntegrationJobNatsSeqNum",
+				zap.Uint("jobID", dc.ID),
+				zap.Uint64("seqNum", *seqNum),
+				zap.Error(err),
+			)
+		}
 	}
 
 	s.logger.Info("successful job trigger",
 		zap.Uint("jobID", dc.ID),
-		zap.String("connectionID", dc.ConnectionID),
+		zap.String("IntegrationID", dc.IntegrationID),
 		zap.String("resourceType", dc.ResourceType),
 	)
 

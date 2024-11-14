@@ -1,10 +1,10 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type ResourceCollectionStatus string
@@ -24,11 +24,11 @@ type ResourceCollection struct {
 	Status      ResourceCollectionStatus                  `json:"status"`
 	Filters     []opengovernance.ResourceCollectionFilter `json:"filters"`
 
-	Connectors      []source.Type `json:"connectors,omitempty"`
-	LastEvaluatedAt *time.Time    `json:"last_evaluated_at,omitempty"`
-	ResourceCount   *int          `json:"resource_count,omitempty"`
-	ConnectionCount *int          `json:"connection_count,omitempty"`
-	MetricCount     *int          `json:"metric_count,omitempty"`
+	IntegrationTypes []integration.Type `json:"integration_types,omitempty"`
+	LastEvaluatedAt  *time.Time         `json:"last_evaluated_at,omitempty"`
+	ResourceCount    *int               `json:"resource_count,omitempty"`
+	IntegrationCount *int               `json:"integration_count,omitempty"`
+	MetricCount      *int               `json:"metric_count,omitempty"`
 }
 
 type ResourceCollectionLandscapeItem struct {

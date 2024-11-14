@@ -17,7 +17,7 @@ type DescribeStatus struct {
 	Status       DescribeResourceJobStatus
 }
 
-type ConnectionDescribeStatus struct {
+type IntegrationDescribeStatus struct {
 	ResourceType string
 	Status       DescribeResourceJobStatus
 }

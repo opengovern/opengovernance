@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_api_benchmark_controls",
+		Name:        "platform_api_benchmark_controls",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -101,22 +101,22 @@ func tablePlatformApiBenchmarkControls(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("TotalResourcesCount"),
 			},
 			{
-				Name:        "failed_connection_count",
+				Name:        "failed_integration_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The count of failed connections",
-				Transform:   transform.FromField("FailedConnectionCount"),
+				Transform:   transform.FromField("FailedIntegrationCount"),
 			},
 			{
-				Name:        "total_connection_count",
+				Name:        "total_integration_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The total count of connections",
-				Transform:   transform.FromField("TotalConnectionCount"),
+				Transform:   transform.FromField("TotalIntegrationCount"),
 			},
 			{
-				Name:        "cost_optimization",
+				Name:        "cost_impact",
 				Type:        proto.ColumnType_DOUBLE,
-				Description: "The cost optimization",
-				Transform:   transform.FromField("CostOptimization"),
+				Description: "The cost impact",
+				Transform:   transform.FromField("CostImpact"),
 			},
 			{
 				Name:        "evaluated_at",

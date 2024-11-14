@@ -6,6 +6,13 @@ name: Go
 on:
   workflow_dispatch:
     inputs:
+      buildImportDemo:
+        type: choice
+        description: "build demo import images and dex image"
+        options:
+          - "true"
+          - "false"
+        default: "false"
       servicesList:
         type: string
         description: "List of services to build"
@@ -29,7 +36,7 @@ jobs:
     environment: golang
     outputs:
       latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if:   github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')  && ( ! contains(github.event.head_commit.message, 'ui-changes') )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -38,6 +45,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          fetch_all_tags: true
           release_branches: main
           tag_prefix: v
       - name: Set latest tag output
@@ -64,12 +72,10 @@ jobs:
       inventory-service: ${{ steps.build_services.outputs.inventory-service }}
       metadata-service: ${{ steps.build_services.outputs.metadata-service }}
       migrator-worker: ${{ steps.build_services.outputs.migrator-worker }}
-      onboard-service: ${{ steps.build_services.outputs.onboard-service }}
       swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
       analytics-worker: ${{ steps.build_services.outputs.analytics-worker }}
       steampipe-plugin-opengovernance: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
-      integration-v2-service: ${{ steps.build_services.outputs.integration-v2-service }}
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
       wastage-service: ${{ steps.build_services.outputs.wastage-service }}
       information-service: ${{ steps.build_services.outputs.information-service }}
@@ -83,11 +89,11 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
+          # This might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
           tool-cache: false
 
-          # all of these default to true, but feel free to set to
+          # All of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
           dotnet: true
@@ -95,18 +101,23 @@ jobs:
           large-packages: false
           docker-images: true
           swap-storage: true
+
       - name: Install musl cc
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: musl-tools musl-dev musl
-      - uses: actions/checkout@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version-file: "./go.mod"
           cache: false
+
       - name: Go Cache
         uses: actions/cache@v3
         with:
@@ -116,7 +127,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
+      - name: Configure Git
+        run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/opengovern.insteadOf https://github.com/opengovern
+
       - name: Build services
         id: build_services
         run: |
@@ -134,11 +148,11 @@ jobs:
           fi
           for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
       - name: Pack build
-        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        if: github.event_name != 'pull_request'
         run: |
           tar -czvf build.tar.gz build
       - name: Upload artifact
-        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v3
         with:
           name: build
@@ -154,7 +168,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -182,6 +196,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-auth-service:
     runs-on: ubuntu-latest
     needs:
@@ -191,7 +206,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -217,6 +232,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/auth-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/AuthServiceDockerfile
           context: .
+
   deploy-checkup-worker:
     runs-on: ubuntu-latest
     needs:
@@ -226,7 +242,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -252,6 +268,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/CheckupWorkerDockerfile
           context: .
+
   deploy-compliance-report-worker:
     runs-on: ubuntu-latest
     needs:
@@ -263,7 +280,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -291,6 +308,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-compliance-summarizer:
     runs-on: ubuntu-latest
     needs:
@@ -300,7 +318,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -328,6 +346,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-compliance-service:
     runs-on: ubuntu-latest
     needs:
@@ -337,7 +356,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -363,6 +382,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceServiceDockerfile
           context: .
+
   deploy-describe-scheduler:
     runs-on: ubuntu-latest
     needs:
@@ -372,7 +392,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -398,6 +418,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
           file: docker/DescribeSchedulerDockerfile
           context: .
+
   deploy-integration-service:
     runs-on: ubuntu-latest
     needs:
@@ -407,7 +428,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.integration-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -433,41 +454,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/integration:${{ needs.tag.outputs.latest_tag }}
           file: docker/IntegrationServiceDockerfile
           context: .
-  deploy-integration-v2-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.integration-v2-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/integration-v2:${{ needs.tag.outputs.latest_tag }}
-          file: docker/IntegrationV2ServiceDockerfile
-          context: .
   deploy-es-sink-service:
     runs-on: ubuntu-latest
     needs:
@@ -477,7 +463,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.es-sink-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.es-sink-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -503,6 +489,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/es-sink:${{ needs.tag.outputs.latest_tag }}
           file: docker/EsSinkServiceDockerfile
           context: .
+
   deploy-inventory-service:
     runs-on: ubuntu-latest
     needs:
@@ -512,7 +499,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -538,6 +525,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InventoryServiceDockerfile
           context: .
+
   deploy-metadata-service:
     runs-on: ubuntu-latest
     needs:
@@ -547,7 +535,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -573,6 +561,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/MetadataServiceDockerfile
           context: .
+
   deploy-migrator-worker:
     runs-on: ubuntu-latest
     needs:
@@ -582,7 +571,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -608,41 +597,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
           context: .
-  deploy-onboard-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/OnboardServiceDockerfile
-          context: .
   deploy-swagger-ui:
     runs-on: ubuntu-latest
     needs:
@@ -652,7 +606,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -678,6 +632,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
           context: .
+
   deploy-analytics-worker:
     runs-on: ubuntu-latest
     needs:
@@ -689,7 +644,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -717,6 +672,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-steampipe-plugin-opengovernance:
     runs-on: ubuntu-latest
     needs:
@@ -729,7 +685,7 @@ jobs:
     if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' ||
       needs.build.outputs.steampipe == 'true' ||
       needs.build.outputs.compliance-report-worker == 'true' ||
-      needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+      needs.build.outputs.analytics-worker == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Check if we need to actually push
         id: check_if_push
@@ -768,6 +724,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipePluginOpengovernanceDockerfile
           context: .
+
   deploy-wastage-service:
     runs-on: ubuntu-latest
     needs:
@@ -777,7 +734,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.wastage-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.wastage-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -803,6 +760,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WastageServiceDockerfile
           context: .
+
   deploy-information-service:
     runs-on: ubuntu-latest
     needs:
@@ -812,7 +770,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.information-service == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.information-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -838,6 +796,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/information-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InformationServiceDockerfile
           context: .
+
   deploy-query-runner-worker:
     runs-on: ubuntu-latest
     needs:
@@ -849,7 +808,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.query-runner-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.query-runner-worker == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -877,10 +836,12 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
+
   deploy-import-data-script:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -908,6 +869,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - tag
+    if: github.event.inputs.buildImportDemo == 'true'
     permissions:
       id-token: write
       contents: read
@@ -940,7 +902,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -966,8 +928,10 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
           file: docker/DemoImporterDockerfile
           context: .
+
   deploy-dex-login:
     runs-on: ubuntu-latest
+    if: github.event.inputs.buildImportDemo == 'true'
     needs:
       - tag
     permissions:

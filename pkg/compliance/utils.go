@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	opengovernanceTypes "github.com/opengovern/opengovernance/pkg/types"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"go.uber.org/zap"
 	"regexp"
 	"time"
@@ -43,8 +43,8 @@ func (h *HttpHandler) getBenchmarkTree(ctx context.Context, benchmarkId string) 
 		Tags:              b.GetTagsMap(),
 		Children:          children,
 	}
-	if b.Connector != nil {
-		nb.Connectors = source.ParseTypes(b.Connector)
+	if b.IntegrationType != nil {
+		nb.IntegrationTypes = integration_type.ParseTypes(b.IntegrationType)
 	}
 	for _, control := range b.Controls {
 		nb.Controls = append(nb.Controls, control.ID)
@@ -70,39 +70,39 @@ func (h *HttpHandler) getBenchmarkPath(ctx context.Context, benchmarkId string) 
 	return parentPath + "/" + benchmarkId, nil
 }
 
-func (h *HttpHandler) getBenchmarkFindingSummary(ctx context.Context, benchmarkId string, findingFilters *api.FindingSummaryFilters) (*api.GetBenchmarkDetailsFindings, error) {
-	findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmarkId)
+func (h *HttpHandler) getBenchmarkComplianceResultSummary(ctx context.Context, benchmarkId string, complianceResultFilters *api.ComplianceResultSummaryFilters) (*api.GetBenchmarkDetailsComplianceResults, error) {
+	complianceResults, evaluatedAt, err := es.BenchmarkIntegrationSummary(ctx, h.logger, h.client, benchmarkId)
 	if err != nil {
 		return nil, err
 	}
 
-	var findingsResult api.GetBenchmarkDetailsFindings
-	findingsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
-	for connection, finding := range findings {
-		if findingFilters != nil && len(findingFilters.ConnectionID) > 0 {
-			if !listContains(findingFilters.ConnectionID, connection) {
+	var complianceResultsResult api.GetBenchmarkDetailsComplianceResults
+	complianceResultsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
+	for connection, resultGroup := range complianceResults {
+		if complianceResultFilters != nil && len(complianceResultFilters.IntegrationID) > 0 {
+			if !listContains(complianceResultFilters.IntegrationID, connection) {
 				continue
 			}
 		}
-		if findingFilters != nil && len(findingFilters.ResourceTypeID) > 0 {
-			findingsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
-			for resourceType, result := range finding.ResourceTypes {
-				if listContains(findingFilters.ResourceTypeID, resourceType) {
+		if complianceResultFilters != nil && len(complianceResultFilters.ResourceTypeID) > 0 {
+			complianceResultsResult.Results = make(map[opengovernanceTypes.ComplianceStatus]int)
+			for resourceType, result := range resultGroup.ResourceTypes {
+				if listContains(complianceResultFilters.ResourceTypeID, resourceType) {
 					for k, v := range result.QueryResult {
-						if _, ok := findingsResult.Results[k]; ok {
-							findingsResult.Results[k] += v
+						if _, ok := complianceResultsResult.Results[k]; ok {
+							complianceResultsResult.Results[k] += v
 						} else {
-							findingsResult.Results[k] = v
+							complianceResultsResult.Results[k] = v
 						}
 					}
 				}
 			}
 		} else {
-			findingsResult.Results = finding.Result.QueryResult
+			complianceResultsResult.Results = resultGroup.Result.QueryResult
 		}
-		findingsResult.ConnectionIDs = append(findingsResult.ConnectionIDs, connection)
+		complianceResultsResult.IntegrationIDs = append(complianceResultsResult.IntegrationIDs, connection)
 	}
-	return &findingsResult, nil
+	return &complianceResultsResult, nil
 }
 
 type BenchmarkControlsCache struct {
@@ -216,45 +216,45 @@ func (h *HttpHandler) getChildBenchmarksWithDetails(ctx context.Context, benchma
 			controlIDs = append(controlIDs, c.ID)
 		}
 
-		findings, evaluatedAt, err := es.BenchmarkConnectionSummary(ctx, h.logger, h.client, benchmark.ID)
+		complianceResults, evaluatedAt, err := es.BenchmarkIntegrationSummary(ctx, h.logger, h.client, benchmark.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		var findingsResult api.GetBenchmarkDetailsFindings
-		findingsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
-		for connection, finding := range findings {
-			if req.FindingFilters != nil && len(req.FindingFilters.ConnectionID) > 0 {
-				if !listContains(req.FindingFilters.ConnectionID, connection) {
+		var complianceResultsResult api.GetBenchmarkDetailsComplianceResults
+		complianceResultsResult.LastEvaluatedAt = time.Unix(evaluatedAt, 0)
+		for connection, resultGroup := range complianceResults {
+			if req.ComplianceResultFilters != nil && len(req.ComplianceResultFilters.IntegrationID) > 0 {
+				if !listContains(req.ComplianceResultFilters.IntegrationID, connection) {
 					continue
 				}
 			}
-			if req.FindingFilters != nil && len(req.FindingFilters.ResourceTypeID) > 0 {
-				findingsResult.Results = make(map[opengovernanceTypes.ConformanceStatus]int)
-				for resourceType, result := range finding.ResourceTypes {
-					if listContains(req.FindingFilters.ResourceTypeID, resourceType) {
+			if req.ComplianceResultFilters != nil && len(req.ComplianceResultFilters.ResourceTypeID) > 0 {
+				complianceResultsResult.Results = make(map[opengovernanceTypes.ComplianceStatus]int)
+				for resourceType, result := range resultGroup.ResourceTypes {
+					if listContains(req.ComplianceResultFilters.ResourceTypeID, resourceType) {
 						for k, v := range result.QueryResult {
-							if _, ok := findingsResult.Results[k]; ok {
-								findingsResult.Results[k] += v
+							if _, ok := complianceResultsResult.Results[k]; ok {
+								complianceResultsResult.Results[k] += v
 							} else {
-								findingsResult.Results[k] = v
+								complianceResultsResult.Results[k] = v
 							}
 						}
 					}
 				}
 			} else {
-				findingsResult.Results = finding.Result.QueryResult
+				complianceResultsResult.Results = resultGroup.Result.QueryResult
 			}
-			findingsResult.ConnectionIDs = append(findingsResult.ConnectionIDs, connection)
+			complianceResultsResult.IntegrationIDs = append(complianceResultsResult.IntegrationIDs, connection)
 		}
 
 		benchmarks = append(benchmarks, api.GetBenchmarkDetailsChildren{
-			ID:         child.ID,
-			Title:      child.Title,
-			Tags:       filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(child.GetTagsMap())),
-			ControlIDs: controlIDs,
-			Findings:   findingsResult,
-			Children:   childChildren,
+			ID:                child.ID,
+			Title:             child.Title,
+			Tags:              filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(child.GetTagsMap())),
+			ControlIDs:        controlIDs,
+			ComplianceResults: complianceResultsResult,
+			Children:          childChildren,
 		})
 	}
 	return benchmarks, nil

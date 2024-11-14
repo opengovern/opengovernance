@@ -7,6 +7,7 @@ import (
 	"fmt"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/jq"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/config"
@@ -17,7 +18,6 @@ import (
 	"github.com/opengovern/opengovernance/pkg/analytics/db"
 	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -67,15 +67,15 @@ func WorkerCommand() *cobra.Command {
 }
 
 type Worker struct {
-	id              string
-	jq              *jq.JobQueue
-	config          workerConfig.WorkerConfig
-	logger          *zap.Logger
-	db              db.Database
-	onboardClient   onboardClient.OnboardServiceClient
-	schedulerClient describeClient.SchedulerServiceClient
-	inventoryClient inventoryClient.InventoryServiceClient
-	sinkClient      esSinkClient.EsSinkServiceClient
+	id                string
+	jq                *jq.JobQueue
+	config            workerConfig.WorkerConfig
+	logger            *zap.Logger
+	db                db.Database
+	integrationClient integrationClient.IntegrationServiceClient
+	schedulerClient   describeClient.SchedulerServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	sinkClient        esSinkClient.EsSinkServiceClient
 }
 
 func NewWorker(
@@ -132,7 +132,7 @@ func NewWorker(
 	w.config = conf
 	w.logger = logger
 
-	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
+	w.integrationClient = integrationClient.NewIntegrationServiceClient(conf.Integration.BaseURL)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	w.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	w.sinkClient = esSinkClient.NewEsSinkServiceClient(logger, conf.EsSink.BaseURL)
@@ -158,7 +158,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe, w.config.PennywiseBaseURL); err != nil {
+	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe); err != nil {
 		w.logger.Error("failed to populate steampipe config for opengovernance plugin", zap.Error(err))
 		return err
 	}
@@ -189,7 +189,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 		w.logger.Info("Running the job", zap.Uint("id", job.JobID))
 
-		result := job.Do(w.jq, w.db, steampipeConn, w.onboardClient, w.schedulerClient, w.inventoryClient, w.sinkClient, w.logger, w.config, ctx)
+		result := job.Do(w.jq, w.db, steampipeConn, w.integrationClient, w.schedulerClient, w.inventoryClient, w.sinkClient, w.logger, w.config, ctx)
 
 		w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

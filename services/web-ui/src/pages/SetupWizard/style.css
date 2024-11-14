@@ -1,0 +1,5 @@
+.wizard-card{
+    hr{
+        margin: revert!important;
+    }
+}

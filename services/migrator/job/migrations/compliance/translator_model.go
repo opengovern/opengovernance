@@ -1,12 +1,13 @@
 package compliance
 
-import "github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
+import (
+	"github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
+)
 
 type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
 	Title             string              `json:"Title" yaml:"Title"`
 	SectionCode       string              `json:"SectionCode" yaml:"SectionCode"`
-	Connectors        []string            `json:"Connectors" yaml:"Connectors"`
 	Description       string              `json:"Description" yaml:"Description"`
 	Children          []string            `json:"Children" yaml:"Children"`
 	Tags              map[string][]string `json:"Tags" yaml:"Tags"`
@@ -19,7 +20,7 @@ type Benchmark struct {
 type Control struct {
 	ID                 string              `json:"ID" yaml:"ID"`
 	Title              string              `json:"Title" yaml:"Title"`
-	Connector          []string            `json:"Connector" yaml:"Connector"`
+	IntegrationType    []string            `json:"IntegrationType" yaml:"IntegrationType"`
 	Description        string              `json:"Description" yaml:"Description"`
 	Query              *shared.Query       `json:"Query" yaml:"Query"`
 	ManualVerification bool                `json:"ManualVerification" yaml:"ManualVerification"`
@@ -29,6 +30,7 @@ type Control struct {
 }
 
 type QueryView struct {
-	ID    string `json:"id" yaml:"ID"`
-	Query string `json:"query" yaml:"Query"`
+	ID           string   `json:"id" yaml:"ID"`
+	Query        string   `json:"query" yaml:"Query"`
+	Dependencies []string `json:"dependencies" yaml:"Dependencies"`
 }

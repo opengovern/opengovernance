@@ -13,7 +13,7 @@ import (
 
 func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_api_benchmark_summary",
+		Name:        "platform_api_benchmark_summary",
 		Description: "Wrapper for benchmark summary api",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -31,7 +31,7 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 					Require:   plugin.Optional,
 				},
 				{
-					Name:      "connection_id",
+					Name:      "integration_id",
 					Operators: []string{quals.QualOperatorEqual},
 					Require:   plugin.Optional,
 				},
@@ -46,10 +46,10 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromQual("benchmark_id"),
 			},
 			{
-				Name:        "connection_id",
+				Name:        "integration_id",
 				Type:        proto.ColumnType_STRING,
-				Description: "The connection IDs included in the benchmark summary",
-				Transform:   transform.FromQual("connection_id"),
+				Description: "The integration IDs included in the benchmark summary",
+				Transform:   transform.FromQual("integration_id"),
 			},
 			{
 				Name:        "time_at",
@@ -59,16 +59,16 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Default:     time.Now(),
 			},
 			{
-				Name:        "conformance_status_passed_count",
+				Name:        "compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that passed in the benchmark summary",
-				Transform:   transform.FromField("ConformanceStatusSummary.PassedCount"),
+				Transform:   transform.FromField("ComplianceStatusSummary.PassedCount"),
 			},
 			{
-				Name:        "conformance_status_failed_count",
+				Name:        "compliance_status_failed_count",
 				Type:        proto.ColumnType_INT,
 				Description: "The number of checks that failed in the benchmark summary",
-				Transform:   transform.FromField("ConformanceStatusSummary.FailedCount"),
+				Transform:   transform.FromField("ComplianceStatusSummary.FailedCount"),
 			},
 			{
 				Name:        "severity_result_critical_count",
@@ -245,22 +245,22 @@ func tablePlatformApiBenchmarkSummary(_ context.Context) *plugin.Table {
 				Transform:   transform.FromField("ResourcesSeverityStatus.None.PassedCount"),
 			},
 			{
-				Name:        "connections_result_conformance_status_passed_count",
+				Name:        "integrations_result_compliance_status_passed_count",
 				Type:        proto.ColumnType_INT,
-				Description: "The number of checks that passed in the benchmark summary for the connection",
-				Transform:   transform.FromField("ConnectionsStatus.PassedCount"),
+				Description: "The number of checks that passed in the benchmark summary for the integration",
+				Transform:   transform.FromField("IntegrationsStatus.PassedCount"),
 			},
 			{
-				Name:        "connections_result_conformance_status_total_count",
+				Name:        "integrations_result_compliance_status_total_count",
 				Type:        proto.ColumnType_INT,
-				Description: "The total number of checks in the benchmark summary for the connection",
-				Transform:   transform.FromField("ConnectionsStatus.TotalCount"),
+				Description: "The total number of checks in the benchmark summary for the integration",
+				Transform:   transform.FromField("IntegrationsStatus.TotalCount"),
 			},
 			{
-				Name:        "cost_optimization",
+				Name:        "cost_impact",
 				Type:        proto.ColumnType_DOUBLE,
-				Description: "The cost optimization score of the benchmark summary",
-				Transform:   transform.FromField("CostOptimization"),
+				Description: "The cost impact score of the benchmark summary",
+				Transform:   transform.FromField("CostImpact"),
 			},
 			{
 				Name:        "evaluated_at",

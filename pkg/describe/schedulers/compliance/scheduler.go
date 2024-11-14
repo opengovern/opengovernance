@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"go.uber.org/zap"
 	"time"
-
-	onboardAPI "github.com/opengovern/opengovernance/pkg/onboard/api"
 )
 
 func (s *JobScheduler) runScheduler() error {
@@ -24,43 +23,43 @@ func (s *JobScheduler) runScheduler() error {
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 
-	allConnections, err := s.onboardClient.ListSources(clientCtx, nil)
+	allIntegrations, err := s.integrationClient.ListIntegrations(clientCtx, nil)
 	if err != nil {
 		s.logger.Error("error while listing allConnections", zap.Error(err))
 		return fmt.Errorf("error while listing allConnections: %v", err)
 	}
-	connectionsMap := make(map[string]*onboardAPI.Connection)
-	for _, connection := range allConnections {
+	integrationsMap := make(map[string]*integrationapi.Integration)
+	for _, connection := range allIntegrations.Integrations {
 		connection := connection
-		connectionsMap[connection.ID.String()] = &connection
+		integrationsMap[connection.IntegrationID] = &connection
 	}
 
 	for _, benchmark := range benchmarks {
-		var connections []onboardAPI.Connection
+		var integrations []integrationapi.Integration
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			s.logger.Error("error while listing assignments", zap.Error(err))
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
-		for _, assignment := range assignments.Connections {
+		for _, assignment := range assignments.Integrations {
 			if !assignment.Status {
 				continue
 			}
 
-			if _, ok := connectionsMap[assignment.ConnectionID]; !ok {
+			if _, ok := integrationsMap[assignment.IntegrationID]; !ok {
 				continue
 			}
-			connection := connectionsMap[assignment.ConnectionID]
+			integration := integrationsMap[assignment.IntegrationID]
 
-			if !connection.IsEnabled() {
+			if integration.State != integrationapi.IntegrationStateActive {
 				continue
 			}
 
-			connections = append(connections, *connection)
+			integrations = append(integrations, *integration)
 		}
 
-		if len(connections) == 0 {
+		if len(integrations) == 0 {
 			continue
 		}
 
@@ -74,8 +73,8 @@ func (s *JobScheduler) runScheduler() error {
 		if complianceJob == nil ||
 			complianceJob.CreatedAt.Before(timeAt) {
 
-			for _, c := range connections {
-				_, err := s.CreateComplianceReportJobs(benchmark.ID, complianceJob, c.ID.String(), false, "system")
+			for _, c := range integrations {
+				_, err := s.CreateComplianceReportJobs(benchmark.ID, complianceJob, c.IntegrationID, false, "system")
 				if err != nil {
 					s.logger.Error("error while creating compliance job", zap.Error(err))
 					return err

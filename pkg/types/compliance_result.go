@@ -2,23 +2,23 @@ package types
 
 import "strings"
 
-type ConformanceStatus string
+type ComplianceStatus string
 
 const (
-	ConformanceStatusOK    ConformanceStatus = "ok"
-	ConformanceStatusALARM ConformanceStatus = "alarm"
-	ConformanceStatusINFO  ConformanceStatus = "info"
-	ConformanceStatusSKIP  ConformanceStatus = "skip"
-	ConformanceStatusERROR ConformanceStatus = "error"
+	ComplianceStatusOK    ComplianceStatus = "ok"
+	ComplianceStatusALARM ComplianceStatus = "alarm"
+	ComplianceStatusINFO  ComplianceStatus = "info"
+	ComplianceStatusSKIP  ComplianceStatus = "skip"
+	ComplianceStatusERROR ComplianceStatus = "error"
 )
 
-func GetConformanceStatuses() []ConformanceStatus {
-	return conformanceStatuses
+func GetComplianceStatuses() []ComplianceStatus {
+	return complianceStatuses
 }
 
-func GetPassedConformanceStatuses() []ConformanceStatus {
-	passed := make([]ConformanceStatus, 0)
-	for _, status := range conformanceStatuses {
+func GetPassedComplianceStatuses() []ComplianceStatus {
+	passed := make([]ComplianceStatus, 0)
+	for _, status := range complianceStatuses {
 		if status.IsPassed() {
 			passed = append(passed, status)
 		}
@@ -26,9 +26,9 @@ func GetPassedConformanceStatuses() []ConformanceStatus {
 	return passed
 }
 
-func GetFailedConformanceStatuses() []ConformanceStatus {
-	failed := make([]ConformanceStatus, 0)
-	for _, status := range conformanceStatuses {
+func GetFailedComplianceStatuses() []ComplianceStatus {
+	failed := make([]ComplianceStatus, 0)
+	for _, status := range complianceStatuses {
 		if !status.IsPassed() {
 			failed = append(failed, status)
 		}
@@ -36,16 +36,16 @@ func GetFailedConformanceStatuses() []ConformanceStatus {
 	return failed
 }
 
-func (r ConformanceStatus) IsPassed() bool {
-	return r == ConformanceStatusOK || r == ConformanceStatusINFO || r == ConformanceStatusSKIP
+func (r ComplianceStatus) IsPassed() bool {
+	return r == ComplianceStatusOK || r == ComplianceStatusINFO || r == ComplianceStatusSKIP
 }
 
-type ConformanceStatusSummaryWithTotal struct {
-	ConformanceStatusSummary
+type ComplianceStatusSummaryWithTotal struct {
+	ComplianceStatusSummary
 	TotalCount int `json:"totalCount" example:"5"`
 }
 
-type ConformanceStatusSummary struct {
+type ComplianceStatusSummary struct {
 	OkCount    int `json:"okCount" example:"1"`
 	AlarmCount int `json:"alarmCount" example:"1"`
 	InfoCount  int `json:"infoCount" example:"1"`
@@ -53,7 +53,7 @@ type ConformanceStatusSummary struct {
 	ErrorCount int `json:"errorCount" example:"1"`
 }
 
-func (c *ConformanceStatusSummary) AddConformanceStatusSummary(summary ConformanceStatusSummary) {
+func (c *ComplianceStatusSummary) AddComplianceStatusSummary(summary ComplianceStatusSummary) {
 	c.OkCount += summary.OkCount
 	c.AlarmCount += summary.AlarmCount
 	c.InfoCount += summary.InfoCount
@@ -61,12 +61,12 @@ func (c *ConformanceStatusSummary) AddConformanceStatusSummary(summary Conforman
 	c.ErrorCount += summary.ErrorCount
 }
 
-func (c *ConformanceStatusSummary) AddConformanceStatusMap(summary map[ConformanceStatus]int) {
-	c.OkCount += summary[ConformanceStatusOK]
-	c.AlarmCount += summary[ConformanceStatusALARM]
-	c.InfoCount += summary[ConformanceStatusINFO]
-	c.SkipCount += summary[ConformanceStatusSKIP]
-	c.ErrorCount += summary[ConformanceStatusERROR]
+func (c *ComplianceStatusSummary) AddComplianceStatusMap(summary map[ComplianceStatus]int) {
+	c.OkCount += summary[ComplianceStatusOK]
+	c.AlarmCount += summary[ComplianceStatusALARM]
+	c.InfoCount += summary[ComplianceStatusINFO]
+	c.SkipCount += summary[ComplianceStatusSKIP]
+	c.ErrorCount += summary[ComplianceStatusERROR]
 }
 
 type ComplianceResultShortSummary struct {
@@ -74,17 +74,17 @@ type ComplianceResultShortSummary struct {
 	Failed int `json:"failed"`
 }
 
-var conformanceStatuses = []ConformanceStatus{
-	ConformanceStatusOK,
-	ConformanceStatusALARM,
-	ConformanceStatusINFO,
-	ConformanceStatusSKIP,
-	ConformanceStatusERROR,
+var complianceStatuses = []ComplianceStatus{
+	ComplianceStatusOK,
+	ComplianceStatusALARM,
+	ComplianceStatusINFO,
+	ComplianceStatusSKIP,
+	ComplianceStatusERROR,
 }
 
-func ParseConformanceStatus(s string) ConformanceStatus {
+func ParseComplianceStatus(s string) ComplianceStatus {
 	s = strings.ToLower(s)
-	for _, status := range conformanceStatuses {
+	for _, status := range complianceStatuses {
 		if s == strings.ToLower(string(status)) {
 			return status
 		}
@@ -92,10 +92,10 @@ func ParseConformanceStatus(s string) ConformanceStatus {
 	return ""
 }
 
-func ParseConformanceStatuses(list []string) []ConformanceStatus {
-	result := make([]ConformanceStatus, 0, len(list))
+func ParseComplianceStatuses(list []string) []ComplianceStatus {
+	result := make([]ComplianceStatus, 0, len(list))
 	for _, s := range list {
-		result = append(result, ParseConformanceStatus(s))
+		result = append(result, ParseComplianceStatus(s))
 	}
 	return result
 }

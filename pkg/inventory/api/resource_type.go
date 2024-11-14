@@ -1,18 +1,17 @@
 package api
 
 import (
+	"github.com/opengovern/og-util/pkg/integration"
 	"time"
-
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 type ResourceType struct {
-	Connector     source.Type         `json:"connector" example:"Azure"`                                                                                                            // Cloud Provider
-	ResourceType  string              `json:"resource_type" example:"Microsoft.Compute/virtualMachines"`                                                                            // Resource Type
-	ResourceLabel string              `json:"resource_name" example:"VM"`                                                                                                           // Resource Name
-	ServiceName   string              `json:"service_name" example:"compute"`                                                                                                       // Service Name
-	Tags          map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"` // Tags
-	LogoURI       *string             `json:"logo_uri,omitempty" example:"https://opengovernance.io/logo.png"`                                                                      // Logo URI
+	IntegrationType integration.Type    `json:"integration_type" example:"Azure"`                                                                                                     // Cloud Provider
+	ResourceType    string              `json:"resource_type" example:"Microsoft.Compute/virtualMachines"`                                                                            // Resource Type
+	ResourceLabel   string              `json:"resource_name" example:"VM"`                                                                                                           // Resource Name
+	ServiceName     string              `json:"service_name" example:"compute"`                                                                                                       // Service Name
+	Tags            map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"` // Tags
+	LogoURI         *string             `json:"logo_uri,omitempty" example:"https://opengovernance.io/logo.png"`                                                                      // Logo URI
 
 	Count    *int `json:"count" example:"100" minimum:"0"`    // Number of Resources of this Resource Type - Metric
 	OldCount *int `json:"old_count" example:"90" minimum:"0"` // Number of Resources of this Resource Type in the past - Metric
@@ -23,11 +22,11 @@ type ResourceType struct {
 }
 
 type ResourceTypeV2 struct {
-	ProviderName   source.Type `json:"provider_name"`
-	ResourceName   string      `json:"resource_name"`
-	ResourceID     string      `json:"resource_id"`
-	SteampipeTable string      `json:"steampipe_table"`
-	Category       string      `json:"category"`
+	IntegrationType integration.Type `json:"integration_type"`
+	ResourceName    string           `json:"resource_name"`
+	ResourceID      string           `json:"resource_id"`
+	SteampipeTable  string           `json:"steampipe_table"`
+	Category        string           `json:"category"`
 }
 
 type CategoriesTables struct {
@@ -55,7 +54,7 @@ type ListResourceTypeCompositionResponse struct {
 type ResourceTypeTrendDatapoint struct {
 	Count                                   int                        `json:"count" example:"100" minimum:"0"`
 	CountStacked                            []ResourceCountStackedItem `json:"countStacked"`
-	TotalDescribedConnectionCount           int64                      `json:"totalConnectionCount"`
+	TotalDescribedConnectionCount           int64                      `json:"totalIntegrationCount"`
 	TotalSuccessfulDescribedConnectionCount int64                      `json:"totalSuccessfulDescribedConnectionCount"`
 	Date                                    time.Time                  `json:"date" format:"date-time"`
 }

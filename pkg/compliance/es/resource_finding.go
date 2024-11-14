@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/pkg/utils"
@@ -79,33 +79,33 @@ func (p ResourceFindingPaginator) NextPage(ctx context.Context) ([]types.Resourc
 	return values, nil
 }
 
-func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, connector []source.Type, connectionID []string,
-	notConnectionID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
-	severity []types.FindingSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, conformanceStatuses []types.ConformanceStatus,
+func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client opengovernance.Client, integrationType []integration.Type, integrationID []string,
+	notIntegrationID []string, resourceCollection []string, resourceTypes []string, benchmarkID []string, controlID []string,
+	severity []types.ComplianceResultSeverity, evaluatedAtFrom *time.Time, evaluatedAtTo *time.Time, complianceStatuses []types.ComplianceStatus,
 	sorts []api.ResourceFindingsSort, pageSizeLimit int, searchAfter []any, summaryJobIDs []string) ([]ResourceFindingsQueryHit, int64, error) {
 
 	nestedFilters := make([]map[string]any, 0)
-	if len(connector) > 0 {
+	if len(integrationType) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.connector": connector,
+				"complianceResults.integrationType": integrationType,
 			},
 		})
 	}
-	if len(connectionID) > 0 {
+	if len(integrationID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.connectionID": connectionID,
+				"complianceResults.integrationID": integrationID,
 			},
 		})
 	}
-	if len(notConnectionID) > 0 {
+	if len(notIntegrationID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string]any{
-							"findings.connectionID": notConnectionID,
+							"complianceResults.integrationID": notIntegrationID,
 						},
 					},
 				},
@@ -115,28 +115,28 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 	if len(benchmarkID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.benchmarkID": benchmarkID,
+				"complianceResults.benchmarkID": benchmarkID,
 			},
 		})
 	}
 	if len(controlID) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.controlID": controlID,
+				"complianceResults.controlID": controlID,
 			},
 		})
 	}
 	if len(severity) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.severity": severity,
+				"complianceResults.severity": severity,
 			},
 		})
 	}
-	if len(conformanceStatuses) > 0 {
+	if len(complianceStatuses) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.conformanceStatus": conformanceStatuses,
+				"complianceResults.complianceStatus": complianceStatuses,
 			},
 		})
 	}
@@ -185,7 +185,7 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 
 	if len(nestedFilters) > 0 {
 		filters = append(filters, map[string]any{"nested": map[string]any{
-			"path": "findings",
+			"path": "complianceResults",
 			"query": map[string]any{
 				"bool": map[string]any{
 					"filter": nestedFilters,
@@ -212,9 +212,9 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 	requestSort := make([]map[string]any, 0, len(sorts)+1)
 	for _, sort := range sorts {
 		switch {
-		case sort.OpenGovernanceResourceID != nil:
+		case sort.PlatformResourceID != nil:
 			requestSort = append(requestSort, map[string]any{
-				"opengovernanceResourceID": *sort.OpenGovernanceResourceID,
+				"platformResourceID": *sort.PlatformResourceID,
 			})
 		case sort.ResourceType != nil:
 			requestSort = append(requestSort, map[string]any{
@@ -228,18 +228,18 @@ func ResourceFindingsQuery(ctx context.Context, logger *zap.Logger, client openg
 			requestSort = append(requestSort, map[string]any{
 				"resourceLocation": *sort.ResourceLocation,
 			})
-		case sort.ConformanceStatus != nil:
+		case sort.ComplianceStatus != nil:
 			requestSort = append(requestSort, map[string]any{
-				"findings.conformanceStatus": *sort.ConformanceStatus,
+				"complianceResults.complianceStatus": *sort.ComplianceStatus,
 			})
 		case sort.FailedCount != nil:
 			scriptSource :=
 				fmt.Sprintf(`int total = 0; 
-for (int i=0; i<params['_source']['findings'].length;++i) { 
-  if(params['_source']['findings'][i]['conformanceStatus'] != '%s' && params['_source']['findings'][i]['conformanceStatus'] != '%s' && params['_source']['findings'][i]['conformanceStatus'] != '%s') 
+for (int i=0; i<params['_source']['complianceResults'].length;++i) { 
+  if(params['_source']['complianceResults'][i]['complianceStatus'] != '%s' && params['_source']['complianceResults'][i]['complianceStatus'] != '%s' && params['_source']['complianceResults'][i]['complianceStatus'] != '%s') 
     total+=1;
   } 
-return total;`, types.ConformanceStatusOK, types.ConformanceStatusINFO, types.ConformanceStatusSKIP)
+return total;`, types.ComplianceStatusOK, types.ComplianceStatusINFO, types.ComplianceStatusSKIP)
 			requestSort = append(requestSort, map[string]any{
 				"_script": map[string]any{
 					"type": "number",
@@ -275,8 +275,8 @@ return total;`, types.ConformanceStatusOK, types.ConformanceStatusINFO, types.Co
 
 type GetPerBenchmarkResourceSeverityResultResponse struct {
 	Aggregations struct {
-		Findings struct {
-			ConformanceFilter struct {
+		ComplianceResults struct {
+			ComplianceFilter struct {
 				BenchmarkGroup struct {
 					Buckets []struct {
 						Key           string `json:"key"`
@@ -290,28 +290,28 @@ type GetPerBenchmarkResourceSeverityResultResponse struct {
 						} `json:"severityGroup"`
 					} `json:"buckets"`
 				} `json:"benchmarkGroup"`
-			} `json:"conformanceFilter"`
-		} `json:"findings"`
+			} `json:"complianceFilter"`
+		} `json:"complianceResults"`
 	} `json:"aggregations"`
 }
 
 func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
-	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus) (map[string]types.SeverityResultWithTotal, error) {
+	benchmarkIDs []string, integrationIDs []string, resourceCollections []string,
+	severities []types.ComplianceResultSeverity, complianceStatuses []types.ComplianceStatus) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
 	if len(benchmarkIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.benchmarkID": benchmarkIDs,
+				"complianceResults.benchmarkID": benchmarkIDs,
 			},
 		})
 	}
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
@@ -325,16 +325,16 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 	if len(severities) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.severity": severities,
+				"complianceResults.severity": severities,
 			},
 		})
 	}
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = types.GetConformanceStatuses()
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = types.GetComplianceStatuses()
 	}
 	nestedFilters = append(nestedFilters, map[string]any{
 		"terms": map[string]any{
-			"findings.conformanceStatus": conformanceStatuses,
+			"complianceResults.complianceStatus": complianceStatuses,
 		},
 	})
 
@@ -342,7 +342,7 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 	if len(nestedFilters) > 0 {
 		filters = append(filters, map[string]any{
 			"nested": map[string]any{
-				"path":  "findings",
+				"path":  "complianceResults",
 				"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 			},
 		})
@@ -358,27 +358,27 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 	request["size"] = 0
 
 	request["aggs"] = map[string]any{
-		"findings": map[string]any{
+		"complianceResults": map[string]any{
 			"nested": map[string]any{
-				"path": "findings",
+				"path": "complianceResults",
 			},
 			"aggs": map[string]any{
-				"conformanceFilter": map[string]any{
+				"complianceFilter": map[string]any{
 					"filter": map[string]any{
 						"terms": map[string]any{
-							"findings.conformanceStatus": conformanceStatuses,
+							"complianceResults.complianceStatus": complianceStatuses,
 						},
 					},
 					"aggs": map[string]any{
 						"benchmarkGroup": map[string]any{
 							"terms": map[string]any{
-								"field": "findings.benchmarkID",
+								"field": "complianceResults.benchmarkID",
 								"size":  10000,
 							},
 							"aggs": map[string]any{
 								"severityGroup": map[string]any{
 									"terms": map[string]any{
-										"field": "findings.severity",
+										"field": "complianceResults.severity",
 										"size":  10000,
 									},
 									"aggs": map[string]any{
@@ -409,21 +409,21 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 	}
 
 	result := make(map[string]types.SeverityResultWithTotal)
-	for _, benchmarkBucket := range response.Aggregations.Findings.ConformanceFilter.BenchmarkGroup.Buckets {
+	for _, benchmarkBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.BenchmarkGroup.Buckets {
 		severityResult := types.SeverityResultWithTotal{}
 		for _, severityBucket := range benchmarkBucket.SeverityGroup.Buckets {
 			severityResult.TotalCount += severityBucket.ResourceCount.DocCount
 
-			switch types.ParseFindingSeverity(strings.ToLower(severityBucket.Key)) {
-			case types.FindingSeverityCritical:
+			switch types.ParseComplianceResultSeverity(strings.ToLower(severityBucket.Key)) {
+			case types.ComplianceResultSeverityCritical:
 				severityResult.CriticalCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityHigh:
+			case types.ComplianceResultSeverityHigh:
 				severityResult.HighCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityMedium:
+			case types.ComplianceResultSeverityMedium:
 				severityResult.MediumCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityLow:
+			case types.ComplianceResultSeverityLow:
 				severityResult.LowCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityNone, "":
+			case types.ComplianceResultSeverityNone, "":
 				severityResult.NoneCount += severityBucket.ResourceCount.DocCount
 			}
 		}
@@ -434,22 +434,22 @@ func GetPerBenchmarkResourceSeverityResult(ctx context.Context, logger *zap.Logg
 }
 
 func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
-	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, summaryJobIDs string) (map[string]types.SeverityResultWithTotal, error) {
+	benchmarkIDs []string, integrationIDs []string, resourceCollections []string,
+	severities []types.ComplianceResultSeverity, complianceStatuses []types.ComplianceStatus, summaryJobIDs string) (map[string]types.SeverityResultWithTotal, error) {
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
 	if len(benchmarkIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.benchmarkID": benchmarkIDs,
+				"complianceResults.benchmarkID": benchmarkIDs,
 			},
 		})
 	}
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
@@ -469,16 +469,16 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 	if len(severities) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.severity": severities,
+				"complianceResults.severity": severities,
 			},
 		})
 	}
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = types.GetConformanceStatuses()
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = types.GetComplianceStatuses()
 	}
 	nestedFilters = append(nestedFilters, map[string]any{
 		"terms": map[string]any{
-			"findings.conformanceStatus": conformanceStatuses,
+			"complianceResults.complianceStatus": complianceStatuses,
 		},
 	})
 
@@ -486,7 +486,7 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 	if len(nestedFilters) > 0 {
 		filters = append(filters, map[string]any{
 			"nested": map[string]any{
-				"path":  "findings",
+				"path":  "complianceResults",
 				"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 			},
 		})
@@ -502,27 +502,27 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 	request["size"] = 0
 
 	request["aggs"] = map[string]any{
-		"findings": map[string]any{
+		"complianceResults": map[string]any{
 			"nested": map[string]any{
-				"path": "findings",
+				"path": "complianceResults",
 			},
 			"aggs": map[string]any{
-				"conformanceFilter": map[string]any{
+				"complianceFilter": map[string]any{
 					"filter": map[string]any{
 						"terms": map[string]any{
-							"findings.conformanceStatus": conformanceStatuses,
+							"complianceResults.complianceStatus": complianceStatuses,
 						},
 					},
 					"aggs": map[string]any{
 						"benchmarkGroup": map[string]any{
 							"terms": map[string]any{
-								"field": "findings.benchmarkID",
+								"field": "complianceResults.benchmarkID",
 								"size":  10000,
 							},
 							"aggs": map[string]any{
 								"severityGroup": map[string]any{
 									"terms": map[string]any{
-										"field": "findings.severity",
+										"field": "complianceResults.severity",
 										"size":  10000,
 									},
 									"aggs": map[string]any{
@@ -553,21 +553,21 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 	}
 
 	result := make(map[string]types.SeverityResultWithTotal)
-	for _, benchmarkBucket := range response.Aggregations.Findings.ConformanceFilter.BenchmarkGroup.Buckets {
+	for _, benchmarkBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.BenchmarkGroup.Buckets {
 		severityResult := types.SeverityResultWithTotal{}
 		for _, severityBucket := range benchmarkBucket.SeverityGroup.Buckets {
 			severityResult.TotalCount += severityBucket.ResourceCount.DocCount
 
-			switch types.ParseFindingSeverity(strings.ToLower(severityBucket.Key)) {
-			case types.FindingSeverityCritical:
+			switch types.ParseComplianceResultSeverity(strings.ToLower(severityBucket.Key)) {
+			case types.ComplianceResultSeverityCritical:
 				severityResult.CriticalCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityHigh:
+			case types.ComplianceResultSeverityHigh:
 				severityResult.HighCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityMedium:
+			case types.ComplianceResultSeverityMedium:
 				severityResult.MediumCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityLow:
+			case types.ComplianceResultSeverityLow:
 				severityResult.LowCount += severityBucket.ResourceCount.DocCount
-			case types.FindingSeverityNone, "":
+			case types.ComplianceResultSeverityNone, "":
 				severityResult.NoneCount += severityBucket.ResourceCount.DocCount
 			}
 		}
@@ -577,56 +577,56 @@ func GetPerBenchmarkResourceSeverityResultByJobId(ctx context.Context, logger *z
 	return result, nil
 }
 
-type GetPerFieldResourceConformanceResultResponse struct {
+type GetPerFieldResourceComplianceResultResponse struct {
 	Aggregations struct {
-		Findings struct {
-			ConformanceFilter struct {
+		ComplianceResults struct {
+			ComplianceFilter struct {
 				FieldGroup struct {
 					Buckets []struct {
-						Key              string `json:"key"`
-						ConformanceGroup struct {
+						Key             string `json:"key"`
+						ComplianceGroup struct {
 							Buckets []struct {
 								Key           string `json:"key"`
 								ResourceCount struct {
 									DocCount int `json:"doc_count"`
 								} `json:"resourceCount"`
 							} `json:"buckets"`
-						} `json:"conformanceGroup"`
+						} `json:"complianceGroup"`
 					} `json:"buckets"`
 				} `json:"fieldGroup"`
-			} `json:"conformanceFilter"`
-		} `json:"findings"`
+			} `json:"complianceFilter"`
+		} `json:"complianceResults"`
 	} `json:"aggregations"`
 }
 
-// GetPerFieldResourceConformanceResult
-// field could be: connectionID, benchmarkID, controlID, severity, conformanceStatus
-func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+// GetPerFieldResourceComplianceResult
+// field could be: integrationID, benchmarkID, controlID, severity, complianceStatus
+func GetPerFieldResourceComplianceResult(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
-	connectionIDs []string, notConnectionIDs []string,
+	integrationIDs []string, notIntegrationIDs []string,
 	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
-	severities []types.FindingSeverity, conformanceStatuses []types.ConformanceStatus, startTime, endTime *time.Time) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
-	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" {
+	severities []types.ComplianceResultSeverity, complianceStatuses []types.ComplianceStatus, startTime, endTime *time.Time) (map[string]types.ComplianceStatusSummaryWithTotal, error) {
+	if field != "integrationID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "complianceStatus" {
 		return nil, fmt.Errorf("field %s is not supported", field)
 	}
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
-	if len(notConnectionIDs) > 0 {
+	if len(notIntegrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string][]string{
-							"findings.connectionID": notConnectionIDs,
+							"complianceResults.integrationID": notIntegrationIDs,
 						},
 					},
 				},
@@ -636,14 +636,14 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 	if len(controlIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.controlID": controlIDs,
+				"complianceResults.controlID": controlIDs,
 			},
 		})
 	}
 	if len(benchmarkIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.benchmarkID": benchmarkIDs,
+				"complianceResults.benchmarkID": benchmarkIDs,
 			},
 		})
 	}
@@ -683,23 +683,23 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 	if len(severities) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.severity": severities,
+				"complianceResults.severity": severities,
 			},
 		})
 	}
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = types.GetConformanceStatuses()
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = types.GetComplianceStatuses()
 	}
 	nestedFilters = append(nestedFilters, map[string]any{
 		"terms": map[string]any{
-			"findings.conformanceStatus": conformanceStatuses,
+			"complianceResults.complianceStatus": complianceStatuses,
 		},
 	})
 
 	requestQuery := make(map[string]any)
 
 	nestedQuery := map[string]any{
-		"path":  "findings",
+		"path":  "complianceResults",
 		"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 	}
 
@@ -719,27 +719,27 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 	request["size"] = 0
 
 	request["aggs"] = map[string]any{
-		"findings": map[string]any{
+		"complianceResults": map[string]any{
 			"nested": map[string]any{
-				"path": "findings",
+				"path": "complianceResults",
 			},
 			"aggs": map[string]any{
-				"conformanceFilter": map[string]any{
+				"complianceFilter": map[string]any{
 					"filter": map[string]any{
 						"terms": map[string]any{
-							"findings.conformanceStatus": conformanceStatuses,
+							"complianceResults.complianceStatus": complianceStatuses,
 						},
 					},
 					"aggs": map[string]any{
 						"fieldGroup": map[string]any{
 							"terms": map[string]any{
-								"field": fmt.Sprintf("findings.%s", field),
+								"field": fmt.Sprintf("complianceResults.%s", field),
 								"size":  10000,
 							},
 							"aggs": map[string]any{
-								"conformanceGroup": map[string]any{
+								"complianceGroup": map[string]any{
 									"terms": map[string]any{
-										"field": "findings.conformanceStatus",
+										"field": "complianceResults.complianceStatus",
 										"size":  10000,
 									},
 									"aggs": map[string]any{
@@ -758,38 +758,38 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 
 	query, err := json.Marshal(request)
 	if err != nil {
-		logger.Error("GetPerFieldResourceConformanceResult", zap.Error(err), zap.Any("request", request))
+		logger.Error("GetPerFieldResourceComplianceResult", zap.Error(err), zap.Any("request", request))
 		return nil, err
 	}
 
-	logger.Info("GetPerFieldResourceConformanceResult", zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
-	var response GetPerFieldResourceConformanceResultResponse
+	logger.Info("GetPerFieldResourceComplianceResult", zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
+	var response GetPerFieldResourceComplianceResultResponse
 	err = client.Search(ctx, types.ResourceFindingsIndex, string(query), &response)
 	if err != nil {
-		logger.Error("GetPerFieldResourceConformanceResult", zap.Error(err), zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
+		logger.Error("GetPerFieldResourceComplianceResult", zap.Error(err), zap.String("query", string(query)), zap.String("index", types.ResourceFindingsIndex))
 		return nil, err
 	}
 
-	result := make(map[string]types.ConformanceStatusSummaryWithTotal)
-	for _, connectionBucket := range response.Aggregations.Findings.ConformanceFilter.FieldGroup.Buckets {
-		conformanceStatusSummary := types.ConformanceStatusSummaryWithTotal{}
-		for _, conformanceBucket := range connectionBucket.ConformanceGroup.Buckets {
-			conformanceStatusSummary.TotalCount += conformanceBucket.ResourceCount.DocCount
+	result := make(map[string]types.ComplianceStatusSummaryWithTotal)
+	for _, integrationBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
+		complianceStatusSummary := types.ComplianceStatusSummaryWithTotal{}
+		for _, complianceBucket := range integrationBucket.ComplianceGroup.Buckets {
+			complianceStatusSummary.TotalCount += complianceBucket.ResourceCount.DocCount
 
-			switch types.ParseConformanceStatus(strings.ToLower(conformanceBucket.Key)) {
-			case types.ConformanceStatusOK:
-				conformanceStatusSummary.OkCount += conformanceBucket.ResourceCount.DocCount
-			case types.ConformanceStatusALARM:
-				conformanceStatusSummary.AlarmCount += conformanceBucket.ResourceCount.DocCount
-			case types.ConformanceStatusINFO:
-				conformanceStatusSummary.InfoCount += conformanceBucket.ResourceCount.DocCount
-			case types.ConformanceStatusSKIP:
-				conformanceStatusSummary.SkipCount += conformanceBucket.ResourceCount.DocCount
-			case types.ConformanceStatusERROR:
-				conformanceStatusSummary.ErrorCount += conformanceBucket.ResourceCount.DocCount
+			switch types.ParseComplianceStatus(strings.ToLower(complianceBucket.Key)) {
+			case types.ComplianceStatusOK:
+				complianceStatusSummary.OkCount += complianceBucket.ResourceCount.DocCount
+			case types.ComplianceStatusALARM:
+				complianceStatusSummary.AlarmCount += complianceBucket.ResourceCount.DocCount
+			case types.ComplianceStatusINFO:
+				complianceStatusSummary.InfoCount += complianceBucket.ResourceCount.DocCount
+			case types.ComplianceStatusSKIP:
+				complianceStatusSummary.SkipCount += complianceBucket.ResourceCount.DocCount
+			case types.ComplianceStatusERROR:
+				complianceStatusSummary.ErrorCount += complianceBucket.ResourceCount.DocCount
 			}
 		}
-		result[connectionBucket.Key] = conformanceStatusSummary
+		result[integrationBucket.Key] = complianceStatusSummary
 	}
 
 	return result, nil
@@ -797,31 +797,31 @@ func GetPerFieldResourceConformanceResult(ctx context.Context, logger *zap.Logge
 
 func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	field string,
-	connectionIDs []string, notConnectionIDs []string,
+	integrationIDs []string, notIntegrationIDs []string,
 	resourceCollections []string,
 	controlIDs []string, benchmarkIDs []string,
-	severities []types.FindingSeverity, topCount int) (map[string]types.ConformanceStatusSummaryWithTotal, error) {
-	if field != "connectionID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "conformanceStatus" &&
+	severities []types.ComplianceResultSeverity, topCount int) (map[string]types.ComplianceStatusSummaryWithTotal, error) {
+	if field != "integrationID" && field != "benchmarkID" && field != "controlID" && field != "severity" && field != "complianceStatus" &&
 		field != "resourceType" && field != "resourceID" {
 		return nil, fmt.Errorf("field %s is not supported", field)
 	}
 	request := make(map[string]any)
 	filters := make([]map[string]any, 0)
 	nestedFilters := make([]map[string]any, 0)
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.connectionID": connectionIDs,
+				"complianceResults.integrationID": integrationIDs,
 			},
 		})
 	}
-	if len(notConnectionIDs) > 0 {
+	if len(notIntegrationIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"bool": map[string]any{
 				"must_not": []map[string]any{
 					{
 						"terms": map[string][]string{
-							"findings.connectionID": notConnectionIDs,
+							"complianceResults.integrationID": notIntegrationIDs,
 						},
 					},
 				},
@@ -831,14 +831,14 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 	if len(controlIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.controlID": controlIDs,
+				"complianceResults.controlID": controlIDs,
 			},
 		})
 	}
 	if len(benchmarkIDs) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string][]string{
-				"findings.benchmarkID": benchmarkIDs,
+				"complianceResults.benchmarkID": benchmarkIDs,
 			},
 		})
 	}
@@ -852,22 +852,22 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 	if len(severities) > 0 {
 		nestedFilters = append(nestedFilters, map[string]any{
 			"terms": map[string]any{
-				"findings.severity": severities,
+				"complianceResults.severity": severities,
 			},
 		})
 	}
-	conformanceStatuses := []types.ConformanceStatus{types.ConformanceStatusALARM}
+	complianceStatuses := []types.ComplianceStatus{types.ComplianceStatusALARM}
 
 	nestedFilters = append(nestedFilters, map[string]any{
 		"terms": map[string]any{
-			"findings.conformanceStatus": conformanceStatuses,
+			"complianceResults.complianceStatus": complianceStatuses,
 		},
 	})
 
 	requestQuery := make(map[string]any, 0)
 	if len(nestedFilters) > 0 {
 		requestQuery["nested"] = map[string]any{
-			"path":  "findings",
+			"path":  "complianceResults",
 			"query": map[string]any{"bool": map[string]any{"filter": nestedFilters}},
 		}
 	}
@@ -882,31 +882,31 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 	request["size"] = 0
 
 	request["aggs"] = map[string]any{
-		"findings": map[string]any{
+		"complianceResults": map[string]any{
 			"nested": map[string]any{
-				"path": "findings",
+				"path": "complianceResults",
 			},
 			"aggs": map[string]any{
-				"conformanceFilter": map[string]any{
+				"complianceFilter": map[string]any{
 					"filter": map[string]any{
 						"terms": map[string]any{
-							"findings.conformanceStatus": conformanceStatuses,
+							"complianceResults.complianceStatus": complianceStatuses,
 						},
 					},
 					"aggs": map[string]any{
 						"fieldGroup": map[string]any{
 							"terms": map[string]any{
-								"field": fmt.Sprintf("findings.%s", field),
+								"field": fmt.Sprintf("complianceResults.%s", field),
 								"size":  topCount,
 								"order": map[string]any{
-									"conformanceGroup>resourceCount.doc_count": "desc",
+									"complianceGroup>resourceCount.doc_count": "desc",
 								},
 							},
 							"aggs": map[string]any{
-								"conformanceGroup": map[string]any{
+								"complianceGroup": map[string]any{
 									"filter": map[string]any{
 										"terms": map[string]any{
-											"findings.conformanceStatus": conformanceStatuses,
+											"complianceResults.complianceStatus": complianceStatuses,
 										},
 									},
 									"aggs": map[string]any{
@@ -937,16 +937,16 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 		return nil, err
 	}
 
-	result := make(map[string]types.ConformanceStatusSummaryWithTotal)
-	for _, connectionBucket := range response.Aggregations.Findings.ConformanceFilter.FieldGroup.Buckets {
-		conformanceStatusSummary := types.ConformanceStatusSummaryWithTotal{
-			TotalCount: connectionBucket.ConformanceGroup.ResourceCount.DocCount,
-			ConformanceStatusSummary: types.ConformanceStatusSummary{
-				AlarmCount: connectionBucket.ConformanceGroup.ResourceCount.DocCount,
+	result := make(map[string]types.ComplianceStatusSummaryWithTotal)
+	for _, integrationBucket := range response.Aggregations.ComplianceResults.ComplianceFilter.FieldGroup.Buckets {
+		complianceStatusSummary := types.ComplianceStatusSummaryWithTotal{
+			TotalCount: integrationBucket.ComplianceGroup.ResourceCount.DocCount,
+			ComplianceStatusSummary: types.ComplianceStatusSummary{
+				AlarmCount: integrationBucket.ComplianceGroup.ResourceCount.DocCount,
 			},
 		}
 
-		result[connectionBucket.Key] = conformanceStatusSummary
+		result[integrationBucket.Key] = complianceStatusSummary
 	}
 
 	return result, nil
@@ -954,19 +954,19 @@ func GetPerFieldTopWithIssues(ctx context.Context, logger *zap.Logger, client op
 
 type GetPerFieldTopWithIssuesResponse struct {
 	Aggregations struct {
-		Findings struct {
-			ConformanceFilter struct {
+		ComplianceResults struct {
+			ComplianceFilter struct {
 				FieldGroup struct {
 					Buckets []struct {
-						Key              string `json:"key"`
-						ConformanceGroup struct {
+						Key             string `json:"key"`
+						ComplianceGroup struct {
 							ResourceCount struct {
 								DocCount int `json:"doc_count"`
 							} `json:"resourceCount"`
-						} `json:"conformanceGroup"`
+						} `json:"complianceGroup"`
 					} `json:"buckets"`
 				} `json:"fieldGroup"`
-			} `json:"conformanceFilter"`
-		} `json:"findings"`
+			} `json:"complianceFilter"`
+		} `json:"complianceResults"`
 	} `json:"aggregations"`
 }

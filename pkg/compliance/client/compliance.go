@@ -20,12 +20,12 @@ type ComplianceServiceClient interface {
 	GetBenchmarkControls(ctx *httpclient.Context, benchmarkID string, connectionId []string, timeAt *time.Time) (*compliance.BenchmarkControlSummary, error)
 	GetControl(ctx *httpclient.Context, controlID string) (*compliance.Control, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
-	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
+	GetComplianceResults(ctx *httpclient.Context, req compliance.GetComplianceResultsRequest) (compliance.GetComplianceResultsResponse, error)
 	ListBenchmarks(ctx *httpclient.Context, tags map[string][]string) ([]compliance.Benchmark, error)
 	ListAllBenchmarks(ctx *httpclient.Context, isBare bool) ([]compliance.Benchmark, error)
-	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
+	GetAccountsComplianceResultsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsComplianceResultsSummaryResponse, error)
 	CreateBenchmarkAssignment(ctx *httpclient.Context, benchmarkID, connectionId string) ([]compliance.BenchmarkAssignment, error)
-	CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error)
+	CountComplianceResults(ctx *httpclient.Context, complianceStatuses []compliance.ComplianceStatus) (*compliance.CountComplianceResultsResponse, error)
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
 	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
 	GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error)
@@ -304,44 +304,44 @@ func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*c
 	return &response, nil
 }
 
-func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/findings", s.baseURL)
+func (s *complianceClient) GetComplianceResults(ctx *httpclient.Context, req compliance.GetComplianceResultsRequest) (compliance.GetComplianceResultsResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/compliance_result", s.baseURL)
 
 	payload, err := json.Marshal(req)
 	if err != nil {
-		return compliance.GetFindingsResponse{}, err
+		return compliance.GetComplianceResultsResponse{}, err
 	}
 
-	var response compliance.GetFindingsResponse
+	var response compliance.GetComplianceResultsResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return compliance.GetFindingsResponse{}, echo.NewHTTPError(statusCode, err.Error())
+			return compliance.GetComplianceResultsResponse{}, echo.NewHTTPError(statusCode, err.Error())
 		}
-		return compliance.GetFindingsResponse{}, err
+		return compliance.GetComplianceResultsResponse{}, err
 	}
 
 	return response, nil
 }
 
-func (s *complianceClient) CountFindings(ctx *httpclient.Context, conformanceStatuses []compliance.ConformanceStatus) (*compliance.CountFindingsResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/findings/count", s.baseURL)
+func (s *complianceClient) CountComplianceResults(ctx *httpclient.Context, complianceStatuses []compliance.ComplianceStatus) (*compliance.CountComplianceResultsResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/compliance_result/count", s.baseURL)
 
-	if len(conformanceStatuses) == 0 {
-		conformanceStatuses = compliance.ListConformanceStatuses()
+	if len(complianceStatuses) == 0 {
+		complianceStatuses = compliance.ListComplianceStatuses()
 	}
 
 	isFirstParamAttached := false
-	for _, conformanceStatus := range conformanceStatuses {
+	for _, complianceStatus := range complianceStatuses {
 		if !isFirstParamAttached {
 			url += "?"
 			isFirstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("conformanceStatus=%s", conformanceStatus)
+		url += fmt.Sprintf("complianceStatus=%s", complianceStatus)
 	}
 
-	var response compliance.CountFindingsResponse
+	var response compliance.CountComplianceResultsResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
@@ -411,8 +411,8 @@ func (s *complianceClient) ListAllBenchmarks(ctx *httpclient.Context, isBare boo
 	return benchmarks, nil
 }
 
-func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionIds []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/findings/%s/accounts", s.baseURL, benchmarkId)
+func (s *complianceClient) GetAccountsComplianceResultsSummary(ctx *httpclient.Context, benchmarkId string, connectionIds []string, connector []source.Type) (compliance.GetAccountsComplianceResultsSummaryResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/compliance_result/%s/accounts", s.baseURL, benchmarkId)
 
 	var firstParamAttached bool
 	firstParamAttached = false
@@ -439,12 +439,12 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 		url += fmt.Sprintf("connector=%v", &connector)
 	}
 
-	var res compliance.GetAccountsFindingsSummaryResponse
+	var res compliance.GetAccountsComplianceResultsSummaryResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
-			return compliance.GetAccountsFindingsSummaryResponse{}, echo.NewHTTPError(statusCode, err.Error())
+			return compliance.GetAccountsComplianceResultsSummaryResponse{}, echo.NewHTTPError(statusCode, err.Error())
 		}
-		return compliance.GetAccountsFindingsSummaryResponse{}, err
+		return compliance.GetAccountsComplianceResultsSummaryResponse{}, err
 	}
 	return res, nil
 }

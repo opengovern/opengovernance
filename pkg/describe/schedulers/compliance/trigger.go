@@ -3,8 +3,9 @@ package compliance
 import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"time"
 
 	"github.com/opengovern/opengovernance/pkg/compliance/runner"
@@ -15,7 +16,7 @@ import (
 func (s *JobScheduler) buildRunners(
 	parentJobID uint,
 	connectionID *string,
-	connector *source.Type,
+	connector *integration.Type,
 	resourceCollectionID *string,
 	rootBenchmarkID string,
 	parentBenchmarkIDs []string,
@@ -65,9 +66,9 @@ func (s *JobScheduler) buildRunners(
 		if control.Query == nil {
 			continue
 		}
-		if connector != nil && len(control.Query.Connector) > 0 && !control.Query.Global {
+		if connector != nil && len(control.Query.IntegrationType) > 0 && !control.Query.Global {
 			supportsConnector := false
-			for _, c := range control.Query.Connector {
+			for _, c := range control.Query.IntegrationType {
 				if *connector == c {
 					supportsConnector = true
 					break
@@ -89,7 +90,7 @@ func (s *JobScheduler) buildRunners(
 			runnerJob := model.ComplianceRunner{
 				BenchmarkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
-				ConnectionID:         nil,
+				IntegrationID:        nil,
 				ResourceCollectionID: resourceCollectionID,
 				ParentJobID:          parentJobID,
 				StartedAt:            time.Time{},
@@ -107,7 +108,7 @@ func (s *JobScheduler) buildRunners(
 			runnerJob := model.ComplianceRunner{
 				BenchmarkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
-				ConnectionID:         connectionID,
+				IntegrationID:        connectionID,
 				ResourceCollectionID: resourceCollectionID,
 				ParentJobID:          parentJobID,
 				StartedAt:            time.Time{},
@@ -220,7 +221,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 		BenchmarkID:         benchmarkID,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
-		ConnectionID:        connectionID,
+		IntegrationID:       connectionID,
 		TriggerType:         triggerType,
 		CreatedBy:           createdBy,
 	}
@@ -246,31 +247,33 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		s.logger.Info("processing job with unqueued runners", zap.Uint("jobID", job.ID))
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
-		connections, err := s.onboardClient.GetSources(&httpclient.Context{UserRole: api.AdminRole}, []string{job.ConnectionID})
+		integrations, err := s.integrationClient.ListIntegrationsByFilters(&httpclient.Context{UserRole: api.AdminRole}, integrationapi.ListIntegrationsRequest{
+			IntegrationID: []string{job.IntegrationID},
+		})
 		if err != nil {
-			s.logger.Error("error while getting sources", zap.Error(err))
+			s.logger.Error("error while getting integrations", zap.Error(err))
 			continue
 		}
 		assignments = &complianceApi.BenchmarkAssignedEntities{}
-		for _, connection := range connections {
-			assignment := complianceApi.BenchmarkAssignedConnection{
-				ConnectionID:           connection.ID.String(),
-				ProviderConnectionID:   connection.ConnectionID,
-				ProviderConnectionName: connection.ConnectionName,
-				Connector:              connection.Connector,
-				Status:                 true,
+		for _, integration := range integrations.Integrations {
+			assignment := complianceApi.BenchmarkAssignedIntegration{
+				IntegrationID:   integration.IntegrationID,
+				ProviderID:      integration.ProviderID,
+				IntegrationName: integration.Name,
+				IntegrationType: integration.IntegrationType,
+				Status:          true,
 			}
-			assignments.Connections = append(assignments.Connections, assignment)
+			assignments.Integrations = append(assignments.Integrations, assignment)
 		}
 
 		var globalRunners []*model.ComplianceRunner
 		var runners []*model.ComplianceRunner
-		for _, it := range assignments.Connections {
+		for _, it := range assignments.Integrations {
 			if !it.Status {
 				continue
 			}
 			connection := it
-			runners, globalRunners, err = s.buildRunners(job.ID, &connection.ConnectionID, &connection.Connector, nil, job.BenchmarkID, nil, job.BenchmarkID, nil, job.TriggerType)
+			runners, globalRunners, err = s.buildRunners(job.ID, &connection.IntegrationID, &connection.IntegrationType, nil, job.BenchmarkID, nil, job.BenchmarkID, nil, job.TriggerType)
 			if err != nil {
 				s.logger.Error("error while building runners", zap.Error(err))
 				return err

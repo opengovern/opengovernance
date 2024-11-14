@@ -1,1 +1,0 @@
-package entra_id_directory

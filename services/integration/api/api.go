@@ -2,28 +2,18 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
-	describe "github.com/opengovern/opengovernance/pkg/describe/client"
-	inventory "github.com/opengovern/opengovernance/pkg/inventory/client"
-	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/services/integration/api/connection"
-	"github.com/opengovern/opengovernance/services/integration/api/connector"
-	"github.com/opengovern/opengovernance/services/integration/api/credential"
-	"github.com/opengovern/opengovernance/services/integration/api/healthz"
+	"github.com/opengovern/opengovernance/services/integration/api/credentials"
+	"github.com/opengovern/opengovernance/services/integration/api/integrations"
 	"github.com/opengovern/opengovernance/services/integration/db"
-	"github.com/opengovern/opengovernance/services/integration/meta"
-	"github.com/opengovern/opengovernance/services/integration/repository"
-	"github.com/opengovern/opengovernance/services/integration/service"
 	"go.uber.org/zap"
 )
 
 type API struct {
 	logger          *zap.Logger
-	describe        describe.SchedulerServiceClient
-	inventory       inventory.InventoryServiceClient
-	metadata        metadata.MetadataServiceClient
-	meta            *meta.Meta
 	database        db.Database
+	steampipeConn   *steampipe.Database
 	vault           vault.VaultSourceConfig
 	vaultKeyId      string
 	masterAccessKey string
@@ -32,82 +22,22 @@ type API struct {
 
 func New(
 	logger *zap.Logger,
-	d describe.SchedulerServiceClient,
-	i inventory.InventoryServiceClient,
-	mClient metadata.MetadataServiceClient,
-	m *meta.Meta,
 	db db.Database,
 	vault vault.VaultSourceConfig,
-	vaultKeyId string,
-	masterAccessKey string,
-	masterSecretKey string,
+	steampipeConn *steampipe.Database,
 ) *API {
 	return &API{
-		logger:          logger.Named("api"),
-		describe:        d,
-		inventory:       i,
-		metadata:        mClient,
-		meta:            m,
-		database:        db,
-		vault:           vault,
-		vaultKeyId:      vaultKeyId,
-		masterAccessKey: masterAccessKey,
-		masterSecretKey: masterSecretKey,
+		logger:        logger.Named("api"),
+		database:      db,
+		vault:         vault,
+		steampipeConn: steampipeConn,
 	}
 }
 
 func (api *API) Register(e *echo.Echo) {
-	var healthz healthz.Healthz
+	integrationsApi := integrations.New(api.vault, api.database, api.logger, api.steampipeConn)
+	cred := credentials.New(api.vault, api.database, api.logger)
 
-	repo := repository.NewCredConnSQL(api.database)
-
-	connSvc := service.NewConnection(
-		repository.NewConnectionSQL(api.database),
-		repo,
-		api.vault,
-		api.vaultKeyId,
-		api.describe,
-		api.inventory,
-		api.meta,
-		api.masterAccessKey,
-		api.masterSecretKey,
-		api.logger,
-	)
-
-	credSvc := service.NewCredential(
-		repository.NewCredentialSQL(api.database),
-		repo,
-		api.vault,
-		api.vaultKeyId,
-		api.describe,
-		api.inventory,
-		api.meta,
-		connSvc,
-		api.masterAccessKey,
-		api.masterSecretKey,
-		api.logger,
-	)
-
-	connection := connection.New(
-		connSvc,
-		credSvc,
-		api.logger,
-	)
-
-	credential := credential.New(
-		credSvc,
-		connSvc,
-		api.logger,
-	)
-
-	connector := connector.New(
-		connSvc,
-		service.NewConnector(repository.NewConnectorSQL(api.database), api.logger),
-		api.logger,
-	)
-
-	healthz.Register(e.Group("/api/v1/healthz"))
-	connection.Register(e.Group("/api/v1/connections"))
-	credential.Register(e.Group("/api/v1/credentials"))
-	connector.Register(e.Group("/api/v1/connectors"))
+	integrationsApi.Register(e.Group("/api/v1/integrations"))
+	cred.Register(e.Group("/api/v1/credentials"))
 }

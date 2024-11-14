@@ -9,6 +9,7 @@ import (
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
+	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/utils/dag"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	"go.uber.org/zap"
 	"os"
@@ -142,11 +143,34 @@ func (v *ViewSync) updateViewsInDatabase(ctx context.Context, selfClient *steamp
 		return
 	}
 
+	qvMap := make(map[string]models.QueryView)
+	qvDag := dag.NewDirectedAcyclicGraph()
+	for _, qv := range queryViews {
+		qvMap[qv.ID] = qv
+		qvDag.AddNodeIdempotent(qv.ID)
+		for _, dep := range qv.Dependencies {
+			qvDag.AddEdge(qv.ID, dep)
+		}
+	}
+
+	sortedViewIds, err := qvDag.TopologicalSort()
+	if err != nil {
+		v.logger.Error("Error sorting views topologically", zap.Error(err))
+		v.logger.Sync()
+		return
+	}
+
 initLoop:
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
 
-		for _, view := range queryViews {
+		for _, viewId := range sortedViewIds {
+			view, ok := qvMap[viewId]
+			if !ok {
+				v.logger.Error("Error fetching view from map", zap.String("view", viewId))
+				v.logger.Sync()
+				continue
+			}
 			dropQuery := "DROP MATERIALIZED VIEW IF EXISTS " + view.ID + " CASCADE"
 			_, err := selfClient.GetConnection().Exec(ctx, dropQuery)
 			if err != nil {

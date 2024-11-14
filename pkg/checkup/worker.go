@@ -7,17 +7,17 @@ import (
 	"github.com/opengovern/og-util/pkg/jq"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/opengovern/opengovernance/pkg/onboard/client"
+	"github.com/opengovern/opengovernance/services/integration/client"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
 
 type Worker struct {
-	id            string
-	jq            *jq.JobQueue
-	logger        *zap.Logger
-	pusher        *push.Pusher
-	onboardClient client.OnboardServiceClient
+	id                string
+	jq                *jq.JobQueue
+	logger            *zap.Logger
+	pusher            *push.Pusher
+	integrationClient client.IntegrationServiceClient
 }
 
 func NewWorker(
@@ -56,7 +56,7 @@ func NewWorker(
 	w.pusher.Collector(DoCheckupJobsCount).
 		Collector(DoCheckupJobsDuration)
 
-	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL)
+	w.integrationClient = client.NewIntegrationServiceClient(onboardBaseURL)
 	return w, nil
 }
 
@@ -83,7 +83,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 			w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
 
-			result := job.Do(w.onboardClient, w.logger)
+			result := job.Do(w.integrationClient, w.logger)
 
 			bytes, err := json.Marshal(result)
 			if err != nil {

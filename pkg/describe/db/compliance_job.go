@@ -162,7 +162,7 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 			compliance_jobs.updated_at, 
 			compliance_jobs.benchmark_id, 
 			compliance_jobs.status, 
-			compliance_jobs.connection_id, 
+			compliance_jobs.integration_id, 
 			compliance_jobs.trigger_type, 
 			compliance_jobs.created_by,
 			COALESCE(array_agg(COALESCE(compliance_summarizers.id::text, '')), '{}') as summarizer_jobs
@@ -195,9 +195,9 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 	return result, nil
 }
 
-func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByIntegrationID(integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("connection_id IN ?", connectionIds).Find(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("integration_id IN ?", integrationIds).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -207,10 +207,10 @@ func (db Database) ListComplianceJobsByConnectionID(connectionIds []string) ([]m
 	return job, nil
 }
 
-func (db Database) ListPendingComplianceJobsByConnectionID(connectionIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListPendingComplianceJobsByIntegrationID(integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).
-		Where("connection_id IN ?", connectionIds).
+		Where("integration_id IN ?", integrationIds).
 		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress}).
 		Find(&job)
 	if tx.Error != nil {
@@ -359,13 +359,13 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkId []string, status []string,
+func (db Database) ListComplianceJobsByFilters(integrationId []string, benchmarkId []string, status []string,
 	startTime, endTime *time.Time) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{})
 
-	if len(connectionId) > 0 {
-		tx = tx.Where("connection_id IN ?", connectionId)
+	if len(integrationId) > 0 {
+		tx = tx.Where("integration_id IN ?", integrationId)
 	}
 
 	if len(benchmarkId) > 0 {
@@ -390,11 +390,11 @@ func (db Database) ListComplianceJobsByFilters(connectionId []string, benchmarkI
 }
 
 func (db Database) GetComplianceJobsIntegrations() ([]string, error) {
-	var uniqueConnectionIDs []string
-	if err := db.ORM.Model(&model.ComplianceJob{}).Distinct("connection_id").Pluck("connection_id", &uniqueConnectionIDs).Error; err != nil {
+	var uniqueIntegrationIDs []string
+	if err := db.ORM.Model(&model.ComplianceJob{}).Distinct("integration_id").Pluck("integration_id", &uniqueIntegrationIDs).Error; err != nil {
 		return nil, err
 	}
-	return uniqueConnectionIDs, nil
+	return uniqueIntegrationIDs, nil
 }
 
 func (db Database) CleanupAllComplianceJobs() error {

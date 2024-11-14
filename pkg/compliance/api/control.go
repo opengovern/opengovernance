@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/opengovern/og-util/pkg/source"
+	"github.com/opengovern/og-util/pkg/integration"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"time"
@@ -22,15 +22,15 @@ type Control struct {
 	GuardrailRemediation    string `json:"guardrailRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 	ProgrammaticRemediation string `json:"programmaticRemediation" example:"To enable multi-factor authentication for a user, run the following command..."`
 
-	Connector          []source.Type         `json:"connector" example:"Azure"`
-	Enabled            bool                  `json:"enabled" example:"true"`
-	DocumentURI        string                `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
-	Query              *Query                `json:"query"`
-	Severity           types.FindingSeverity `json:"severity" example:"low"`
-	ManualVerification bool                  `json:"manualVerification" example:"true"`
-	Managed            bool                  `json:"managed" example:"true"`
-	CreatedAt          time.Time             `json:"createdAt" example:"2020-01-01T00:00:00Z"`
-	UpdatedAt          time.Time             `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
+	IntegrationType    []string                       `json:"integration_type" example:"Azure"`
+	Enabled            bool                           `json:"enabled" example:"true"`
+	DocumentURI        string                         `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
+	Query              *Query                         `json:"query"`
+	Severity           types.ComplianceResultSeverity `json:"severity" example:"low"`
+	ManualVerification bool                           `json:"manualVerification" example:"true"`
+	Managed            bool                           `json:"managed" example:"true"`
+	CreatedAt          time.Time                      `json:"createdAt" example:"2020-01-01T00:00:00Z"`
+	UpdatedAt          time.Time                      `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
 }
 
 type ControlSummary struct {
@@ -39,52 +39,52 @@ type ControlSummary struct {
 
 	Benchmarks []Benchmark `json:"benchmarks"`
 
-	Passed                bool      `json:"passed"`
-	FailedResourcesCount  int       `json:"failedResourcesCount"`
-	TotalResourcesCount   int       `json:"totalResourcesCount"`
-	FailedConnectionCount int       `json:"failedConnectionCount"`
-	TotalConnectionCount  int       `json:"totalConnectionCount"`
-	CostOptimization      *float64  `json:"costOptimization"`
-	EvaluatedAt           time.Time `json:"evaluatedAt"`
+	Passed                 bool      `json:"passed"`
+	FailedResourcesCount   int       `json:"failedResourcesCount"`
+	TotalResourcesCount    int       `json:"totalResourcesCount"`
+	FailedIntegrationCount int       `json:"failedIntegrationCount"`
+	TotalIntegrationCount  int       `json:"totalIntegrationCount"`
+	CostImpact             *float64  `json:"costImpact"`
+	EvaluatedAt            time.Time `json:"evaluatedAt"`
 }
 
 type ControlTrendDatapoint struct {
-	Timestamp             int `json:"timestamp" example:"1686346668"` // Time
-	FailedResourcesCount  int `json:"failedResourcesCount"`
-	TotalResourcesCount   int `json:"totalResourcesCount"`
-	FailedConnectionCount int `json:"failedConnectionCount"`
-	TotalConnectionCount  int `json:"totalConnectionCount"`
+	Timestamp              int `json:"timestamp" example:"1686346668"` // Time
+	FailedResourcesCount   int `json:"failedResourcesCount"`
+	TotalResourcesCount    int `json:"totalResourcesCount"`
+	FailedIntegrationCount int `json:"failedIntegrationCount"`
+	TotalIntegrationCount  int `json:"totalIntegrationCount"`
 }
 
 type ControlsFilterSummaryRequest struct {
-	Connector       []string            `json:"connector"`
-	Severity        []string            `json:"severity"`
-	RootBenchmark   []string            `json:"root_benchmark"`
-	ParentBenchmark []string            `json:"parent_benchmark"`
-	HasParameters   *bool               `json:"has_parameters"`
-	PrimaryTable    []string            `json:"primary_table"`
-	ListOfTables    []string            `json:"list_of_tables"`
-	Tags            map[string][]string `json:"tags"`
-	TagsRegex       *string             `json:"tags_regex"`
-	FindingFilters  *FindingFilters     `json:"finding_filters"`
+	IntegrationTypes        []string                 `json:"integration_types"`
+	Severity                []string                 `json:"severity"`
+	RootBenchmark           []string                 `json:"root_benchmark"`
+	ParentBenchmark         []string                 `json:"parent_benchmark"`
+	HasParameters           *bool                    `json:"has_parameters"`
+	PrimaryTable            []string                 `json:"primary_table"`
+	ListOfTables            []string                 `json:"list_of_tables"`
+	Tags                    map[string][]string      `json:"tags"`
+	TagsRegex               *string                  `json:"tags_regex"`
+	ComplianceResultFilters *ComplianceResultFilters `json:"compliance_result_filters"`
 }
 
 type ListControlsFilterRequest struct {
-	Connector       []string            `json:"connector"`
-	Severity        []string            `json:"severity"`
-	RootBenchmark   []string            `json:"root_benchmark"`
-	ParentBenchmark []string            `json:"parent_benchmark"`
-	HasParameters   *bool               `json:"has_parameters"`
-	PrimaryTable    []string            `json:"primary_table"`
-	ListOfTables    []string            `json:"list_of_tables"`
-	Tags            map[string][]string `json:"tags"`
-	TagsRegex       *string             `json:"tags_regex"`
-	FindingFilters  *FindingFilters     `json:"finding_filters"`
-	FindingSummary  bool                `json:"finding_summary"`
-	SortBy          string              `json:"sort_by"`
-	SortOrder       string              `json:"sort_order"`
-	Cursor          *int64              `json:"cursor"`
-	PerPage         *int64              `json:"per_page"`
+	IntegrationTypes        []string                 `json:"integration_types"`
+	Severity                []string                 `json:"severity"`
+	RootBenchmark           []string                 `json:"root_benchmark"`
+	ParentBenchmark         []string                 `json:"parent_benchmark"`
+	HasParameters           *bool                    `json:"has_parameters"`
+	PrimaryTable            []string                 `json:"primary_table"`
+	ListOfTables            []string                 `json:"list_of_tables"`
+	Tags                    map[string][]string      `json:"tags"`
+	TagsRegex               *string                  `json:"tags_regex"`
+	ComplianceResultFilters *ComplianceResultFilters `json:"compliance_result_filters"`
+	ComplianceResultSummary bool                     `json:"compliance_result_summary"`
+	SortBy                  string                   `json:"sort_by"`
+	SortOrder               string                   `json:"sort_order"`
+	Cursor                  *int64                   `json:"cursor"`
+	PerPage                 *int64                   `json:"per_page"`
 }
 
 type ListControlsFilterResponse struct {
@@ -93,45 +93,34 @@ type ListControlsFilterResponse struct {
 }
 
 type ListControlsFilterResultControl struct {
-	ID          string                `json:"id"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	Connector   []source.Type         `json:"connector"`
-	Severity    types.FindingSeverity `json:"severity"`
-	Tags        map[string][]string   `json:"tags"`
-	Query       struct {
+	ID              string                         `json:"id"`
+	Title           string                         `json:"title"`
+	Description     string                         `json:"description"`
+	IntegrationType []integration.Type             `json:"integration_type"`
+	Severity        types.ComplianceResultSeverity `json:"severity"`
+	Tags            map[string][]string            `json:"tags"`
+	Query           struct {
 		PrimaryTable *string          `json:"primary_table"`
 		ListOfTables []string         `json:"list_of_tables"`
 		Parameters   []QueryParameter `json:"parameters"`
 	} `json:"query"`
-	FindingsSummary struct {
+	ComplianceResultsSummary struct {
 		IncidentCount         int64    `json:"incident_count"`
 		NonIncidentCount      int64    `json:"non_incident_count"`
 		NonCompliantResources int      `json:"noncompliant_resources"`
 		CompliantResources    int      `json:"compliant_resources"`
 		ImpactedResources     int      `json:"impacted_resources"`
-		CostOptimization      *float64 `json:"cost_optimization"`
-	} `json:"findings_summary"`
+		CostImpact            *float64 `json:"cost_impact"`
+	} `json:"compliance_results_summary"`
 }
 
 type ControlsFilterSummaryResult struct {
-	ControlsCount int64               `json:"controls_count"`
-	Connector     []string            `json:"connector"`
-	Severity      []string            `json:"severity"`
-	Tags          map[string][]string `json:"tags"`
-	PrimaryTable  []string            `json:"primary_table"`
-	ListOfTables  []string            `json:"list_of_tables"`
-}
-
-type ListControlsFilterResult struct {
-	Controls []ListControlsFilterResultControl `json:"controls"`
-	Summary  struct {
-		Connector    []string            `json:"connector"`
-		Severity     []string            `json:"severity"`
-		Tags         map[string][]string `json:"tags"`
-		PrimaryTable []string            `json:"primary_table"`
-		ListOfTables []string            `json:"list_of_tables"`
-	} `json:"summary"`
+	ControlsCount    int64               `json:"controls_count"`
+	IntegrationTypes []string            `json:"integration_types"`
+	Severity         []string            `json:"severity"`
+	Tags             map[string][]string `json:"tags"`
+	PrimaryTable     []string            `json:"primary_table"`
+	ListOfTables     []string            `json:"list_of_tables"`
 }
 
 type ControlTagsResult struct {
@@ -145,12 +134,12 @@ type BenchmarkTagsResult struct {
 }
 
 type GetControlDetailsResponse struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Connector   []string `json:"connector"`
-	Severity    string   `json:"severity"`
-	Query       struct {
+	ID              string             `json:"id"`
+	Title           string             `json:"title"`
+	Description     string             `json:"description"`
+	IntegrationType []integration.Type `json:"integrationType"`
+	Severity        string             `json:"severity"`
+	Query           struct {
 		Engine         string           `json:"engine"`
 		QueryToExecute string           `json:"queryToExecute"`
 		PrimaryTable   *string          `json:"primaryTable"`

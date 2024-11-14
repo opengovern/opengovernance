@@ -6,11 +6,11 @@ import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"golang.org/x/net/context"
 
 	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/compliance/runner"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"go.uber.org/zap"
 )
 
@@ -18,15 +18,15 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 	s.logger.Info("runPublisher")
 	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
 	ctx2.Ctx = ctx
-	connectionsMap := make(map[string]*onboardApi.Connection)
-	connections, err := s.onboardClient.ListSources(ctx2, nil)
+	connectionsMap := make(map[string]*integrationapi.Integration)
+	integrations, err := s.integrationClient.ListIntegrations(ctx2, nil)
 	if err != nil {
 		s.logger.Error("failed to get connections", zap.Error(err))
 		return err
 	}
-	for _, connection := range connections {
-		connection := connection
-		connectionsMap[connection.ID.String()] = &connection
+	for _, integration := range integrations.Integrations {
+		integration := integration
+		connectionsMap[integration.IntegrationID] = &integration
 	}
 
 	queries, err := s.complianceClient.ListQueries(ctx2)
@@ -73,10 +73,10 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 				s.logger.Error("failed to get callers", zap.Error(err), zap.Uint("runnerId", it.ID))
 				continue
 			}
-			var providerConnectionID *string
-			if it.ConnectionID != nil && *it.ConnectionID != "" {
-				if _, ok := connectionsMap[*it.ConnectionID]; ok {
-					providerConnectionID = &connectionsMap[*it.ConnectionID].ConnectionID
+			var providerID *string
+			if it.IntegrationID != nil && *it.IntegrationID != "" {
+				if _, ok := connectionsMap[*it.IntegrationID]; ok {
+					providerID = &connectionsMap[*it.IntegrationID].ProviderID
 				} else {
 					_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "connection does not exist")
 				}
@@ -87,10 +87,10 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 				ParentJobID: it.ParentJobID,
 				CreatedAt:   it.CreatedAt,
 				ExecutionPlan: runner.ExecutionPlan{
-					Callers:              callers,
-					Query:                *query,
-					ConnectionID:         it.ConnectionID,
-					ProviderConnectionID: providerConnectionID,
+					Callers:       callers,
+					Query:         *query,
+					IntegrationID: it.IntegrationID,
+					ProviderID:    providerID,
 				},
 			}
 

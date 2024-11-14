@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"strings"
 	"time"
 
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	analyticsDb "github.com/opengovern/opengovernance/pkg/analytics/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -176,7 +176,7 @@ func (db Database) GetQuery(id string) (*NamedQuery, error) {
 	return &s, nil
 }
 
-func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]string, connectors []string,
+func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]string, integrationTypes []string,
 	hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
@@ -186,12 +186,12 @@ func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]
 		m = m.Where("title LIKE ?", "%"+*search+"%")
 	}
 
-	for i, c := range connectors {
-		connectors[i] = strings.ToLower(c)
+	for i, c := range integrationTypes {
+		integrationTypes[i] = strings.ToLower(c)
 	}
 
-	if len(connectors) > 0 {
-		m = m.Where("named_queries.connector::text[] @> ?", pq.Array(connectors))
+	if len(integrationTypes) > 0 {
+		m = m.Where("named_queries.integration_types::text[] @> ?", pq.Array(integrationTypes))
 	}
 
 	if len(tagFilters) > 0 {
@@ -339,14 +339,14 @@ func (db Database) UpdateQueryHistory(query string) error {
 	return nil
 }
 
-func (db Database) ListResourceTypeTagsKeysWithPossibleValues(connectorTypes []source.Type, doSummarize *bool) (map[string][]string, error) {
+func (db Database) ListResourceTypeTagsKeysWithPossibleValues(integrationTypes []integration.Type, doSummarize *bool) (map[string][]string, error) {
 	var tags []ResourceTypeTag
 	tx := db.orm.Model(ResourceTypeTag{}).Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type")
 	if doSummarize != nil {
 		tx = tx.Where("resource_types.do_summarize = ?", true)
 	}
-	if len(connectorTypes) > 0 {
-		tx = tx.Where("resource_types.connector in ?", connectorTypes)
+	if len(integrationTypes) > 0 {
+		tx = tx.Where("resource_types.integration_type in ?", integrationTypes)
 	}
 	tx.Find(&tags)
 	if tx.Error != nil {
@@ -360,7 +360,7 @@ func (db Database) ListResourceTypeTagsKeysWithPossibleValues(connectorTypes []s
 	return result, nil
 }
 
-func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceTypeNames []string, serviceNames []string, connectorTypes []source.Type, doSummarize bool) ([]ResourceType, error) {
+func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceTypeNames []string, serviceNames []string, integrationTypes []integration.Type, doSummarize bool) ([]ResourceType, error) {
 	var resourceTypes []ResourceType
 	query := db.orm.Model(ResourceType{}).Preload(clause.Associations)
 	if doSummarize {
@@ -379,8 +379,8 @@ func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceT
 	if len(serviceNames) != 0 {
 		query = query.Where("service_name IN ?", serviceNames)
 	}
-	if len(connectorTypes) != 0 {
-		query = query.Where("connector IN ?", connectorTypes)
+	if len(integrationTypes) != 0 {
+		query = query.Where("integration_type IN ?", integrationTypes)
 	}
 	if len(resourceTypeNames) != 0 {
 		query = query.Where("resource_types.resource_type IN ?", resourceTypeNames)
@@ -444,31 +444,31 @@ func (db Database) GetResourceCollection(collectionID string) (*ResourceCollecti
 }
 
 func (db Database) ListNamedQueriesUniqueProviders() ([]string, error) {
-	var connectors []string
+	var integrationTypes []string
 
 	tx := db.orm.
 		Model(&NamedQuery{}).
-		Select("DISTINCT UNNEST(connectors)").
-		Scan(&connectors)
+		Select("DISTINCT UNNEST(integration_types)").
+		Scan(&integrationTypes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	return connectors, nil
+	return integrationTypes, nil
 }
 
 func (db Database) ListResourceTypesUniqueCategories() ([]string, error) {
-	var connectors []string
+	var integrationTypes []string
 
 	tx := db.orm.
 		Model(&ResourceTypeV2{}).
 		Select("DISTINCT category").
-		Scan(&connectors)
+		Scan(&integrationTypes)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
-	return connectors, nil
+	return integrationTypes, nil
 }
 
 func (db Database) ListCategoryResourceTypes(category string) ([]ResourceTypeV2, error) {

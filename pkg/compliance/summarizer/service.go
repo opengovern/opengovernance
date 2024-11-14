@@ -15,7 +15,7 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ type Config struct {
 	NATS                  config.NATS
 	PrometheusPushAddress string
 	Inventory             config.OpenGovernanceService
-	Onboard               config.OpenGovernanceService
+	Integration           config.OpenGovernanceService
 	EsSink                config.OpenGovernanceService
 }
 
@@ -34,9 +34,9 @@ type Worker struct {
 	esClient opengovernance.Client
 	jq       *jq.JobQueue
 
-	inventoryClient inventoryClient.InventoryServiceClient
-	onboardClient   onboardClient.OnboardServiceClient
-	esSinkClient    esSinkClient.EsSinkServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	integrationClient integrationClient.IntegrationServiceClient
+	esSinkClient      esSinkClient.EsSinkServiceClient
 }
 
 var (
@@ -77,13 +77,13 @@ func NewWorker(
 	}
 
 	w := &Worker{
-		config:          config,
-		logger:          logger,
-		esClient:        esClient,
-		jq:              jq,
-		inventoryClient: inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
-		onboardClient:   onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL),
-		esSinkClient:    esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
+		config:            config,
+		logger:            logger,
+		esClient:          esClient,
+		jq:                jq,
+		inventoryClient:   inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
+		integrationClient: integrationClient.NewIntegrationServiceClient(config.Integration.BaseURL),
+		esSinkClient:      esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 	}
 
 	return w, nil

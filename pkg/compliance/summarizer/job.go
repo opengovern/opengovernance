@@ -5,16 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
+	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"strings"
-
-	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/opengovernance/pkg/compliance/es"
 	types2 "github.com/opengovern/opengovernance/pkg/compliance/summarizer/types"
 	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
-	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
@@ -25,12 +21,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 	)
 
-	// We have to sort by opengovernanceResourceID to be able to optimize memory usage for resourceFinding generations
+	// We have to sort by platformResourceID to be able to optimize memory usage for resourceFinding generations
 	// this way as soon as paginator switches to next resource we can send the previous resource to the queue and free up memory
-	paginator, err := es.NewFindingPaginator(w.esClient, types.FindingsIndex, []opengovernance.BoolFilter{
+	paginator, err := es.NewComplianceResultPaginator(w.esClient, types.ComplianceResultsIndex, []opengovernance.BoolFilter{
 		opengovernance.NewTermFilter("stateActive", "true"),
 	}, nil, []map[string]any{
-		{"opengovernanceResourceID": "asc"},
+		{"platformResourceID": "asc"},
 		{"resourceType": "asc"},
 	})
 	if err != nil {
@@ -42,53 +38,29 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 	}()
 
-	w.logger.Info("FindingsIndex paginator ready")
+	w.logger.Info("ComplianceResultsIndex paginator ready")
 
 	jd := types2.JobDocs{
 		BenchmarkSummary: types2.BenchmarkSummary{
 			BenchmarkID:      j.BenchmarkID,
 			JobID:            j.ID,
 			EvaluatedAtEpoch: j.CreatedAt.Unix(),
-			Connections: types2.BenchmarkSummaryResult{
+			Integrations: types2.BenchmarkSummaryResult{
 				BenchmarkResult: types2.ResultGroup{
 					Result: types2.Result{
-						QueryResult:    map[types.ConformanceStatus]int{},
-						SeverityResult: map[types.FindingSeverity]int{},
+						QueryResult:    map[types.ComplianceStatus]int{},
+						SeverityResult: map[types.ComplianceResultSeverity]int{},
 						SecurityScore:  0,
 					},
 					ResourceTypes: map[string]types2.Result{},
 					Controls:      map[string]types2.ControlResult{},
 				},
-				Connections: map[string]types2.ResultGroup{},
+				Integrations: map[string]types2.ResultGroup{},
 			},
 			ResourceCollections: map[string]types2.BenchmarkSummaryResult{},
 		},
 		ResourcesFindings:       make(map[string]types.ResourceFinding),
 		ResourcesFindingsIsDone: make(map[string]bool),
-
-		ResourceCollectionCache: map[string]inventoryApi.ResourceCollection{},
-		ConnectionCache:         map[string]onboardApi.Connection{},
-	}
-
-	resourceCollections, err := w.inventoryClient.ListResourceCollections(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole})
-	if err != nil {
-		w.logger.Error("failed to list resource collections", zap.Error(err))
-		return err
-	}
-	for _, rc := range resourceCollections {
-		rc := rc
-		jd.ResourceCollectionCache[rc.ID] = rc
-	}
-
-	connections, err := w.onboardClient.ListSources(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
-	if err != nil {
-		w.logger.Error("failed to list connections", zap.Error(err))
-		return err
-	}
-	for _, c := range connections {
-		c := c
-		// use provider id instead of opengovernance id because we need that to check resource collections
-		jd.ConnectionCache[strings.ToLower(c.ConnectionID)] = c
 	}
 
 	for page := 1; paginator.HasNext(); page++ {
@@ -99,38 +71,39 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			return err
 		}
 
-		resourceIds := make([]string, 0, len(page))
+		platformResourceIDs := make([]string, 0, len(page))
 		for _, f := range page {
-			resourceIds = append(resourceIds, f.OpenGovernanceResourceID)
+			platformResourceIDs = append(platformResourceIDs, f.PlatformResourceID)
 		}
 
-		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, resourceIds)
+		lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, w.esClient, platformResourceIDs)
 		if err != nil {
 			w.logger.Error("failed to fetch lookup resources", zap.Error(err))
 			return err
 		}
 
+		w.logger.Info("resource lookup result", zap.Any("platformResourceIDs", platformResourceIDs),
+			zap.Any("lookupResourcesMap", lookupResourcesMap))
 		w.logger.Info("page size", zap.Int("pageSize", len(page)))
 		for _, f := range page {
 			var resource *es2.LookupResource
-			potentialResources := lookupResourcesMap[f.OpenGovernanceResourceID]
-			for _, r := range potentialResources {
-				r := r
-				if strings.ToLower(r.ResourceType) == strings.ToLower(f.ResourceType) {
-					resource = &r
-					break
-				}
+			potentialResources := lookupResourcesMap[f.PlatformResourceID]
+			if len(potentialResources) > 0 {
+				resource = &potentialResources[0]
 			}
-
-			jd.AddFinding(w.logger, j, f, resource)
+			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
+				zap.Any("resource", resource))
+			jd.AddComplianceResult(w.logger, j, f, resource)
 		}
 
 		var docs []es2.Doc
 		for resourceIdType, isReady := range jd.ResourcesFindingsIsDone {
 			if !isReady {
+				w.logger.Info("resource NOT DONE", zap.String("platform_resource_id", resourceIdType))
 				continue
 			}
-			resourceFinding := jd.SummarizeResourceFinding(w.logger, jd.ResourcesFindings[resourceIdType])
+			w.logger.Info("resource DONE", zap.String("platform_resource_id", resourceIdType))
+			resourceFinding := jd.ResourcesFindings[resourceIdType]
 			keys, idx := resourceFinding.KeysAndIndex()
 			resourceFinding.EsID = es2.HashOf(keys...)
 			resourceFinding.EsIndex = idx
@@ -188,6 +161,24 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		}
 	}
 
+	w.logger.Info("Deleting compliance results and resource findings of removed integrations", zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+
+	currentInregrations, err := w.integrationClient.ListIntegrations(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, nil)
+	if err != nil {
+		w.logger.Error("failed to list integrations", zap.Error(err), zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+		return err
+	}
+	currentIntegrationIds := make([]string, 0, len(currentInregrations.Integrations))
+	for _, i := range currentInregrations.Integrations {
+		currentIntegrationIds = append(currentIntegrationIds, i.IntegrationID)
+	}
+
+	err = w.deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations(ctx, j, currentIntegrationIds)
+	if err != nil {
+		w.logger.Error("failed to delete compliance results and resource findings of removed integrations", zap.Error(err), zap.String("benchmark_id", j.BenchmarkID), zap.Uint("job_id", j.ID))
+		return err
+	}
+
 	w.logger.Info("Finished summarizer",
 		zap.Uint("job_id", j.ID),
 		zap.String("benchmark_id", j.BenchmarkID),
@@ -199,7 +190,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, currentResourceIds []string) error {
 	// Delete old resource findings
 	filters := make([]opengovernance.BoolFilter, 0, 2)
-	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("opengovernanceResourceID", currentResourceIds)))
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("platformResourceID", currentResourceIds)))
 	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
 
 	root := map[string]any{
@@ -217,7 +208,7 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 
 	task := es3.DeleteTask{
 		DiscoveryJobID: j.ID,
-		ConnectionID:   j.BenchmarkID,
+		IntegrationID:  j.BenchmarkID,
 		ResourceType:   "resource-finding",
 		TaskType:       es3.DeleteTaskTypeQuery,
 		Query:          string(rootJson),
@@ -225,6 +216,80 @@ func (w *Worker) deleteOldResourceFindings(ctx context.Context, j types2.Job, cu
 	}
 
 	keys, idx := task.KeysAndIndex()
+	task.EsID = es2.HashOf(keys...)
+	task.EsIndex = idx
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {
+		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (w *Worker) deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations(ctx context.Context, j types2.Job, currentIntegrationIds []string) error {
+	// Delete compliance results
+	filters := make([]opengovernance.BoolFilter, 0, 2)
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", currentIntegrationIds)))
+	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+
+	root := map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+	}
+	rootJson, err := json.Marshal(root)
+	if err != nil {
+		w.logger.Error("failed to marshal root", zap.Error(err))
+		return err
+	}
+
+	task := es3.DeleteTask{
+		DiscoveryJobID: j.ID,
+		IntegrationID:  j.BenchmarkID,
+		ResourceType:   "compliance-result-old-integrations-removal",
+		TaskType:       es3.DeleteTaskTypeQuery,
+		Query:          string(rootJson),
+		QueryIndex:     types.ComplianceResultsIndex,
+	}
+
+	keys, idx := task.KeysAndIndex()
+	task.EsID = es2.HashOf(keys...)
+	task.EsIndex = idx
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {
+		w.logger.Error("failed to send delete message to elastic", zap.Error(err))
+		return err
+	}
+
+	// Delete resource findings
+	filters = make([]opengovernance.BoolFilter, 0, 2)
+	filters = append(filters, opengovernance.NewBoolMustNotFilter(opengovernance.NewTermsFilter("integrationID", currentIntegrationIds)))
+	filters = append(filters, opengovernance.NewRangeFilter("jobId", "", "", fmt.Sprintf("%d", j.ID), ""))
+
+	root = map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+	}
+	rootJson, err = json.Marshal(root)
+	if err != nil {
+		w.logger.Error("failed to marshal root", zap.Error(err))
+		return err
+	}
+
+	task = es3.DeleteTask{
+		DiscoveryJobID: j.ID,
+		IntegrationID:  j.BenchmarkID,
+		ResourceType:   "resource-finding-old-integrations-removal",
+		TaskType:       es3.DeleteTaskTypeQuery,
+		Query:          string(rootJson),
+		QueryIndex:     types.ResourceFindingsIndex,
+	}
+
+	keys, idx = task.KeysAndIndex()
 	task.EsID = es2.HashOf(keys...)
 	task.EsIndex = idx
 	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, []es2.Doc{task}); err != nil {

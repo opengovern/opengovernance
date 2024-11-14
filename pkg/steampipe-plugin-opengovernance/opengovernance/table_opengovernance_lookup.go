@@ -10,7 +10,7 @@ import (
 
 func tablePlatformLookup(_ context.Context) *plugin.Table {
 	return &plugin.Table{
-		Name:        "og_lookup",
+		Name:        "platform_lookup",
 		Description: "OpenGovernance Resource Lookup",
 		Cache: &plugin.TableCacheOptions{
 			Enabled: false,
@@ -19,14 +19,14 @@ func tablePlatformLookup(_ context.Context) *plugin.Table {
 			Hydrate: og_client.ListLookupResources,
 		},
 		Columns: []*plugin.Column{
+			{Name: "platform_resource_id", Transform: transform.FromField("PlatformId"), Type: proto.ColumnType_STRING},
 			{Name: "resource_id", Type: proto.ColumnType_STRING},
 			{Name: "name", Type: proto.ColumnType_STRING},
-			{Name: "connector", Transform: transform.FromField("SourceType"), Type: proto.ColumnType_STRING},
+			{Name: "integration_type", Transform: transform.FromField("IntegrationType"), Type: proto.ColumnType_STRING},
 			{Name: "resource_type", Type: proto.ColumnType_STRING},
-			{Name: "resource_group", Type: proto.ColumnType_STRING},
-			{Name: "region", Transform: transform.FromField("Location"), Type: proto.ColumnType_STRING},
-			{Name: "connection_id", Transform: transform.FromField("SourceID"), Type: proto.ColumnType_STRING},
-			{Name: "created_at", Type: proto.ColumnType_INT},
+			{Name: "integration_id", Transform: transform.FromField("IntegrationID"), Type: proto.ColumnType_STRING},
+			{Name: "described_at", Type: proto.ColumnType_INT},
+			{Name: "described_by", Type: proto.ColumnType_STRING},
 			{Name: "tags", Type: proto.ColumnType_JSON},
 		},
 	}

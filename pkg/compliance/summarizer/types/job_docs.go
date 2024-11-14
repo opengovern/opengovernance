@@ -1,12 +1,8 @@
 package types
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/opengovern/og-util/pkg/es"
-	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
@@ -18,190 +14,92 @@ type JobDocs struct {
 	// these are used to track if the resource finding is done so we can remove it from the map and send it to queue to save memory
 	ResourcesFindingsIsDone map[string]bool `json:"-"`
 	LastResourceIdType      string          `json:"-"`
-	// caches, these are not marshalled and only used
-	ResourceCollectionCache map[string]inventoryApi.ResourceCollection `json:"-"`
-	ConnectionCache         map[string]onboardApi.Connection           `json:"-"`
 }
 
-func (jd *JobDocs) AddFinding(logger *zap.Logger, job Job,
-	finding types.Finding, resource *es.LookupResource,
+func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
+	complianceResult types.ComplianceResult, resource *es.LookupResource,
 ) {
-	if finding.Severity == "" {
-		finding.Severity = types.FindingSeverityNone
+	if complianceResult.Severity == "" {
+		complianceResult.Severity = types.ComplianceResultSeverityNone
 	}
-	if finding.ConformanceStatus == "" {
-		finding.ConformanceStatus = types.ConformanceStatusERROR
+	if complianceResult.ComplianceStatus == "" {
+		complianceResult.ComplianceStatus = types.ComplianceStatusERROR
 	}
-	if finding.ResourceType == "" {
-		finding.ResourceType = "-"
+	if complianceResult.ResourceType == "" {
+		complianceResult.ResourceType = "-"
 	}
 
-	if job.BenchmarkID == finding.BenchmarkID {
-		jd.BenchmarkSummary.Connections.addFinding(finding)
+	if job.BenchmarkID == complianceResult.BenchmarkID {
+		jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
+	}
+
+	var platformResourceID, resourceType, resourceName string
+	var integrationType integration.Type
+	if resource != nil {
+		platformResourceID = resource.PlatformID
+		resourceType = resource.ResourceType
+		integrationType = resource.IntegrationType
+		resourceName = resource.ResourceName
+	} else {
+		platformResourceID = complianceResult.PlatformResourceID
+		resourceType = complianceResult.ResourceType
+		integrationType = complianceResult.IntegrationType
+		resourceName = complianceResult.ResourceName
 	}
 
 	if resource == nil {
-		logger.Warn("no resource found ignoring resource collection population for this finding",
-			zap.String("opengovernanceResourceId", finding.OpenGovernanceResourceID),
-			zap.String("resourceId", finding.ResourceID),
-			zap.String("resourceType", finding.ResourceType),
-			zap.String("connectionId", finding.ConnectionID),
-			zap.String("benchmarkId", finding.BenchmarkID),
-			zap.String("controlId", finding.ControlID),
+		logger.Warn("no resource found ignoring resource collection population for this complianceResult",
+			zap.String("platformResourceID", complianceResult.PlatformResourceID),
+			zap.String("resourceId", complianceResult.ResourceID),
+			zap.String("resourceType", complianceResult.ResourceType),
+			zap.String("integrationID", complianceResult.IntegrationID),
+			zap.String("benchmarkId", complianceResult.BenchmarkID),
+			zap.String("controlId", complianceResult.ControlID),
 		)
-		return
+		//return
 	}
 
 	if jd.LastResourceIdType == "" {
-		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
-	} else if jd.LastResourceIdType != fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID) {
+		jd.LastResourceIdType = platformResourceID
+	} else if jd.LastResourceIdType != platformResourceID {
 		jd.ResourcesFindingsIsDone[jd.LastResourceIdType] = true
-		jd.LastResourceIdType = fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)
+		jd.LastResourceIdType = platformResourceID
 	}
-	resourceFinding, ok := jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)]
+
+	logger.Info("creating the resource finding", zap.String("platform_resource_id", platformResourceID),
+		zap.Any("resource", resource))
+	resourceFinding, ok := jd.ResourcesFindings[platformResourceID]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
-			OpenGovernanceResourceID: resource.ResourceID,
-			ResourceType:             resource.ResourceType,
-			ResourceName:             resource.Name,
-			ResourceLocation:         resource.Location,
-			Connector:                resource.SourceType,
-			Findings:                 nil,
-			ResourceCollection:       nil,
-			ResourceCollectionMap:    make(map[string]bool),
-			JobId:                    job.ID,
-			EvaluatedAt:              job.CreatedAt.UnixMilli(),
+			PlatformResourceID:    platformResourceID,
+			ResourceType:          resourceType,
+			ResourceName:          resourceName,
+			IntegrationType:       integrationType,
+			ComplianceResults:     nil,
+			ResourceCollection:    nil,
+			ResourceCollectionMap: make(map[string]bool),
+			JobId:                 job.ID,
+			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
-		jd.ResourcesFindingsIsDone[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = false
+		jd.ResourcesFindingsIsDone[platformResourceID] = false
 	} else {
 		resourceFinding.JobId = job.ID
 		resourceFinding.EvaluatedAt = job.CreatedAt.UnixMilli()
 	}
 	if resourceFinding.ResourceName == "" {
-		resourceFinding.ResourceName = resource.Name
-	}
-	if resourceFinding.ResourceLocation == "" {
-		resourceFinding.ResourceLocation = resource.Location
+		resourceFinding.ResourceName = resourceName
 	}
 	if resourceFinding.ResourceType == "" {
-		resourceFinding.ResourceType = resource.ResourceType
+		resourceFinding.ResourceType = resourceType
 	}
-	resourceFinding.Findings = append(resourceFinding.Findings, finding)
+	resourceFinding.ComplianceResults = append(resourceFinding.ComplianceResults, complianceResult)
 
-	for rcId, rc := range jd.ResourceCollectionCache {
-		// check if resource is in this resource collection
-		isIn := false
-		for _, filter := range rc.Filters {
-			found := false
-
-			for _, connector := range filter.Connectors {
-				if strings.ToLower(connector) == strings.ToLower(finding.Connector.String()) {
-					found = true
-					break
-				}
-			}
-			if !found && len(filter.Connectors) > 0 {
-				continue
-			}
-
-			found = false
-			for _, resourceType := range filter.ResourceTypes {
-				if strings.ToLower(resourceType) == strings.ToLower(finding.ResourceType) {
-					found = true
-					break
-				}
-			}
-			if !found && len(filter.ResourceTypes) > 0 {
-				continue
-			}
-
-			found = false
-			for _, accountId := range filter.AccountIDs {
-				if conn, ok := jd.ConnectionCache[strings.ToLower(accountId)]; ok {
-					if strings.ToLower(conn.ID.String()) == strings.ToLower(finding.ConnectionID) {
-						found = true
-						break
-					}
-				}
-			}
-			if !found && len(filter.AccountIDs) > 0 {
-				continue
-			}
-
-			found = false
-			for _, region := range filter.Regions {
-				if strings.ToLower(region) == strings.ToLower(resource.Location) {
-					found = true
-					break
-				}
-			}
-			if !found && len(filter.Regions) > 0 {
-				continue
-			}
-
-			found = false
-			for k, v := range filter.Tags {
-				k := strings.ToLower(k)
-				v := strings.ToLower(v)
-
-				isMatch := false
-				for _, resourceTag := range resource.Tags {
-					if strings.ToLower(resourceTag.Key) == k {
-						if strings.ToLower(resourceTag.Value) == v {
-							isMatch = true
-							break
-						}
-					}
-				}
-				if !isMatch {
-					found = false
-					break
-				}
-				found = true
-			}
-
-			if !found && len(filter.Tags) > 0 {
-				continue
-			}
-
-			isIn = true
-			break
-		}
-		if !isIn {
-			continue
-		}
-
-		resourceFinding.ResourceCollectionMap[rcId] = true
-		if job.BenchmarkID == finding.BenchmarkID {
-			benchmarkSummaryRc, ok := jd.BenchmarkSummary.ResourceCollections[rcId]
-			if !ok {
-				benchmarkSummaryRc = BenchmarkSummaryResult{
-					BenchmarkResult: ResultGroup{
-						Result: Result{
-							QueryResult:    map[types.ConformanceStatus]int{},
-							SeverityResult: map[types.FindingSeverity]int{},
-							SecurityScore:  0,
-						},
-						ResourceTypes: map[string]Result{},
-						Controls:      map[string]ControlResult{},
-					},
-					Connections: map[string]ResultGroup{},
-				}
-			}
-			benchmarkSummaryRc.addFinding(finding)
-			jd.BenchmarkSummary.ResourceCollections[rcId] = benchmarkSummaryRc
-		}
+	if _, ok := jd.ResourcesFindingsIsDone[platformResourceID]; !ok {
+		jd.ResourcesFindingsIsDone[platformResourceID] = false
 	}
-
-	jd.ResourcesFindings[fmt.Sprintf("%s-%s", resource.ResourceType, resource.ResourceID)] = resourceFinding
-}
-
-func (jd *JobDocs) SummarizeResourceFinding(logger *zap.Logger, resourceFinding types.ResourceFinding) types.ResourceFinding {
-	resourceFinding.ResourceCollection = nil
-	for rcId := range resourceFinding.ResourceCollectionMap {
-		resourceFinding.ResourceCollection = append(resourceFinding.ResourceCollection, rcId)
-	}
-	return resourceFinding
+	logger.Info("adding the resource finding", zap.String("platform_resource_id", platformResourceID),
+		zap.Any("resource", resource))
+	jd.ResourcesFindings[platformResourceID] = resourceFinding
 }
 
 func (jd *JobDocs) Summarize(logger *zap.Logger) {

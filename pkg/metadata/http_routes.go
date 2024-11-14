@@ -15,9 +15,9 @@ import (
 	client3 "github.com/opengovern/opengovernance/pkg/describe/client"
 	inventoryApi "github.com/opengovern/opengovernance/pkg/inventory/api"
 	client2 "github.com/opengovern/opengovernance/pkg/inventory/client"
-	onboardApi "github.com/opengovern/opengovernance/pkg/onboard/api"
-	"github.com/opengovern/opengovernance/pkg/onboard/client"
 	model2 "github.com/opengovern/opengovernance/services/demo-importer/db/model"
+	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -321,9 +321,6 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := client4.NewComplianceClient(complianceURL)
 
-	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	onboardClient := client.NewOnboardServiceClient(onboardURL)
-
 	err = schedulerClient.PurgeSampleData(ctx)
 	if err != nil {
 		h.logger.Error("failed to purge scheduler data", zap.Error(err))
@@ -333,11 +330,6 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to purge compliance data", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge compliance data")
-	}
-	err = onboardClient.PurgeSampleData(ctx)
-	if err != nil {
-		h.logger.Error("failed to purge onboard data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge onboard data")
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -755,20 +747,20 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}
 
-	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	onboardClient := client.NewOnboardServiceClient(onboardURL)
-	connections, err := onboardClient.ListSources(ctx, nil)
+	integrationURL := strings.ReplaceAll(h.cfg.Integration.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	integrationClient := integrationClient.NewIntegrationServiceClient(integrationURL)
+	integrationsResp, err := integrationClient.ListIntegrations(ctx, nil)
 	if err != nil {
 		h.logger.Error("failed to list integrations", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
 	}
 
-	integrations := make(map[string][]onboardApi.Connection)
-	for _, c := range connections {
-		if _, ok := integrations[c.Connector.String()]; !ok {
-			integrations[c.Connector.String()] = make([]onboardApi.Connection, 0)
+	integrations := make(map[string][]integrationApi.Integration)
+	for _, c := range integrationsResp.Integrations {
+		if _, ok := integrations[c.IntegrationType.String()]; !ok {
+			integrations[c.IntegrationType.String()] = make([]integrationApi.Integration, 0)
 		}
-		integrations[c.Connector.String()] = append(integrations[c.Connector.String()], c)
+		integrations[c.IntegrationType.String()] = append(integrations[c.IntegrationType.String()], c)
 	}
 
 	inventoryURL := strings.ReplaceAll(h.cfg.Inventory.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
@@ -860,22 +852,24 @@ func newDexClient(hostAndPort string) (dexApi.DexClient, error) {
 func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
-	onboardURL := strings.ReplaceAll(h.cfg.Onboard.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	onboardClient := client.NewOnboardServiceClient(onboardURL)
+	integrationURL := strings.ReplaceAll(h.cfg.Integration.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	integrationClient := integrationClient.NewIntegrationServiceClient(integrationURL)
 
-	connections, err := onboardClient.ListSources(ctx, nil)
+	integrations, err := integrationClient.ListIntegrations(ctx, nil)
 	if err != nil {
+		h.logger.Error("failed to list integrations", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
 	}
 
-	connectionChecks := strings.Split(h.cfg.SampledataIntegrationsCheck, ",")
-	connectionsMap := make(map[string]bool)
-	for _, c := range connectionChecks {
-		connectionsMap[c] = true
+	integrationChecks := strings.Split(h.cfg.SampledataIntegrationsCheck, ",")
+	integrationsMap := make(map[string]bool)
+	for _, c := range integrationChecks {
+		integrationsMap[c] = true
 	}
 
-	credentials, err := onboardClient.ListCredentials(ctx, nil, nil, nil, 0, 0)
+	credentials, err := integrationClient.ListCredentials(ctx)
 	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
 		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
 	}
 	credentialsMap := make(map[string]bool)
@@ -883,8 +877,12 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 		credentialsMap[c.ID] = true
 	}
 
-	for _, c := range connections {
-		if _, ok := connectionsMap[c.ID.String()]; !ok {
+	if len(integrations.Integrations) == 0 {
+		return false, nil
+	}
+
+	for _, c := range integrations.Integrations {
+		if _, ok := integrationsMap[c.IntegrationID]; !ok {
 			return false, nil
 		} else {
 			if _, ok2 := credentialsMap[c.CredentialID]; ok2 {
@@ -892,9 +890,7 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 			}
 		}
 	}
-	if len(connections) == 0 {
-		return false, nil
-	}
+
 	return true, nil
 }
 

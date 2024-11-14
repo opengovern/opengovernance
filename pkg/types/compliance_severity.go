@@ -4,48 +4,48 @@ import (
 	"strings"
 )
 
-type FindingSeverity string
+type ComplianceResultSeverity string
 
 const (
-	FindingSeverityNone     FindingSeverity = "none"
-	FindingSeverityLow      FindingSeverity = "low"
-	FindingSeverityMedium   FindingSeverity = "medium"
-	FindingSeverityHigh     FindingSeverity = "high"
-	FindingSeverityCritical FindingSeverity = "critical"
+	ComplianceResultSeverityNone     ComplianceResultSeverity = "none"
+	ComplianceResultSeverityLow      ComplianceResultSeverity = "low"
+	ComplianceResultSeverityMedium   ComplianceResultSeverity = "medium"
+	ComplianceResultSeverityHigh     ComplianceResultSeverity = "high"
+	ComplianceResultSeverityCritical ComplianceResultSeverity = "critical"
 )
 
-func (s FindingSeverity) Level() int {
+func (s ComplianceResultSeverity) Level() int {
 	switch s {
-	case FindingSeverityNone:
+	case ComplianceResultSeverityNone:
 		return 1
-	case FindingSeverityLow:
+	case ComplianceResultSeverityLow:
 		return 2
-	case FindingSeverityMedium:
+	case ComplianceResultSeverityMedium:
 		return 3
-	case FindingSeverityHigh:
+	case ComplianceResultSeverityHigh:
 		return 4
-	case FindingSeverityCritical:
+	case ComplianceResultSeverityCritical:
 		return 5
 	default:
 		return 0
 	}
 }
 
-func (s FindingSeverity) String() string {
+func (s ComplianceResultSeverity) String() string {
 	return string(s)
 }
 
-var findingSeverities = []FindingSeverity{
-	FindingSeverityNone,
-	FindingSeverityLow,
-	FindingSeverityMedium,
-	FindingSeverityHigh,
-	FindingSeverityCritical,
+var complianceResultSeveritiesSeverities = []ComplianceResultSeverity{
+	ComplianceResultSeverityNone,
+	ComplianceResultSeverityLow,
+	ComplianceResultSeverityMedium,
+	ComplianceResultSeverityHigh,
+	ComplianceResultSeverityCritical,
 }
 
-func ParseFindingSeverity(s string) FindingSeverity {
+func ParseComplianceResultSeverity(s string) ComplianceResultSeverity {
 	s = strings.ToLower(s)
-	for _, sev := range findingSeverities {
+	for _, sev := range complianceResultSeveritiesSeverities {
 		if s == strings.ToLower(sev.String()) {
 			return sev
 		}
@@ -53,10 +53,10 @@ func ParseFindingSeverity(s string) FindingSeverity {
 	return ""
 }
 
-func ParseFindingSeverities(list []string) []FindingSeverity {
-	result := make([]FindingSeverity, 0, len(list))
+func ParseComplianceResultSeverities(list []string) []ComplianceResultSeverity {
+	result := make([]ComplianceResultSeverity, 0, len(list))
 	for _, s := range list {
-		result = append(result, ParseFindingSeverity(s))
+		result = append(result, ParseComplianceResultSeverity(s))
 	}
 	return result
 }
@@ -92,13 +92,13 @@ func (r *SeverityResultV2) AddSeverityResult(severity SeverityResult) {
 	r.Total += severity.NoneCount + severity.LowCount + severity.MediumCount + severity.HighCount + severity.CriticalCount
 }
 
-func (r *SeverityResultV2) AddResultMap(result map[FindingSeverity]int) {
-	r.None += result[FindingSeverityNone]
-	r.Low += result[FindingSeverityLow]
-	r.Medium += result[FindingSeverityMedium]
-	r.High += result[FindingSeverityHigh]
-	r.Critical += result[FindingSeverityCritical]
-	r.Total += result[FindingSeverityNone] + result[FindingSeverityLow] + result[FindingSeverityMedium] + result[FindingSeverityHigh] + result[FindingSeverityCritical]
+func (r *SeverityResultV2) AddResultMap(result map[ComplianceResultSeverity]int) {
+	r.None += result[ComplianceResultSeverityNone]
+	r.Low += result[ComplianceResultSeverityLow]
+	r.Medium += result[ComplianceResultSeverityMedium]
+	r.High += result[ComplianceResultSeverityHigh]
+	r.Critical += result[ComplianceResultSeverityCritical]
+	r.Total += result[ComplianceResultSeverityNone] + result[ComplianceResultSeverityLow] + result[ComplianceResultSeverityMedium] + result[ComplianceResultSeverityHigh] + result[ComplianceResultSeverityCritical]
 }
 
 func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
@@ -109,40 +109,40 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.CriticalCount += severity.CriticalCount
 }
 
-func (r *SeverityResult) AddResultMap(result map[FindingSeverity]int) {
-	r.NoneCount += result[FindingSeverityNone]
-	r.LowCount += result[FindingSeverityLow]
-	r.MediumCount += result[FindingSeverityMedium]
-	r.HighCount += result[FindingSeverityHigh]
-	r.CriticalCount += result[FindingSeverityCritical]
+func (r *SeverityResult) AddResultMap(result map[ComplianceResultSeverity]int) {
+	r.NoneCount += result[ComplianceResultSeverityNone]
+	r.LowCount += result[ComplianceResultSeverityLow]
+	r.MediumCount += result[ComplianceResultSeverityMedium]
+	r.HighCount += result[ComplianceResultSeverityHigh]
+	r.CriticalCount += result[ComplianceResultSeverityCritical]
 }
 
-func (r *SeverityResult) IncreaseBySeverity(severity FindingSeverity) {
+func (r *SeverityResult) IncreaseBySeverity(severity ComplianceResultSeverity) {
 	switch severity {
-	case FindingSeverityCritical:
+	case ComplianceResultSeverityCritical:
 		r.CriticalCount++
-	case FindingSeverityHigh:
+	case ComplianceResultSeverityHigh:
 		r.HighCount++
-	case FindingSeverityMedium:
+	case ComplianceResultSeverityMedium:
 		r.MediumCount++
-	case FindingSeverityLow:
+	case ComplianceResultSeverityLow:
 		r.LowCount++
-	case FindingSeverityNone:
+	case ComplianceResultSeverityNone:
 		r.LowCount++
 	}
 }
 
-func (r *SeverityResult) IncreaseBySeverityByAmount(severity FindingSeverity, amount int) {
+func (r *SeverityResult) IncreaseBySeverityByAmount(severity ComplianceResultSeverity, amount int) {
 	switch severity {
-	case FindingSeverityCritical:
+	case ComplianceResultSeverityCritical:
 		r.CriticalCount += amount
-	case FindingSeverityHigh:
+	case ComplianceResultSeverityHigh:
 		r.HighCount += amount
-	case FindingSeverityMedium:
+	case ComplianceResultSeverityMedium:
 		r.MediumCount += amount
-	case FindingSeverityLow:
+	case ComplianceResultSeverityLow:
 		r.LowCount += amount
-	case FindingSeverityNone:
+	case ComplianceResultSeverityNone:
 		r.LowCount += amount
 	}
 }

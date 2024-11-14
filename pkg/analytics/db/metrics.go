@@ -2,8 +2,8 @@ package db
 
 import (
 	"github.com/lib/pq"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/og-util/pkg/source"
 	"gorm.io/gorm/clause"
 )
 
@@ -38,7 +38,7 @@ const (
 type AnalyticMetric struct {
 	ID                       string `gorm:"primaryKey"`
 	Engine                   QueryEngine
-	Connectors               pq.StringArray `gorm:"type:text[]"`
+	IntegrationTypes         pq.StringArray `gorm:"type:text[]"`
 	Type                     MetricType
 	Name                     string
 	Query                    string
@@ -101,7 +101,7 @@ func (db Database) GetMetric(metricType MetricType, table string) (*AnalyticMetr
 }
 
 func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType,
-	metricIDs []string, connectorTypes []source.Type, statuses []AnalyticMetricStatus) ([]AnalyticMetric, error) {
+	metricIDs []string, integrationTypes []integration.Type, statuses []AnalyticMetricStatus) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) > 0 {
@@ -114,8 +114,8 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 			}
 		}
 	}
-	if len(connectorTypes) > 0 {
-		for _, ct := range connectorTypes {
+	if len(integrationTypes) > 0 {
+		for _, ct := range integrationTypes {
 			query = query.Where("? = ANY (analytic_metrics.connectors)", ct)
 		}
 	}
@@ -135,12 +135,12 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 	return metrics, nil
 }
 
-func (db Database) ListMetricTagsKeysWithPossibleValues(connectorTypes []source.Type) (map[string][]string, error) {
+func (db Database) ListMetricTagsKeysWithPossibleValues(integrationTypes []integration.Type) (map[string][]string, error) {
 	var tags []MetricTag
 	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.id = analytic_metrics.id")
-	if len(connectorTypes) > 0 {
-		for _, ct := range connectorTypes {
-			tx = tx.Where("? = ANY (analytic_metrics.connectors)", ct)
+	if len(integrationTypes) > 0 {
+		for _, ct := range integrationTypes {
+			tx = tx.Where("? = ANY (analytic_metrics.integration_types)", ct)
 		}
 	}
 	tx.Find(&tags)

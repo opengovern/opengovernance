@@ -9,19 +9,15 @@ import (
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
 	queryrunner "github.com/opengovern/opengovernance/pkg/inventory/query-runner"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus"
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	envoyAuth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/nats-io/nats.go/jetstream"
-	awsDescriberLocal "github.com/opengovern/og-aws-describer/local"
-	azureDescriberLocal "github.com/opengovern/og-azure-describer/local"
 	authAPI "github.com/opengovern/og-util/pkg/api"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -45,8 +41,8 @@ import (
 	inventoryClient "github.com/opengovern/opengovernance/pkg/inventory/client"
 	metadataClient "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/pkg/metadata/models"
-	onboardClient "github.com/opengovern/opengovernance/pkg/onboard/client"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -109,8 +105,7 @@ type Scheduler struct {
 	httpServer *HttpServer
 	grpcServer *grpc.Server
 
-	describeIntervalHours      time.Duration
-	fullDiscoveryIntervalHours time.Duration
+	discoveryIntervalHours     time.Duration
 	costDiscoveryIntervalHours time.Duration
 	describeTimeoutHours       int64
 	checkupIntervalHours       int64
@@ -118,14 +113,14 @@ type Scheduler struct {
 	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
-	logger           *zap.Logger
-	metadataClient   metadataClient.MetadataServiceClient
-	complianceClient client.ComplianceServiceClient
-	onboardClient    onboardClient.OnboardServiceClient
-	inventoryClient  inventoryClient.InventoryServiceClient
-	sinkClient       esSinkClient.EsSinkServiceClient
-	authGrpcClient   envoyAuth.AuthorizationClient
-	es               opengovernance.Client
+	logger            *zap.Logger
+	metadataClient    metadataClient.MetadataServiceClient
+	complianceClient  client.ComplianceServiceClient
+	integrationClient integrationClient.IntegrationServiceClient
+	inventoryClient   inventoryClient.InventoryServiceClient
+	sinkClient        esSinkClient.EsSinkServiceClient
+	authGrpcClient    envoyAuth.AuthorizationClient
+	es                opengovernance.Client
 
 	jq *jq.JobQueue
 
@@ -138,9 +133,6 @@ type Scheduler struct {
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
-
-	lambdaClient     *lambda.Client
-	serviceBusClient *azservicebus.Client
 
 	complianceScheduler  *compliance.JobScheduler
 	discoveryScheduler   *discovery.Scheduler
@@ -186,20 +178,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	lambdaCfg, err := awsConfig.LoadDefaultConfig(ctx)
-	lambdaCfg.Region = KeyRegion
-
 	s.conf = conf
-	s.lambdaClient = lambda.NewFromConfig(lambdaCfg)
-
-	if len(conf.ServiceBusConnectionString) > 0 {
-		serviceBusClient, err := azservicebus.NewClientFromConnectionString(conf.ServiceBusConnectionString, nil)
-		if err != nil {
-			s.logger.Error("Failed to create service bus client", zap.Error(err))
-			return nil, err
-		}
-		s.serviceBusClient = serviceBusClient
-	}
 
 	cfg := postgres.Config{
 		Host:    postgresHost,
@@ -253,21 +232,12 @@ func InitializeScheduler(
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
-	s.httpServer.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL)
-
 	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
 		s.logger.Error("Failed to parse describe interval hours", zap.Error(err))
 		return nil, err
 	}
-	s.describeIntervalHours = time.Duration(describeIntervalHours) * time.Hour
-
-	fullDiscoveryIntervalHours, err := strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
-	if err != nil {
-		s.logger.Error("Failed to parse full discovery interval hours", zap.Error(err))
-		return nil, err
-	}
-	s.fullDiscoveryIntervalHours = time.Duration(fullDiscoveryIntervalHours) * time.Hour
+	s.discoveryIntervalHours = time.Duration(describeIntervalHours) * time.Hour
 
 	costDiscoveryIntervalHours, err := strconv.ParseInt(CostDiscoveryIntervalHours, 10, 64)
 	if err != nil {
@@ -305,7 +275,7 @@ func InitializeScheduler(
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
-	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL)
+	s.integrationClient = integrationClient.NewIntegrationServiceClient(IntegrationBaseURL)
 	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	s.sinkClient = esSinkClient.NewEsSinkServiceClient(s.logger, EsSinkBaseURL)
 	authGRPCConn, err := grpc.NewClient(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
@@ -333,7 +303,6 @@ func InitializeScheduler(
 		conf,
 		s.logger,
 		s.complianceClient,
-		s.onboardClient,
 		s.db,
 		s.es,
 	)
@@ -372,13 +341,12 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 	}
 
 	if s.conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
-		if err := s.jq.Stream(ctx, awsDescriberLocal.StreamName, "aws describe job runner queue", []string{awsDescriberLocal.JobQueueTopic, awsDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local aws queue", zap.Error(err))
-			return err
-		}
-		if err := s.jq.Stream(ctx, azureDescriberLocal.StreamName, "azure describe job runner queue", []string{azureDescriberLocal.JobQueueTopic, azureDescriberLocal.JobQueueTopicManuals}, 200000); err != nil {
-			s.logger.Error("Failed to stream to local azure queue", zap.Error(err))
-			return err
+		for itName, integrationType := range integration_type.IntegrationTypes {
+			describerConfig := integrationType.GetConfiguration()
+			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 200000); err != nil {
+				s.logger.Error("Failed to stream to local integration type queue", zap.String("integration_type", string(itName)), zap.Error(err))
+				return err
+			}
 		}
 	}
 	return nil
@@ -401,22 +369,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
 	} else {
 		if v, ok := describeJobIntM.GetValue().(int); ok {
-			s.describeIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.describeIntervalHours.Hours())))
+			s.discoveryIntervalHours = time.Duration(v) * time.Hour
+			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.discoveryIntervalHours.Hours())))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
-		}
-	}
-
-	fullDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyFullDiscoveryJobInterval)
-	if err != nil {
-		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
-	} else {
-		if v, ok := fullDiscoveryJobIntM.GetValue().(int); ok {
-			s.fullDiscoveryIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set describe interval", zap.Int64("interval", int64(s.fullDiscoveryIntervalHours.Hours())))
-		} else {
-			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(fullDiscoveryJobIntM.GetType())))
 		}
 	}
 
@@ -505,7 +461,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.conf,
 		s.logger,
 		s.complianceClient,
-		s.onboardClient,
+		s.integrationClient,
 		s.db,
 		s.jq,
 		s.es,
@@ -520,7 +476,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.RunCheckupJobScheduler(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
-		s.RunDisabledConnectionCleanup(ctx)
+		s.RunDeletedIntegrationsResourcesCleanup(ctx)
 	})
 	utils.EnsureRunGoroutine(func() {
 		s.RunRemoveResourcesConnectionJobsCleanup()
@@ -533,12 +489,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	utils.EnsureRunGoroutine(func() {
 		s.RunScheduledJobCleanup()
 	})
-	utils.EnsureRunGoroutine(func() {
-		s.UpdateDescribedResourceCountScheduler()
-	})
-	utils.EnsureRunGoroutine(func() {
-		s.UpdateDescribedResourceCountScheduler()
-	})
+
 	wg.Add(1)
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer(ctx)))
@@ -568,28 +519,21 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Scheduler) RunDisabledConnectionCleanup(ctx context.Context) {
-	ticker := ticker.NewTicker(time.Hour, time.Second*10)
+func (s *Scheduler) RunDeletedIntegrationsResourcesCleanup(ctx context.Context) {
+	ticker := ticker.NewTicker(time.Minute*10, time.Second*10)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
+		integrations, err := s.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			continue
 		}
-		disabledConnectionIds := make([]string, 0)
-		for _, connection := range connections {
-			if connection.IsEnabled() {
-				continue
-			}
-			disabledConnectionIds = append(disabledConnectionIds, connection.ID.String())
+		integrationIds := make([]string, 0)
+		for _, integration := range integrations.Integrations {
+			integrationIds = append(integrationIds, integration.IntegrationID)
 		}
-
-		if len(disabledConnectionIds) > 0 {
-			s.cleanupDescribeResourcesForConnections(ctx, disabledConnectionIds)
-		}
-
+		s.cleanupDescribeResourcesNotInIntegrations(ctx, integrationIds)
 	}
 }
 
@@ -605,13 +549,13 @@ func (s *Scheduler) RunRemoveResourcesConnectionJobsCleanup() {
 		}
 
 		for _, j := range jobs {
-			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.ConnectionID, j.ResourceType)
+			err = s.cleanupDescribeResourcesForConnectionAndResourceType(j.IntegrationID, j.ResourceType)
 			if err != nil {
 				s.logger.Error("Failed to remove old resources", zap.Error(err))
 				continue
 			}
 
-			err = s.db.UpdateDescribeConnectionJobStatus(j.ID, api.DescribeResourceJobSucceeded, "", "", 0, 0)
+			err = s.db.UpdateDescribeIntegrationJobStatus(j.ID, api.DescribeResourceJobSucceeded, "", "", 0, 0)
 			if err != nil {
 				s.logger.Error("Failed to update job", zap.Error(err))
 				continue
@@ -625,12 +569,12 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	defer ticker.Stop()
 	for range ticker.C {
 		tOlder := time.Now().AddDate(0, 0, -7)
-		err := s.db.CleanupScheduledDescribeConnectionJobsOlderThan(tOlder)
+		err := s.db.CleanupScheduledDescribeIntegrationJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}
 		tOlderManual := time.Now().AddDate(0, 0, -30)
-		err = s.db.CleanupManualDescribeConnectionJobsOlderThan(tOlderManual)
+		err = s.db.CleanupManualDescribeIntegrationJobsOlderThan(tOlderManual)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}

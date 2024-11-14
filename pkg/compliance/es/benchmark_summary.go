@@ -17,8 +17,8 @@ import (
 
 type BenchmarkTrendDatapoint struct {
 	DateEpoch      int64
-	QueryResult    map[types.ConformanceStatus]int
-	SeverityResult map[types.FindingSeverity]int
+	QueryResult    map[types.ComplianceStatus]int
+	SeverityResult map[types.ComplianceResultSeverity]int
 	Controls       map[string]types2.ControlResult
 }
 
@@ -38,19 +38,19 @@ func (t *BenchmarkTrendDatapoint) addResultGroupToTrendDataPoint(resultGroup typ
 		v := t.Controls[controlId]
 		v.FailedResourcesCount += control.FailedResourcesCount
 		v.TotalResourcesCount += control.TotalResourcesCount
-		v.FailedConnectionCount += control.FailedConnectionCount
-		v.TotalConnectionCount += control.TotalConnectionCount
+		v.FailedIntegrationCount += control.FailedIntegrationCount
+		v.TotalIntegrationCount += control.TotalIntegrationCount
 		v.Passed = v.Passed && control.Passed
 		t.Controls[controlId] = v
 	}
 }
 
 type ControlTrendDatapoint struct {
-	DateEpoch             int64
-	FailedResourcesCount  int
-	TotalResourcesCount   int
-	FailedConnectionCount int
-	TotalConnectionCount  int
+	DateEpoch              int64
+	FailedResourcesCount   int
+	TotalResourcesCount    int
+	FailedIntegrationCount int
+	TotalIntegrationCount  int
 }
 
 type FetchBenchmarkSummaryTrendAggregatedResponse struct {
@@ -77,17 +77,17 @@ type FetchBenchmarkSummaryTrendAggregatedResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
-	pathFilters := make([]string, 0, len(connectionIDs)+4)
+func FetchBenchmarkSummaryTrendByIntegrationID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, integrationIDs []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+	pathFilters := make([]string, 0, len(integrationIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Controls")
-	for _, connectionID := range connectionIDs {
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.BenchmarkResult.Controls")
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Result", connectionID),
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls", connectionID),
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Result", integrationID),
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID),
 		)
 	}
 
@@ -156,15 +156,15 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err))
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	logger.Info("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
 	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
 
@@ -174,25 +174,25 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
 			date := int64(rangeBucket.To)
 			if err != nil {
-				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+				logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
 				trendDataPoint.DateEpoch = date
-				if len(connectionIDs) > 0 {
-					for _, connectionID := range connectionIDs {
-						if connection, ok := hit.Source.Connections.Connections[connectionID]; ok {
-							trendDataPoint.addResultGroupToTrendDataPoint(connection)
+				if len(integrationIDs) > 0 {
+					for _, integrationID := range integrationIDs {
+						if integration, ok := hit.Source.Integrations.Integrations[integrationID]; ok {
+							trendDataPoint.addResultGroupToTrendDataPoint(integration)
 						}
 					}
 				} else {
-					trendDataPoint.addResultGroupToTrendDataPoint(hit.Source.Connections.BenchmarkResult)
+					trendDataPoint.addResultGroupToTrendDataPoint(hit.Source.Integrations.BenchmarkResult)
 				}
 			}
 			if trendDataPoint.DateEpoch != 0 {
@@ -207,18 +207,18 @@ func FetchBenchmarkSummaryTrendByConnectionID(ctx context.Context, logger *zap.L
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, connectionIDs []string, from, to, granularity int64) (map[string][]BenchmarkTrendDatapoint, error) {
-	pathFilters := make([]string, 0, len(connectionIDs)+4)
+func FetchBenchmarkSummaryTrendByIntegrationIDV3(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+	benchmarkIDs []string, integrationIDs []string, from, to, granularity int64) (map[string][]BenchmarkTrendDatapoint, error) {
+	pathFilters := make([]string, 0, len(integrationIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.BenchmarkResult.Controls")
-	for _, connectionID := range connectionIDs {
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.BenchmarkResult.Controls")
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Result", connectionID),
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls", connectionID),
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Result", integrationID),
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID),
 		)
 	}
 
@@ -286,15 +286,15 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err))
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	logger.Info("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
 	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
 
@@ -306,25 +306,25 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
 			date := int64(rangeBucket.To)
 			if err != nil {
-				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+				logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
 				trendDataPoint.DateEpoch = date
-				if len(connectionIDs) > 0 {
-					for _, connectionID := range connectionIDs {
-						if connection, ok := hit.Source.Connections.Connections[connectionID]; ok {
-							trendDataPoint.addResultGroupToTrendDataPoint(connection)
+				if len(integrationIDs) > 0 {
+					for _, integrationID := range integrationIDs {
+						if integration, ok := hit.Source.Integrations.Integrations[integrationID]; ok {
+							trendDataPoint.addResultGroupToTrendDataPoint(integration)
 						}
 					}
 				} else {
-					trendDataPoint.addResultGroupToTrendDataPoint(hit.Source.Connections.BenchmarkResult)
+					trendDataPoint.addResultGroupToTrendDataPoint(hit.Source.Integrations.BenchmarkResult)
 				}
 			}
 			if trendDataPoint.DateEpoch != 0 {
@@ -349,19 +349,19 @@ func FetchBenchmarkSummaryTrendByConnectionIDV3(ctx context.Context, logger *zap
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrendByResourceCollectionAndIntegrationID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, integrationIDs []string, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) == 0 {
 		return nil, fmt.Errorf("resource collections cannot be empty")
 	}
-	pathFilters := make([]string, 0, (len(connectionIDs)+1)*len(resourceCollections)+3)
+	pathFilters := make([]string, 0, (len(integrationIDs)+1)*len(resourceCollections)+3)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
 	for _, resourceCollection := range resourceCollections {
 		pathFilters = append(pathFilters, fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result.SecurityScore", resourceCollection))
-		for _, connectionID := range connectionIDs {
+		for _, integrationID := range integrationIDs {
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.Connections.%s.Result.SecurityScore", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.ResourceCollections.%s.Integrations.%s.Result.SecurityScore", resourceCollection, integrationID))
 		}
 	}
 
@@ -430,15 +430,15 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.C
 
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err))
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	logger.Info("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
 	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
 
@@ -448,21 +448,21 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.C
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
 			date := int64(rangeBucket.To)
 			if err != nil {
-				logger.Error("FetchBenchmarkSummaryTrendByConnectionIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
+				logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDAtTime", zap.Error(err), zap.String("query", string(queryBytes)))
 				return nil, err
 			}
 			trendDataPoint := BenchmarkTrendDatapoint{
-				QueryResult:    make(map[types.ConformanceStatus]int),
-				SeverityResult: make(map[types.FindingSeverity]int),
+				QueryResult:    make(map[types.ComplianceStatus]int),
+				SeverityResult: make(map[types.ComplianceResultSeverity]int),
 				Controls:       make(map[string]types2.ControlResult),
 			}
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
 				trendDataPoint.DateEpoch = date
 				for _, resourceCollection := range hit.Source.ResourceCollections {
-					if len(connectionIDs) > 0 {
-						for _, connectionID := range connectionIDs {
-							if connection, ok := resourceCollection.Connections[connectionID]; ok {
-								trendDataPoint.addResultGroupToTrendDataPoint(connection)
+					if len(integrationIDs) > 0 {
+						for _, integrationID := range integrationIDs {
+							if integration, ok := resourceCollection.Integrations[integrationID]; ok {
+								trendDataPoint.addResultGroupToTrendDataPoint(integration)
 							}
 						}
 					} else {
@@ -482,42 +482,42 @@ func FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx context.C
 	return trend, nil
 }
 
-func FetchBenchmarkSummaryTrend(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
+func FetchBenchmarkSummaryTrend(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, integrationIDs, resourceCollections []string, from, to time.Time) (map[string][]BenchmarkTrendDatapoint, error) {
 	if len(resourceCollections) > 0 {
-		return FetchBenchmarkSummaryTrendByResourceCollectionAndConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, resourceCollections, from, to)
+		return FetchBenchmarkSummaryTrendByResourceCollectionAndIntegrationID(ctx, logger, client, benchmarkIDs, integrationIDs, resourceCollections, from, to)
 	}
-	return FetchBenchmarkSummaryTrendByConnectionID(ctx, logger, client, benchmarkIDs, connectionIDs, from, to)
+	return FetchBenchmarkSummaryTrendByIntegrationID(ctx, logger, client, benchmarkIDs, integrationIDs, from, to)
 }
 
-func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
-	benchmarkIDs []string, controlIDs []string, connectionIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
-	pathFilters := make([]string, 0, len(connectionIDs)+4)
+func FetchBenchmarkSummaryTrendByIntegrationIDPerControl(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
+	benchmarkIDs []string, controlIDs []string, integrationIDs []string, from, to time.Time, stepDuration time.Duration) (map[string][]ControlTrendDatapoint, error) {
+	pathFilters := make([]string, 0, len(integrationIDs)+4)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.from")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.to")
-	if len(connectionIDs) > 0 {
+	if len(integrationIDs) > 0 {
 		if len(controlIDs) > 0 {
-			for _, connectionID := range connectionIDs {
+			for _, integrationID := range integrationIDs {
 				for _, controlID := range controlIDs {
 					pathFilters = append(pathFilters,
-						fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls.%s", connectionID, controlID))
+						fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Controls.%s", integrationID, controlID))
 				}
 			}
 		} else {
-			for _, connectionID := range connectionIDs {
+			for _, integrationID := range integrationIDs {
 				pathFilters = append(pathFilters,
-					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID))
 			}
 		}
 	} else {
 		if len(controlIDs) > 0 {
 			for _, controlID := range controlIDs {
 				pathFilters = append(pathFilters,
-					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.*.Controls.%s", controlID))
+					fmt.Sprintf("aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.*.Controls.%s", controlID))
 			}
 		} else {
 			pathFilters = append(pathFilters,
-				"aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Connections.Connections.*.Controls")
+				"aggregations.benchmark_id_group.buckets.evaluated_at_range_group.buckets.hit_select.hits.hits._source.Integrations.Integrations.*.Controls")
 		}
 	}
 
@@ -586,15 +586,15 @@ func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, log
 
 	queryBytes, err := json.Marshal(query)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.Error(err))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDPerControl", zap.Error(err))
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
+	logger.Info("FetchBenchmarkSummaryTrendByIntegrationIDPerControl", zap.String("query", string(queryBytes)), zap.String("pathFilters", strings.Join(pathFilters, ",")))
 	var response FetchBenchmarkSummaryTrendAggregatedResponse
 	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &response)
 	if err != nil {
-		logger.Error("FetchBenchmarkSummaryTrendByConnectionIDPerControl", zap.Error(err), zap.String("query", string(queryBytes)))
+		logger.Error("FetchBenchmarkSummaryTrendByIntegrationIDPerControl", zap.Error(err), zap.String("query", string(queryBytes)))
 		return nil, err
 	}
 
@@ -604,14 +604,14 @@ func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, log
 		for _, rangeBucket := range bucket.EvaluatedAtRangeGroup.Buckets {
 			for _, hit := range rangeBucket.HitSelect.Hits.Hits {
 				controlData := make(map[string][]ControlTrendDatapoint)
-				for _, connection := range hit.Source.Connections.Connections {
-					for controlId, control := range connection.Controls {
+				for _, integration := range hit.Source.Integrations.Integrations {
+					for controlId, control := range integration.Controls {
 						trendDataPoint := ControlTrendDatapoint{}
 						trendDataPoint.DateEpoch = int64(rangeBucket.To)
 						trendDataPoint.FailedResourcesCount = control.FailedResourcesCount
 						trendDataPoint.TotalResourcesCount = control.TotalResourcesCount
-						trendDataPoint.FailedConnectionCount = control.FailedConnectionCount
-						trendDataPoint.TotalConnectionCount = control.TotalConnectionCount
+						trendDataPoint.FailedIntegrationCount = control.FailedIntegrationCount
+						trendDataPoint.TotalIntegrationCount = control.TotalIntegrationCount
 						controlData[controlId] = append(controlData[controlId], trendDataPoint)
 					}
 				}
@@ -623,19 +623,19 @@ func FetchBenchmarkSummaryTrendByConnectionIDPerControl(ctx context.Context, log
 					}
 					if _, ok := trendMap[controlId][int64(rangeBucket.To)]; !ok || currentTimes[controlId][int64(rangeBucket.To)] < hit.Source.EvaluatedAtEpoch {
 						trendMap[controlId][int64(rangeBucket.To)] = ControlTrendDatapoint{
-							DateEpoch:             int64(rangeBucket.To),
-							FailedResourcesCount:  0,
-							TotalResourcesCount:   0,
-							FailedConnectionCount: 0,
-							TotalConnectionCount:  0,
+							DateEpoch:              int64(rangeBucket.To),
+							FailedResourcesCount:   0,
+							TotalResourcesCount:    0,
+							FailedIntegrationCount: 0,
+							TotalIntegrationCount:  0,
 						}
 						currentTimes[controlId][int64(rangeBucket.To)] = hit.Source.EvaluatedAtEpoch
 						for _, controlTrendDataPoint := range controlTrendDataPoints {
 							v := trendMap[controlId][int64(rangeBucket.To)]
 							v.FailedResourcesCount += controlTrendDataPoint.FailedResourcesCount
 							v.TotalResourcesCount += controlTrendDataPoint.TotalResourcesCount
-							v.FailedConnectionCount += controlTrendDataPoint.FailedConnectionCount
-							v.TotalConnectionCount += controlTrendDataPoint.TotalConnectionCount
+							v.FailedIntegrationCount += controlTrendDataPoint.FailedIntegrationCount
+							v.TotalIntegrationCount += controlTrendDataPoint.TotalIntegrationCount
 							trendMap[controlId][int64(rangeBucket.To)] = v
 						}
 					}
@@ -677,39 +677,39 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 
 func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string,
-	connectionIDs []string, resourceCollections []string,
+	integrationIDs []string, resourceCollections []string,
 	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
-	if len(connectionIDs) > 0 || fetchFullObject {
-		includes = append(includes, "Connections.Connections")
+	includes := []string{"Integrations.BenchmarkResult.Result", "EvaluatedAtEpoch", "Integrations.BenchmarkResult.Controls"}
+	if len(integrationIDs) > 0 || fetchFullObject {
+		includes = append(includes, "Integrations.Integrations")
 	}
 	if len(resourceCollections) > 0 || fetchFullObject {
 		includes = append(includes, "ResourceCollections")
 	}
-	pathFilters := make([]string, 0, len(connectionIDs)+(len(resourceCollections)*(len(connectionIDs)+1))+2)
+	pathFilters := make([]string, 0, len(integrationIDs)+(len(resourceCollections)*(len(integrationIDs)+1))+2)
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
-	for _, connectionID := range connectionIDs {
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Controls")
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.Integrations.%s.Result", integrationID))
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID))
 	}
 	for _, resourceCollection := range resourceCollections {
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result", resourceCollection))
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Controls", resourceCollection))
-		for _, connectionID := range connectionIDs {
+		for _, integrationID := range integrationIDs {
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Result", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Integrations.%s.Result", resourceCollection, integrationID))
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Controls", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Integrations.%s.Controls", resourceCollection, integrationID))
 		}
 	}
 
@@ -767,7 +767,7 @@ func ListBenchmarkSummariesAtTime(ctx context.Context, logger *zap.Logger, clien
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
+	logger.Info("FetchBenchmarkSummariesByIntegrationIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response ListBenchmarkSummariesAtTimeResponse
 	if fetchFullObject {
@@ -792,9 +792,9 @@ func GetComplianceSummaryByJobId(ctx context.Context, logger *zap.Logger, client
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
+	includes := []string{"Integrations.BenchmarkResult.Result", "EvaluatedAtEpoch", "Integrations.BenchmarkResult.Controls"}
 	if fetchFullObject {
-		includes = append(includes, "Connections.Connections")
+		includes = append(includes, "Integrations.Integrations")
 	}
 	if fetchFullObject {
 		includes = append(includes, "ResourceCollections")
@@ -802,8 +802,8 @@ func GetComplianceSummaryByJobId(ctx context.Context, logger *zap.Logger, client
 	var pathFilters []string
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Controls")
 
 	request := map[string]any{
 		"aggs": map[string]any{
@@ -847,7 +847,7 @@ func GetComplianceSummaryByJobId(ctx context.Context, logger *zap.Logger, client
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
+	logger.Info("FetchBenchmarkSummariesByIntegrationIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response ListBenchmarkSummariesAtTimeResponse
 	if fetchFullObject {
@@ -880,10 +880,10 @@ type BenchmarkSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
-	includes := []string{"Connections.Connections", "EvaluatedAtEpoch"}
+func BenchmarkIntegrationSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string) (map[string]types2.ResultGroup, int64, error) {
+	includes := []string{"Integrations.Integrations", "EvaluatedAtEpoch"}
 	pathFilters := make([]string, 0, 2)
-	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.Connections.*.Result")
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Integrations.Integrations.*.Result")
 	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.EvaluatedAtEpoch")
 	request := map[string]any{
 		"aggs": map[string]any{
@@ -920,7 +920,7 @@ func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client 
 		return nil, -1, err
 	}
 
-	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
+	logger.Info("BenchmarkIntegrationSummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkSummaryResponse
 	err = client.SearchWithFilterPath(ctx, types.BenchmarkSummaryIndex, string(queryBytes), pathFilters, &resp)
 	if err != nil {
@@ -928,23 +928,23 @@ func BenchmarkConnectionSummary(ctx context.Context, logger *zap.Logger, client 
 	}
 
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		return res.Source.Connections.Connections, res.Source.EvaluatedAtEpoch, nil
+		return res.Source.Integrations.Integrations, res.Source.EvaluatedAtEpoch, nil
 	}
 	return nil, 0, nil
 }
 
-func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string, connectionIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
-	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
-	if len(connectionIDs) > 0 {
-		includes = append(includes, "Connections.Connections")
+func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkID string, integrationIDs []string, timeAt time.Time) (map[string]types2.ControlResult, int64, error) {
+	includes := []string{"Integrations.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
+	if len(integrationIDs) > 0 {
+		includes = append(includes, "Integrations.Integrations")
 	}
 
-	pathFilters := make([]string, 0, len(connectionIDs)+2)
-	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
+	pathFilters := make([]string, 0, len(integrationIDs)+2)
+	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.Integrations.BenchmarkResult.Controls")
 	pathFilters = append(pathFilters, "aggregations.last_result.hits.hits._source.EvaluatedAtEpoch")
-	for _, connectionID := range connectionIDs {
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+			fmt.Sprintf("aggregations.last_result.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID))
 	}
 
 	request := map[string]any{
@@ -1000,17 +1000,17 @@ func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client ope
 	evAt := int64(0)
 	result := make(map[string]types2.ControlResult)
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		if len(connectionIDs) > 0 {
-			for _, connectionID := range connectionIDs {
-				if connection, ok := res.Source.Connections.Connections[connectionID]; ok {
-					for key, controlRes := range connection.Controls {
+		if len(integrationIDs) > 0 {
+			for _, integrationID := range integrationIDs {
+				if integration, ok := res.Source.Integrations.Integrations[integrationID]; ok {
+					for key, controlRes := range integration.Controls {
 						if v, ok := result[key]; !ok {
 							result[key] = controlRes
 						} else {
 							v.FailedResourcesCount += controlRes.FailedResourcesCount
-							v.FailedConnectionCount += controlRes.FailedConnectionCount
+							v.FailedIntegrationCount += controlRes.FailedIntegrationCount
 							v.TotalResourcesCount += controlRes.TotalResourcesCount
-							v.TotalConnectionCount += controlRes.TotalConnectionCount
+							v.TotalIntegrationCount += controlRes.TotalIntegrationCount
 							v.Passed = v.Passed && controlRes.Passed
 							result[key] = v
 						}
@@ -1019,7 +1019,7 @@ func BenchmarkControlSummary(ctx context.Context, logger *zap.Logger, client ope
 				}
 			}
 		} else {
-			result = res.Source.Connections.BenchmarkResult.Controls
+			result = res.Source.Integrations.BenchmarkResult.Controls
 			evAt = res.Source.EvaluatedAtEpoch
 			break
 		}
@@ -1044,19 +1044,19 @@ type BenchmarksControlSummaryResponse struct {
 	} `json:"aggregations"`
 }
 
-func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, connectionIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
-	includes := []string{"Connections.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
-	if len(connectionIDs) > 0 {
-		includes = append(includes, "Connections.Connections")
+func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client opengovernance.Client, benchmarkIDs []string, integrationIDs []string) (map[string]types2.ControlResult, map[string]int64, error) {
+	includes := []string{"Integrations.BenchmarkResult.Controls", "EvaluatedAtEpoch"}
+	if len(integrationIDs) > 0 {
+		includes = append(includes, "Integrations.Integrations")
 	}
 
-	pathFilters := make([]string, 0, len(connectionIDs)+2)
+	pathFilters := make([]string, 0, len(integrationIDs)+2)
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
-	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
-	for _, connectionID := range connectionIDs {
+	pathFilters = append(pathFilters, "aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Controls")
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+			fmt.Sprintf("aggregations.benchmark_id_group.buckets.last_result.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID))
 	}
 
 	request := map[string]any{
@@ -1117,17 +1117,17 @@ func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client op
 		perBenchmarkEvAt[benchmarkID] = int64(0)
 		perBenchmarkResult[benchmarkID] = make(map[string]types2.ControlResult)
 		for _, res := range bucket.LastResult.Hits.Hits {
-			if len(connectionIDs) > 0 {
-				for _, connectionID := range connectionIDs {
-					if connection, ok := res.Source.Connections.Connections[connectionID]; ok {
-						for key, controlRes := range connection.Controls {
+			if len(integrationIDs) > 0 {
+				for _, integrationID := range integrationIDs {
+					if integration, ok := res.Source.Integrations.Integrations[integrationID]; ok {
+						for key, controlRes := range integration.Controls {
 							if v, ok := perBenchmarkResult[benchmarkID][key]; !ok {
 								perBenchmarkResult[benchmarkID][key] = controlRes
 							} else {
 								v.FailedResourcesCount += controlRes.FailedResourcesCount
-								v.FailedConnectionCount += controlRes.FailedConnectionCount
+								v.FailedIntegrationCount += controlRes.FailedIntegrationCount
 								v.TotalResourcesCount += controlRes.TotalResourcesCount
-								v.TotalConnectionCount += controlRes.TotalConnectionCount
+								v.TotalIntegrationCount += controlRes.TotalIntegrationCount
 								v.Passed = v.Passed && controlRes.Passed
 								perBenchmarkResult[benchmarkID][key] = v
 							}
@@ -1136,7 +1136,7 @@ func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client op
 					}
 				}
 			} else {
-				perBenchmarkResult[benchmarkID] = res.Source.Connections.BenchmarkResult.Controls
+				perBenchmarkResult[benchmarkID] = res.Source.Integrations.BenchmarkResult.Controls
 				perBenchmarkEvAt[benchmarkID] = res.Source.EvaluatedAtEpoch
 				break
 			}
@@ -1159,39 +1159,39 @@ func BenchmarksControlSummary(ctx context.Context, logger *zap.Logger, client op
 
 func ListJobsSummariesAtTime(ctx context.Context, logger *zap.Logger, client opengovernance.Client,
 	benchmarkIDs []string, jobIDs []string,
-	connectionIDs []string, resourceCollections []string,
+	integrationIDs []string, resourceCollections []string,
 	timeAt time.Time, fetchFullObject bool) (map[string]types2.BenchmarkSummary, error) {
 
 	idx := types.BenchmarkSummaryIndex
 
-	includes := []string{"Connections.BenchmarkResult.Result", "EvaluatedAtEpoch", "Connections.BenchmarkResult.Controls"}
-	if len(connectionIDs) > 0 || fetchFullObject {
-		includes = append(includes, "Connections.Connections")
+	includes := []string{"Integrations.BenchmarkResult.Result", "EvaluatedAtEpoch", "Integrations.BenchmarkResult.Controls"}
+	if len(integrationIDs) > 0 || fetchFullObject {
+		includes = append(includes, "Integrations.Integrations")
 	}
 	if len(resourceCollections) > 0 || fetchFullObject {
 		includes = append(includes, "ResourceCollections")
 	}
-	pathFilters := make([]string, 0, len(connectionIDs)+(len(resourceCollections)*(len(connectionIDs)+1))+2)
+	pathFilters := make([]string, 0, len(integrationIDs)+(len(resourceCollections)*(len(integrationIDs)+1))+2)
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.key")
 	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.EvaluatedAtEpoch")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Result")
-	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Connections.BenchmarkResult.Controls")
-	for _, connectionID := range connectionIDs {
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Result")
+	pathFilters = append(pathFilters, "aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.BenchmarkResult.Controls")
+	for _, integrationID := range integrationIDs {
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Result", connectionID))
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.Integrations.%s.Result", integrationID))
 		pathFilters = append(pathFilters,
-			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Connections.Connections.%s.Controls", connectionID))
+			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.Integrations.Integrations.%s.Controls", integrationID))
 	}
 	for _, resourceCollection := range resourceCollections {
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.BenchmarkResult.Result", resourceCollection))
 		pathFilters = append(pathFilters,
 			fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Controls", resourceCollection))
-		for _, connectionID := range connectionIDs {
+		for _, integrationID := range integrationIDs {
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Result", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Integrations.%s.Result", resourceCollection, integrationID))
 			pathFilters = append(pathFilters,
-				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Connections.%s.Controls", resourceCollection, connectionID))
+				fmt.Sprintf("aggregations.summaries.buckets.last_result.hits.hits._source.ResourceCollections.%s.Integrations.%s.Controls", resourceCollection, integrationID))
 		}
 	}
 
@@ -1256,7 +1256,7 @@ func ListJobsSummariesAtTime(ctx context.Context, logger *zap.Logger, client ope
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
+	logger.Info("FetchBenchmarkSummariesByIntegrationIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response ListBenchmarkSummariesAtTimeResponse
 	if fetchFullObject {

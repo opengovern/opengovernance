@@ -9,10 +9,10 @@ import (
 )
 
 type Result struct {
-	QueryResult      map[types.ConformanceStatus]int
-	SeverityResult   map[types.FindingSeverity]int
-	SecurityScore    float64
-	CostOptimization *float64 `json:"CostOptimization,omitempty"`
+	QueryResult    map[types.ComplianceStatus]int
+	SeverityResult map[types.ComplianceResultSeverity]int
+	SecurityScore  float64
+	CostImpact     *float64 `json:"CostImpact,omitempty"`
 }
 
 func (r Result) IsFullyPassed() bool {
@@ -43,19 +43,19 @@ type ControlResult struct {
 	allResources    *hyperloglog.Sketch
 	failedResources *hyperloglog.Sketch
 
-	FailedConnectionCount int
-	TotalConnectionCount  int
+	FailedIntegrationCount int
+	TotalIntegrationCount  int
 
 	// these are not exported fields so they are not marshalled
-	allConnections    *hyperloglog.Sketch
-	failedConnections *hyperloglog.Sketch
+	allIntegrations    *hyperloglog.Sketch
+	failedIntegrations *hyperloglog.Sketch
 
-	CostOptimization *float64 `json:"CostOptimization,omitempty"`
+	CostImpact *float64 `json:"CostImpact,omitempty"`
 }
 
 type BenchmarkSummaryResult struct {
 	BenchmarkResult ResultGroup
-	Connections     map[string]ResultGroup
+	Integrations    map[string]ResultGroup
 }
 
 type BenchmarkSummary struct {
@@ -66,7 +66,7 @@ type BenchmarkSummary struct {
 	JobID            uint
 	EvaluatedAtEpoch int64
 
-	Connections         BenchmarkSummaryResult
+	Integrations        BenchmarkSummaryResult
 	ResourceCollections map[string]BenchmarkSummaryResult
 }
 
@@ -74,110 +74,110 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, types.BenchmarkSummaryIndex
 }
 
-func (r *BenchmarkSummaryResult) addFinding(finding types.Finding) {
-	if !finding.ConformanceStatus.IsPassed() {
-		r.BenchmarkResult.Result.SeverityResult[finding.Severity]++
+func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.ComplianceResult) {
+	if !complianceResult.ComplianceStatus.IsPassed() {
+		r.BenchmarkResult.Result.SeverityResult[complianceResult.Severity]++
 	}
-	r.BenchmarkResult.Result.QueryResult[finding.ConformanceStatus]++
-	r.BenchmarkResult.Result.CostOptimization = utils.PAdd(r.BenchmarkResult.Result.CostOptimization, finding.CostOptimization)
+	r.BenchmarkResult.Result.QueryResult[complianceResult.ComplianceStatus]++
+	r.BenchmarkResult.Result.CostImpact = utils.PAdd(r.BenchmarkResult.Result.CostImpact, complianceResult.CostImpact)
 
-	connection, ok := r.Connections[finding.ConnectionID]
+	integration, ok := r.Integrations[complianceResult.IntegrationID]
 	if !ok {
-		connection = ResultGroup{
+		integration = ResultGroup{
 			Result: Result{
-				QueryResult:    map[types.ConformanceStatus]int{},
-				SeverityResult: map[types.FindingSeverity]int{},
+				QueryResult:    map[types.ComplianceStatus]int{},
+				SeverityResult: map[types.ComplianceResultSeverity]int{},
 				SecurityScore:  0,
 			},
 			ResourceTypes: map[string]Result{},
 			Controls:      map[string]ControlResult{},
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		connection.Result.SeverityResult[finding.Severity]++
+	if !complianceResult.ComplianceStatus.IsPassed() {
+		integration.Result.SeverityResult[complianceResult.Severity]++
 	}
-	connection.Result.QueryResult[finding.ConformanceStatus]++
-	connection.Result.CostOptimization = utils.PAdd(connection.Result.CostOptimization, finding.CostOptimization)
-	r.Connections[finding.ConnectionID] = connection
+	integration.Result.QueryResult[complianceResult.ComplianceStatus]++
+	integration.Result.CostImpact = utils.PAdd(integration.Result.CostImpact, complianceResult.CostImpact)
+	r.Integrations[complianceResult.IntegrationID] = integration
 
-	resourceType, ok := r.BenchmarkResult.ResourceTypes[finding.ResourceType]
+	resourceType, ok := r.BenchmarkResult.ResourceTypes[complianceResult.ResourceType]
 	if !ok {
 		resourceType = Result{
-			QueryResult:    map[types.ConformanceStatus]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
+			QueryResult:    map[types.ComplianceStatus]int{},
+			SeverityResult: map[types.ComplianceResultSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		resourceType.SeverityResult[finding.Severity]++
+	if !complianceResult.ComplianceStatus.IsPassed() {
+		resourceType.SeverityResult[complianceResult.Severity]++
 	}
-	resourceType.QueryResult[finding.ConformanceStatus]++
-	resourceType.CostOptimization = utils.PAdd(resourceType.CostOptimization, finding.CostOptimization)
-	r.BenchmarkResult.ResourceTypes[finding.ResourceType] = resourceType
+	resourceType.QueryResult[complianceResult.ComplianceStatus]++
+	resourceType.CostImpact = utils.PAdd(resourceType.CostImpact, complianceResult.CostImpact)
+	r.BenchmarkResult.ResourceTypes[complianceResult.ResourceType] = resourceType
 
-	connectionResourceType, ok := connection.ResourceTypes[finding.ResourceType]
+	integrationResourceType, ok := integration.ResourceTypes[complianceResult.ResourceType]
 	if !ok {
-		connectionResourceType = Result{
-			QueryResult:    map[types.ConformanceStatus]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
+		integrationResourceType = Result{
+			QueryResult:    map[types.ComplianceStatus]int{},
+			SeverityResult: map[types.ComplianceResultSeverity]int{},
 			SecurityScore:  0,
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		connectionResourceType.SeverityResult[finding.Severity]++
+	if !complianceResult.ComplianceStatus.IsPassed() {
+		integrationResourceType.SeverityResult[complianceResult.Severity]++
 	}
-	connectionResourceType.QueryResult[finding.ConformanceStatus]++
-	connectionResourceType.CostOptimization = utils.PAdd(connectionResourceType.CostOptimization, finding.CostOptimization)
-	connection.ResourceTypes[finding.ResourceType] = connectionResourceType
+	integrationResourceType.QueryResult[complianceResult.ComplianceStatus]++
+	integrationResourceType.CostImpact = utils.PAdd(integrationResourceType.CostImpact, complianceResult.CostImpact)
+	integration.ResourceTypes[complianceResult.ResourceType] = integrationResourceType
 
-	control, ok := r.BenchmarkResult.Controls[finding.ControlID]
+	control, ok := r.BenchmarkResult.Controls[complianceResult.ControlID]
 	if !ok {
 		control = ControlResult{
-			Passed:            true,
-			allResources:      hyperloglog.New16(),
-			failedResources:   hyperloglog.New16(),
-			allConnections:    hyperloglog.New16(),
-			failedConnections: hyperloglog.New16(),
+			Passed:             true,
+			allResources:       hyperloglog.New16(),
+			failedResources:    hyperloglog.New16(),
+			allIntegrations:    hyperloglog.New16(),
+			failedIntegrations: hyperloglog.New16(),
 		}
 	}
 
-	if !finding.ConformanceStatus.IsPassed() {
+	if !complianceResult.ComplianceStatus.IsPassed() {
 		control.Passed = false
 
-		control.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
-		control.failedConnections.Insert([]byte(finding.ConnectionID))
+		control.failedResources.Insert([]byte(complianceResult.PlatformResourceID))
+		control.failedIntegrations.Insert([]byte(complianceResult.IntegrationID))
 	}
-	control.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
-	control.allConnections.Insert([]byte(finding.ConnectionID))
-	control.CostOptimization = utils.PAdd(control.CostOptimization, finding.CostOptimization)
-	r.BenchmarkResult.Controls[finding.ControlID] = control
+	control.allResources.Insert([]byte(complianceResult.PlatformResourceID))
+	control.allIntegrations.Insert([]byte(complianceResult.IntegrationID))
+	control.CostImpact = utils.PAdd(control.CostImpact, complianceResult.CostImpact)
+	r.BenchmarkResult.Controls[complianceResult.ControlID] = control
 
-	connectionControl, ok := connection.Controls[finding.ControlID]
+	integrationControl, ok := integration.Controls[complianceResult.ControlID]
 	if !ok {
-		connectionControl = ControlResult{
-			Passed:            true,
-			allResources:      hyperloglog.New16(),
-			failedResources:   hyperloglog.New16(),
-			allConnections:    hyperloglog.New16(),
-			failedConnections: hyperloglog.New16(),
+		integrationControl = ControlResult{
+			Passed:             true,
+			allResources:       hyperloglog.New16(),
+			failedResources:    hyperloglog.New16(),
+			allIntegrations:    hyperloglog.New16(),
+			failedIntegrations: hyperloglog.New16(),
 		}
 	}
-	if !finding.ConformanceStatus.IsPassed() {
-		connectionControl.Passed = false
-		connectionControl.failedResources.Insert([]byte(finding.OpenGovernanceResourceID))
-		connectionControl.failedConnections.Insert([]byte(finding.ConnectionID))
+	if !complianceResult.ComplianceStatus.IsPassed() {
+		integrationControl.Passed = false
+		integrationControl.failedResources.Insert([]byte(complianceResult.PlatformResourceID))
+		integrationControl.failedIntegrations.Insert([]byte(complianceResult.IntegrationID))
 	}
-	connectionControl.allResources.Insert([]byte(finding.OpenGovernanceResourceID))
-	connectionControl.allConnections.Insert([]byte(finding.ConnectionID))
-	connectionControl.CostOptimization = utils.PAdd(connectionControl.CostOptimization, finding.CostOptimization)
-	connection.Controls[finding.ControlID] = connectionControl
+	integrationControl.allResources.Insert([]byte(complianceResult.PlatformResourceID))
+	integrationControl.allIntegrations.Insert([]byte(complianceResult.IntegrationID))
+	integrationControl.CostImpact = utils.PAdd(integrationControl.CostImpact, complianceResult.CostImpact)
+	integration.Controls[complianceResult.ControlID] = integrationControl
 }
 
 func (r *BenchmarkSummaryResult) summarize() {
 	// update security scores
 	for controlID, summary := range r.BenchmarkResult.Controls {
-		summary.FailedConnectionCount = int(summary.failedConnections.Estimate())
-		summary.TotalConnectionCount = int(summary.allConnections.Estimate())
+		summary.FailedIntegrationCount = int(summary.failedIntegrations.Estimate())
+		summary.TotalIntegrationCount = int(summary.allIntegrations.Estimate())
 
 		summary.FailedResourcesCount = int(summary.failedResources.Estimate())
 		summary.TotalResourcesCount = int(summary.allResources.Estimate())
@@ -192,7 +192,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 		}
 
 		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
+			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceStatusOK]) / float64(total) * 100.0
 		}
 
 		r.BenchmarkResult.ResourceTypes[resourceType] = summary
@@ -203,13 +203,13 @@ func (r *BenchmarkSummaryResult) summarize() {
 		total += count
 	}
 	if total > 0 {
-		r.BenchmarkResult.Result.SecurityScore = float64(r.BenchmarkResult.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
+		r.BenchmarkResult.Result.SecurityScore = float64(r.BenchmarkResult.Result.QueryResult[types.ComplianceStatusOK]) / float64(total) * 100.0
 	}
 
-	for connectionID, summary := range r.Connections {
+	for integrationID, summary := range r.Integrations {
 		for controlID, controlSummary := range summary.Controls {
-			controlSummary.FailedConnectionCount = int(controlSummary.failedConnections.Estimate())
-			controlSummary.TotalConnectionCount = int(controlSummary.allConnections.Estimate())
+			controlSummary.FailedIntegrationCount = int(controlSummary.failedIntegrations.Estimate())
+			controlSummary.TotalIntegrationCount = int(controlSummary.allIntegrations.Estimate())
 
 			controlSummary.FailedResourcesCount = int(controlSummary.failedResources.Estimate())
 			controlSummary.TotalResourcesCount = int(controlSummary.allResources.Estimate())
@@ -224,7 +224,7 @@ func (r *BenchmarkSummaryResult) summarize() {
 			}
 
 			if total > 0 {
-				resourceTypeSummary.SecurityScore = float64(resourceTypeSummary.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
+				resourceTypeSummary.SecurityScore = float64(resourceTypeSummary.QueryResult[types.ComplianceStatusOK]) / float64(total) * 100.0
 			}
 
 			summary.ResourceTypes[resourceType] = resourceTypeSummary
@@ -236,15 +236,15 @@ func (r *BenchmarkSummaryResult) summarize() {
 		}
 
 		if total > 0 {
-			summary.Result.SecurityScore = float64(summary.Result.QueryResult[types.ConformanceStatusOK]) / float64(total) * 100.0
+			summary.Result.SecurityScore = float64(summary.Result.QueryResult[types.ComplianceStatusOK]) / float64(total) * 100.0
 		}
 
-		r.Connections[connectionID] = summary
+		r.Integrations[integrationID] = summary
 	}
 }
 
 func (b *BenchmarkSummary) summarize() {
-	b.Connections.summarize()
+	b.Integrations.summarize()
 	for rcId, rc := range b.ResourceCollections {
 		rc.summarize()
 		b.ResourceCollections[rcId] = rc

@@ -26,7 +26,7 @@ func (db Database) CountDescribeJobsByDate(includeCost *bool, start time.Time, e
 			costStmt = "NOT(resource_type like '%Cost%') AND "
 		}
 	}
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).
 		Where(costStmt+"status = ? AND updated_at >= ? AND updated_at < ?", api.DescribeResourceJobSucceeded, start, end).Count(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -37,9 +37,9 @@ func (db Database) CountDescribeJobsByDate(includeCost *bool, start time.Time, e
 	return count, nil
 }
 
-func (db Database) CountQueuedDescribeConnectionJobs(manuals bool) (int64, error) {
+func (db Database) CountQueuedDescribeIntegrationJobs(manuals bool) (int64, error) {
 	var count int64
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).
 		Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued)
 	if manuals {
 		tx = tx.Where("trigger_type = ?", enums.DescribeTriggerTypeManual)
@@ -56,9 +56,9 @@ func (db Database) CountQueuedDescribeConnectionJobs(manuals bool) (int64, error
 	return count, nil
 }
 
-func (db Database) CountDescribeConnectionJobsRunOverLast10Minutes(manuals bool) (int64, error) {
+func (db Database) CountDescribeIntegrationJobsRunOverLast10Minutes(manuals bool) (int64, error) {
 	var count int64
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).
 		Where("status != ? AND updated_at > now() - interval '10 minutes'", api.DescribeResourceJobCreated)
 	if manuals {
 		tx = tx.Where("trigger_type = ?", enums.DescribeTriggerTypeManual)
@@ -83,7 +83,7 @@ type ResourceTypeCount struct {
 func (db Database) CountRunningDescribeJobsPerResourceType(manuals bool) ([]ResourceTypeCount, error) {
 	var count []ResourceTypeCount
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, api.DescribeResourceJobOldResourceDeletion}
-	query := `select resource_type, count(*) as count from describe_connection_jobs where status in ?`
+	query := `select resource_type, count(*) as count from describe_integration_jobs where status in ?`
 	if manuals {
 		query = query + ` AND trigger_type = ?`
 	} else {
@@ -102,9 +102,9 @@ func (db Database) CountRunningDescribeJobsPerResourceType(manuals bool) ([]Reso
 	return count, nil
 }
 
-func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType string) (*model.DescribeConnectionJob, error) {
-	var job model.DescribeConnectionJob
-	tx := db.ORM.Preload(clause.Associations).Where("connection_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
+func (db Database) GetLastDescribeIntegrationJob(integrationId, resourceType string) (*model.DescribeIntegrationJob, error) {
+	var job model.DescribeIntegrationJob
+	tx := db.ORM.Preload(clause.Associations).Where("integration_id = ? AND resource_type = ?", integrationId, resourceType).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -115,9 +115,9 @@ func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType strin
 	return &job, nil
 }
 
-func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) ([]model.DescribeConnectionJob, error) {
-	var jobs []model.DescribeConnectionJob
-	tx := db.ORM.Preload(clause.Associations).Where("connection_id = ?", connectionID).Find(&jobs)
+func (db Database) GetDescribeIntegrationJobByIntegrationID(integrationId string) ([]model.DescribeIntegrationJob, error) {
+	var jobs []model.DescribeIntegrationJob
+	tx := db.ORM.Preload(clause.Associations).Where("integration_id = ?", integrationId).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -128,8 +128,8 @@ func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) (
 	return jobs, nil
 }
 
-func (db Database) GetDescribeConnectionJobByID(id uint) (*model.DescribeConnectionJob, error) {
-	var job model.DescribeConnectionJob
+func (db Database) GetDescribeIntegrationJobByID(id uint) (*model.DescribeIntegrationJob, error) {
+	var job model.DescribeIntegrationJob
 	tx := db.ORM.Preload(clause.Associations).Where("id = ?", id).First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -141,25 +141,16 @@ func (db Database) GetDescribeConnectionJobByID(id uint) (*model.DescribeConnect
 	return &job, nil
 }
 
-func (db Database) RetryDescribeConnectionJob(id uint) error {
-	tx := db.ORM.Exec("update describe_connection_jobs set status = ? where id = ?", api.DescribeResourceJobCreated, id)
+func (db Database) RetryDescribeIntegrationJob(id uint) error {
+	tx := db.ORM.Exec("update describe_integration_jobs set status = ? where id = ?", api.DescribeResourceJobCreated, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
 
 	return nil
 }
-func (db Database) QueueDescribeConnectionJob(id uint) error {
-	tx := db.ORM.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-func (db Database) UpdateDescribeConnectionJobNatsSeqNum(id uint, seqNum uint64) error {
-	tx := db.ORM.Exec("update describe_connection_jobs set nats_sequence_number = ? where id = ?", seqNum, id)
+func (db Database) QueueDescribeIntegrationJob(id uint) error {
+	tx := db.ORM.Exec("update describe_integration_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -167,17 +158,26 @@ func (db Database) UpdateDescribeConnectionJobNatsSeqNum(id uint, seqNum uint64)
 	return nil
 }
 
-func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int, manuals bool) ([]model.DescribeConnectionJob, error) {
+func (db Database) UpdateDescribeIntegrationJobNatsSeqNum(id uint, seqNum uint64) error {
+	tx := db.ORM.Exec("update describe_integration_jobs set nats_sequence_number = ? where id = ?", seqNum, id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListRandomCreatedDescribeIntegrationJobs(ctx context.Context, limit int, manuals bool) ([]model.DescribeIntegrationJob, error) {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
-	var job []model.DescribeConnectionJob
+	var job []model.DescribeIntegrationJob
 
 	query := `
 SELECT
 	*, random() as r
 FROM
-	describe_connection_jobs dr
+	describe_integration_jobs dr
 WHERE
 	status = ?`
 
@@ -230,11 +230,11 @@ func (db Database) ListAllJobs(pageStart, pageEnd int, interval *string, from *t
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_integration_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, *interval, whereQuery, sortBy, sortOrder)
@@ -242,11 +242,11 @@ UNION ALL
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT id, created_at, updated_at, 'discovery' AS job_type, connection_id, resource_type AS title, status, failure_message FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_integration_jobs WHERE created_at >= ? AND created_at <= ?)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS connection_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
 UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS connection_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
+(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, whereQuery, sortBy, sortOrder)
@@ -305,7 +305,7 @@ func (db Database) GetAllJobSummary(interval *string, from *time.Time, to *time.
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_integration_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 UNION ALL 
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 UNION ALL 
@@ -317,7 +317,7 @@ UNION ALL
 		rawQuery = fmt.Sprintf(`
 SELECT * FROM (
 (
-(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_connection_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
+(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_integration_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
 UNION ALL 
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
 UNION ALL 
@@ -335,11 +335,11 @@ UNION ALL
 	return job, nil
 }
 
-func (db Database) ListDescribeJobs(connectionId string) (*model.DescribeConnectionJob, error) {
-	var job model.DescribeConnectionJob
+func (db Database) ListDescribeJobs(integrationId string) (*model.DescribeIntegrationJob, error) {
+	var job model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
-		Where("connection_id = ?", connectionId).
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).
+		Where("integration_id = ?", integrationId).
 		Order("updated_at DESC").
 		Limit(1).
 		First(&job)
@@ -352,10 +352,10 @@ func (db Database) ListDescribeJobs(connectionId string) (*model.DescribeConnect
 	return &job, nil
 }
 
-func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", status).Find(&job)
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).Where("status = ?", status).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -365,10 +365,10 @@ func (db Database) ListDescribeJobsByStatus(status api.DescribeResourceJobStatus
 	return job, nil
 }
 
-func (db Database) LatestDescribeJobForIntegration(status api.DescribeResourceJobStatus) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) LatestDescribeJobForIntegration(status api.DescribeResourceJobStatus) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", status).Find(&job)
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).Where("status = ?", status).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -378,10 +378,10 @@ func (db Database) LatestDescribeJobForIntegration(status api.DescribeResourceJo
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("id IN ?", ids).Find(&job)
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).Where("id IN ?", ids).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -391,10 +391,10 @@ func (db Database) ListDescribeJobsByIds(ids []string) ([]model.DescribeConnecti
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsForInterval(interval, triggerType, createdBy string) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) ListDescribeJobsForInterval(interval, triggerType, createdBy string) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{})
 
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
@@ -417,18 +417,18 @@ func (db Database) ListDescribeJobsForInterval(interval, triggerType, createdBy 
 	return job, nil
 }
 
-func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds []string, resourceType []string,
-	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) ListDescribeJobsByFilters(parentIds []string, integrationIds []string, resourceType []string,
+	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{})
 
 	if len(parentIds) > 0 {
 		tx = tx.Where("parent_id IN ?", parentIds)
 	}
 
-	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id IN ?", connectionIds)
+	if len(integrationIds) > 0 {
+		tx = tx.Where("integration_id IN ?", integrationIds)
 	}
 
 	if len(resourceType) > 0 {
@@ -458,21 +458,18 @@ func (db Database) ListDescribeJobsByFilters(parentIds []string, connectionIds [
 	return job, nil
 }
 
-func (db Database) ListPendingDescribeJobsByFilters(connectionIds []string, resourceType []string,
-	discoveryType []string, jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeConnectionJob, error) {
-	var job []model.DescribeConnectionJob
+func (db Database) ListPendingDescribeJobsByFilters(integrationIds []string, resourceType []string,
+	jobStatus []string, startTime *time.Time, endTime *time.Time) ([]model.DescribeIntegrationJob, error) {
+	var job []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{})
 
-	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id IN ?", connectionIds)
+	if len(integrationIds) > 0 {
+		tx = tx.Where("integration_id IN ?", integrationIds)
 	}
 
 	if len(resourceType) > 0 {
 		tx = tx.Where("resource_type IN ?", resourceType)
-	}
-	if len(discoveryType) > 0 {
-		tx = tx.Where("discovery_type IN ?", discoveryType)
 	}
 	if len(jobStatus) > 0 {
 		tx = tx.Where("status IN ?", jobStatus)
@@ -497,10 +494,10 @@ func (db Database) ListPendingDescribeJobsByFilters(connectionIds []string, reso
 	return job, nil
 }
 
-func (db Database) GetDescribeJobById(jobId string) (*model.DescribeConnectionJob, error) {
-	var job model.DescribeConnectionJob
+func (db Database) GetDescribeJobById(jobId string) (*model.DescribeIntegrationJob, error) {
+	var job model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{})
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{})
 
 	tx = tx.Where("id = ?", jobId)
 
@@ -515,24 +512,24 @@ func (db Database) GetDescribeJobById(jobId string) (*model.DescribeConnectionJo
 	return &job, nil
 }
 
-func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]model.DescribeConnectionJob, error) {
+func (db Database) GetFailedDescribeIntegrationJobs(ctx context.Context) ([]model.DescribeIntegrationJob, error) {
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
-	var job []model.DescribeConnectionJob
+	var job []model.DescribeIntegrationJob
 
 	tx := db.ORM.Raw(`
 SELECT
 	*
 FROM
-	describe_connection_jobs dr
+	describe_integration_jobs dr
 WHERE
     trigger_type <> ? AND
 	(status = ? OR status = ?) AND
 	created_at > now() - interval '2 day' AND
     updated_at < now() - interval '5 minutes' AND
 	NOT(error_code IN ('InvalidApiVersionParameter', 'AuthorizationFailed', 'AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
-	(retry_count < 5 OR retry_count IS NULL)
+	(retry_count < 1 OR retry_count IS NULL)
 	ORDER BY id DESC
 `, enums.DescribeTriggerTypeManual, api.DescribeResourceJobFailed, api.DescribeResourceJobTimeout).Find(&job)
 	if tx.Error != nil {
@@ -544,9 +541,9 @@ WHERE
 	return job, nil
 }
 
-func (db Database) CreateDescribeConnectionJob(job *model.DescribeConnectionJob) error {
+func (db Database) CreateDescribeIntegrationJob(job *model.DescribeIntegrationJob) error {
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Create(job)
 	if tx.Error != nil {
 		return tx.Error
@@ -555,58 +552,58 @@ func (db Database) CreateDescribeConnectionJob(job *model.DescribeConnectionJob)
 	return nil
 }
 
-func (db Database) CleanupManualDescribeConnectionJobsOlderThan(t time.Time) error {
-	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type = ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeConnectionJob{})
+func (db Database) CleanupManualDescribeIntegrationJobsOlderThan(t time.Time) error {
+	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type = ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeIntegrationJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) CleanupScheduledDescribeConnectionJobsOlderThan(t time.Time) error {
-	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type <> ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeConnectionJob{})
+func (db Database) CleanupScheduledDescribeIntegrationJobsOlderThan(t time.Time) error {
+	tx := db.ORM.Where("created_at < ?", t).Where("trigger_type <> ?", enums.DescribeTriggerTypeManual).Unscoped().Delete(&model.DescribeIntegrationJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-// UpdateDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
+// UpdateDescribeIntegrationJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than 4 hours.
-func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours int64) error {
+func (db Database) UpdateDescribeIntegrationJobsTimedOut(describeIntervalHours int64) error {
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
 
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("updated_at < NOW() - INTERVAL '30 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobOldResourceDeletion)}).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
 
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '1 hour'")).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
 	if tx.Error != nil {
 		return tx.Error
 	}
 
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -614,45 +611,45 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 	return nil
 }
 
-// UpdateResourceTypeDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
+// UpdateResourceTypeDescribeIntegrationJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than time interval for the specific resource type.
-func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours time.Duration) (int, error) {
+func (db Database) UpdateResourceTypeDescribeIntegrationJobsTimedOut(resourceType string, describeIntervalHours time.Duration) (int, error) {
 	totalCount := 0
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
 		Where("resource_type = ?", resourceType).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("updated_at < NOW() - INTERVAL '30 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobOldResourceDeletion)}).
 		Where("resource_type = ?", resourceType).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '1 hours'")).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Where("resource_type = ?", resourceType).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
 	totalCount += int(tx.RowsAffected)
 	tx = db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", int(describeIntervalHours.Hours()))).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
 		Where("resource_type = ?", resourceType).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted", ErrorCode: "JobTimeOut"})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
@@ -660,10 +657,10 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 	return totalCount, nil
 }
 
-// UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
+// UpdateDescribeIntegrationJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount, deletingCount int64) error {
-	tx := db.ORM.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ?, deleting_count = ? WHERE id = ?",
+func (db Database) UpdateDescribeIntegrationJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount, deletingCount int64) error {
+	tx := db.ORM.Exec("UPDATE describe_integration_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ?, deleting_count = ? WHERE id = ?",
 		status, msg, errCode, resourceCount, deletingCount, id)
 	if tx.Error != nil {
 		return tx.Error
@@ -672,12 +669,12 @@ func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.Describ
 	return nil
 }
 
-func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
+func (db Database) UpdateDescribeIntegrationJobToInProgress(id uint) error {
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("id = ?", id).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobInProgress, InProgressedAt: time.Now()})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobInProgress, InProgressedAt: time.Now()})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -685,11 +682,11 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 	return nil
 }
 
-func (db Database) UpdateDescribeConnectionJobToDeletionOfOldResources(id uint) error {
+func (db Database) UpdateDescribeIntegrationJobToDeletionOfOldResources(id uint) error {
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("id = ?", id).
-		Updates(model.DescribeConnectionJob{Status: api.DescribeResourceJobOldResourceDeletion})
+		Updates(model.DescribeIntegrationJob{Status: api.DescribeResourceJobOldResourceDeletion})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -702,11 +699,11 @@ func (db Database) GetDescribeStatus(resourceType string) ([]api.DescribeStatus,
 
 	tx := db.ORM.Raw(`with conns as (
     select 
-        connection_id, max(updated_at) as updated_at 
-    from describe_connection_jobs 
+        integration_id, max(updated_at) as updated_at 
+    from describe_integration_jobs 
     where lower(resource_type) = ? and status in ('SUCCEEDED', 'FAILED', 'TIMEOUT') group by 1
 )
-select j.connection_id, j.connector, j.status from describe_connection_jobs j inner join conns c on j.connection_id = c.connection_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
+select j.integration_id, j.connector, j.status from describe_integration_jobs j inner join conns c on j.integration_id = c.integration_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -716,25 +713,25 @@ select j.connection_id, j.connector, j.status from describe_connection_jobs j in
 	return job, nil
 }
 
-func (db Database) GetConnectionDescribeStatus(connectionID string) ([]api.ConnectionDescribeStatus, error) {
-	var job []api.ConnectionDescribeStatus
+func (db Database) GetIntegrationDescribeStatus(integrationId string) ([]api.IntegrationDescribeStatus, error) {
+	var job []api.IntegrationDescribeStatus
 
 	tx := db.ORM.Raw(`with resourceTypes as (
     select 
         resource_type, max(updated_at) as updated_at 
     from
-		describe_connection_jobs 
+		describe_integration_jobs 
     where 
-		connection_id = ?
+		integration_id = ?
 	group by 1
 )
 select 
 	j.resource_type, j.status 
 from 
-	describe_connection_jobs j inner join resourceTypes c on j.resource_type = c.resource_type 
+	describe_integration_jobs j inner join resourceTypes c on j.resource_type = c.resource_type 
 where 
-	connection_id = ? AND j.updated_at = c.updated_at;`,
-		connectionID, connectionID).Find(&job)
+	integration_id = ? AND j.updated_at = c.updated_at;`,
+		integrationId, integrationId).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -746,7 +743,7 @@ where
 
 func (db Database) CountJobsWithStatus(interval int, connector source.Type, status api.DescribeResourceJobStatus) (*int64, error) {
 	var count int64
-	query := fmt.Sprintf("SELECT count(*) FROM describe_connection_jobs WHERE (connector = '%s' and created_at > now() - interval '%d hour' and status = '%s') AND deleted_at IS NULL", connector, interval, status)
+	query := fmt.Sprintf("SELECT count(*) FROM describe_integration_jobs WHERE (connector = '%s' and created_at > now() - interval '%d hour' and status = '%s') AND deleted_at IS NULL", connector, interval, status)
 	tx := db.ORM.Raw(query).Find(&count)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -754,23 +751,23 @@ func (db Database) CountJobsWithStatus(interval int, connector source.Type, stat
 	return &count, nil
 }
 
-func (db Database) ListAllPendingConnection() ([]string, error) {
-	var connectionIDs []string
+func (db Database) ListAllPendingIntegration() ([]string, error) {
+	var integrationIds []string
 
-	tx := db.ORM.Raw(`select distinct(connection_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS')`).Find(&connectionIDs)
+	tx := db.ORM.Raw(`select distinct(integration_id) from describe_integration_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS')`).Find(&integrationIds)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, tx.Error
 	}
-	return connectionIDs, nil
+	return integrationIds, nil
 }
 
-func (db Database) ListAllFirstTryPendingConnection() ([]string, error) {
+func (db Database) ListAllFirstTryPendingIntegration() ([]string, error) {
 	var discoveryTypes []string
 
-	tx := db.ORM.Raw(`select distinct(discovery_type) from describe_connection_jobs where (status = 'CREATED' AND retry_count = 0) OR (status in ('QUEDED', 'IN_PROGRESS') and retry_count = 1)`).Find(&discoveryTypes)
+	tx := db.ORM.Raw(`select distinct(discovery_type) from describe_integration_jobs where (status = 'CREATED' AND retry_count = 0) OR (status in ('QUEDED', 'IN_PROGRESS') and retry_count = 1)`).Find(&discoveryTypes)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -780,10 +777,10 @@ func (db Database) ListAllFirstTryPendingConnection() ([]string, error) {
 	return discoveryTypes, nil
 }
 
-func (db Database) ListAllSuccessfulDescribeJobs() ([]model.DescribeConnectionJob, error) {
-	var jobs []model.DescribeConnectionJob
+func (db Database) ListAllSuccessfulDescribeJobs() ([]model.DescribeIntegrationJob, error) {
+	var jobs []model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).Where("status = ?", api.DescribeResourceJobSucceeded).Find(&jobs)
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).Where("status = ?", api.DescribeResourceJobSucceeded).Find(&jobs)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -793,10 +790,10 @@ func (db Database) ListAllSuccessfulDescribeJobs() ([]model.DescribeConnectionJo
 	return jobs, nil
 }
 
-func (db Database) GetLastSuccessfulDescribeJob() (*model.DescribeConnectionJob, error) {
-	var job model.DescribeConnectionJob
+func (db Database) GetLastSuccessfulDescribeJob() (*model.DescribeIntegrationJob, error) {
+	var job model.DescribeIntegrationJob
 
-	tx := db.ORM.Model(&model.DescribeConnectionJob{}).
+	tx := db.ORM.Model(&model.DescribeIntegrationJob{}).
 		Where("status = 'SUCCEEDED'").
 		Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
@@ -810,15 +807,15 @@ func (db Database) GetLastSuccessfulDescribeJob() (*model.DescribeConnectionJob,
 
 func (db Database) CountJobsAndResources() (*int64, *int64, error) {
 	var count, sum *int64
-	err := db.ORM.Raw("select count(*), sum(described_resource_count) from describe_connection_jobs").Row().Scan(&count, &sum)
+	err := db.ORM.Raw("select count(*), sum(described_resource_count) from describe_integration_jobs").Row().Scan(&count, &sum)
 	if err != nil {
 		return nil, nil, err
 	}
 	return count, sum, nil
 }
 
-func (db Database) CleanupAllDescribeConnectionJobs() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.DescribeConnectionJob{})
+func (db Database) CleanupAllDescribeIntegrationJobs() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.DescribeIntegrationJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -836,14 +833,14 @@ func (db Database) CreateIntegrationDiscovery(discovery *model.IntegrationDiscov
 	return nil
 }
 
-func (db Database) ListIntegrationDiscovery(triggerId string, connectionIds []string) ([]model.IntegrationDiscovery, error) {
+func (db Database) ListIntegrationDiscovery(triggerId string, integrationIds []string) ([]model.IntegrationDiscovery, error) {
 	var jobs []model.IntegrationDiscovery
 	tx := db.ORM.
 		Model(&model.IntegrationDiscovery{}).
 		Where("trigger_id = ?", triggerId)
 
-	if len(connectionIds) > 0 {
-		tx = tx.Where("connection_id in ?", connectionIds)
+	if len(integrationIds) > 0 {
+		tx = tx.Where("integration_id in ?", integrationIds)
 	}
 	tx = tx.Find(&jobs)
 	if tx.Error != nil {
@@ -853,10 +850,10 @@ func (db Database) ListIntegrationDiscovery(triggerId string, connectionIds []st
 	return jobs, nil
 }
 
-func (db Database) GetDiscoveryJobsByParentID(parentId uint) ([]model.DescribeConnectionJob, error) {
-	var jobs []model.DescribeConnectionJob
+func (db Database) GetDiscoveryJobsByParentID(parentId uint) ([]model.DescribeIntegrationJob, error) {
+	var jobs []model.DescribeIntegrationJob
 	tx := db.ORM.
-		Model(&model.DescribeConnectionJob{}).
+		Model(&model.DescribeIntegrationJob{}).
 		Where("parent_id = ?", parentId).
 		Find(&jobs)
 	if tx.Error != nil {

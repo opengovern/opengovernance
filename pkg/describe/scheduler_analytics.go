@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -26,15 +27,15 @@ func (s *Scheduler) RunAnalyticsJobScheduler(ctx context.Context) {
 	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
 	ctx2.Ctx = ctx
 	for ; ; <-t.C {
-		connections, err := s.onboardClient.ListSources(ctx2, nil)
+		integrations, err := s.integrationClient.ListIntegrations(ctx2, nil)
 		if err != nil {
 			s.logger.Error("Failed to list sources", zap.Error(err))
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 		hasEnabled := false
-		for _, connection := range connections {
-			if connection.IsEnabled() {
+		for _, integration := range integrations.Integrations {
+			if integration.State == integrationapi.IntegrationStateActive {
 				hasEnabled = true
 				break
 			}

@@ -27,12 +27,12 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []any             `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client opengovernance.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client opengovernance.Client, integrationID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": append([]map[string]any{
-				{"term": map[string]string{"source_id": sourceID}},
+				{"term": map[string]string{"integration_id": integrationID}},
 				{"term": map[string]string{"resource_type": strings.ToLower(resourceType)}},
 			}, additionalFilters...),
 		},
@@ -42,7 +42,7 @@ func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client open
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"created_at": "asc"},
+		{"described_at": "asc"},
 		{"_id": "desc"},
 	}
 
@@ -62,12 +62,12 @@ func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client open
 	return &response, nil
 }
 
-func GetResourceIDsForAccountFromES(ctx context.Context, client opengovernance.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsNotInIntegrationsFromES(ctx context.Context, client opengovernance.Client, integrationIDs []string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": []map[string]any{
-				{"term": map[string]string{"source_id": sourceID}},
+			"must_not": []map[string]any{
+				{"terms": map[string]any{"integration_id": integrationIDs}},
 			},
 		},
 	}
@@ -76,7 +76,41 @@ func GetResourceIDsForAccountFromES(ctx context.Context, client opengovernance.C
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"created_at": "asc"},
+		{"described_at": "asc"},
+		{"_id": "desc"},
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ResourceIdentifierFetchResponse
+	err = client.Search(ctx, es.InventorySummaryIndex,
+		string(queryBytes), &response)
+	if err != nil {
+		fmt.Println("query=", string(queryBytes))
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+func GetResourceIDsForIntegrationFromES(ctx context.Context, client opengovernance.Client, integrationID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+	root := map[string]any{}
+	root["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": []map[string]any{
+				{"term": map[string]string{"integration_id": integrationID}},
+			},
+		},
+	}
+	if searchAfter != nil {
+		root["search_after"] = searchAfter
+	}
+	root["size"] = size
+	root["sort"] = []map[string]any{
+		{"described_at": "asc"},
 		{"_id": "desc"},
 	}
 

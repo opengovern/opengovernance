@@ -12,13 +12,13 @@ import (
 )
 
 type ConnectionCostSummaryHit struct {
-	ID      string                             `json:"_id"`
-	Score   float64                            `json:"_score"`
-	Index   string                             `json:"_index"`
-	Type    string                             `json:"_type"`
-	Version int64                              `json:"_version,omitempty"`
-	Source  spend.ConnectionMetricTrendSummary `json:"_source"`
-	Sort    []any                              `json:"sort"`
+	ID      string                              `json:"_id"`
+	Score   float64                             `json:"_score"`
+	Index   string                              `json:"_index"`
+	Type    string                              `json:"_type"`
+	Version int64                               `json:"_version,omitempty"`
+	Source  spend.IntegrationMetricTrendSummary `json:"_source"`
+	Sort    []any                               `json:"sort"`
 }
 
 type ConnectionCostSummaryHits struct {
@@ -36,7 +36,7 @@ type ConnectionCostSummaryPaginator struct {
 }
 
 func (k Client) NewConnectionCostSummaryPaginator(filters []essdk.BoolFilter, limit *int64) (ConnectionCostSummaryPaginator, error) {
-	paginator, err := essdk.NewPaginator(k.ES.ES(), spend.AnalyticsSpendConnectionSummaryIndex, filters, limit)
+	paginator, err := essdk.NewPaginator(k.ES.ES(), spend.AnalyticsSpendIntegrationSummaryIndex, filters, limit)
 	if err != nil {
 		return ConnectionCostSummaryPaginator{}, err
 	}
@@ -61,14 +61,14 @@ func (p ConnectionCostSummaryPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p ConnectionCostSummaryPaginator) NextPage(ctx context.Context) ([]spend.ConnectionMetricTrendSummary, error) {
+func (p ConnectionCostSummaryPaginator) NextPage(ctx context.Context) ([]spend.IntegrationMetricTrendSummary, error) {
 	var response ConnectionCostSummarySearchResponse
 	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []spend.ConnectionMetricTrendSummary
+	var values []spend.IntegrationMetricTrendSummary
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}
@@ -131,20 +131,20 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 		plugin.Logger(ctx).Warn("ListCostSummary: Stream", d)
 		for _, v := range page {
 			plugin.Logger(ctx).Warn("ListCostSummary: Page", v)
-			for _, connRes := range v.Connections {
+			for _, connRes := range v.Integrations {
 				row := OpenGovernanceCostTableRow{
-					ConnectionID:   connRes.ConnectionID,
-					ConnectionName: connRes.ConnectionName,
-					Connector:      connRes.Connector.String(),
-					Date:           v.Date,
-					DateEpoch:      v.DateEpoch,
-					Month:          v.Month,
-					Year:           v.Year,
-					MetricID:       v.MetricID,
-					MetricName:     v.MetricName,
-					CostValue:      connRes.CostValue,
-					PeriodStart:    time.UnixMilli(v.PeriodStart),
-					PeriodEnd:      time.UnixMilli(v.PeriodEnd),
+					IntegrationID:   connRes.IntegrationID,
+					IntegrationName: connRes.IntegrationName,
+					IntegrationType: connRes.IntegrationType.String(),
+					Date:            v.Date,
+					DateEpoch:       v.DateEpoch,
+					Month:           v.Month,
+					Year:            v.Year,
+					MetricID:        v.MetricID,
+					MetricName:      v.MetricName,
+					CostValue:       connRes.CostValue,
+					PeriodStart:     time.UnixMilli(v.PeriodStart),
+					PeriodEnd:       time.UnixMilli(v.PeriodEnd),
 				}
 				d.StreamListItem(ctx, row)
 			}
@@ -156,16 +156,16 @@ func ListCostSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrate
 }
 
 type OpenGovernanceCostTableRow struct {
-	ConnectionID   string    `json:"connection_id"`
-	ConnectionName string    `json:"connection_name"`
-	Connector      string    `json:"connector"`
-	Date           string    `json:"date"`
-	DateEpoch      int64     `json:"date_epoch"`
-	Month          string    `json:"month"`
-	Year           string    `json:"year"`
-	MetricID       string    `json:"metric_id"`
-	MetricName     string    `json:"metric_name"`
-	CostValue      float64   `json:"cost_value"`
-	PeriodStart    time.Time `json:"period_start"`
-	PeriodEnd      time.Time `json:"period_end"`
+	IntegrationID   string    `json:"integration_id"`
+	IntegrationName string    `json:"integration_name"`
+	IntegrationType string    `json:"integration_type"`
+	Date            string    `json:"date"`
+	DateEpoch       int64     `json:"date_epoch"`
+	Month           string    `json:"month"`
+	Year            string    `json:"year"`
+	MetricID        string    `json:"metric_id"`
+	MetricName      string    `json:"metric_name"`
+	CostValue       float64   `json:"cost_value"`
+	PeriodStart     time.Time `json:"period_start"`
+	PeriodEnd       time.Time `json:"period_end"`
 }

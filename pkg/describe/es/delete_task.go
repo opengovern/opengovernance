@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 )
 
 const DeleteTasksIndex = "delete_tasks"
@@ -27,11 +27,11 @@ type DeleteTask struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	TaskType       DeleteTaskType `json:"task_type"`
-	DiscoveryJobID uint           `json:"discovery_job_id"`
-	ConnectionID   string         `json:"connection_id"`
-	ResourceType   string         `json:"resource_type"`
-	Connector      source.Type    `json:"connector"`
+	TaskType        DeleteTaskType   `json:"task_type"`
+	DiscoveryJobID  uint             `json:"discovery_job_id"`
+	IntegrationID   string           `json:"integration_id"`
+	ResourceType    string           `json:"resource_type"`
+	IntegrationType integration.Type `json:"connector"`
 
 	DeletingResources []DeletingResource `json:"deleting_resources"`
 	Query             string             `json:"query"`
@@ -45,7 +45,7 @@ func (d DeleteTask) KeysAndIndex() ([]string, string) {
 		ids = append(ids, r.Index)
 	}
 	ids = append(ids, d.ResourceType)
-	ids = append(ids, d.ConnectionID)
+	ids = append(ids, d.IntegrationID)
 	ids = append(ids, string(d.TaskType))
 	ids = append(ids, d.Query)
 	return ids, DeleteTasksIndex
@@ -89,8 +89,4 @@ func GetDeleteTasks(ctx context.Context, client opengovernance.Client) (*GetDele
 	}
 
 	return &response, nil
-}
-
-func DeleteDeleteTask(client opengovernance.Client, id string) error {
-	return client.Delete(id, DeleteTasksIndex)
 }
