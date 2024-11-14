@@ -2,10 +2,11 @@ package db
 
 import (
 	"errors"
-	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	"gorm.io/gorm"
 	"time"
+
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/services/compliance/summarizer"
+	"gorm.io/gorm"
 )
 
 func (db Database) CreateSummarizerJob(summarizer *model.ComplianceSummarizer) error {

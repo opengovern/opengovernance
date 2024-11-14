@@ -2,10 +2,11 @@ package db
 
 import (
 	"errors"
-	"github.com/opengovern/opengovernance/pkg/compliance/runner"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	"gorm.io/gorm"
 	"time"
+
+	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/services/compliance/runner"
+	"gorm.io/gorm"
 )
 
 func (db Database) CreateRunnerJobs(tx *gorm.DB, runners []*model.ComplianceRunner) error {

@@ -2,15 +2,16 @@ package opengovernance_client
 
 import (
 	"context"
+	"runtime"
+	"time"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	complianceApi "github.com/opengovern/opengovernance/pkg/compliance/api"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
 	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/services"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"runtime"
-	"time"
 )
 
 func GetBenchmarkSummary(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {

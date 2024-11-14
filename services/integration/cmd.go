@@ -3,6 +3,7 @@ package integration
 import (
 	"errors"
 	"fmt"
+
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
@@ -10,10 +11,10 @@ import (
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
-	metadata "github.com/opengovern/opengovernance/pkg/metadata/client"
 	"github.com/opengovern/opengovernance/services/integration/api"
 	"github.com/opengovern/opengovernance/services/integration/config"
 	"github.com/opengovern/opengovernance/services/integration/db"
+	metadata "github.com/opengovern/opengovernance/services/metadata/client"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

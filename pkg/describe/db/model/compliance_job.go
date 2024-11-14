@@ -3,12 +3,13 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lib/pq"
-	"github.com/opengovern/opengovernance/pkg/compliance/runner"
-	"github.com/opengovern/opengovernance/pkg/compliance/summarizer"
-	"github.com/opengovern/opengovernance/pkg/describe/api"
-	"gorm.io/gorm"
 	"time"
+
+	"github.com/lib/pq"
+	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/services/compliance/runner"
+	"github.com/opengovern/opengovernance/services/compliance/summarizer"
+	"gorm.io/gorm"
 )
 
 type ComplianceJobStatus string

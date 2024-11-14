@@ -4,22 +4,23 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/metadata/client"
-	"github.com/opengovern/opengovernance/pkg/metadata/models"
 	db2 "github.com/opengovern/opengovernance/services/demo-importer/db"
 	"github.com/opengovern/opengovernance/services/demo-importer/fetch"
 	"github.com/opengovern/opengovernance/services/demo-importer/types"
 	"github.com/opengovern/opengovernance/services/demo-importer/worker"
+	"github.com/opengovern/opengovernance/services/metadata/client"
+	"github.com/opengovern/opengovernance/services/metadata/models"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
 )
 
 func Command() *cobra.Command {
