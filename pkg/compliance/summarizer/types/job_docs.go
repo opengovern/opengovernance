@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/opengovern/og-util/pkg/es"
+	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"go.uber.org/zap"
 )
@@ -32,6 +33,20 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 		jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
 	}
 
+	var platformResourceID, resourceType, resourceName string
+	var integrationType integration.Type
+	if resource != nil {
+		platformResourceID = resource.PlatformID
+		resourceType = resource.ResourceType
+		integrationType = resource.IntegrationType
+		resourceName = resource.ResourceName
+	} else {
+		platformResourceID = complianceResult.PlatformResourceID
+		resourceType = complianceResult.ResourceType
+		integrationType = complianceResult.IntegrationType
+		resourceName = complianceResult.ResourceName
+	}
+
 	if resource == nil {
 		logger.Warn("no resource found ignoring resource collection population for this complianceResult",
 			zap.String("platformResourceID", complianceResult.PlatformResourceID),
@@ -41,50 +56,50 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 			zap.String("benchmarkId", complianceResult.BenchmarkID),
 			zap.String("controlId", complianceResult.ControlID),
 		)
-		return
+		//return
 	}
 
 	if jd.LastResourceIdType == "" {
-		jd.LastResourceIdType = resource.PlatformID
-	} else if jd.LastResourceIdType != resource.PlatformID {
+		jd.LastResourceIdType = platformResourceID
+	} else if jd.LastResourceIdType != platformResourceID {
 		jd.ResourcesFindingsIsDone[jd.LastResourceIdType] = true
-		jd.LastResourceIdType = resource.PlatformID
+		jd.LastResourceIdType = platformResourceID
 	}
 
-	logger.Info("creating the resource finding", zap.String("platform_resource_id", resource.PlatformID),
+	logger.Info("creating the resource finding", zap.String("platform_resource_id", platformResourceID),
 		zap.Any("resource", resource))
-	resourceFinding, ok := jd.ResourcesFindings[resource.PlatformID]
+	resourceFinding, ok := jd.ResourcesFindings[platformResourceID]
 	if !ok {
 		resourceFinding = types.ResourceFinding{
-			PlatformResourceID:    resource.PlatformID,
-			ResourceType:          resource.ResourceType,
-			ResourceName:          resource.ResourceName,
-			IntegrationType:       resource.IntegrationType,
+			PlatformResourceID:    platformResourceID,
+			ResourceType:          resourceType,
+			ResourceName:          resourceName,
+			IntegrationType:       integrationType,
 			ComplianceResults:     nil,
 			ResourceCollection:    nil,
 			ResourceCollectionMap: make(map[string]bool),
 			JobId:                 job.ID,
 			EvaluatedAt:           job.CreatedAt.UnixMilli(),
 		}
-		jd.ResourcesFindingsIsDone[resource.PlatformID] = false
+		jd.ResourcesFindingsIsDone[platformResourceID] = false
 	} else {
 		resourceFinding.JobId = job.ID
 		resourceFinding.EvaluatedAt = job.CreatedAt.UnixMilli()
 	}
 	if resourceFinding.ResourceName == "" {
-		resourceFinding.ResourceName = resource.ResourceName
+		resourceFinding.ResourceName = resourceName
 	}
 	if resourceFinding.ResourceType == "" {
-		resourceFinding.ResourceType = resource.ResourceType
+		resourceFinding.ResourceType = resourceType
 	}
 	resourceFinding.ComplianceResults = append(resourceFinding.ComplianceResults, complianceResult)
 
-	if _, ok := jd.ResourcesFindingsIsDone[resource.PlatformID]; !ok {
-		jd.ResourcesFindingsIsDone[resource.PlatformID] = false
+	if _, ok := jd.ResourcesFindingsIsDone[platformResourceID]; !ok {
+		jd.ResourcesFindingsIsDone[platformResourceID] = false
 	}
-	logger.Info("adding the resource finding", zap.String("platform_resource_id", resource.PlatformID),
+	logger.Info("adding the resource finding", zap.String("platform_resource_id", platformResourceID),
 		zap.Any("resource", resource))
-	jd.ResourcesFindings[resource.PlatformID] = resourceFinding
+	jd.ResourcesFindings[platformResourceID] = resourceFinding
 }
 
 func (jd *JobDocs) Summarize(logger *zap.Logger) {
