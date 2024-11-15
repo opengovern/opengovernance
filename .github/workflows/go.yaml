@@ -136,6 +136,8 @@ jobs:
         run: |
           ls -la
 
+          ls build -la
+
       - name: Pack build
         if: github.event_name != 'pull_request'
         run: |
