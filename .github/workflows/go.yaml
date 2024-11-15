@@ -98,7 +98,7 @@ jobs:
           fetch-depth: 5
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: "./go.mod"
           cache: false
@@ -132,12 +132,6 @@ jobs:
             chmod +x ./build/*
           fi
           for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
-      - name: Run LS
-        run: |
-          ls -la
-
-          ls build -la
-
       - name: Pack build
         if: github.event_name != 'pull_request'
         run: |

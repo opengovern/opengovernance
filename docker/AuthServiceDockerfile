@@ -1,5 +1,4 @@
-FROM golang:1.16-buster as build
-
+FROM docker.io/golang:alpine as build
 RUN apk --no-cache add ca-certificates
 
 FROM scratch
