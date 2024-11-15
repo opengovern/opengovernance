@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	queryvalidator "github.com/opengovern/opengovernance/pkg/query-validator"
 	"net"
 	"net/http"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	queryrunnerscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-runner"
+	queryrvalidatorscheduler "github.com/opengovern/opengovernance/pkg/describe/schedulers/query-validator"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 
@@ -135,10 +137,11 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
-	complianceScheduler  *compliance.JobScheduler
-	discoveryScheduler   *discovery.Scheduler
-	queryRunnerScheduler *queryrunnerscheduler.JobScheduler
-	conf                 config.SchedulerConfig
+	complianceScheduler     *compliance.JobScheduler
+	discoveryScheduler      *discovery.Scheduler
+	queryRunnerScheduler    *queryrunnerscheduler.JobScheduler
+	queryValidatorScheduler *queryrvalidatorscheduler.JobScheduler
+	conf                    config.SchedulerConfig
 }
 
 func InitializeScheduler(
@@ -316,6 +319,11 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 		return err
 	}
 
+	if err := s.jq.Stream(ctx, queryvalidator.StreamName, "Query Validator job queues", []string{queryvalidator.JobQueueTopic, queryvalidator.JobResultQueueTopic}, 1000); err != nil {
+		s.logger.Error("Failed to stream to Query Validator queue", zap.Error(err))
+		return err
+	}
+
 	if err := s.jq.Stream(ctx, summarizer.StreamName, "compliance summarizer job queues", []string{summarizer.JobQueueTopic, summarizer.JobQueueTopicManuals, summarizer.ResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to compliance summarizer queue", zap.Error(err))
 		return err
@@ -453,6 +461,22 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.metadataClient,
 	)
 	s.queryRunnerScheduler.Run(ctx)
+
+	// Query Validator
+	s.queryValidatorScheduler = queryrvalidatorscheduler.New(
+		func(ctx context.Context) error {
+			return s.SetupNatsStreams(ctx)
+		},
+		s.conf,
+		s.logger,
+		s.db,
+		s.jq,
+		s.es,
+		s.inventoryClient,
+		s.complianceClient,
+		s.metadataClient,
+	)
+	s.queryValidatorScheduler.Run(ctx)
 
 	// Compliance
 	s.complianceScheduler = compliance.New(

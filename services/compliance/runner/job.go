@@ -77,13 +77,6 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 }
 
 func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
-	//cutOff := time.Now().AddDate(0, -3, 0)
-	//w.logger.Info("Deleting old complianceResults", zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
-	//if err := w.handleOldComplianceResultsStateByTime(ctx, cutOff, false); err != nil {
-	//	w.logger.Error("failed to delete old complianceResults", zap.Error(err), zap.Uint("job_id", j.ID), zap.Time("cut_off", cutOff))
-	//	return 0, err
-	//}
-
 	w.logger.Info("Running query",
 		zap.Uint("job_id", j.ID),
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
