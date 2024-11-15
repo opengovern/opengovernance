@@ -77,7 +77,6 @@ jobs:
       steampipe-plugin-opengovernance: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
-      wastage-service: ${{ steps.build_services.outputs.wastage-service }}
       information-service: ${{ steps.build_services.outputs.information-service }}
       query-runner-worker: ${{ steps.build_services.outputs.query-runner-worker }}
       query-validator-worker: ${{ steps.build_services.outputs.query-validator-worker }}
@@ -99,7 +98,7 @@ jobs:
           fetch-depth: 5
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: "./go.mod"
           cache: false
@@ -711,41 +710,6 @@ jobs:
           file: docker/SteampipePluginOpengovernanceDockerfile
           context: .
 
-  deploy-wastage-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.wastage-service == 'true' && github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar.gz
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/wastage-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/WastageServiceDockerfile
-          context: .
 
   deploy-information-service:
     runs-on: ubuntu-latest

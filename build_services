@@ -9,13 +9,11 @@ hopper
 inventory-service
 metadata-service
 migrator-worker
-onboard-service
+integration-service
 reporter
 summarizer-worker
 swagger-ui
-gpt-service
 analytics-worker
 cost-estimator-service
-wastage-service
 query-runner-worker
 demo-importer-worker
