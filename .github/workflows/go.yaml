@@ -87,11 +87,6 @@ jobs:
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
     steps:
   
-      - name: Install musl cc
-        uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: musl-tools musl-dev musl
-
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -127,7 +122,7 @@ jobs:
           mkdir -p ./build
           if [ ! -z "$(cat ./build_services)" ]; then
             for f in $(cat ./build_services); do
-              CC=/usr/bin/musl-gcc GOPRIVATE="github.com/opengovern" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
+                 GOPRIVATE="github.com/opengovern"  go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ ./cmd/$f;
             done
             chmod +x ./build/*
           fi
