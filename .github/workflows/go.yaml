@@ -134,8 +134,8 @@ jobs:
           for f in $(cat ./service-list); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
       - name: Run LS
         run: |
-          ls build/* -la
-          ls build_services/* -la
+          ls build/ -la
+          ls build_services/ -la
 
       - name: Pack build
         if: github.event_name != 'pull_request'
