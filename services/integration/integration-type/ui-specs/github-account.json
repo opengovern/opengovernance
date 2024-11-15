@@ -1,0 +1,148 @@
+{
+  "integration_type_id": "github_repository",
+  "integration_name": "GitHub Repository",
+  "help_text_md": "GitHub Repository integration facilitates secure connections to your GitHub repositories. [Documentation](https://docs.github.com/en/rest/guides/intro-to-the-rest-api).",
+  "platform_documentation": "https://docs.github.com/en/rest/guides/intro-to-the-rest-api",
+  "provider_documentation": "https://github.com",
+  "icon": "github.svg",
+  "discover": {
+    "credentials": [
+      {
+        "type": "oauth_token",
+        "label": "GitHub OAuth Token",
+        "priority": 1,
+        "fields": [
+          {
+            "name": "personal_access_token",
+            "label": "Personal Access Token",
+            "inputType": "text",
+            "required": true,
+            "order": 1,
+            "validation": {
+              "pattern": "^[A-Za-z0-9]{40}$",
+              "errorMessage": "Personal Access Token must be a 40-character string."
+            },
+            "info": "Personal access token for GitHub authentication.",
+            "external_help_url": "https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token"
+          }
+        ]
+      },
+      {
+        "type": "ssh_key",
+        "label": "GitHub SSH Key",
+        "priority": 2,
+        "fields": [
+          {
+            "name": "ssh_key",
+            "label": "SSH Key",
+            "inputType": "file",
+            "required": true,
+            "order": 1,
+            "validation": {
+              "fileTypes": [".pem", ".pub"],
+              "maxFileSizeMB": 2,
+              "errorMessage": "Please upload a valid SSH key file."
+            },
+            "info": "Upload your SSH key for GitHub authentication.",
+            "external_help_url": "https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh"
+          }
+        ]
+      }
+    ],
+    "integrations": [
+      {
+        "label": "GitHub Repository",
+        "type": "github_repository",
+        "fields": [
+          {
+            "name": "uuid",
+            "label": "Integration UUID",
+            "fieldType": "text",
+            "required": true,
+            "order": 1,
+            "info": "Unique identifier (UUID) for the integration."
+          },
+          {
+            "name": "repository_name",
+            "label": "Repository Name",
+            "fieldType": "text",
+            "required": true,
+            "order": 2,
+            "info": "Name of the GitHub repository."
+          },
+          {
+            "name": "owner",
+            "label": "Owner",
+            "fieldType": "text",
+            "required": true,
+            "order": 3,
+            "info": "Owner of the GitHub repository (user or organization)."
+          },
+          {
+            "name": "repository_url",
+            "label": "Repository URL",
+            "fieldType": "text",
+            "required": true,
+            "order": 4,
+            "info": "URL of the GitHub repository.",
+            "validation": {
+              "pattern": "^(https://github.com/)([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)$",
+              "errorMessage": "Repository URL must be a valid GitHub repository URL."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "render": {
+    "credentials": {
+      "defaultPageSize": 10,
+      "fields": [
+        {
+          "name": "id",
+          "label": "ID",
+          "fieldType": "text",
+          "order": 1,
+          "sortable": true,
+          "filterable": true,
+          "info": "ID.",
+          "detail": false,
+          "detail_order": 1
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "fieldType": "date",
+          "order": 2,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the credential was created.",
+          "detail": true,
+          "detail_order": 2
+        },
+        {
+          "name": "repository_name",
+          "label": "Repository Name",
+          "fieldType": "text",
+          "order": 3,
+          "sortable": true,
+          "filterable": true,
+          "info": "Name of the repository.",
+          "detail": true,
+          "detail_order": 3
+        },
+        {
+          "name": "owner",
+          "label": "Owner",
+          "fieldType": "text",
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "info": "Owner of the repository.",
+          "detail": true,
+          "detail_order": 4
+        }
+      ]
+    }
+  }
+}

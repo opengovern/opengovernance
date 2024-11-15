@@ -8,6 +8,8 @@ import (
 	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory"
 	entraidConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
+	github_account "github.com/opengovern/opengovernance/services/integration/integration-type/github-account"
+	githubConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/github-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"strings"
 )
@@ -16,18 +18,21 @@ const (
 	IntegrationTypeAWSAccount        = awsConfigs.IntegrationTypeAwsCloudAccount
 	IntegrationTypeAzureSubscription = azureConfigs.IntegrationTypeAzureSubscription
 	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
+	IntegrationTypeGithubAccount     = githubConfigs.IntegrationTypeGithubAccount
 )
 
 var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeAWSAccount,
 	IntegrationTypeAzureSubscription,
 	IntegrationTypeEntraIdDirectory,
+	IntegrationTypeGithubAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeAWSAccount:        &aws_account.AwsCloudAccountIntegration{},
 	IntegrationTypeAzureSubscription: &azure_subscription.AzureSubscriptionIntegration{},
 	IntegrationTypeEntraIdDirectory:  &entra_id_directory.EntraIdDirectoryIntegration{},
+	IntegrationTypeGithubAccount:     &github_account.GithubAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
