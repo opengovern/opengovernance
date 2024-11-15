@@ -4,8 +4,6 @@ set -e
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt - Running init script the 1st time Primary PostgreSql container is created...";
 
-pennywiseDatabaseName="pennywise"
-pennywiseUserName="pennywise_service"
 
 workspaceDatabaseName="workspace"
 workspaceUserName="workspace_service"
@@ -81,13 +79,6 @@ GRANT ALL PRIVILEGES ON DATABASE "$subscriptionDatabaseName" to $subscriptionUse
 CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
 GRANT ALL ON SCHEMA public TO $subscriptionUserName;
 
-CREATE DATABASE $pennywiseDatabaseName;
-CREATE USER $pennywiseUserName WITH PASSWORD '$POSTGRES_PENNYWISE_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$pennywiseDatabaseName" to $pennywiseUserName;
-
-\c "$pennywiseDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-GRANT ALL ON SCHEMA public TO $pennywiseUserName;
 
 CREATE DATABASE $informationDatabaseName;
 CREATE USER $informationUserName WITH PASSWORD '$POSTGRES_INFORMATION_DB_PASSWORD';
