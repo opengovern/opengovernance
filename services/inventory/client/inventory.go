@@ -19,6 +19,7 @@ import (
 type InventoryServiceClient interface {
 	RunQuery(ctx *httpclient.Context, req api.RunQueryRequest) (*api.RunQueryResponse, error)
 	GetQuery(ctx *httpclient.Context, id string) (*api.NamedQueryItemV2, error)
+	ListQueriesV2(ctx *httpclient.Context) (*api.ListQueriesV2Response, error)
 	CountResources(ctx *httpclient.Context) (int64, error)
 	ListIntegrationsData(ctx *httpclient.Context, integrationIds []string, resourceCollections []string, startTime, endTime *time.Time, metricIDs []string, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, integrationTypes []integration.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
@@ -76,6 +77,18 @@ func (s *inventoryClient) GetQuery(ctx *httpclient.Context, id string) (*api.Nam
 	url := fmt.Sprintf("%s/api/v3/query/%s", s.baseURL, id)
 
 	var namedQuery api.NamedQueryItemV2
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &namedQuery); err != nil {
+		if statusCode == http.StatusNotFound {
+			return nil, nil
+		}
+	}
+	return &namedQuery, nil
+}
+
+func (s *inventoryClient) ListQueriesV2(ctx *httpclient.Context) (*api.ListQueriesV2Response, error) {
+	url := fmt.Sprintf("%s/api/v3/queries", s.baseURL)
+
+	var namedQuery api.ListQueriesV2Response
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &namedQuery); err != nil {
 		if statusCode == http.StatusNotFound {
 			return nil, nil
