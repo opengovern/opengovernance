@@ -201,7 +201,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err err
 		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
 	}
 
-	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
+	w.logger.Info("running job", zap.ByteString("job", msg.Data()), zap.Any("job object", job))
 
 	err = w.RunJob(ctx, job)
 	if err != nil {
