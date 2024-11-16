@@ -3,7 +3,6 @@ package api
 import (
 	"time"
 
-	"github.com/opengovern/opengovernance/pkg/analytics/api"
 	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 )
 
@@ -11,7 +10,6 @@ type JobType string
 
 const (
 	JobType_Discovery  JobType = "discovery"
-	JobType_Analytics  JobType = "analytics"
 	JobType_Compliance JobType = "compliance"
 )
 
@@ -128,12 +126,7 @@ type BenchmarkAuditHistoryResponse struct {
 	TotalCount int                         `json:"total_count"`
 }
 
-type GetAnalyticsJobsHistoryResponse struct {
-	JobId     uint          `json:"job_id"`
-	Type      string        `json:"type"`
-	JobStatus api.JobStatus `json:"job_status"`
-	DateTime  time.Time     `json:"date_time"`
-}
+
 
 type RunBenchmarkByIdRequest struct {
 	IntegrationInfo []struct {
@@ -209,12 +202,6 @@ type GetComplianceJobStatusResponse struct {
 	BenchmarkId     string          `json:"benchmark_id"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
-}
-type GetAnalyticsJobStatusResponse struct {
-	JobId     uint      `json:"job_id"`
-	JobStatus string    `json:"job_status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type GetAsyncQueryRunJobStatusResponse struct {

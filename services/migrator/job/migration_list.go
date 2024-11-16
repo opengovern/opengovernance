@@ -1,7 +1,6 @@
 package job
 
 import (
-	"github.com/opengovern/opengovernance/services/migrator/job/migrations/analytics"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/auth"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/compliance"
 	"github.com/opengovern/opengovernance/services/migrator/job/migrations/elasticsearch"
@@ -26,7 +25,6 @@ var manualMigrations =map[string]types.Migration{
 	"resource_collection": resource_collection.Migration{},
 	"elasticsearch":       elasticsearch.Migration{},
 	"compliance":          compliance.Migration{},
-	"analytics":           analytics.Migration{},
 	"resource_info":       resource_info.Migration{},
 	"auth":                auth.Migration{},
 }
