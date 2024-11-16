@@ -10,7 +10,6 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"go.uber.org/zap"
@@ -217,5 +216,22 @@ func (w *Worker) Stop() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (w *Worker) Initialize(ctx context.Context, j Job) error {
+	providerAccountID := "all"
+
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, providerAccountID)
+	if err != nil {
+		w.logger.Error("failed to set account id", zap.Error(err))
+		return err
+	}
+	err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType, "compliance")
+	if err != nil {
+		w.logger.Error("failed to set client type", zap.Error(err))
+		return err
+	}
+
 	return nil
 }
