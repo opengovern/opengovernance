@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"strconv"
 	"time"
 
