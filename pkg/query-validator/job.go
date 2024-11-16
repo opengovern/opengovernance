@@ -8,7 +8,6 @@ import (
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/steampipe"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
@@ -38,17 +37,9 @@ type Job struct {
 }
 
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
-
-	if err := w.Initialize(ctx, job); err != nil {
-		return err
-	}
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID)
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters)
-
 	ctx, cancel := context.WithTimeout(ctx, JobTimeout)
 	defer cancel()
-	res, err := w.steampipeConn.QueryAll(ctx, job.Query)
+	res, err := w.RunSQLNamedQuery(ctx, job.Query)
 	if err != nil {
 		return err
 	}
@@ -75,7 +66,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 		}
 
 		esIndex := ResourceTypeToESIndex(queryResourceType)
-
+		w.logger.Info("before getting data", zap.String("esIndex", esIndex))
 		for _, record := range res.Data {
 			w.logger.Info("GettingData")
 			if len(record) != len(res.Headers) {
