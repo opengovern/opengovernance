@@ -732,7 +732,7 @@ func (h HttpHandler) UnsetConfiguredStatus(echoCtx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	api.About
-//	@Router			/workspace/api/v3/configured/status [put]
+//	@Router			/workspace/api/v3/about [put]
 func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	ctx := &httpclient.Context{UserRole: api3.AdminRole}
 
@@ -830,6 +830,7 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	}
 
 	response := api.About{
+		InstallID:             appConfiguration.InstallID.String(),
 		DexConnectors:         dexConnectors,
 		AppVersion:            version,
 		WorkspaceCreationTime: creationTime,

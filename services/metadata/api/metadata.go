@@ -20,6 +20,7 @@ type DexConnectorInfo struct {
 }
 
 type About struct {
+	InstallID             string                       `json:"install_id"`
 	DexConnectors         []DexConnectorInfo           `json:"dex_connectors"`
 	AppVersion            string                       `json:"app_version"`
 	WorkspaceCreationTime time.Time                    `json:"workspace_creation_time"`

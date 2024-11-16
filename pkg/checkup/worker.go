@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/opengovernance/pkg/checkup/config"
+	authClient "github.com/opengovern/opengovernance/services/auth/client"
+	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/opengovernance/services/integration/client"
@@ -16,8 +19,11 @@ type Worker struct {
 	id                string
 	jq                *jq.JobQueue
 	logger            *zap.Logger
+	config            config.WorkerConfig
 	pusher            *push.Pusher
 	integrationClient client.IntegrationServiceClient
+	authClient        authClient.AuthServiceClient
+	metadataClient    metadataClient.MetadataServiceClient
 }
 
 func NewWorker(
@@ -25,7 +31,10 @@ func NewWorker(
 	natsURL string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
-	onboardBaseURL string,
+	integrationBaseURL string,
+	authBaseURL string,
+	metadataBaseURL string,
+	config config.WorkerConfig,
 	ctx context.Context,
 ) (w *Worker, err error) {
 	if id == "" {
@@ -56,7 +65,10 @@ func NewWorker(
 	w.pusher.Collector(DoCheckupJobsCount).
 		Collector(DoCheckupJobsDuration)
 
-	w.integrationClient = client.NewIntegrationServiceClient(onboardBaseURL)
+	w.integrationClient = client.NewIntegrationServiceClient(integrationBaseURL)
+	w.authClient = authClient.NewAuthClient(authBaseURL)
+	w.metadataClient = metadataClient.NewMetadataServiceClient(metadataBaseURL)
+	w.config = config
 	return w, nil
 }
 
@@ -83,7 +95,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 			w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
 
-			result := job.Do(w.integrationClient, w.logger)
+			result := job.Do(w.integrationClient, w.authClient, w.metadataClient, w.logger, w.config)
 
 			bytes, err := json.Marshal(result)
 			if err != nil {

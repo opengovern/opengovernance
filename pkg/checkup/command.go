@@ -2,6 +2,8 @@ package checkup
 
 import (
 	"errors"
+	config2 "github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/opengovernance/pkg/checkup/config"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,6 +13,8 @@ import (
 var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 	IntegrationBaseUrl    = os.Getenv("INTEGRATION_BASE_URL")
+	AuthBaseUrl           = os.Getenv("AUTH_BASE_URL")
+	MetadataBaseUrl       = os.Getenv("METADATA_BASE_URL")
 	NATSAddress           = os.Getenv("NATS_URL")
 )
 
@@ -32,6 +36,8 @@ func WorkerCommand() *cobra.Command {
 			}
 
 			cmd.SilenceUsage = true
+			var cnf config.WorkerConfig
+			config2.ReadFromEnv(&cnf, nil)
 
 			w, err := NewWorker(
 				id,
@@ -39,6 +45,9 @@ func WorkerCommand() *cobra.Command {
 				logger,
 				PrometheusPushAddress,
 				IntegrationBaseUrl,
+				AuthBaseUrl,
+				MetadataBaseUrl,
+				cnf,
 				cmd.Context(),
 			)
 			if err != nil {
