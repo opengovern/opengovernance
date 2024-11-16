@@ -1,4 +1,4 @@
-package query_runner
+package query_validator
 
 import (
 	"context"

@@ -24,7 +24,7 @@ type ClientAccessTokenCredential struct {
 func (c *ClientAccessTokenCredential) GetClient(ctx context.Context) (*github.Client, error) {
 	var client *github.Client
 	// Authentication with GitHub access token
-	if strings.HasPrefix(c.Token, "ghp_") {
+	if strings.HasPrefix(c.Token, "ghp_") || strings.HasPrefix(c.Token, "github_pat_") {
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: c.Token},
 		)
@@ -141,8 +141,8 @@ func checkCredentials(config Config) error {
 		return fmt.Errorf("'token' or 'app_id', 'installation_id' and 'private_key' must be set in the connection configuration")
 	}
 	// Return error for unsupported token by prefix
-	if config.Token != "" && !strings.HasPrefix(config.Token, "ghs_") && !strings.HasPrefix(config.Token, "ghp_") && !strings.HasPrefix(config.Token, "gho_") {
-		return fmt.Errorf("wrong token format. tokens should start with ghs_ or ghp_ or gho_")
+	if config.Token != "" && !strings.HasPrefix(config.Token, "ghs_") && !strings.HasPrefix(config.Token, "ghp_") && !strings.HasPrefix(config.Token, "gho_") && strings.HasPrefix(config.Token, "github_pat_") {
+		return fmt.Errorf("wrong token format. tokens should start with ghs_ or ghp_ or gho_ or github_pat_")
 	}
 	return nil
 }

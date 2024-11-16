@@ -1,9 +1,16 @@
 package checkup
 
 import (
+	"encoding/json"
 	"fmt"
 	authAPI "github.com/opengovern/og-util/pkg/api"
+	shared_entities "github.com/opengovern/og-util/pkg/api/shared-entities"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/pkg/checkup/config"
+	authClient "github.com/opengovern/opengovernance/services/auth/client"
+	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	"golang.org/x/net/context"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -41,7 +48,8 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(integrationClient client.IntegrationServiceClient, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient authClient.AuthServiceClient,
+	metadataClient metadataClient.MetadataServiceClient, logger *zap.Logger, config config.WorkerConfig) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -107,9 +115,66 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, logger *zap.L
 		DoCheckupJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
 	}
 
+	if config.DoTelemetry {
+		j.SendTelemetry(context.Background(), logger, config, integrationClient, authClient, metadataClient)
+	}
+
 	return JobResult{
 		JobID:  j.JobID,
 		Status: status,
 		Error:  errMsg,
 	}
+}
+
+func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig,
+	integrationClient client.IntegrationServiceClient, authClient authClient.AuthServiceClient, metadataClient metadataClient.MetadataServiceClient) {
+	now := time.Now()
+
+	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authAPI.AdminRole}
+
+	req := shared_entities.CspmUsageRequest{
+		GatherTimestamp:      now,
+		Hostname:             workerConfig.TelemetryHostname,
+		IntegrationTypeCount: make(map[string]int),
+	}
+
+	integrations, err := integrationClient.ListIntegrations(&httpCtx, nil)
+	if err != nil {
+		logger.Error("failed to list sources", zap.Error(err))
+		return
+	}
+	for _, integration := range integrations.Integrations {
+		if _, ok := req.IntegrationTypeCount[integration.IntegrationType.String()]; !ok {
+			req.IntegrationTypeCount[integration.IntegrationType.String()] = 0
+		}
+		req.IntegrationTypeCount[integration.IntegrationType.String()] += 1
+	}
+
+	users, err := authClient.ListUsers(&httpCtx)
+	if err != nil {
+		logger.Error("failed to list users", zap.Error(err))
+		return
+	}
+	req.NumberOfUsers = int64(len(users))
+
+	about, err := metadataClient.GetAbout(&httpCtx)
+	if err != nil {
+		logger.Error("failed to get about", zap.Error(err))
+		return
+	}
+	req.InstallId = about.InstallID
+
+	url := fmt.Sprintf("%s/api/v1/information/usage", workerConfig.TelemetryBaseURL)
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		logger.Error("failed to marshal telemetry request", zap.Error(err))
+		return
+	}
+	var resp any
+	if statusCode, err := httpclient.DoRequest(httpCtx.Ctx, http.MethodPost, url, httpCtx.ToHeaders(), reqBytes, &resp); err != nil {
+		logger.Error("failed to send telemetry", zap.Error(err), zap.Int("status_code", statusCode), zap.String("url", url), zap.Any("req", req), zap.Any("resp", resp))
+		return
+	}
+
+	logger.Info("sent telemetry", zap.String("url", url))
 }

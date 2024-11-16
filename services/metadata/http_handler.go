@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 
@@ -74,6 +75,7 @@ func InitializeHttpHandler(
 	}
 	if len(apps) == 0 {
 		err = db.CreateApp(&models.PlatformConfiguration{
+			InstallID: uuid.New(),
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		})

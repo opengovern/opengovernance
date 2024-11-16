@@ -1,4 +1,4 @@
-package query_runner
+package query_validator
 
 import (
 	"bytes"
@@ -46,6 +46,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 		}
 		if job.QueryType == queryvalidator.QueryTypeNamedQuery {
 			jobMsg.QueryType = queryvalidator.QueryTypeNamedQuery
+			jobMsg.QueryId = job.QueryId
 			namedQuery, err := s.inventoryClient.GetQuery(ctx2, job.QueryId)
 			if err != nil {
 				s.logger.Error("Get Query Error", zap.Error(err))
@@ -56,6 +57,8 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 			jobMsg.PrimaryTable = namedQuery.Query.PrimaryTable
 			jobMsg.IntegrationType = namedQuery.IntegrationTypes
 		} else if job.QueryType == queryvalidator.QueryTypeComplianceControl {
+			jobMsg.QueryType = queryvalidator.QueryTypeComplianceControl
+			jobMsg.QueryId = job.QueryId
 			controlQuery, err := s.complianceClient.GetControlDetails(ctx2, job.QueryId)
 			if err != nil {
 				s.logger.Error("Get Control Error", zap.Error(err))
@@ -86,7 +89,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 		for _, qp := range queryParams.QueryParameters {
 			queryParamMap[qp.Key] = qp.Value
 		}
-		queryTemplate, err := template.New("query").Parse(jobMsg.Query)
+		queryTemplate, err := template.New(jobMsg.QueryId).Parse(jobMsg.Query)
 		if err != nil {
 			return err
 		}

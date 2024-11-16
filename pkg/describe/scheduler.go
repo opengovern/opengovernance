@@ -418,21 +418,23 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	)
 	s.queryRunnerScheduler.Run(ctx)
 
-	// Query Validator
-	s.queryValidatorScheduler = queryrvalidatorscheduler.New(
-		func(ctx context.Context) error {
-			return s.SetupNatsStreams(ctx)
-		},
-		s.conf,
-		s.logger,
-		s.db,
-		s.jq,
-		s.es,
-		s.inventoryClient,
-		s.complianceClient,
-		s.metadataClient,
-	)
-	s.queryValidatorScheduler.Run(ctx)
+	if s.conf.QueryValidatorEnabled == "true" {
+		// Query Validator
+		s.queryValidatorScheduler = queryrvalidatorscheduler.New(
+			func(ctx context.Context) error {
+				return s.SetupNatsStreams(ctx)
+			},
+			s.conf,
+			s.logger,
+			s.db,
+			s.jq,
+			s.es,
+			s.inventoryClient,
+			s.complianceClient,
+			s.metadataClient,
+		)
+		s.queryValidatorScheduler.Run(ctx)
+	}
 
 	// Compliance
 	s.complianceScheduler = compliance.New(

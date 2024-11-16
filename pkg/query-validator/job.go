@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
@@ -39,12 +38,13 @@ type Job struct {
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
 	ctx, cancel := context.WithTimeout(ctx, JobTimeout)
 	defer cancel()
-	res, err := w.RunSQLNamedQuery(ctx, job.Query)
+	res, err := w.steampipeConn.QueryAll(ctx, job.Query)
 	if err != nil {
 		return err
 	}
 
 	if job.QueryType == QueryTypeComplianceControl {
+		w.logger.Info("QueryTypeComplianceControl")
 		queryResourceType := ""
 		if job.PrimaryTable != nil || len(job.ListOfTables) == 1 {
 			tableName := ""
@@ -56,17 +56,21 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 			if tableName != "" {
 				queryResourceType, _, err = GetResourceTypeFromTableName(tableName, job.IntegrationType)
 				if err != nil {
+					w.logger.Error("Error getting resource type from table", zap.String("table_name", tableName), zap.Error(err))
 					return err
 				}
 			}
 		}
 		if queryResourceType == "" {
+			w.logger.Error("Error getting resource type from table")
 			return fmt.Errorf(string(MissingResourceTypeQueryError))
 		}
 
 		esIndex := ResourceTypeToESIndex(queryResourceType)
-
+		w.logger.Info("before getting data", zap.String("esIndex", esIndex),
+			zap.String("query", job.Query), zap.Any("resp", res))
 		for _, record := range res.Data {
+			w.logger.Info("GettingData")
 			if len(record) != len(res.Headers) {
 				return fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
 			}
@@ -75,7 +79,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 				value := record[idx]
 				recordValue[header] = value
 			}
-
+			w.logger.Info("Start Checks")
 			var platformResourceID string
 			if v, ok := recordValue["og_resource_id"].(string); ok {
 				platformResourceID = v
@@ -88,6 +92,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 			if v, ok := recordValue["resource"].(string); !ok || v == "" || v == "null" {
 				return fmt.Errorf(string(MissingResourceQueryError))
 			}
+			w.logger.Info("Check Resource Exist")
 			err = w.SearchResourceTypeByPlatformID(ctx, esIndex, platformResourceID)
 			if err != nil {
 				return err
@@ -120,15 +125,17 @@ func ResourceTypeToESIndex(t string) string {
 }
 
 func (w *Worker) SearchResourceTypeByPlatformID(ctx context.Context, index string, platformID string) error {
-	var filters []opengovernance.BoolFilter
-
-	filters = append(filters, opengovernance.NewTermsFilter("platformResourceID", []string{platformID}))
-
 	root := map[string]any{}
 
 	root["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": filters,
+			"must": []map[string]any{
+				{
+					"match": map[string]any{
+						"platform_id": platformID,
+					},
+				},
+			},
 		},
 	}
 

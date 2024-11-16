@@ -10,5 +10,6 @@ type QueryValidatorJob struct {
 	QueryId        string
 	QueryType      queryvalidator.QueryType
 	Status         queryvalidator.QueryValidatorStatus
+	HasParams      bool
 	FailureMessage string
 }
