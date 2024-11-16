@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/og-util/pkg/steampipe"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
@@ -37,14 +36,23 @@ type Job struct {
 }
 
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
+
+	if err := w.Initialize(ctx, job); err != nil {
+		return err
+	}
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters)
+
 	ctx, cancel := context.WithTimeout(ctx, JobTimeout)
 	defer cancel()
-	res, err := w.RunSQLNamedQuery(ctx, job.Query)
+	res, err := w.steampipeConn.QueryAll(ctx, job.Query)
 	if err != nil {
 		return err
 	}
 
 	if job.QueryType == QueryTypeComplianceControl {
+		w.logger.Info("QueryTypeComplianceControl")
 		queryResourceType := ""
 		if job.PrimaryTable != nil || len(job.ListOfTables) == 1 {
 			tableName := ""
@@ -67,6 +75,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 		esIndex := ResourceTypeToESIndex(queryResourceType)
 
 		for _, record := range res.Data {
+			w.logger.Info("GettingData")
 			if len(record) != len(res.Headers) {
 				return fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
 			}
@@ -75,7 +84,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 				value := record[idx]
 				recordValue[header] = value
 			}
-
+			w.logger.Info("Start Checks")
 			var platformResourceID string
 			if v, ok := recordValue["og_resource_id"].(string); ok {
 				platformResourceID = v
@@ -88,6 +97,7 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 			if v, ok := recordValue["resource"].(string); !ok || v == "" || v == "null" {
 				return fmt.Errorf(string(MissingResourceQueryError))
 			}
+			w.logger.Info("Check Resource Exist")
 			err = w.SearchResourceTypeByPlatformID(ctx, esIndex, platformResourceID)
 			if err != nil {
 				return err

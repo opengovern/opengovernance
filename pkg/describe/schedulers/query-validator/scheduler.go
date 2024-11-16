@@ -18,10 +18,15 @@ func (s *JobScheduler) runScheduler() error {
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 	for _, c := range controls {
+		hasParams := false
+		if len(c.Query.Parameters) > 0 {
+			hasParams = true
+		}
 		_, err = s.db.CreateQueryValidatorJob(&model.QueryValidatorJob{
 			QueryId:        c.ID,
 			QueryType:      queryvalidator.QueryTypeComplianceControl,
 			Status:         queryvalidator.QueryValidatorCreated,
+			HasParams:      hasParams,
 			FailureMessage: "",
 		})
 		if err != nil {
@@ -35,10 +40,15 @@ func (s *JobScheduler) runScheduler() error {
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 	for _, nq := range namedQueries.Items {
+		hasParams := false
+		if len(nq.Query.Parameters) > 0 {
+			hasParams = true
+		}
 		_, err = s.db.CreateQueryValidatorJob(&model.QueryValidatorJob{
 			QueryId:        nq.ID,
 			QueryType:      queryvalidator.QueryTypeNamedQuery,
 			Status:         queryvalidator.QueryValidatorCreated,
+			HasParams:      hasParams,
 			FailureMessage: "",
 		})
 		if err != nil {
