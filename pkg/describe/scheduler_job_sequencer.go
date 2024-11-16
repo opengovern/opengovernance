@@ -103,17 +103,6 @@ func (s *Scheduler) getParentBenchmarkPaths(rootBenchmark, controlID string) ([]
 
 func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) error {
 	switch job.NextJob {
-	case model.JobSequencerJobTypeAnalytics:
-		jobID, err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal, ctx)
-		if err != nil {
-			return err
-		}
-
-		nextJobID := []int64{int64(jobID)}
-		err = s.db.UpdateJobSequencerFinished(job.ID, nextJobID)
-		if err != nil {
-			return err
-		}
 	case model.JobSequencerJobTypeBenchmarkRunner:
 		parameters := model.JobSequencerJobTypeBenchmarkRunnerParameters{}
 		if job.NextJobParameters == nil {

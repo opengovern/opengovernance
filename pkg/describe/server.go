@@ -26,7 +26,6 @@ import (
 	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 	"github.com/sony/sonyflake"
 
-	analyticsapi "github.com/opengovern/opengovernance/pkg/analytics/api"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
 	"github.com/opengovern/opengovernance/pkg/describe/db"
 	model2 "github.com/opengovern/opengovernance/pkg/describe/db/model"
@@ -67,8 +66,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.CheckReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/re-evaluate/:benchmark_id", httpserver.AuthorizeHandler(h.ReEvaluateComplianceJob, apiAuth.AdminRole))
 	v1.GET("/compliance/status/:benchmark_id", httpserver.AuthorizeHandler(h.GetComplianceBenchmarkStatus, apiAuth.ViewerRole))
-	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.AdminRole))
-	v1.GET("/analytics/job/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJob, apiAuth.ViewerRole))
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.ViewerRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.ViewerRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.ViewerRole))
@@ -91,13 +88,11 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.PUT("/query/:query_id/run", httpserver.AuthorizeHandler(h.RunQuery, apiAuth.AdminRole))
 	v3.GET("/job/discovery/:job_id", httpserver.AuthorizeHandler(h.GetDescribeJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/compliance/:job_id", httpserver.AuthorizeHandler(h.GetComplianceJobStatus, apiAuth.ViewerRole))
-	v3.GET("/job/analytics/:job_id", httpserver.AuthorizeHandler(h.GetAnalyticsJobStatus, apiAuth.ViewerRole))
 	v3.GET("/job/query/:job_id", httpserver.AuthorizeHandler(h.GetAsyncQueryRunJobStatus, apiAuth.ViewerRole))
 	v3.POST("/jobs/discovery", httpserver.AuthorizeHandler(h.ListDescribeJobs, apiAuth.ViewerRole))
 	v3.POST("/jobs/compliance", httpserver.AuthorizeHandler(h.ListComplianceJobs, apiAuth.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/run-history", httpserver.AuthorizeHandler(h.BenchmarkAuditHistory, apiAuth.ViewerRole))
 	v3.GET("/benchmark/run-history/integrations", httpserver.AuthorizeHandler(h.BenchmarkAuditHistoryIntegrations, apiAuth.ViewerRole))
-	v3.GET("/jobs/analytics", httpserver.AuthorizeHandler(h.ListAnalyticsJobs, apiAuth.ViewerRole))
 	v3.PUT("/jobs/cancel/byid", httpserver.AuthorizeHandler(h.CancelJobById, apiAuth.AdminRole))
 	v3.POST("/jobs/cancel", httpserver.AuthorizeHandler(h.CancelJob, apiAuth.AdminRole))
 	v3.POST("/jobs", httpserver.AuthorizeHandler(h.ListJobsByType, apiAuth.ViewerRole))
@@ -324,8 +319,7 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 			includeCost = &v
 		}
 		count, err = h.DB.CountDescribeJobsByDate(includeCost, time.UnixMilli(startDate), time.UnixMilli(endDate))
-	case api.JobType_Analytics:
-		count, err = h.DB.CountAnalyticsJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
+	
 	case api.JobType_Compliance:
 		count, err = h.DB.CountComplianceJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	default:
@@ -414,7 +408,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
 		DependencySource: model2.JobSequencerJobTypeDescribe,
-		NextJob:          model2.JobSequencerJobTypeAnalytics,
+		NextJob:          model2.JobSequencerJobTypeBenchmark,
 		Status:           model2.JobSequencerWaitingForDependencies,
 	})
 	if err != nil {
@@ -876,38 +870,9 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
 }
 
-func (h HttpServer) GetAnalyticsJob(ctx echo.Context) error {
-	jobIDstr := ctx.Param("job_id")
-	jobID, err := strconv.ParseInt(jobIDstr, 10, 64)
-	if err != nil {
-		return err
-	}
 
-	job, err := h.Scheduler.db.GetAnalyticsJobByID(uint(jobID))
-	if err != nil {
-		return err
-	}
 
-	return ctx.JSON(http.StatusOK, job)
-}
 
-// TriggerAnalyticsJob godoc
-//
-//	@Summary		TriggerAnalyticsJob
-//	@Description	Triggers an analytics job to run immediately
-//	@Security		BearerToken
-//	@Tags			describe
-//	@Produce		json
-//	@Success		200
-//	@Router			/schedule/api/v1/analytics/trigger [put]
-func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	jobID, err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal, ctx.Request().Context())
-	if err != nil {
-		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
-	}
-	return ctx.JSON(http.StatusOK, jobID)
-}
 
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
 	resourceType := ctx.Param("resource_type")
@@ -1663,37 +1628,6 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, jobsResult)
 }
 
-// GetAnalyticsJobStatus godoc
-//
-//	@Summary	Get analytics job status by job id
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Param		job_id	path	string	true	"Job ID"
-//	@Produce	json
-//	@Success	200	{object}	api.GetAnalyticsJobStatusResponse
-//	@Router		/schedule/api/v3/job/analytics/{job_id} [get]
-func (h HttpServer) GetAnalyticsJobStatus(ctx echo.Context) error {
-
-	jobIdString := ctx.Param("job_id")
-	jobId, err := strconv.ParseUint(jobIdString, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
-	}
-
-	j, err := h.DB.GetAnalyticsJobByID(uint(jobId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	jobsResult := api.GetAnalyticsJobStatusResponse{
-		JobId:     j.ID,
-		JobStatus: string(j.Status),
-		CreatedAt: j.CreatedAt,
-		UpdatedAt: j.UpdatedAt,
-	}
-
-	return ctx.JSON(http.StatusOK, jobsResult)
-}
 
 // GetAsyncQueryRunJobStatus godoc
 //
@@ -2198,115 +2132,7 @@ func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, job)
 }
 
-// ListAnalyticsJobs godoc
-//
-//	@Summary	Get analytics jobs history for give connection
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Param		job_status	query	[]string	true	"List of job statuses to filter"
-//	@Param		type		query	[]string	true	"List of types to filter"
-//	@Param		sort_by		query	string		true	"sort by field"
-//	@Param		cursor		query	int			true	"cursor"
-//	@Param		per_page	query	int			true	"per page"
-//	@Param		startTime	query	int			false	"timestamp for start of the chart in epoch seconds"
-//	@Param		endTime		query	int			false	"timestamp for end of the chart in epoch seconds"
-//	@Produce	json
-//	@Success	200	{object}	[]api.GetAnalyticsJobsHistoryResponse
-//	@Router		/schedule/api/v3/jobs/analytics [get]
-func (h HttpServer) ListAnalyticsJobs(ctx echo.Context) error {
-	types := httpserver.QueryArrayParam(ctx, "types")
-	jobStatus := httpserver.QueryArrayParam(ctx, "job_status")
-	sortBy := ctx.QueryParam("job_status")
 
-	var cursor, perPage int64
-	var err error
-	cursorStr := ctx.QueryParam("cursor")
-	if cursorStr != "" {
-		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-	perPageStr := ctx.QueryParam("per_page")
-	if perPageStr != "" {
-		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-
-	var startTime, endTime *time.Time
-	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
-		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return err
-		}
-		endTimeTmp := time.Unix(endTimeInt, 0)
-		endTime = &endTimeTmp
-	}
-
-	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
-		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return err
-		}
-		startTimeTmp := time.Unix(startTimeInt, 0)
-		startTime = &startTimeTmp
-	}
-
-	jobs, err := h.DB.ListAnalyticsJobsByFilter(types, jobStatus, startTime, endTime)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	var jobsResults []api.GetAnalyticsJobsHistoryResponse
-	for _, j := range jobs {
-		jobsResults = append(jobsResults, api.GetAnalyticsJobsHistoryResponse{
-			JobId:     j.ID,
-			Type:      string(j.Type),
-			JobStatus: j.Status,
-			DateTime:  j.UpdatedAt,
-		})
-	}
-	if sortBy != "" {
-		switch strings.ToLower(sortBy) {
-		case "id":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobId < jobsResults[j].JobId
-			})
-		case "datetime":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
-			})
-		case "type":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].Type < jobsResults[j].Type
-			})
-		case "jobstatus":
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
-			})
-		default:
-			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].JobId < jobsResults[j].JobId
-			})
-		}
-	} else {
-		sort.Slice(jobsResults, func(i, j int) bool {
-			return jobsResults[i].JobId < jobsResults[j].JobId
-		})
-	}
-
-	if perPage != 0 {
-		if cursor == 0 {
-			jobsResults = utils.Paginate(1, perPage, jobsResults)
-		} else {
-			jobsResults = utils.Paginate(cursor, perPage, jobsResults)
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, jobsResults)
-}
 
 // GetDescribeJobsHistoryByIntegration godoc
 //
@@ -2667,29 +2493,7 @@ func (h HttpServer) CancelJobById(ctx echo.Context) error {
 		} else {
 			return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
 		}
-	case "analytics":
-		jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
-		}
-		job, err := h.DB.GetAnalyticsJobByID(uint(jobId))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		if job == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "job not found")
-		}
-		if job.Status == analyticsapi.JobCreated {
-			job.Status = analyticsapi.JobCanceled
-			err = h.DB.UpdateAnalyticsJobStatus(*job)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-		} else if job.Status == analyticsapi.JobInProgress {
-			return echo.NewHTTPError(http.StatusOK, "job is already in progress, unable to cancel")
-		} else {
-			return echo.NewHTTPError(http.StatusOK, "job is already finished")
-		}
+
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
@@ -2714,7 +2518,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query" {
+		 strings.ToLower(request.JobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -2780,14 +2584,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 			for _, j := range jobs {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
-		case "analytics":
-			jobs, err := h.DB.ListPendingAnalyticsJobs()
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			for _, j := range jobs {
-				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
-			}
+		
 		}
 	case "status":
 		for _, status := range request.Status {
@@ -2816,17 +2613,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				for _, j := range jobs {
 					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 				}
-			case "analytics":
-				if strings.ToUpper(status) != "CREATED" {
-					continue
-				}
-				jobs, err := h.DB.ListAnalyticsJobsByFilter(nil, []string{strings.ToUpper(status)}, nil, nil)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-				for _, j := range jobs {
-					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
-				}
+			
 			}
 		}
 	default:
@@ -2963,37 +2750,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				failureReason = "job is already in progress, unable to cancel"
 				break
 			}
-		case "analytics":
-			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
-			if err != nil {
-				failureReason = "invalid job id"
-				break
-			}
-			job, err := h.DB.GetAnalyticsJobByID(uint(jobId))
-			if err != nil {
-				failureReason = err.Error()
-				break
-			}
-			if job == nil {
-				failureReason = "job not found"
-				break
-			}
-			if job.Status == analyticsapi.JobCreated {
-				job.Status = analyticsapi.JobCanceled
-				err = h.DB.UpdateAnalyticsJobStatus(*job)
-				if err != nil {
-					failureReason = err.Error()
-					break
-				}
-				canceled = true
-				break
-			} else if job.Status == analyticsapi.JobInProgress {
-				failureReason = "job is already in progress, unable to cancel"
-				break
-			} else {
-				failureReason = "job is already finished"
-				break
-			}
+		
 		case "query":
 			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
 			if err != nil {
@@ -3067,7 +2824,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		strings.ToLower(request.JobType) != "analytics" && strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
+		 strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -3139,20 +2896,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					UpdatedAt: j.UpdatedAt,
 				})
 			}
-		case "analytics":
-			jobs, err := h.DB.ListAnalyticsJobsByIds(request.JobId)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			for _, j := range jobs {
-				items = append(items, api.ListJobsByTypeItem{
-					JobId:     strconv.Itoa(int(j.ID)),
-					JobType:   strings.ToLower(request.JobType),
-					JobStatus: string(j.Status),
-					CreatedAt: j.CreatedAt,
-					UpdatedAt: j.UpdatedAt,
-				})
-			}
+		
 		}
 	case "integration_info":
 		var integrations []integrationapi.Integration
@@ -3218,20 +2962,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					UpdatedAt: j.UpdatedAt,
 				})
 			}
-		case "analytics":
-			jobs, err := h.DB.ListAnalyticsJobs()
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			for _, j := range jobs {
-				items = append(items, api.ListJobsByTypeItem{
-					JobId:     strconv.Itoa(int(j.ID)),
-					JobType:   strings.ToLower(request.JobType),
-					JobStatus: string(j.Status),
-					CreatedAt: j.CreatedAt,
-					UpdatedAt: j.UpdatedAt,
-				})
-			}
+		
 		}
 	case "status":
 		for _, status := range request.Status {
@@ -3264,20 +2995,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 						UpdatedAt: j.UpdatedAt,
 					})
 				}
-			case "analytics":
-				jobs, err := h.DB.ListAnalyticsJobsByFilter(nil, []string{strings.ToUpper(status)}, nil, nil)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-				for _, j := range jobs {
-					items = append(items, api.ListJobsByTypeItem{
-						JobId:     strconv.Itoa(int(j.ID)),
-						JobType:   strings.ToLower(request.JobType),
-						JobStatus: string(j.Status),
-						CreatedAt: j.CreatedAt,
-						UpdatedAt: j.UpdatedAt,
-					})
-				}
+			
 			}
 		}
 	case "benchmark":
@@ -3385,7 +3103,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 	}
 
 	if strings.ToLower(jobType) != "compliance" && strings.ToLower(jobType) != "discovery" &&
-		strings.ToLower(jobType) != "analytics" && strings.ToLower(jobType) != "query" {
+		 strings.ToLower(jobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -3420,20 +3138,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 				UpdatedAt: j.UpdatedAt,
 			})
 		}
-	case "analytics":
-		jobs, err := h.DB.ListAnalyticsJobsForInterval(convertedInterval)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		for _, j := range jobs {
-			items = append(items, api.ListJobsByTypeItem{
-				JobId:     strconv.Itoa(int(j.ID)),
-				JobType:   strings.ToLower(jobType),
-				JobStatus: string(j.Status),
-				CreatedAt: j.CreatedAt,
-				UpdatedAt: j.UpdatedAt,
-			})
-		}
+	
 	case "query":
 		jobs, err := h.DB.ListQueryRunnerJobForInterval(convertedInterval, triggerType, createdBy)
 		if err != nil {
@@ -3605,11 +3310,7 @@ func (h HttpServer) PurgeSampleData(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete checkup jobs")
 	}
-	err = h.DB.CleanupAllAnalyticsJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete analytics jobs")
-	}
-
+	
 	return c.NoContent(http.StatusOK)
 }
 

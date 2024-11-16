@@ -29,7 +29,6 @@ import (
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/ticker"
 	"github.com/opengovern/og-util/proto/src/golang"
-	"github.com/opengovern/opengovernance/pkg/analytics"
 	"github.com/opengovern/opengovernance/pkg/checkup"
 	checkupAPI "github.com/opengovern/opengovernance/pkg/checkup/api"
 	"github.com/opengovern/opengovernance/pkg/describe/api"
@@ -76,19 +75,6 @@ var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
-var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "opengovernance",
-	Subsystem: "scheduler",
-	Name:      "schedule_analytics_jobs_total",
-	Help:      "Count of analytics jobs in scheduler service",
-}, []string{"status"})
-
-var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "opengovernance",
-	Subsystem: "scheduler",
-	Name:      "schedule_analytics_job_results_total",
-	Help:      "Count of analytics job results in scheduler service",
-}, []string{"status"})
 
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "og_scheduler_large_describe_resource_message",
@@ -113,7 +99,6 @@ type Scheduler struct {
 	describeTimeoutHours       int64
 	checkupIntervalHours       int64
 	mustSummarizeIntervalHours int64
-	analyticsIntervalHours     time.Duration
 	complianceIntervalHours    time.Duration
 
 	logger            *zap.Logger
@@ -268,12 +253,6 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	analyticsIntervalHours, err := strconv.ParseInt(AnalyticsIntervalHours, 10, 64)
-	if err != nil {
-		s.logger.Error("Failed to parse analytics interval hours", zap.Error(err))
-		return nil, err
-	}
-	s.analyticsIntervalHours = time.Duration(analyticsIntervalHours) * time.Hour
 
 	s.complianceIntervalHours = time.Duration(conf.ComplianceIntervalHours) * time.Hour
 
@@ -334,11 +313,7 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 		return err
 	}
 
-	if err := s.jq.Stream(ctx, analytics.StreamName, "analytics job queue", []string{analytics.JobQueueTopic, analytics.JobResultQueueTopic}, 1000); err != nil {
-		s.logger.Error("Failed to stream to analytics queue", zap.Error(err))
-		return err
-	}
-
+	
 	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
 		s.logger.Error("Failed to stream to checkup queue", zap.Error(err))
 		return err
@@ -397,17 +372,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	analyticsJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyMetricsJobInterval)
-	if err != nil {
-		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
-	} else {
-		if v, ok := analyticsJobIntM.GetValue().(int); ok {
-			s.analyticsIntervalHours = time.Duration(v) * time.Hour
-			s.logger.Info("set analytics interval", zap.Int64("interval", int64(s.analyticsIntervalHours.Hours())))
-		} else {
-			s.logger.Error("failed to set analytics interval due to invalid type", zap.String("type", string(analyticsJobIntM.GetType())))
-		}
-	}
+	
 
 	complianceJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyComplianceJobInterval)
 	if err != nil {
@@ -436,16 +401,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	s.discoveryScheduler.Run(ctx)
 
 	// Inventory summarizer
-	utils.EnsureRunGoroutine(func() {
-		s.RunAnalyticsJobScheduler(ctx)
-	})
-
-	wg.Add(1)
-	utils.EnsureRunGoroutine(func() {
-		s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer(ctx)))
-		wg.Done()
-	})
-
+	
 	// Query Runner
 	s.queryRunnerScheduler = queryrunnerscheduler.New(
 		func(ctx context.Context) error {
