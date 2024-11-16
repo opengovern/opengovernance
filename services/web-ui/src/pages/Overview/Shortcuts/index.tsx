@@ -47,7 +47,7 @@ const navList = [
         title: 'Inventory',
         description: 'See all workloads - from code to cloud',
         icon: Cube,
-        link: 'dashboard/infrastructure',
+        link: 'finder?tab_id=0',
         new: true,
     },
     // {
