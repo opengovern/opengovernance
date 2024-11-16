@@ -27,10 +27,11 @@ func NewInformationService(cfg config.InformationConfig, logger *zap.Logger, csp
 func (s *InformationService) RecordUsage(ctx context.Context, req shared_entities.CspmUsageRequest) error {
 
 	m := model.CspmUsage{
+		InstallId:            req.InstallId,
 		GatherTimestamp:      req.GatherTimestamp,
 		Hostname:             req.Hostname,
+		NumberOfUsers:        req.NumberOfUsers,
 		IntegrationTypeCount: req.IntegrationTypeCount,
-		ApproximateSpend:     req.ApproximateSpend,
 	}
 
 	if err := s.csmpUsageRepo.Create(ctx, &m); err != nil {

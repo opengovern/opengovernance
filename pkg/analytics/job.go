@@ -5,19 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math"
-	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
 
 	authApi "github.com/opengovern/og-util/pkg/api"
-	shared_entities "github.com/opengovern/og-util/pkg/api/shared-entities"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/opengovernance/pkg/utils"
 	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
@@ -105,66 +101,7 @@ func (j *Job) Do(
 		fail(err)
 	}
 
-	if config.DoTelemetry {
-		// send telemetry
-		j.SendTelemetry(ctx, logger, config, integrationClient, inventoryClient)
-	}
-
 	return result
-}
-
-func (j *Job) SendTelemetry(ctx context.Context, logger *zap.Logger, workerConfig config.WorkerConfig, integrationClient integrationClient.IntegrationServiceClient, inventoryClient inventoryClient.InventoryServiceClient) {
-	now := time.Now()
-
-	httpCtx := httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
-
-	req := shared_entities.CspmUsageRequest{
-		GatherTimestamp:      now,
-		Hostname:             workerConfig.TelemetryHostname,
-		IntegrationTypeCount: make(map[string]int),
-		ApproximateSpend:     0,
-	}
-
-	integrations, err := integrationClient.ListIntegrations(&httpCtx, nil)
-	if err != nil {
-		logger.Error("failed to list sources", zap.Error(err))
-		return
-	}
-	for _, integration := range integrations.Integrations {
-		if _, ok := req.IntegrationTypeCount[integration.IntegrationType.String()]; !ok {
-			req.IntegrationTypeCount[integration.IntegrationType.String()] = 0
-		}
-		req.IntegrationTypeCount[integration.IntegrationType.String()] += 1
-	}
-
-	connData, err := inventoryClient.ListIntegrationsData(&httpCtx, nil, nil,
-		utils.GetPointer(now.AddDate(0, -1, 0)), &now, nil, true, false)
-	if err != nil {
-		logger.Error("failed to list connections data", zap.Error(err))
-		return
-	}
-	totalSpend := float64(0)
-	for _, conn := range connData {
-		if conn.TotalCost != nil {
-			totalSpend += *conn.TotalCost
-		}
-	}
-
-	req.ApproximateSpend = int(math.Floor(totalSpend/5000000)) * 5000000
-
-	url := fmt.Sprintf("%s/api/v1/information/usage", workerConfig.TelemetryBaseURL)
-	reqBytes, err := json.Marshal(req)
-	if err != nil {
-		logger.Error("failed to marshal telemetry request", zap.Error(err))
-		return
-	}
-	var resp any
-	if statusCode, err := httpclient.DoRequest(httpCtx.Ctx, http.MethodPost, url, httpCtx.ToHeaders(), reqBytes, &resp); err != nil {
-		logger.Error("failed to send telemetry", zap.Error(err), zap.Int("status_code", statusCode), zap.String("url", url), zap.Any("req", req), zap.Any("resp", resp))
-		return
-	}
-
-	logger.Info("sent telemetry", zap.String("url", url))
 }
 
 func (j *Job) Run(ctx context.Context, jq *jq.JobQueue, dbc db.Database, encodedResourceCollectionFilters map[string]string, steampipeDB *steampipe.Database, schedulerClient describeClient.SchedulerServiceClient, integrationClient integrationClient.IntegrationServiceClient, sinkClient esSinkClient.EsSinkServiceClient, inventoryClient inventoryClient.InventoryServiceClient, logger *zap.Logger, config config.WorkerConfig) error {
