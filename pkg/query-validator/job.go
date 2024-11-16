@@ -39,7 +39,7 @@ type Job struct {
 func (w *Worker) RunJob(ctx context.Context, job Job) error {
 	ctx, cancel := context.WithTimeout(ctx, JobTimeout)
 	defer cancel()
-	res, err := w.RunSQLNamedQuery(ctx, job.Query)
+	res, err := w.steampipeConn.QueryAll(ctx, job.Query)
 	if err != nil {
 		return err
 	}
@@ -57,16 +57,19 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 			if tableName != "" {
 				queryResourceType, _, err = GetResourceTypeFromTableName(tableName, job.IntegrationType)
 				if err != nil {
+					w.logger.Error("Error getting resource type from table", zap.String("table_name", tableName), zap.Error(err))
 					return err
 				}
 			}
 		}
 		if queryResourceType == "" {
+			w.logger.Error("Error getting resource type from table")
 			return fmt.Errorf(string(MissingResourceTypeQueryError))
 		}
 
 		esIndex := ResourceTypeToESIndex(queryResourceType)
-		w.logger.Info("before getting data", zap.String("esIndex", esIndex))
+		w.logger.Info("before getting data", zap.String("esIndex", esIndex),
+			zap.String("query", job.Query), zap.Any("resp", res))
 		for _, record := range res.Data {
 			w.logger.Info("GettingData")
 			if len(record) != len(res.Headers) {
