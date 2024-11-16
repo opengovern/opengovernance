@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
@@ -126,15 +125,17 @@ func ResourceTypeToESIndex(t string) string {
 }
 
 func (w *Worker) SearchResourceTypeByPlatformID(ctx context.Context, index string, platformID string) error {
-	var filters []opengovernance.BoolFilter
-
-	filters = append(filters, opengovernance.NewTermsFilter("platformResourceID", []string{platformID}))
-
 	root := map[string]any{}
 
 	root["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": filters,
+			"must": []map[string]any{
+				{
+					"match": map[string]any{
+						"platform_id": platformID,
+					},
+				},
+			},
 		},
 	}
 
