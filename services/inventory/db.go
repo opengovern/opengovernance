@@ -10,7 +10,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/model"
-	analyticsDb "github.com/opengovern/opengovernance/pkg/analytics/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -32,8 +31,6 @@ func (db Database) Initialize() error {
 		&NamedQueryTag{},
 		&NamedQueryHistory{},
 		&ResourceTypeTag{},
-		&analyticsDb.AnalyticMetric{},
-		&analyticsDb.MetricTag{},
 		&ResourceCollection{},
 		&ResourceCollectionTag{},
 		&ResourceTypeV2{},

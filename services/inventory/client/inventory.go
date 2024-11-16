@@ -12,7 +12,6 @@ import (
 	"github.com/opengovern/og-util/pkg/integration"
 
 	"github.com/labstack/echo/v4"
-	analyticsDB "github.com/opengovern/opengovernance/pkg/analytics/db"
 	"github.com/opengovern/opengovernance/services/inventory/api"
 )
 
@@ -26,8 +25,6 @@ type InventoryServiceClient interface {
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollectionMetadata(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
-	ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error)
-	ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, integrationIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error)
 	ListAnalyticsMetricTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.ResourceTypeTrendDatapoint, error)
 	ListAnalyticsSpendTrend(ctx *httpclient.Context, metricIds []string, integrationIds []string, startTime, endTime *time.Time) ([]api.CostTrendDatapoint, error)
 	GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error)
@@ -97,29 +94,6 @@ func (s *inventoryClient) ListQueriesV2(ctx *httpclient.Context) (*api.ListQueri
 	return &namedQuery, nil
 }
 
-func (s *inventoryClient) ListAnalyticsMetrics(ctx *httpclient.Context, metricType *analyticsDB.MetricType) ([]api.AnalyticsMetric, error) {
-	url := fmt.Sprintf("%s/api/v2/analytics/metrics/list", s.baseURL)
-
-	firstParamAttached := false
-	if metricType != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("metricType=%s", *metricType)
-	}
-
-	var resp []api.AnalyticsMetric
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return resp, nil
-}
 
 func (s *inventoryClient) GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error) {
 	url := fmt.Sprintf("%s/api/v3/tables/categories", s.baseURL)
@@ -478,72 +452,3 @@ func (s *inventoryClient) ListAnalyticsSpendTrend(ctx *httpclient.Context, metri
 	return response, nil
 }
 
-func (s *inventoryClient) ListAnalyticsMetricsSummary(ctx *httpclient.Context, metricType *analyticsDB.MetricType, metricIds []string, integrationIds []string, startTime, endTime *time.Time) (*api.ListMetricsResponse, error) {
-	url := fmt.Sprintf("%s/api/v2/analytics/metric", s.baseURL)
-	firstParamAttached := false
-	if metricType != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("metricType=%s", *metricType)
-	}
-	if len(metricIds) > 0 {
-		for _, metricId := range metricIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("metricIDs=%s", metricId)
-		}
-	}
-	if len(integrationIds) > 0 {
-		for _, connectionId := range integrationIds {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connectionId=%s", connectionId)
-		}
-	}
-	if startTime != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("startTime=%d", startTime.Unix())
-	}
-	if endTime != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("endTime=%d", endTime.Unix())
-	}
-	if !firstParamAttached {
-		url += "?"
-		firstParamAttached = true
-	} else {
-		url += "&"
-	}
-	url += "pageSize=1000"
-
-	var response api.ListMetricsResponse
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return &response, nil
-}

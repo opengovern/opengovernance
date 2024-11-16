@@ -4,7 +4,6 @@ import (
 	"github.com/opengovern/og-util/pkg/integration"
 	"time"
 
-	"github.com/opengovern/opengovernance/pkg/analytics/db"
 )
 
 type CostTrendDatapoint struct {
@@ -51,17 +50,7 @@ type ListCostMetricsResponse struct {
 	Metrics    []CostMetric `json:"metrics"`
 }
 
-type AnalyticsMetric struct {
-	ID                       string              `json:"id"`
-	IntegrationType          []integration.Type  `json:"integrationTypes"`
-	Type                     db.MetricType       `json:"type"`
-	Name                     string              `json:"name"`
-	Query                    string              `json:"query"`
-	Tables                   []string            `json:"tables"`
-	FinderQuery              string              `json:"finderQuery"`
-	FinderPerConnectionQuery string              `json:"finderPerConnectionQuery"`
-	Tags                     map[string][]string `json:"tags"`
-}
+
 
 type ListCostCompositionResponse struct {
 	TotalCount     int                `json:"total_count" example:"10" minimum:"0"`

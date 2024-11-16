@@ -21,7 +21,6 @@ const (
 	JobSequencerJobTypeBenchmark           JobSequencerJobType = "Benchmark"
 	JobSequencerJobTypeBenchmarkSummarizer JobSequencerJobType = "BenchmarkSummarizer"
 	JobSequencerJobTypeDescribe            JobSequencerJobType = "Describe"
-	JobSequencerJobTypeAnalytics           JobSequencerJobType = "Analytics"
 )
 
 type JobSequencerJobTypeBenchmarkRunnerParameters struct {
