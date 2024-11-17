@@ -33,7 +33,6 @@ var (
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
-	AnalyticsIntervalHours     = os.Getenv("ANALYTICS_INTERVAL_HOURS")
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")

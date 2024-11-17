@@ -234,8 +234,6 @@ SELECT * FROM (
 (SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_integration_jobs WHERE created_at > now() - interval '%[1]s')
 UNION ALL 
 (SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at > now() - interval '%[1]s')
-UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at > now() - interval '%[1]s')
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, *interval, whereQuery, sortBy, sortOrder)
@@ -246,8 +244,6 @@ SELECT * FROM (
 (SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_integration_jobs WHERE created_at >= ? AND created_at <= ?)
 UNION ALL 
 (SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, benchmark_id::text AS title, status, failure_message FROM compliance_jobs WHERE created_at >= ? AND created_at <= ?)
-UNION ALL 
-(SELECT id, created_at, updated_at, 'analytics' AS job_type, 'all' AS integration_id, 'All asset & spend metrics for all accounts' AS title, status, failure_message FROM analytics_jobs WHERE created_at >= ? AND created_at <= ?)
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, whereQuery, sortBy, sortOrder)
@@ -309,8 +305,6 @@ SELECT * FROM (
 (SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_integration_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 UNION ALL 
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
-UNION ALL 
-(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at > now() - interval '%[1]s' GROUP BY status )
 )
 ) AS t %s;
 `, *interval, whereQuery)
@@ -321,8 +315,6 @@ SELECT * FROM (
 (SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_integration_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
 UNION ALL 
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
-UNION ALL 
-(SELECT 'analytics' AS job_type, status, count(*) AS count FROM analytics_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
 )
 ) AS t %s;`, whereQuery)
 	}

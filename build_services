@@ -13,7 +13,6 @@ integration-service
 reporter
 summarizer-worker
 swagger-ui
-analytics-worker
 cost-estimator-service
 query-runner-worker
 demo-importer-worker
