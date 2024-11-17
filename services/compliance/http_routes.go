@@ -5522,7 +5522,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	var migratorJob batchv1.Job
 	err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
 		Namespace: currentNamespace,
-		Name:      "migrator-job",
+		Name:      "post-install-configuration",
 	}, &migratorJob)
 	if err != nil {
 		return err
@@ -5533,17 +5533,17 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 		return err
 	}
 	envsMap := make(map[string]corev1.EnvVar)
-  for _, env := range migratorJob.Spec.Template.Spec.Containers[0].Env {
-    envsMap[env.Name] = env
-  }
-  envsMap["IS_MANUAL"] = corev1.EnvVar{
-    Name: "IS_MANUAL",
-    Value: "true",
-  }
-  var newEnvs []corev1.EnvVar
-  for _, v := range envsMap {
-    newEnvs = append(newEnvs, v)
-  }
+	for _, env := range migratorJob.Spec.Template.Spec.Containers[0].Env {
+		envsMap[env.Name] = env
+	}
+	envsMap["IS_MANUAL"] = corev1.EnvVar{
+		Name:  "IS_MANUAL",
+		Value: "true",
+	}
+	var newEnvs []corev1.EnvVar
+	for _, v := range envsMap {
+		newEnvs = append(newEnvs, v)
+	}
 	for {
 		err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
 			Namespace: currentNamespace,
@@ -5570,7 +5570,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	migratorJob.Spec.Selector = nil
 	migratorJob.Spec.Suspend = aws.Bool(false)
 	migratorJob.Spec.Template.ObjectMeta = metav1.ObjectMeta{}
-  	migratorJob.Spec.Template.Spec.Containers[0].Env = newEnvs
+	migratorJob.Spec.Template.Spec.Containers[0].Env = newEnvs
 	migratorJob.Status = batchv1.JobStatus{}
 
 	err = h.kubeClient.Create(ctx, &migratorJob)
