@@ -5547,7 +5547,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	for {
 		err = h.kubeClient.Get(ctx, k8sclient.ObjectKey{
 			Namespace: currentNamespace,
-			Name:      "migrator-job",
+			Name:      "post-install-configuration",
 		}, &migratorJob)
 		if err != nil {
 			if k8sclient.IgnoreNotFound(err) == nil {
@@ -5560,7 +5560,7 @@ func (h *HttpHandler) SyncQueries(echoCtx echo.Context) error {
 	}
 
 	migratorJob.ObjectMeta = metav1.ObjectMeta{
-		Name:      "migrator-job",
+		Name:      "post-install-configuration",
 		Namespace: currentNamespace,
 		Annotations: map[string]string{
 			"helm.sh/hook":        "post-install,post-upgrade",
