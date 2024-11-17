@@ -25,7 +25,6 @@ type SchedulerServiceClient interface {
 	ListPendingConnections(ctx *httpclient.Context) ([]string, error)
 	GetLatestComplianceJobForBenchmark(ctx *httpclient.Context, benchmarkID string) (*api.ComplianceJob, error)
 	GetDescribeAllJobsStatus(ctx *httpclient.Context) (*api.DescribeAllJobsStatus, error)
-	TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error)
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
@@ -142,18 +141,7 @@ func (s *schedulerClient) RunQuery(ctx *httpclient.Context, queryID string) (*mo
 	return &job, nil
 }
 
-func (s *schedulerClient) TriggerAnalyticsJob(ctx *httpclient.Context) (uint, error) {
-	url := fmt.Sprintf("%s/api/v1/analytics/trigger", s.baseURL)
 
-	var jobID uint
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &jobID); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return 0, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return 0, err
-	}
-	return jobID, nil
-}
 
 func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {
 	url := fmt.Sprintf("%s/api/v1/describe/status/%s", s.baseURL, resourceType)
