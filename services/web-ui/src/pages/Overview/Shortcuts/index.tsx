@@ -92,7 +92,7 @@ export default function Shortcuts() {
                                     href={`/${nav.link}`}
                                     target={nav.new ? '_blank' : '_self'}
                                 >
-                                    <Card className="  cursor-pointer  min-h-[140px] pt-3 pb-3 hover:bg-gray-50 hover:dark:bg-gray-900">
+                                    <Card className=" flex-auto  cursor-pointer  min-h-[140px] h-full pt-3 pb-3 hover:bg-gray-50 hover:dark:bg-gray-900">
                                         <Flex
                                             flexDirection="col"
                                             justifyContent="start"
@@ -124,7 +124,7 @@ export default function Shortcuts() {
                                             setUserOpen(true)
                                         }
                                     }}
-                                    className="  cursor-pointer  min-h-[140px] pt-3 pb-3 hover:bg-gray-50 hover:dark:bg-gray-900"
+                                    className="  cursor-pointer  min-h-[140px] h-full pt-3 pb-3 hover:bg-gray-50 hover:dark:bg-gray-900"
                                 >
                                     <Flex
                                         flexDirection="col"
