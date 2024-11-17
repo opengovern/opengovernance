@@ -3,10 +3,11 @@ package db
 import (
 	"errors"
 	"fmt"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	"gorm.io/gorm"
 	"math/rand"
 	"time"
+
+	"github.com/opengovern/opengovernance/services/describe/db/model"
+	"gorm.io/gorm"
 )
 
 func (db Database) CountComplianceJobsByDate(start time.Time, end time.Time) (int64, error) {

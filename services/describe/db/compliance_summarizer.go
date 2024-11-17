@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	"github.com/opengovern/opengovernance/services/compliance/summarizer"
+	summarizer "github.com/opengovern/opengovernance/jobs/compliance-summarizer"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

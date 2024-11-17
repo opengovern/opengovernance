@@ -3,14 +3,16 @@ package discovery
 import (
 	"context"
 	"encoding/json"
+
 	es2 "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/pkg/describe/api"
-	"github.com/opengovern/opengovernance/pkg/describe/es"
+	"github.com/opengovern/opengovernance/services/describe/api"
+	"github.com/opengovern/opengovernance/services/describe/es"
 
-	"go.uber.org/zap"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const OldResourceDeleterInterval = 1 * time.Minute

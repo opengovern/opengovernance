@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/services/demo-importer/db"
-	"github.com/opengovern/opengovernance/services/demo-importer/db/model"
-	"github.com/opengovern/opengovernance/services/demo-importer/types"
+	"github.com/opengovern/opengovernance/jobs/demo-importer/db"
+	"github.com/opengovern/opengovernance/jobs/demo-importer/db/model"
+	"github.com/opengovern/opengovernance/jobs/demo-importer/types"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
 )

@@ -13,7 +13,7 @@ import (
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/services/compliance/summarizer/types"
+	"github.com/opengovern/opengovernance/jobs/compliance-summarizer/types"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
 	"go.uber.org/zap"

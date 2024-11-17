@@ -10,8 +10,8 @@ import (
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
+	describeClient "github.com/opengovern/opengovernance/services/describe/client"
 	"go.uber.org/zap"
 )
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/opengovern/og-util/pkg/postgres"
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
 	"github.com/opengovern/opengovernance/services/compliance/db"
 	"github.com/opengovern/opengovernance/services/metadata/models"
-	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"

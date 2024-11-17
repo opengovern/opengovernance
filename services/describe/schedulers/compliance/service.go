@@ -8,10 +8,10 @@ import (
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/pkg/describe/config"
-	"github.com/opengovern/opengovernance/pkg/describe/db"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	"github.com/opengovern/opengovernance/services/compliance/client"
+	"github.com/opengovern/opengovernance/services/describe/config"
+	"github.com/opengovern/opengovernance/services/describe/db"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	"go.uber.org/zap"
 )

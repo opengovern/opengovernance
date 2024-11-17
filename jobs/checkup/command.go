@@ -2,9 +2,10 @@ package checkup
 
 import (
 	"errors"
-	config2 "github.com/opengovern/og-util/pkg/config"
-	"github.com/opengovern/opengovernance/pkg/checkup/config"
 	"os"
+
+	config2 "github.com/opengovern/og-util/pkg/config"
+	"github.com/opengovern/opengovernance/jobs/checkup/config"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

@@ -17,9 +17,9 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/integration"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
 	"github.com/opengovern/opengovernance/pkg/types"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
-	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 	"github.com/opengovern/opengovernance/services/inventory/rego_runner"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 

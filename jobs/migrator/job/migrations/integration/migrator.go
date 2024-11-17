@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/jackc/pgtype"
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
+	"github.com/opengovern/opengovernance/jobs/migrator/db"
 	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	integrationModels "github.com/opengovern/opengovernance/services/integration/models"
-	"github.com/opengovern/opengovernance/services/migrator/config"
-	"github.com/opengovern/opengovernance/services/migrator/db"
 	"gorm.io/gorm/clause"
-	"os"
 
 	"github.com/opengovern/og-util/pkg/postgres"
 	"go.uber.org/zap"

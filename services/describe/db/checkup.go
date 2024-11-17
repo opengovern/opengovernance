@@ -3,8 +3,9 @@ package db
 import (
 	"errors"
 	"fmt"
-	checkupapi "github.com/opengovern/opengovernance/pkg/checkup/api"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+
+	checkupapi "github.com/opengovern/opengovernance/jobs/checkup/api"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

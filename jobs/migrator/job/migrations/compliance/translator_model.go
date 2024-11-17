@@ -1,7 +1,7 @@
 package compliance
 
 import (
-	"github.com/opengovern/opengovernance/services/migrator/job/migrations/shared"
+	"github.com/opengovern/opengovernance/jobs/migrator/job/migrations/shared"
 )
 
 type Benchmark struct {

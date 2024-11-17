@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"strings"
+
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 )
 
 // Deprecated

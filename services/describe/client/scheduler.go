@@ -3,15 +3,16 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
 	"net/http"
 	"time"
 
+	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
+
 	"github.com/labstack/echo/v4"
 
-	"github.com/opengovern/opengovernance/pkg/describe/api"
+	"github.com/opengovern/opengovernance/services/describe/api"
 )
 
 type TimeRangeFilter struct {

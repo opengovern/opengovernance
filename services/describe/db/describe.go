@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opengovern/og-util/pkg/describe/enums"
+	"strings"
+	"time"
+
 	"github.com/opengovern/og-util/pkg/source"
 	opengovernanceTrace "github.com/opengovern/og-util/pkg/trace"
-	"github.com/opengovern/opengovernance/pkg/describe/api"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/og-util/pkg/describe/enums"
+	"github.com/opengovern/opengovernance/services/describe/api"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"strings"
-	"time"
 )
 
 func (db Database) CountDescribeJobsByDate(includeCost *bool, start time.Time, end time.Time) (int64, error) {

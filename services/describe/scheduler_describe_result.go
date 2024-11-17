@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
+	"time"
+
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"strings"
-	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/pkg/describe/api"
-	"github.com/opengovern/opengovernance/pkg/describe/es"
+	"github.com/opengovern/opengovernance/services/describe/api"
+	"github.com/opengovern/opengovernance/services/describe/es"
 	"go.uber.org/zap"
 )
 

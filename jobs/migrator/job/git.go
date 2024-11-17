@@ -12,9 +12,9 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
 	"github.com/opengovern/opengovernance/services/metadata/client"
 	"github.com/opengovern/opengovernance/services/metadata/models"
-	"github.com/opengovern/opengovernance/services/migrator/config"
 	"go.uber.org/zap"
 )
 func Unzip(src, dest,url string) error {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	og_client "github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-client"
 	compliance "github.com/opengovern/opengovernance/services/compliance/api"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"

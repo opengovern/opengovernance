@@ -2,11 +2,12 @@ package pg
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go/aws"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
+
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"go.uber.org/zap"

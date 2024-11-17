@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

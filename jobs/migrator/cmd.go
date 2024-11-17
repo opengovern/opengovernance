@@ -2,9 +2,10 @@ package migrator
 
 import (
 	"fmt"
+
 	"github.com/opengovern/og-util/pkg/config"
-	config2 "github.com/opengovern/opengovernance/services/migrator/config"
-	"github.com/opengovern/opengovernance/services/migrator/job"
+	config2 "github.com/opengovern/opengovernance/jobs/migrator/config"
+	"github.com/opengovern/opengovernance/jobs/migrator/job"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

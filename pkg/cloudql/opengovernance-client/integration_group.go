@@ -2,11 +2,12 @@ package opengovernance_client
 
 import (
 	"context"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/pg"
+	"runtime"
+
+	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/pg"
 	integration "github.com/opengovern/opengovernance/services/integration/models"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"runtime"
 )
 
 type IntegrationGroupRow struct {

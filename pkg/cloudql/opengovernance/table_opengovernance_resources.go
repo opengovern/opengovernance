@@ -2,11 +2,12 @@ package opengovernance
 
 import (
 	"context"
-	og_client "github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-client"
+	"time"
+
+	og_client "github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
-	"time"
 )
 
 func tablePlatformResources(_ context.Context) *plugin.Table {

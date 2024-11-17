@@ -3,8 +3,9 @@ package query_validator
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/nats-io/nats.go/jetstream"
-	queryvalidator "github.com/opengovern/opengovernance/pkg/query-validator"
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
 	"go.uber.org/zap"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
 	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
 	"github.com/turbot/steampipe-plugin-sdk/v5/connection"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"

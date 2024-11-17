@@ -2,10 +2,11 @@ package query_validator
 
 import (
 	"fmt"
+
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	queryvalidator "github.com/opengovern/opengovernance/pkg/query-validator"
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"go.uber.org/zap"
 )
 

@@ -2,7 +2,8 @@ package types
 
 import (
 	"context"
-	"github.com/opengovern/opengovernance/services/migrator/config"
+
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
 	"go.uber.org/zap"
 )
 

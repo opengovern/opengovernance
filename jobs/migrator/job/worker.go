@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/services/migrator/config"
-	"github.com/opengovern/opengovernance/services/migrator/db"
-	"github.com/opengovern/opengovernance/services/migrator/db/model"
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
+	"github.com/opengovern/opengovernance/jobs/migrator/db"
+	"github.com/opengovern/opengovernance/jobs/migrator/db/model"
+	"github.com/opengovern/opengovernance/jobs/migrator/job/types"
 	"go.uber.org/zap"
-	"time"
-	"github.com/opengovern/opengovernance/services/migrator/job/types"
 )
 
 type GitConfig struct {

@@ -3,14 +3,15 @@ package job
 import (
 	"crypto/sha256"
 	"encoding/base64"
-	"github.com/opengovern/opengovernance/services/migrator/db/model"
-	"github.com/opengovern/opengovernance/services/migrator/job/types"
-	"go.uber.org/zap"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/opengovern/opengovernance/jobs/migrator/db/model"
+	"github.com/opengovern/opengovernance/jobs/migrator/job/types"
+	"go.uber.org/zap"
 )
 
 func (w *Job) CheckIfUpdateIsNeeded(name string, mig types.Migration) (bool, error) {

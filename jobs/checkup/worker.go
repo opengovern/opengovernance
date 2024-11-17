@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/opengovernance/pkg/checkup/config"
+	"github.com/opengovern/opengovernance/jobs/checkup/config"
 	authClient "github.com/opengovern/opengovernance/services/auth/client"
 	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
 

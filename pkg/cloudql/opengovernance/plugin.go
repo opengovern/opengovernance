@@ -2,7 +2,8 @@ package opengovernance
 
 import (
 	"context"
-	"github.com/opengovern/opengovernance/pkg/steampipe-plugin-opengovernance/opengovernance-sdk/config"
+
+	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )

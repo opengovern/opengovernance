@@ -2,15 +2,16 @@ package elasticsearch
 
 import (
 	"context"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/services/migrator/config"
-	"go.uber.org/zap"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opengovernance/jobs/migrator/config"
+	"go.uber.org/zap"
 )
 
 type Migration struct {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

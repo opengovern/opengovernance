@@ -2,8 +2,9 @@ package db
 
 import (
 	"errors"
+
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/services/demo-importer/db/model"
+	"github.com/opengovern/opengovernance/jobs/demo-importer/db/model"
 	"gorm.io/gorm"
 )
 

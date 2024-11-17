@@ -9,10 +9,10 @@ import (
 	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	es3 "github.com/opengovern/opengovernance/pkg/describe/es"
+	types2 "github.com/opengovern/opengovernance/jobs/compliance-summarizer/types"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/opengovern/opengovernance/services/compliance/es"
-	types2 "github.com/opengovern/opengovernance/services/compliance/summarizer/types"
+	es3 "github.com/opengovern/opengovernance/services/describe/es"
 	"go.uber.org/zap"
 )
 

@@ -3,10 +3,11 @@ package db
 import (
 	"errors"
 	"fmt"
-	queryrunner "github.com/opengovern/opengovernance/services/inventory/query-runner"
 
-	"github.com/opengovern/opengovernance/pkg/describe/db/model"
-	queryvalidator "github.com/opengovern/opengovernance/pkg/query-validator"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
+	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

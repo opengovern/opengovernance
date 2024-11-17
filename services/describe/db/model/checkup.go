@@ -1,7 +1,7 @@
 package model
 
 import (
-	checkupapi "github.com/opengovern/opengovernance/pkg/checkup/api"
+	checkupapi "github.com/opengovern/opengovernance/jobs/checkup/api"
 	"gorm.io/gorm"
 )
 
