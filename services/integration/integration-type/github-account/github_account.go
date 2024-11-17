@@ -18,6 +18,8 @@ func (i *GithubAccountIntegration) GetConfiguration() interfaces.IntegrationConf
 		NatsManualJobsTopic:    githubDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         githubDescriberLocal.StreamName,
 
+		SteampipePluginName: "github",
+
 		UISpecFileName: "github-account.json",
 	}
 }

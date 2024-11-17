@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"os"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
@@ -60,13 +60,12 @@ func NewWorker(
 	prometheusPushAddress string,
 	ctx context.Context,
 ) (*Worker, error) {
-	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
-	if err != nil {
-		return nil, err
-	}
-	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
-	if err != nil {
-		return nil, err
+	for _, integrationType := range integration_type.IntegrationTypes {
+		describerConfig := integrationType.GetConfiguration()
+		err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, describerConfig.SteampipePluginName)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe); err != nil {
 		return nil, err

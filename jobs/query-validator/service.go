@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
 	"strconv"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/og-util/pkg/source"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"go.uber.org/zap"
 )
@@ -41,13 +41,12 @@ func NewWorker(
 	logger *zap.Logger,
 	ctx context.Context,
 ) (*Worker, error) {
-	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
-	if err != nil {
-		return nil, err
-	}
-	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
-	if err != nil {
-		return nil, err
+	for _, integrationType := range integration_type.IntegrationTypes {
+		describerConfig := integrationType.GetConfiguration()
+		err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, describerConfig.SteampipePluginName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe); err != nil {

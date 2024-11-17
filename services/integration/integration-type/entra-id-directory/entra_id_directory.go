@@ -17,6 +17,8 @@ func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationC
 		NatsManualJobsTopic:    entraidDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         entraidDescriberLocal.StreamName,
 
+		SteampipePluginName: "azuread",
+
 		UISpecFileName: "entraid-directory.json",
 	}
 }
