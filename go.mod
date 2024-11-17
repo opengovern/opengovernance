@@ -37,13 +37,12 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/hashicorp/vault/api v1.14.0
 	github.com/jackc/pgtype v1.14.0
-
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.36.0
 	github.com/open-policy-agent/opa v0.69.0
-	github.com/opengovern/og-util v1.1.6
+	github.com/opengovern/og-util v1.1.7
 	github.com/opengovern/plugin-aws v0.7.3
 	github.com/opengovern/plugin-gcp v0.0.0-20241014134959-2c0f222fc07b
 	github.com/opengovern/plugin-kubernetes-internal v0.18.12

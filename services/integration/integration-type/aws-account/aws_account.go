@@ -19,6 +19,8 @@ func (i *AwsCloudAccountIntegration) GetConfiguration() interfaces.IntegrationCo
 		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         awsDescriberLocal.StreamName,
 
+		SteampipePluginName: "aws",
+
 		UISpecFileName: "aws-cloud-account.json",
 	}
 }

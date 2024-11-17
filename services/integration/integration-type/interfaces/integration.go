@@ -7,6 +7,8 @@ type IntegrationConfiguration struct {
 	NatsManualJobsTopic    string
 	NatsStreamName         string
 
+	SteampipePluginName string
+
 	UISpecFileName string
 }
 

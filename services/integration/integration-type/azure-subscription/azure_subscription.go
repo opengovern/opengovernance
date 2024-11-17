@@ -17,6 +17,8 @@ func (i *AzureSubscriptionIntegration) GetConfiguration() interfaces.Integration
 		NatsManualJobsTopic:    azureDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         azureDescriberLocal.StreamName,
 
+		SteampipePluginName: "azure",
+
 		UISpecFileName: "azure-subscription.json",
 	}
 }
