@@ -316,7 +316,7 @@ export default function Query() {
                         >
                             <RenderObject obj={selectedRow} />
                         </Modal>
-                        {openSearch ? (
+                        {/* {openSearch ? (
                             <Card className="sticky w-fit h-fit max-h-[550px] min-w-max   overflow-y-scroll">
                                 <TextInput
                                     className="w-56 mb-6"
@@ -406,7 +406,7 @@ export default function Query() {
                                     </Flex>
                                 </Button>
                             </Flex>
-                        )}
+                        )} */}
                         <CodeEditor
                             ace={ace}
                             language="sql"
