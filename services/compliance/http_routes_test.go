@@ -76,7 +76,7 @@ func (s *HttpServerSuite) SetupSuite() {
 		db: db.Database{Orm: adb},
 	}
 
-	err = s.handler.db.Initialize()
+	// err = s.handler.db.Initialize()
 	require.NoError(err, "db initialize")
 
 	logger, err := zap.NewProduction()

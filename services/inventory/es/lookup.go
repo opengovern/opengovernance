@@ -3,11 +3,12 @@ package es
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/opengovern/og-util/pkg/integration"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/describe"
 	"github.com/opengovern/opengovernance/pkg/utils"
+	"github.com/opengovern/opengovernance/services/describe"
 )
 
 type ResourceTypeCountsResponse struct {

@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	demoimporter "github.com/opengovern/opengovernance/services/demo-importer"
 	"os"
 	"os/signal"
 	"syscall"
+
+	demoimporter "github.com/opengovern/opengovernance/jobs/demo-importer"
 )
 
 func main() {

@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/opengovern/opengovernance/pkg/checkup"
+	"github.com/opengovern/opengovernance/jobs/checkup"
 )
 
 func main() {

@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	"github.com/opengovern/opengovernance/jobs/migrator/db/model"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
-	"github.com/opengovern/opengovernance/services/migrator/db/model"
 	"github.com/sashabaranov/go-openai"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,8 +17,8 @@ import (
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/postgres"
-	describeClient "github.com/opengovern/opengovernance/pkg/describe/client"
 	"github.com/opengovern/opengovernance/services/compliance/db"
+	describeClient "github.com/opengovern/opengovernance/services/describe/client"
 	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
 
 	"go.uber.org/zap"
