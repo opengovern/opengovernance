@@ -3,7 +3,7 @@ package config
 import "github.com/opengovern/og-util/pkg/config"
 
 type MigratorConfig struct {
-	IsManual bool `yaml:"is_manual"`
+	IsManual bool `yaml:"is_manual" koanf:"is_manual"`
 
 	PostgreSQL              config.Postgres
 	Steampipe               config.Postgres
