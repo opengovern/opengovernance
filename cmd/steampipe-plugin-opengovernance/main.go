@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance"
+	"github.com/opengovern/opengovernance/pkg/cloudql/tables"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

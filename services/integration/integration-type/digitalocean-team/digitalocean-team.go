@@ -18,6 +18,8 @@ func (i *DigitaloceanTeamIntegration) GetConfiguration() interfaces.IntegrationC
 		NatsManualJobsTopic:    digitaloceanDescriberLocal.JobQueueTopicManuals,
 		NatsStreamName:         digitaloceanDescriberLocal.StreamName,
 
+		SteampipePluginName: "digitalocean",
+
 		UISpecFileName: "digitalocean-team.json",
 	}
 }
