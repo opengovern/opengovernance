@@ -6,6 +6,8 @@ import (
 	awsConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription"
 	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
+	"github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team"
+	digitalOceanConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory"
 	entraidConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
 	github_account "github.com/opengovern/opengovernance/services/integration/integration-type/github-account"
@@ -19,6 +21,7 @@ const (
 	IntegrationTypeAzureSubscription = azureConfigs.IntegrationTypeAzureSubscription
 	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
 	IntegrationTypeGithubAccount     = githubConfigs.IntegrationTypeGithubAccount
+	IntegrationTypeDigitalOceanTeam  = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -26,6 +29,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeAzureSubscription,
 	IntegrationTypeEntraIdDirectory,
 	IntegrationTypeGithubAccount,
+	IntegrationTypeDigitalOceanTeam,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -33,6 +37,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeAzureSubscription: &azure_subscription.AzureSubscriptionIntegration{},
 	IntegrationTypeEntraIdDirectory:  &entra_id_directory.EntraIdDirectoryIntegration{},
 	IntegrationTypeGithubAccount:     &github_account.GithubAccountIntegration{},
+	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
 }
 
 func ParseType(str string) integration.Type {
