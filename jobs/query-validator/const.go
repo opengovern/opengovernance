@@ -17,7 +17,6 @@ type QueryError string
 const (
 	MissingPlatformResourceIDQueryError QueryError = "missing_platform_resource_id"
 	MissingAccountIDQueryError          QueryError = "missing_account_id"
-	MissingResourceQueryError           QueryError = "missing_resource"
 	MissingResourceTypeQueryError       QueryError = "missing_resource_type"
 	ResourceNotFoundQueryError          QueryError = "resource_not_found"
 )

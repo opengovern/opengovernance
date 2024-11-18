@@ -12,11 +12,10 @@ import (
 )
 
 var (
-	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
-	IntegrationBaseUrl    = os.Getenv("INTEGRATION_BASE_URL")
-	AuthBaseUrl           = os.Getenv("AUTH_BASE_URL")
-	MetadataBaseUrl       = os.Getenv("METADATA_BASE_URL")
-	NATSAddress           = os.Getenv("NATS_URL")
+	IntegrationBaseUrl = os.Getenv("INTEGRATION_BASE_URL")
+	AuthBaseUrl        = os.Getenv("AUTH_BASE_URL")
+	MetadataBaseUrl    = os.Getenv("METADATA_BASE_URL")
+	NATSAddress        = os.Getenv("NATS_URL")
 )
 
 func WorkerCommand() *cobra.Command {
@@ -44,7 +43,6 @@ func WorkerCommand() *cobra.Command {
 				id,
 				NATSAddress,
 				logger,
-				PrometheusPushAddress,
 				IntegrationBaseUrl,
 				AuthBaseUrl,
 				MetadataBaseUrl,
