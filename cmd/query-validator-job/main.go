@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator-job"
 )
 
 func main() {

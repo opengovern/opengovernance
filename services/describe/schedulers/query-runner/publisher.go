@@ -9,7 +9,7 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
 	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
 	"go.uber.org/zap"
 )

@@ -9,7 +9,7 @@ import (
 	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner"
+	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
 	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"go.uber.org/zap"
 )

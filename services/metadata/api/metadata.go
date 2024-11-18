@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	"github.com/opengovern/opengovernance/jobs/migrator/db/model"
+	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
 	authApi "github.com/opengovern/opengovernance/services/auth/api"
 	api "github.com/opengovern/opengovernance/services/integration/api/models"
 )

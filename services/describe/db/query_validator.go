@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
 
-	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator-job"
 	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )

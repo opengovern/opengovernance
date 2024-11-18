@@ -8,7 +8,7 @@ import (
 
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner"
+	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
 	"github.com/opengovern/opengovernance/services/compliance/api"
 
 	"github.com/opengovern/og-util/pkg/ticker"

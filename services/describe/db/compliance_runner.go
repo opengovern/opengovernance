@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner"
+	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
 	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )

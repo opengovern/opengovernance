@@ -1,7 +1,7 @@
 package model
 
 import (
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
 	"gorm.io/gorm"
 )
 

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner"
-	summarizer "github.com/opengovern/opengovernance/jobs/compliance-summarizer"
+	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
+	summarizer "github.com/opengovern/opengovernance/jobs/compliance-summarizer-job"
 	"go.uber.org/zap"
 )
 
