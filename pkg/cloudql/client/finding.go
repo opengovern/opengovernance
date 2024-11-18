@@ -5,7 +5,7 @@ import (
 	"runtime"
 
 	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
+	"github.com/opengovern/opengovernance/pkg/cloudql/sdk/config"
 	"github.com/opengovern/opengovernance/pkg/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )

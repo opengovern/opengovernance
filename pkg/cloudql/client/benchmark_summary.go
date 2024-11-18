@@ -7,8 +7,8 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/config"
-	"github.com/opengovern/opengovernance/pkg/cloudql/opengovernance-sdk/services"
+	"github.com/opengovern/opengovernance/pkg/cloudql/sdk/config"
+	"github.com/opengovern/opengovernance/pkg/cloudql/sdk/services"
 	"github.com/opengovern/opengovernance/pkg/utils"
 	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
