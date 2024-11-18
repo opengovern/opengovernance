@@ -56,6 +56,7 @@ export default function CreateIntegration({
     const [selectedProviders, setSelectedProviders] = useState<any>([])
     const [credentialId, setCredentialId] = useState<string>('')
     const [described, setDescribed] = useState<boolean>(false)
+    const [credentialType, setCredentialType] = useState<string>('')
    
     const DiscoverIntegrations = () => {
         setLoading(true)
@@ -84,6 +85,7 @@ export default function CreateIntegration({
         const formData = new FormData()
         // @ts-ignore
         formData.append('integration_type', integration_type)
+        formData.append('credential_type', credentialType)
         Object.keys(integration).forEach((key) => {
             formData.append(`credentials.${key}`, integration[key])
         })
@@ -122,6 +124,7 @@ export default function CreateIntegration({
              const body = {
                  integration_type: integration_type,
                  credentials: integration,
+                 credential_type: credentialType,
              }
              axios
                  .post(
@@ -221,6 +224,7 @@ export default function CreateIntegration({
                                                         setSelectedCredential(
                                                             index
                                                         )
+                                                        setCredentialType(credential.label)
                                                         setIntegration({...integration,credential_type:credential.label})
                                                     }
                                                     }
