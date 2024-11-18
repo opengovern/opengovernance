@@ -30,8 +30,6 @@ RUN apt update
 RUN apt install -y procps htop
 USER steampipe
 
-RUN echo -e "connection \"digitalocean\" {\n  plugin = \"digitalocean\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/digitalocean.spc
-RUN cat /home/steampipe/.steampipe/config/digitalocean.spc
-RUN sleep 5
+RUN echo "connection \"digitalocean\" {\n  plugin = \"digitalocean\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/digitalocean.spc
 
 RUN steampipe plugin list
