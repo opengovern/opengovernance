@@ -51,15 +51,11 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	}
 	var integrations []models.Integration
 	accounts, err := discovery.GithubIntegrationDiscovery(discovery.Config{
-		Token:          credentials.Token,
-		BaseURL:        credentials.BaseURL,
-		AppId:          credentials.AppId,
-		InstallationId: credentials.InstallationId,
-		PrivateKeyPath: credentials.PrivateKeyPath,
+		Token: credentials.Token,
 	})
 	for _, a := range accounts {
 		labels := map[string]string{
-			"OrganizationName": a.Name,
+			"OrganizationName": a.Login,
 		}
 		labelsJsonData, err := json.Marshal(labels)
 		if err != nil {
@@ -72,7 +68,7 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		}
 		integrations = append(integrations, models.Integration{
 			ProviderID: strconv.FormatInt(a.ID, 10),
-			Name:       a.Name,
+			Name:       a.Login,
 			Labels:     integrationLabelsJsonb,
 		})
 	}
