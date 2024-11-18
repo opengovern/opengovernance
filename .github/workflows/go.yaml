@@ -249,7 +249,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/checkup-job:${{ needs.tag.outputs.latest_tag }}
-          file: docker/checkupJobDockerfile
+          file: docker/CheckupJobDockerfile
           context: .
 
   deploy-compliance-report-job:
