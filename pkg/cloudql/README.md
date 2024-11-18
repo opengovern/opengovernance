@@ -1,1 +1,1 @@
-# steampipe-plugin-opengovernance
+# cloudql

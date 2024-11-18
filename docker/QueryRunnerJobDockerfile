@@ -4,7 +4,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-github:0.0.1 as github
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-digitalocean:0.0.1 as digitalocean
-FROM ${PLUGIN_REGISTRY}/steampipe-plugin-opengovernance:0.0.1 as opengovernance
+FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
 
 FROM ubuntu:20.04 AS base
 RUN apt-get update && apt-get install -y \
@@ -19,7 +19,7 @@ COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plug
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
 COPY --from=github /steampipe-plugin-github.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/github@latest/steampipe-plugin-github.plugin
 COPY --from=digitalocean /steampipe-plugin-digitalocean.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/digitalocean@latest/steampipe-plugin-digitalocean.plugin
-COPY --from=opengovernance /steampipe-plugin-opengovernance.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
+COPY --from=opengovernance /cloudql.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
 
 USER root
 RUN useradd -ms /bin/bash steampipe
@@ -34,7 +34,7 @@ USER steampipe
 
 RUN steampipe plugin list
 
-COPY ./build/query-validator-worker /
+COPY ./build/query-runner-job /
 
-ENTRYPOINT [ "/query-validator-worker" ]
-CMD [ "/query-validator-worker" ]
+ENTRYPOINT [ "/query-runner-job" ]
+CMD [ "/query-runner-job" ]

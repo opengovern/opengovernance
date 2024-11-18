@@ -1,10 +1,10 @@
 auth-service
-checkup-worker
+checkup-job
 cli
 cloud-inventory
-compliance-report-worker
+compliance-report-job
 compliance-service
-describe-scheduler
+describe-scheduler-service-service-service-service-service-service
 hopper
 inventory-service
 metadata-service
@@ -14,5 +14,5 @@ reporter
 summarizer-worker
 swagger-ui
 cost-estimator-service
-query-runner-worker
-demo-importer-worker
+query-runner-job
+demo-importer-job

@@ -64,21 +64,21 @@ jobs:
     outputs:
       steampipe: ${{ steps.build_services.outputs.steampipe }}
       auth-service: ${{ steps.build_services.outputs.auth-service }}
-      checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
-      compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
+      checkup-job: ${{ steps.build_services.outputs.checkup-job }}
+      compliance-report-job: ${{ steps.build_services.outputs.compliance-report-job }}
       compliance-service: ${{ steps.build_services.outputs.compliance-service }}
-      compliance-summarizer: ${{ steps.build_services.outputs.compliance-summarizer }}
-      describe-scheduler: ${{ steps.build_services.outputs.describe-scheduler }}
+      compliance-summarizer-job: ${{ steps.build_services.outputs.compliance-summarizer-job }}
+      describe-scheduler-service: ${{ steps.build_services.outputs.describe-scheduler-service }}
       inventory-service: ${{ steps.build_services.outputs.inventory-service }}
       metadata-service: ${{ steps.build_services.outputs.metadata-service }}
-      post-install-worker: ${{ steps.build_services.outputs.post-install-worker }}
+      post-install-job: ${{ steps.build_services.outputs.post-install-job }}
       swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
-      steampipe-plugin-opengovernance: ${{ steps.build_services.outputs.steampipe-plugin-opengovernance }}
+      cloudql: ${{ steps.build_services.outputs.cloudql }}
       integration-service: ${{ steps.build_services.outputs.integration-service }}
       es-sink-service: ${{ steps.build_services.outputs.es-sink-service }}
-      query-runner-worker: ${{ steps.build_services.outputs.query-runner-worker }}
-      query-validator-worker: ${{ steps.build_services.outputs.query-validator-worker }}
-      demo-importer-worker: ${{ steps.build_services.outputs.demo-importer-worker }}
+      query-runner-job: ${{ steps.build_services.outputs.query-runner-job }}
+      query-validator-job: ${{ steps.build_services.outputs.query-validator-job }}
+      demo-importer-job: ${{ steps.build_services.outputs.demo-importer-job }}
       
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
@@ -146,12 +146,12 @@ jobs:
     needs:
       - build
       - tag
-      - deploy-steampipe-plugin-opengovernance
+      - deploy-cloudql
     permissions:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request'
+    if: (needs.build.outputs.cloudql == 'true' || needs.build.outputs.steampipe == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -216,7 +216,7 @@ jobs:
           file: docker/AuthServiceDockerfile
           context: .
 
-  deploy-checkup-worker:
+  deploy-checkup-job:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -225,7 +225,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.checkup-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -248,22 +248,22 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/CheckupWorkerDockerfile
+            ghcr.io/${{ github.repository_owner }}/checkup-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/CheckupJobDockerfile
           context: .
 
-  deploy-compliance-report-worker:
+  deploy-compliance-report-job:
     runs-on: ubuntu-latest
     needs:
       - build
       - tag
-      - deploy-steampipe-plugin-opengovernance
+      - deploy-cloudql
       - deploy-steampipe
     permissions:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' || needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request'
+    if: (needs.build.outputs.cloudql == 'true' || needs.build.outputs.compliance-report-job == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -286,13 +286,13 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ComplianceReportWorkerDockerfile
+            ghcr.io/${{ github.repository_owner }}/compliance-report-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/ComplianceReportJobDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
 
-  deploy-compliance-summarizer:
+  deploy-compliance-summarizer-job:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -301,7 +301,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-summarizer == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.compliance-summarizer-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -324,8 +324,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/compliance-summarizer:${{ needs.tag.outputs.latest_tag }}
-          file: docker/ComplianceSummarizerDockerfile
+            ghcr.io/${{ github.repository_owner }}/compliance-summarizer-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/ComplianceSummarizerJobDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
@@ -366,7 +366,7 @@ jobs:
           file: docker/ComplianceServiceDockerfile
           context: .
 
-  deploy-describe-scheduler:
+  deploy-describe-scheduler-service:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -375,7 +375,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.describe-scheduler-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -398,8 +398,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DescribeSchedulerDockerfile
+            ghcr.io/${{ github.repository_owner }}/describe-scheduler-service:${{ needs.tag.outputs.latest_tag }}
+          file: docker/DescribeSchedulerServiceDockerfile
           context: .
 
   deploy-integration-service:
@@ -545,7 +545,7 @@ jobs:
           file: docker/MetadataServiceDockerfile
           context: .
 
-  deploy-post-install-worker:
+  deploy-post-install-job:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -554,7 +554,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.post-install-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.post-install-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -577,8 +577,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/post-install:${{ needs.tag.outputs.latest_tag }}
-          file: docker/PostInstallDockerfile
+            ghcr.io/${{ github.repository_owner }}/post-install-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/PostInstallJobDockerfile
           context: .
   deploy-swagger-ui:
     runs-on: ubuntu-latest
@@ -617,7 +617,7 @@ jobs:
           context: .
 
 
-  deploy-steampipe-plugin-opengovernance:
+  deploy-cloudql:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -626,14 +626,14 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: (needs.build.outputs.steampipe-plugin-opengovernance == 'true' ||
+    if: (needs.build.outputs.cloudql == 'true' ||
       needs.build.outputs.steampipe == 'true' ||
-      needs.build.outputs.compliance-report-worker == 'true') && github.event_name != 'pull_request'
+      needs.build.outputs.compliance-report-job == 'true') && github.event_name != 'pull_request'
     steps:
       - name: Check if we need to actually push
         id: check_if_push
         run: |
-          if [[ -z "${{ needs.build.outputs.steampipe-plugin-opengovernance }}" ]]; then
+          if [[ -z "${{ needs.build.outputs.cloudql }}" ]]; then
             echo "do_build=false" >> $GITHUB_OUTPUT
           else
             echo "do_build=true" >> $GITHUB_OUTPUT
@@ -663,25 +663,25 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:0.0.1
-            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-opengovernance:${{ needs.tag.outputs.latest_tag }}
-          file: docker/SteampipePluginOpengovernanceDockerfile
+            ghcr.io/${{ github.repository_owner }}/cloudql:0.0.1
+            ghcr.io/${{ github.repository_owner }}/cloudql:${{ needs.tag.outputs.latest_tag }}
+          file: docker/CloudQLDockerfile
           context: .
 
 
 
-  deploy-query-runner-worker:
+  deploy-query-runner-job:
     runs-on: ubuntu-latest
     needs:
       - build
       - tag
-      - deploy-steampipe-plugin-opengovernance
+      - deploy-cloudql
       - deploy-steampipe
     permissions:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.query-runner-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.query-runner-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -704,24 +704,24 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/query-runner-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/QueryRunnerWorkerDockerfile
+            ghcr.io/${{ github.repository_owner }}/query-runner-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/QueryRunnerJobDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
 
-  deploy-query-validator-worker:
+  deploy-query-validator-job:
     runs-on: ubuntu-latest
     needs:
       - build
       - tag
-      - deploy-steampipe-plugin-opengovernance
+      - deploy-cloudql
       - deploy-steampipe
     permissions:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.query-validator-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.query-validator-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -744,8 +744,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/query-validator-worker:${{ needs.tag.outputs.latest_tag }}
-          file: docker/QueryValidatorWorkerDockerfile
+            ghcr.io/${{ github.repository_owner }}/query-validator-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/QueryValidatorJobDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
@@ -806,7 +806,7 @@ jobs:
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
           context: .
-  deploy-demo-importer-worker:
+  deploy-demo-importer-job:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -815,7 +815,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.demo-importer-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.demo-importer-job == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -838,8 +838,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/demo-importer:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DemoImporterDockerfile
+            ghcr.io/${{ github.repository_owner }}/demo-importer-job:${{ needs.tag.outputs.latest_tag }}
+          file: docker/DemoImporterJobDockerfile
           context: .
 
   deploy-dex-login:
