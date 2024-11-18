@@ -12,16 +12,16 @@ import { dateTimeDisplay } from "../../../utilities/dateDisplay";
 
 export const GetActions=(type: number,schema: Schema | undefined)=>{
     if(type===1){
-        return schema?.actions.credentials
+        return schema?.actions?.credentials
     }
 
-    return schema?.actions.integrations
+    return schema?.actions?.integrations
 
 }
 
 export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
     if(type===1){
-        const fields = schema?.render.credentials.fields
+        const fields = schema?.render?.credentials?.fields
         return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
             return {
                 title: field.label,
@@ -36,7 +36,7 @@ export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
         
     }
 
-    const fields = schema?.render.integrations.fields
+    const fields = schema?.render?.integrations?.fields
   
 
     return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
