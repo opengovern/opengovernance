@@ -344,14 +344,14 @@ export const RenderTableField = (field: any, item: any) => {
         return item[field.key]
     }
     if (field.type === 'status') {
-       
+     
     
         return (
             <Badge
                 // @ts-ignore
                 color={
                     // @ts-ignore
-                    field.statusOptions?.map((x: any) => {
+                    field?.statusOptions?.filter((x: any) => {
                         
                         if (x.value === item[field.key]) {
                             return x
@@ -391,7 +391,6 @@ export const GetViewFields = (schema: Schema | undefined, type: number) => {
                 }
             })
     }
-console.log(schema?.render?.integrations?.fields)
     return schema?.render?.integrations?.fields
         .filter((field) => {
             if (field.detail) {
