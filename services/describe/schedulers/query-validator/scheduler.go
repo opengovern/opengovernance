@@ -5,7 +5,7 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator"
+	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator-job"
 	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"go.uber.org/zap"
 )

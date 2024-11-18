@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
-	"github.com/opengovern/opengovernance/jobs/migrator/db/model"
+	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
 	"github.com/sashabaranov/go-openai"

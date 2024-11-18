@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	checkupapi "github.com/opengovern/opengovernance/jobs/checkup/api"
+	checkupapi "github.com/opengovern/opengovernance/jobs/checkup-job/api"
 	"github.com/opengovern/opengovernance/services/describe/db/model"
 	"gorm.io/gorm"
 )

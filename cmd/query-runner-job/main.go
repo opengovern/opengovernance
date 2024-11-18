@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner"
+	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
 )
 
 func main() {

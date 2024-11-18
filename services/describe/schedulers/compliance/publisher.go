@@ -10,7 +10,7 @@ import (
 	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
 	"golang.org/x/net/context"
 
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner"
+	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
 	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
 	"go.uber.org/zap"
 )
