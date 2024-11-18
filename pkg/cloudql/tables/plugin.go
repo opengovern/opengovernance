@@ -10,7 +10,7 @@ import (
 
 func Plugin(ctx context.Context) *plugin.Plugin {
 	p := &plugin.Plugin{
-		Name:             "steampipe-plugin-opengovernance",
+		Name:             "cloudql",
 		DefaultTransform: transform.FromGo().NullIfZero(),
 		ConnectionConfigSchema: &plugin.ConnectionConfigSchema{
 			NewInstance: config.Instance,
