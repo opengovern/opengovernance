@@ -19,8 +19,8 @@
               "required": true,
               "order": 1,
               "validation": {
-                "pattern": "^[a-zA-Z0-9]{40}$",
-                "errorMessage": "Personal Access Token must be a 40-character alphanumeric string."
+                "pattern": "^[a-zA-Z0-9]{100}$",
+                "errorMessage": "Personal Access Token must be a 100-character alphanumeric string."
               },
               "info": "Your GitHub Personal Access Token with appropriate scopes.",
               "external_help_url": "https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token"
