@@ -148,7 +148,9 @@ export default function Integrations() {
                                                                     connector={
                                                                         connector.platform_name
                                                                     }
-                                                                    id={connector.id}
+                                                                    id={
+                                                                        connector.id
+                                                                    }
                                                                     name={
                                                                         connector?.name
                                                                     }
@@ -156,7 +158,7 @@ export default function Integrations() {
                                                                         connector.label
                                                                     }
                                                                     status={
-                                                                        connector.status
+                                                                        connector.enabled
                                                                     }
                                                                     count={
                                                                         connector.connection_count

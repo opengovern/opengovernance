@@ -22,7 +22,7 @@ import './style.css'
 interface IConnectorCard {
     connector: string | undefined
     title: string | undefined
-    status: string | undefined
+    status: boolean | undefined
     count: number | undefined
     description: string | undefined
     tier?: GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier
@@ -96,24 +96,8 @@ export const getConnectorIcon = (
     )
 }
 
-const getBadgeColor = (status: string | undefined) => {
-    if (status === 'enabled') {
-        return 'emerald'
-    }
-    return 'rose'
-}
 
-const getTierBadgeColor = (
-    tier?: GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier
-) => {
-    if (
-        tier ===
-        GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
-    ) {
-        return 'emerald'
-    }
-    return 'violet'
-}
+
 export default function ConnectorCard({
     connector,
     title,
@@ -129,30 +113,14 @@ export default function ConnectorCard({
     const navigate = useNavigate()
     const searchParams = useAtomValue(searchAtom)
 
-    const button = () => {
-        if (status === 'enabled' && (count || 0) > 0) {
-            return 'Manage'
-        }
-        if (
-            tier ===
-            GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
-        ) {
-            return 'Connect'
-        }
-        return 'Install'
-    }
+ 
 
     const onClick = () => {
-        if (status === 'enabled' && (count || 0) > 0) {
+        if (status === true && (count || 0) > 0) {
             navigate(`${connector}`, { state: { name, id } })
             return
         }
-        if (status === 'first-time') {
-            if (onClickCard) {
-                onClickCard()
-                return
-            }
-        }
+        
         if (
             tier ===
             GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity

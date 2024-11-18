@@ -98,7 +98,7 @@ export default function Integrations({ setLoading ,wizardData,setWizardData}: Pr
                                     <ConnectorCard
                                         connector={'Amazon Web Services'}
                                         title={'Amazon Web Services'}
-                                        status={'first-time'}
+                                        
                                         count={0}
                                         description={''}
                                         // @ts-ignore
@@ -113,7 +113,7 @@ export default function Integrations({ setLoading ,wizardData,setWizardData}: Pr
                                     <ConnectorCard
                                         connector={'Azure'}
                                         title={'Azure'}
-                                        status={'first-time'}
+                                        
                                         count={0}
                                         description={''}
                                         // @ts-ignore
