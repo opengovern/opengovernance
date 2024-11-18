@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	authAPI "github.com/opengovern/og-util/pkg/api"
@@ -18,25 +17,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/opengovern/opengovernance/jobs/checkup/api"
 	"github.com/opengovern/opengovernance/services/integration/client"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
 )
-
-var DoCheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "opengovernance",
-	Subsystem: "checkup_worker",
-	Name:      "do_checkup_jobs_total",
-	Help:      "Count of done checkup jobs in checkup-worker service",
-}, []string{"queryid", "status"})
-
-var DoCheckupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "opengovernance",
-	Subsystem: "checkup_worker",
-	Name:      "do_checkup_jobs_duration_seconds",
-	Help:      "Duration of done checkup jobs in checkup-worker service",
-	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
-}, []string{"queryid", "status"})
 
 type Job struct {
 	JobID      uint
@@ -51,14 +33,11 @@ type JobResult struct {
 
 func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient authClient.AuthServiceClient,
 	metadataClient metadataClient.MetadataServiceClient, logger *zap.Logger, config config.WorkerConfig) (r JobResult) {
-	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("paniced with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
 
-			DoCheckupJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-			DoCheckupJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
 			r = JobResult{
 				JobID:  j.JobID,
 				Status: api.CheckupJobFailed,
@@ -74,8 +53,7 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 	)
 
 	fail := func(err error) {
-		DoCheckupJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoCheckupJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
+
 		status = api.CheckupJobFailed
 		if firstErr == nil {
 			firstErr = err
@@ -110,10 +88,6 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 	errMsg := ""
 	if firstErr != nil {
 		errMsg = firstErr.Error()
-	}
-	if status == api.CheckupJobSucceeded {
-		DoCheckupJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))
-		DoCheckupJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
 	}
 
 	if config.DoTelemetry {

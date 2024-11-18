@@ -12,7 +12,6 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/opengovernance/services/integration/client"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +20,6 @@ type Worker struct {
 	jq                *jq.JobQueue
 	logger            *zap.Logger
 	config            config.WorkerConfig
-	pusher            *push.Pusher
 	integrationClient client.IntegrationServiceClient
 	authClient        authClient.AuthServiceClient
 	metadataClient    metadataClient.MetadataServiceClient
@@ -31,7 +29,6 @@ func NewWorker(
 	id string,
 	natsURL string,
 	logger *zap.Logger,
-	prometheusPushAddress string,
 	integrationBaseURL string,
 	authBaseURL string,
 	metadataBaseURL string,
@@ -61,10 +58,6 @@ func NewWorker(
 	w.jq = jq
 
 	w.logger = logger
-
-	w.pusher = push.New(prometheusPushAddress, "checkup-worker")
-	w.pusher.Collector(DoCheckupJobsCount).
-		Collector(DoCheckupJobsDuration)
 
 	w.integrationClient = client.NewIntegrationServiceClient(integrationBaseURL)
 	w.authClient = authClient.NewAuthClient(authBaseURL)
@@ -112,11 +105,6 @@ func (w *Worker) Run(ctx context.Context) error {
 			if err := msg.Ack(); err != nil {
 				w.logger.Error("Failed to ack the message", zap.Error(err))
 			}
-
-			err = w.pusher.Push()
-			if err != nil {
-				w.logger.Error("Failed to push metrics", zap.Error(err))
-			}
 		},
 	)
 	if err != nil {
@@ -132,5 +120,4 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) Stop() {
-	w.pusher.Push()
 }

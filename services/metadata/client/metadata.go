@@ -166,7 +166,7 @@ func (s *metadataClient) GetAbout(ctx *httpclient.Context) (*api.About, error) {
 	url := fmt.Sprintf("%s/api/v3/about", s.baseURL)
 
 	var about api.About
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), nil, &about); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &about); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
