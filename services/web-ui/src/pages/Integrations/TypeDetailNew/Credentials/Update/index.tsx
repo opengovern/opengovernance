@@ -68,6 +68,7 @@ export default function UpdateCredentials({
     const [selectedProviders, setSelectedProviders] = useState<any>([])
     const [credentialId, setCredentialId] = useState<string>('')
     const [described, setDescribed] = useState<boolean>(false)
+    const [credentialType, setCredentialType] = useState<string>('')
 
     const UpdateCredentials = () => {
         setLoading(true)
@@ -88,6 +89,7 @@ export default function UpdateCredentials({
         if (has_file) {
             const formData = new FormData()
             // @ts-ignore
+            formData.append('credential_type', credentialType)
             Object.keys(credential).forEach((key) => {
                 formData.append(`credentials.${key}`, credential[key])
             })
@@ -121,6 +123,7 @@ export default function UpdateCredentials({
 
              const body = {
                  credentials: credential,
+                 credential_type: credentialType,
              }
              axios
                  .put(
@@ -178,6 +181,7 @@ export default function UpdateCredentials({
                                                             credential_type:
                                                                 cred.label,
                                                         })
+                                                        setCredentialType(cred.label)
                                                     }}
                                                 >
                                                     {cred.label}
