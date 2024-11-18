@@ -1,5 +1,5 @@
 package configs
 
 type IntegrationCredentials struct {
-	Token string `json:"token"`
+	PatToken string `json:"pat_token"`
 }
