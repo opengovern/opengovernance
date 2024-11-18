@@ -8,6 +8,7 @@ import (
 	"github.com/opengovern/opengovernance/services/integration/integration-type/github-account/healthcheck"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opengovernance/services/integration/models"
+	"strconv"
 )
 
 type GithubAccountIntegration struct{}
@@ -31,12 +32,13 @@ func (i *GithubAccountIntegration) HealthCheck(jsonData []byte, providerId strin
 		return false, err
 	}
 
-	isHealthy, _, err := healthcheck.GithubIntegrationHealthcheck(healthcheck.Config{
-		Token:          credentials.Token,
-		BaseURL:        credentials.BaseURL,
-		AppId:          credentials.AppId,
-		InstallationId: credentials.InstallationId,
-		PrivateKeyPath: credentials.PrivateKeyPath,
+	var name string
+	if v, ok := labels["OrganizationName"]; ok {
+		name = v
+	}
+	isHealthy, err := healthcheck.GithubIntegrationHealthcheck(healthcheck.Config{
+		Token:            credentials.Token,
+		OrganizationName: name,
 	})
 	return isHealthy, err
 }
@@ -57,7 +59,7 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	})
 	for _, a := range accounts {
 		labels := map[string]string{
-			"AccountType": a.Type,
+			"OrganizationName": a.Name,
 		}
 		labelsJsonData, err := json.Marshal(labels)
 		if err != nil {
@@ -69,7 +71,7 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 			return nil, err
 		}
 		integrations = append(integrations, models.Integration{
-			ProviderID: a.ID,
+			ProviderID: strconv.FormatInt(a.ID, 10),
 			Name:       a.Name,
 			Labels:     integrationLabelsJsonb,
 		})
