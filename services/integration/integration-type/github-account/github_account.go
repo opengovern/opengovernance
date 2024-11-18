@@ -37,7 +37,7 @@ func (i *GithubAccountIntegration) HealthCheck(jsonData []byte, providerId strin
 		name = v
 	}
 	isHealthy, err := healthcheck.GithubIntegrationHealthcheck(healthcheck.Config{
-		Token:            credentials.Token,
+		Token:            credentials.PatToken,
 		OrganizationName: name,
 	})
 	return isHealthy, err
@@ -51,7 +51,7 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	}
 	var integrations []models.Integration
 	accounts, err := discovery.GithubIntegrationDiscovery(discovery.Config{
-		Token: credentials.Token,
+		Token: credentials.PatToken,
 	})
 	for _, a := range accounts {
 		labels := map[string]string{
