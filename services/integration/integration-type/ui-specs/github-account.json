@@ -19,8 +19,8 @@
               "required": true,
               "order": 1,
               "validation": {
-                "pattern": "^[a-zA-Z0-9]{40}$",
-                "errorMessage": "Personal Access Token must be a 40-character alphanumeric string."
+                "pattern": "^[a-zA-Z0-9]{100}$",
+                "errorMessage": "Personal Access Token must be a 100-character alphanumeric string."
               },
               "info": "Your GitHub Personal Access Token with appropriate scopes.",
               "external_help_url": "https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token"
@@ -168,18 +168,18 @@
             "sortable": true,
             "filterable": true,
             "info": "Name.",
-            "detail": false,
+            "detail": true,
             "detail_order": 1
           },
           {
-            "name": "organization_name",
-            "label": "Organization Name",
+            "name": "provider_id",
+            "label": "Provider ID",
             "fieldType": "text",
             "order": 2,
             "sortable": true,
             "filterable": true,
-            "info": "Name of the GitHub organization.",
-            "detail": false,
+            "info": "Provider ID.",
+            "detail": true,
             "detail_order": 2
           },
           {
@@ -189,7 +189,7 @@
             "order": 3,
             "sortable": true,
             "filterable": true,
-            "detail": false,
+            "detail": true,
             "detail_order": 3,
             "info": "Current state of the GitHub Organization integration.",
             "statusOptions": [
@@ -209,29 +209,8 @@
                 "color": "blue"
               }
             ]
-          },
-          {
-            "name": "created_at",
-            "label": "Created At",
-            "fieldType": "date",
-            "order": 4,
-            "sortable": true,
-            "filterable": true,
-            "info": "Timestamp when the integration was created.",
-            "detail": false,
-            "detail_order": 4
-          },
-          {
-            "name": "last_updated",
-            "label": "Last Updated",
-            "fieldType": "date",
-            "order": 5,
-            "sortable": true,
-            "filterable": true,
-            "info": "Timestamp when the integration was last updated.",
-            "detail": false,
-            "detail_order": 5
           }
+         
         ]
       }
     },
