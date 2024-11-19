@@ -80,12 +80,12 @@ export default function RequestDemo() {
                         Booking a Demo
                     </Flex>
                 </Flex>
-                <Text>Copyright 2024 Kaytu. All Rights Reserved.</Text>
+                <Text>Copyright 2024 open governance inc. All Rights Reserved.</Text>
             </Flex>
             <iframe
                 title="Setup a meeting"
                 className="w-full h-full relative max-w-[630px]"
-                src="https://cal.com/team/opengovernance"
+                src="https://cal.com/team/opencomply/try-enterprise"
             />
         </Grid>
     )
