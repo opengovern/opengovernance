@@ -293,12 +293,17 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			})
 		}
 
+		autoAssign := true
+		if o.AutoAssign != nil {
+			autoAssign = *o.AutoAssign
+		}
+
 		b := db.Benchmark{
 			ID:                o.ID,
 			Title:             o.Title,
 			DisplayCode:       o.SectionCode,
 			Description:       o.Description,
-			AutoAssign:        o.AutoAssign,
+			AutoAssign:        autoAssign,
 			TracksDriftEvents: o.TracksDriftEvents,
 			Tags:              tags,
 			Children:          nil,
