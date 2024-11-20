@@ -488,7 +488,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		Resource: *resource,
 	}
 
-	controlComplianceResults, err := es.FetchComplianceResultsPerControlForResourceId(ctx, h.logger, h.client, lookupResource.ResourceID)
+	controlComplianceResults, err := es.FetchComplianceResultsPerControlForResourceId(ctx, h.logger, h.client, lookupResource.PlatformID)
 	if err != nil {
 		h.logger.Error("failed to fetch control complianceResults", zap.Error(err))
 		return err

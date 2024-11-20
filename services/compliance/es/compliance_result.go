@@ -1353,7 +1353,7 @@ func FetchComplianceResultsPerControlForResourceId(ctx context.Context, logger *
 					"hit_select": map[string]any{
 						"top_hits": map[string]any{
 							"sort": map[string]any{
-								"parentComplianceJobID": "desc",
+								"complianceJobID": "desc",
 							},
 							"size": 1,
 						},
