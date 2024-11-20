@@ -475,7 +475,7 @@ func (h *HttpHandler) GetSingleResourceFinding(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "resource not found")
 	}
 
-	resource, err := es.FetchResourceByResourceIdAndType(ctx, h.client, lookupResource.ResourceID, lookupResource.ResourceType)
+	resource, err := es.FetchResourceByResourceIdAndType(ctx, h.client, lookupResource.PlatformID, lookupResource.ResourceType)
 	if err != nil {
 		h.logger.Error("failed to fetch resource", zap.Error(err))
 		return err

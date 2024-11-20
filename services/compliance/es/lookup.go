@@ -111,14 +111,14 @@ type ResourceQueryResponse struct {
 	}
 }
 
-func FetchResourceByResourceIdAndType(ctx context.Context, client opengovernance.Client, resourceId string, resourceType string) (*es.Resource, error) {
+func FetchResourceByResourceIdAndType(ctx context.Context, client opengovernance.Client, platformResourceID string, resourceType string) (*es.Resource, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": map[string]any{
 				"term": map[string]any{
-					"id": resourceId,
+					"platform_id": platformResourceID,
 				},
 			},
 		},
