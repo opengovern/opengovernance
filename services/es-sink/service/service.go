@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	uuid2 "github.com/google/uuid"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/jq"
@@ -122,8 +123,11 @@ func (s *EsSinkService) Ingest(ctx context.Context, docs []es.DocBase) ([]Failed
 				Err: err.Error(),
 			})
 		}
-		uuid := uuid2.New().String()
-		_, err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s_-_-_%s_%s", idx, id, uuid))
+		fullId := fmt.Sprintf(fmt.Sprintf("%s:::%s:::%s", idx, id, uuid.New().String()))
+		h := sha256.New()
+		h.Write([]byte(fullId))
+		hashedId := fmt.Sprintf("%x", h.Sum(nil))
+		_, err = s.nats.Produce(ctx, SinkQueueTopic, docJson, fmt.Sprintf("%s:::%s", uuid.New().String(), hashedId))
 		if err != nil {
 			s.logger.Error("failed to produce message", zap.Error(err), zap.Any("doc", doc))
 			failedDocs = append(failedDocs, FailedDoc{
