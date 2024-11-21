@@ -70,7 +70,7 @@ func (db Database) UpdateTimedOutInProgressRunners() error {
 	tx := db.ORM.
 		Model(&model.ComplianceRunner{}).
 		Where("status = ?", runner.ComplianceRunnerInProgress).
-		Where("updated_at < NOW() - INTERVAL '1 HOURS'").
+		Where("updated_at < NOW() - INTERVAL '10 MINUTES'").
 		Updates(model.ComplianceRunner{Status: runner.ComplianceRunnerTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error

@@ -66,12 +66,14 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 			query, ok := queriesMap[it.QueryID]
 			if !ok || query == nil {
 				s.logger.Error("query not found", zap.String("queryId", it.QueryID), zap.Uint("runnerId", it.ID))
+				_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "query not found")
 				continue
 			}
 
 			callers, err := it.GetCallers()
 			if err != nil {
 				s.logger.Error("failed to get callers", zap.Error(err), zap.Uint("runnerId", it.ID))
+				_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "failed to get callers")
 				continue
 			}
 			var providerID *string
@@ -79,7 +81,8 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 				if _, ok := connectionsMap[*it.IntegrationID]; ok {
 					providerID = &connectionsMap[*it.IntegrationID].ProviderID
 				} else {
-					_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "connection does not exist")
+					_ = s.db.UpdateRunnerJob(it.ID, runner.ComplianceRunnerFailed, it.CreatedAt, nil, "integration does not exist")
+					continue
 				}
 			}
 			job := runner.Job{
