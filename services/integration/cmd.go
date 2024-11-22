@@ -3,6 +3,14 @@ package integration
 import (
 	"errors"
 	"fmt"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -93,15 +101,44 @@ func Command() *cobra.Command {
 				return fmt.Errorf("new steampipe client: %w", err)
 			}
 			logger.Info("Connected to the steampipe database", zap.String("database", cnf.Steampipe.DB))
+			kubeClient, err := NewKubeClient()
+			if err != nil {
+				return err
+			}
 
 			return httpserver.RegisterAndStart(
 				cmd.Context(),
 				logger,
 				cnf.Http.Address,
-				api.New(logger, db, vaultSc, steampipeConn),
+				api.New(logger, db, vaultSc, steampipeConn, kubeClient),
 			)
 		},
 	}
 
 	return cmd
+}
+
+func NewKubeClient() (client.Client, error) {
+	scheme := runtime.NewScheme()
+	if err := helmv2.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := kedav1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := appsv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient, nil
 }

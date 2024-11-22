@@ -21,6 +21,7 @@ func (db Database) Initialize() error {
 		&models.Credential{},
 		&models.IntegrationType{},
 		&models.IntegrationGroup{},
+		&models.IntegrationTypeSetup{},
 	)
 	if err != nil {
 		return err
