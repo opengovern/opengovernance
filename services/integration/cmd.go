@@ -5,6 +5,8 @@ import (
 	"fmt"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
+	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	"github.com/opengovern/opengovernance/services/integration/models"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -104,6 +106,20 @@ func Command() *cobra.Command {
 			kubeClient, err := NewKubeClient()
 			if err != nil {
 				return err
+			}
+
+			for name, _ := range integration_type.IntegrationTypes {
+				enabled := false
+				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount {
+					enabled = true
+				}
+				err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
+					IntegrationType: name,
+					Enabled:         enabled,
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			return httpserver.RegisterAndStart(

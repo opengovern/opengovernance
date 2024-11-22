@@ -39,3 +39,12 @@ func (db Database) UpdateIntegrationTypeSetup(integrationTypeSetup *models.Integ
 
 	return nil
 }
+
+func (db Database) CreateIntegrationTypeSetup(integrationTypeSetup *models.IntegrationTypeSetup) error {
+	tx := db.Orm.
+		FirstOrCreate(integrationTypeSetup)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
