@@ -15,13 +15,20 @@ type AwsCloudAccountIntegration struct{}
 
 func (i *AwsCloudAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: awsDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    awsDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         awsDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   awsDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      awsDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           awsDescriberLocal.StreamName,
+		NatsConsumerGroup:        awsDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: awsDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "aws",
 
 		UISpecFileName: "aws-cloud-account.json",
+
+		DescriberDeploymentName: awsDescriberLocal.DescriberDeploymentName,
+		DescriberImageAddress:   awsDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    awsDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     awsDescriberLocal.DescriberRunCommand,
 	}
 }
 

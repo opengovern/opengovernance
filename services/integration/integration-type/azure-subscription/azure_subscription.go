@@ -13,13 +13,20 @@ type AzureSubscriptionIntegration struct{}
 
 func (i *AzureSubscriptionIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: azureDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    azureDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         azureDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   azureDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      azureDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           azureDescriberLocal.StreamName,
+		NatsConsumerGroup:        azureDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: azureDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "azure",
 
 		UISpecFileName: "azure-subscription.json",
+
+		DescriberDeploymentName: azureDescriberLocal.DescriberDeploymentName,
+		DescriberImageAddress:   azureDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    azureDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     azureDescriberLocal.DescriberRunCommand,
 	}
 }
 

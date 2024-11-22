@@ -15,13 +15,20 @@ type GithubAccountIntegration struct{}
 
 func (i *GithubAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: githubDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    githubDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         githubDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   githubDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      githubDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           githubDescriberLocal.StreamName,
+		NatsConsumerGroup:        githubDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: githubDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "github",
 
 		UISpecFileName: "github-account.json",
+
+		DescriberDeploymentName: githubDescriberLocal.DescriberDeploymentName,
+		DescriberImageAddress:   githubDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    githubDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     githubDescriberLocal.DescriberRunCommand,
 	}
 }
 

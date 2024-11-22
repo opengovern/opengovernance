@@ -14,13 +14,20 @@ type DigitaloceanTeamIntegration struct{}
 
 func (i *DigitaloceanTeamIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: digitaloceanDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    digitaloceanDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         digitaloceanDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   digitaloceanDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      digitaloceanDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           digitaloceanDescriberLocal.StreamName,
+		NatsConsumerGroup:        digitaloceanDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: digitaloceanDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "digitalocean",
 
 		UISpecFileName: "digitalocean-team.json",
+
+		DescriberDeploymentName: digitaloceanDescriberLocal.DescriberDeploymentName,
+		DescriberImageAddress:   digitaloceanDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    digitaloceanDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     digitaloceanDescriberLocal.DescriberRunCommand,
 	}
 }
 

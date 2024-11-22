@@ -3,13 +3,20 @@ package interfaces
 import "github.com/opengovern/opengovernance/services/integration/models"
 
 type IntegrationConfiguration struct {
-	NatsScheduledJobsTopic string
-	NatsManualJobsTopic    string
-	NatsStreamName         string
+	NatsScheduledJobsTopic   string
+	NatsManualJobsTopic      string
+	NatsStreamName           string
+	NatsConsumerGroup        string
+	NatsConsumerGroupManuals string
 
 	SteampipePluginName string
 
 	UISpecFileName string
+
+	DescriberDeploymentName string
+	DescriberImageAddress   string
+	DescriberImageTagKey    string
+	DescriberRunCommand     string
 }
 
 type IntegrationType interface {

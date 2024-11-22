@@ -13,13 +13,20 @@ type EntraIdDirectoryIntegration struct{}
 
 func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: entraidDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    entraidDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         entraidDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   entraidDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      entraidDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           entraidDescriberLocal.StreamName,
+		NatsConsumerGroup:        entraidDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: entraidDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "azuread",
 
 		UISpecFileName: "entraid-directory.json",
+
+		DescriberDeploymentName: entraidDescriberLocal.DescriberDeploymentName,
+		DescriberImageAddress:   entraidDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    entraidDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     entraidDescriberLocal.DescriberRunCommand,
 	}
 }
 
