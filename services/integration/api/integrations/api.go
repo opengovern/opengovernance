@@ -833,7 +833,7 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration setups")
 	}
 
-	integrationSetupsMap := make(map[string]models2.IntegrationTypeSetup)
+	integrationSetupsMap := make(map[integration.Type]models2.IntegrationTypeSetup)
 	for _, is := range integrationSetups {
 		integrationSetupsMap[is.IntegrationType] = is
 	}
@@ -847,7 +847,7 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration types to API model")
 		}
 		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
-			if v, ok := integrationSetupsMap[integrationType.IntegrationType]; ok {
+			if v, ok := integrationSetupsMap[integration_type.ParseType(integrationType.IntegrationType)]; ok {
 				if v.Enabled {
 					enabled = true
 				}
@@ -1101,7 +1101,7 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	}
 
 	err = h.database.UpdateIntegrationTypeSetup(&models2.IntegrationTypeSetup{
-		IntegrationType: integrationTypeName,
+		IntegrationType: integration_type.ParseType(integrationTypeName),
 		Enabled:         true,
 	})
 	if err != nil {
@@ -1220,7 +1220,7 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 	}
 
 	err = h.database.UpdateIntegrationTypeSetup(&models2.IntegrationTypeSetup{
-		IntegrationType: integrationTypeName,
+		IntegrationType: integration_type.ParseType(integrationTypeName),
 		Enabled:         false,
 	})
 	if err != nil {
