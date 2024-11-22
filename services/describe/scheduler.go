@@ -111,7 +111,6 @@ type Scheduler struct {
 	es                opengovernance.Client
 
 	jq *jq.JobQueue
-	js jetstream.JetStream
 
 	describeJobLocalEndpoint     string
 	describeDeliverLocalEndpoint string
