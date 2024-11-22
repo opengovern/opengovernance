@@ -448,7 +448,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	seqNum, err := s.jq.Produce(ctx, topic, natsPayload, fmt.Sprintf("%s-%d-%d", dc.IntegrationType, input.DescribeJob.JobID, input.DescribeJob.RetryCounter))
 	if err != nil {
 		if err.Error() == "nats: no response from stream" {
-			err = s.SetupNatsStreams(ctx)
+			err = s.SetupNats(ctx)
 			if err != nil {
 				s.logger.Error("Failed to setup nats streams", zap.Error(err))
 				return err

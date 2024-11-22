@@ -76,7 +76,6 @@ var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
-
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "og_scheduler_large_describe_resource_message",
 	Help: "The gauge whether the describe resource message is too large: 0 for not large and 1 for large",
@@ -112,6 +111,7 @@ type Scheduler struct {
 	es                opengovernance.Client
 
 	jq *jq.JobQueue
+	js jetstream.JetStream
 
 	describeJobLocalEndpoint     string
 	describeDeliverLocalEndpoint string
@@ -197,7 +197,7 @@ func InitializeScheduler(
 	}
 	s.jq = jq
 
-	err = s.SetupNatsStreams(ctx)
+	err = s.SetupNats(ctx)
 	if err != nil {
 		s.logger.Error("Failed to setup nats streams", zap.Error(err))
 		return nil, err
@@ -254,7 +254,6 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-
 	s.complianceIntervalHours = time.Duration(conf.ComplianceIntervalHours) * time.Hour
 
 	s.metadataClient = metadataClient.NewMetadataServiceClient(MetadataBaseURL)
@@ -293,7 +292,7 @@ func InitializeScheduler(
 	return s, nil
 }
 
-func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
+func (s *Scheduler) SetupNats(ctx context.Context) error {
 	if err := s.jq.Stream(ctx, queryrunner.StreamName, "Query Runner job queues", []string{queryrunner.JobQueueTopic, queryrunner.JobResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to Query Runner queue", zap.Error(err))
 		return err
@@ -314,7 +313,6 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 		return err
 	}
 
-	
 	if err := s.jq.Stream(ctx, checkup.StreamName, "checkup job queue", []string{checkup.JobsQueueName, checkup.ResultsQueueName}, 1000); err != nil {
 		s.logger.Error("Failed to stream to checkup queue", zap.Error(err))
 		return err
@@ -330,6 +328,33 @@ func (s *Scheduler) SetupNatsStreams(ctx context.Context) error {
 			describerConfig := integrationType.GetConfiguration()
 			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 200000); err != nil {
 				s.logger.Error("Failed to stream to local integration type queue", zap.String("integration_type", string(itName)), zap.Error(err))
+				return err
+			}
+			topic := describerConfig.NatsScheduledJobsTopic
+			consumer := describerConfig.NatsConsumerGroup
+			if err := s.jq.CreateOrUpdateConsumer(ctx, consumer, describerConfig.NatsStreamName, []string{topic}, jetstream.ConsumerConfig{
+				Replicas:          1,
+				AckPolicy:         jetstream.AckExplicitPolicy,
+				DeliverPolicy:     jetstream.DeliverAllPolicy,
+				MaxAckPending:     -1,
+				AckWait:           time.Minute * 30,
+				InactiveThreshold: time.Hour,
+			}); err != nil {
+				s.logger.Error("Failed to create consumer for integration type runner queue", zap.String("integrationType", string(itName)), zap.Error(err))
+				return err
+			}
+
+			topicManuals := describerConfig.NatsManualJobsTopic
+			consumerManuals := describerConfig.NatsConsumerGroupManuals
+			if err := s.jq.CreateOrUpdateConsumer(ctx, consumerManuals, describerConfig.NatsStreamName, []string{topicManuals}, jetstream.ConsumerConfig{
+				Replicas:          1,
+				AckPolicy:         jetstream.AckExplicitPolicy,
+				DeliverPolicy:     jetstream.DeliverAllPolicy,
+				MaxAckPending:     -1,
+				AckWait:           time.Minute * 30,
+				InactiveThreshold: time.Hour,
+			}); err != nil {
+				s.logger.Error("Failed to create manuals consumer for integration type queue", zap.String("integrationType", string(itName)), zap.Error(err))
 				return err
 			}
 		}
@@ -373,8 +398,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		}
 	}
 
-	
-
 	complianceJobIntM, err := s.metadataClient.GetConfigMetadata(httpCtx, models.MetadataKeyComplianceJobInterval)
 	if err != nil {
 		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
@@ -402,11 +425,11 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	s.discoveryScheduler.Run(ctx)
 
 	// Inventory summarizer
-	
+
 	// Query Runner
 	s.queryRunnerScheduler = queryrunnerscheduler.New(
 		func(ctx context.Context) error {
-			return s.SetupNatsStreams(ctx)
+			return s.SetupNats(ctx)
 		},
 		s.conf,
 		s.logger,
@@ -423,7 +446,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		// Query Validator
 		s.queryValidatorScheduler = queryrvalidatorscheduler.New(
 			func(ctx context.Context) error {
-				return s.SetupNatsStreams(ctx)
+				return s.SetupNats(ctx)
 			},
 			s.conf,
 			s.logger,
@@ -440,7 +463,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	// Compliance
 	s.complianceScheduler = compliance.New(
 		func(ctx context.Context) error {
-			return s.SetupNatsStreams(ctx)
+			return s.SetupNats(ctx)
 		},
 		s.conf,
 		s.logger,
