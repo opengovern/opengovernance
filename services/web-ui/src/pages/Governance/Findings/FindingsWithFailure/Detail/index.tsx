@@ -340,19 +340,19 @@ export default function FindingDetail({
                                                         </>
                                                     ),
                                                 },
-                                                {
-                                                    label: 'First discovered',
-                                                    value: (
-                                                        <>
-                                                            {dateTimeDisplay(
-                                                                failedEvents.at(
-                                                                    failedEvents.length -
-                                                                        1
-                                                                )?.evaluatedAt
-                                                            )}
-                                                        </>
-                                                    ),
-                                                },
+                                                // {
+                                                //     label: 'First discovered',
+                                                //     value: (
+                                                //         <>
+                                                //             {dateTimeDisplay(
+                                                //                 failedEvents.at(
+                                                //                     failedEvents.length -
+                                                //                         1
+                                                //                 )?.evaluatedAt
+                                                //             )}
+                                                //         </>
+                                                //     ),
+                                                // },
                                                 {
                                                     label: 'Reason',
                                                     value: (

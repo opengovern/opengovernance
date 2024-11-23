@@ -1,13 +1,32 @@
 // @ts-nocheck
-import { Button, Card, Flex, Grid, Tab, TabGroup, TabList, Text, Title } from '@tremor/react'
+import {
+    Card,
+    Flex,
+    Grid,
+    Tab,
+    TabGroup,
+    TabList,
+    Text,
+    Title,
+} from '@tremor/react'
 
 import { useEffect, useState } from 'react'
-import { ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon, DocumentTextIcon, PlusIcon } from '@heroicons/react/24/outline'
+import {
+    ArrowDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    DocumentTextIcon,
+    PlusIcon,
+} from '@heroicons/react/24/outline'
 import ConnectorCard from '../../components/Cards/ConnectorCard'
 import Spinner from '../../components/Spinner'
 import { useIntegrationApiV1ConnectorsList } from '../../api/integration.gen'
 import TopHeader from '../../components/Layout/Header'
-import { Pagination } from '@cloudscape-design/components'
+import { Button, Modal, Pagination } from '@cloudscape-design/components'
+import { GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier } from '../../api/api'
+import { useNavigate } from 'react-router-dom'
+import { get } from 'http'
+import axios from 'axios'
 
 export default function Integrations() {
     const [pageNo, setPageNo] = useState<number>(1)
@@ -16,19 +35,87 @@ export default function Integrations() {
         isLoading: connectorsLoading,
         sendNow: getList,
     } = useIntegrationApiV1ConnectorsList(9, pageNo)
-
+    const [open, setOpen] = useState(false)
+    const navigate = useNavigate();
+    const [selected, setSelected] = useState()
+    const [loading, setLoading] = useState(false)
     const connectorList = responseConnectors?.integration_types || []
-       
+
     // @ts-ignore
 
-   
     //@ts-ignore
     const totalPages = Math.ceil(responseConnectors?.total_count / 9)
     useEffect(() => {
         getList(9, pageNo)
     }, [pageNo])
+    const EnableIntegration = ()=>{
+         setLoading(true)
+         let url = ''
+         if (window.location.origin === 'http://localhost:3000') {
+             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+         } else {
+             url = window.location.origin
+         }
+         // @ts-ignore
+         const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+         const config = {
+             headers: {
+                 Authorization: `Bearer ${token}`,
+             },
+         }
+
+         axios
+             .put(
+                 `${url}/main/integration/api/v1/integrations/types/${selected?.platform_name}/enable`,
+                {}, config
+             )
+             .then((res) => {
+                getList(9,pageNo)
+                 setLoading(false)
+                 setOpen(false)
+
+             })
+             .catch((err) => {
+                
+                 setLoading(false)
+             })
+    }
     return (
         <>
+            <Modal
+                visible={open}
+                onDismiss={() => setOpen(false)}
+                header="Integration Disabled"
+            >
+                <div className="p-8">
+                    <Text>This integration is disabled.</Text>
+                    <Flex
+                        justifyContent="end"
+                        alignItems="center"
+                        flexDirection="row"
+                        className="gap-3"
+                    >
+                        <Button
+                            loading={loading}
+                            disabled={loading}
+                            onClick={() => setOpen(false)}
+                            className="mt-6"
+                        >
+                            Close
+                        </Button>
+                        <Button
+                            loading={loading}
+                            disabled={loading}
+                            variant="primary"
+                            onClick={() => EnableIntegration()}
+                            className="mt-6"
+                        >
+                            Enable
+                        </Button>
+                    </Flex>
+                </div>
+            </Modal>
             {/* <TopHeader /> */}
             {/* <Grid numItems={3} className="gap-4 mb-10">
                 <OnboardCard
@@ -175,6 +262,43 @@ export default function Integrations() {
                                                                     // logo={
                                                                     //     'https://raw.githubusercontent.com/kaytu-io/website/main/connectors/icons/azure.svg'
                                                                     // }
+                                                                    onClickCard={() => {
+                                                                        if (
+                                                                            connector.enabled ===
+                                                                            false
+                                                                        ) {
+                                                                            setOpen(
+                                                                                true
+                                                                            )
+                                                                            setSelected(
+                                                                                connector
+                                                                            )
+                                                                            return
+                                                                        }
+
+                                                                        if (
+                                                                            connector?.tier ===
+                                                                            GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
+                                                                        ) {
+                                                                            const name =
+                                                                                connector?.name
+                                                                            const id =
+                                                                                connector?.id
+                                                                            navigate(
+                                                                                `${connector.platform_name}`,
+                                                                                {
+                                                                                    state: {
+                                                                                        name,
+                                                                                        id,
+                                                                                    },
+                                                                                }
+                                                                            )
+                                                                            return
+                                                                        }
+                                                                        navigate(
+                                                                            `${connector.platform_name}/../../request-access?connector=${title}`
+                                                                        )
+                                                                    }}
                                                                 />
                                                             </>
                                                         </>

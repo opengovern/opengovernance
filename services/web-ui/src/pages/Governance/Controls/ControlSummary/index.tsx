@@ -145,6 +145,13 @@ export default function ControlDetail() {
                     />
                 ),
             },
+            {
+                label: 'Inspected Resources:',
+                value: (
+                    // @ts-ignore
+                    <>{controlDetail?.totalResourcesCount}</>
+                ),
+            },
         ]
         if (controlDetail?.resourceType?.resource_type) {
             temp.push({
@@ -154,7 +161,7 @@ export default function ControlDetail() {
                     <CopyToClipboard
                         variant="inline"
                         textToCopy={
-                            controlDetail?.resourceType?.resource_type || ''
+                            controlDetail?.resourceType?.resource_type || ''                            
                         }
                         copySuccessText="Resource type copied to clipboard"
                     />
@@ -162,15 +169,9 @@ export default function ControlDetail() {
             })
         }
         temp.push(
+           
             {
-                label: '# of impacted resources',
-                value: (
-                    // @ts-ignore
-                    <>{controlDetail?.totalResourcesCount}</>
-                ),
-            },
-            {
-                label: '# of passed resources',
+                label: 'Compliant Resources',
                 value: (
                     // @ts-ignore
                     <Text className="text-emerald-500">
@@ -180,7 +181,14 @@ export default function ControlDetail() {
                 ),
             },
             {
-                label: '# of failed resources',
+                label: 'Last updated',
+                value: (
+                    // @ts-ignore
+                    <>{dateTimeDisplay(controlDetail?.control?.updatedAt)}</>
+                ),
+            },
+            {
+                label: ' Non-Compliant Resources',
                 value: (
                     // @ts-ignore
                     <Text className="text-rose-600">
@@ -189,13 +197,7 @@ export default function ControlDetail() {
                     </Text>
                 ),
             },
-            {
-                label: 'Last updated',
-                value: (
-                    // @ts-ignore
-                    <>{dateTimeDisplay(controlDetail?.control?.updatedAt)}</>
-                ),
-            }
+            
         )
         return temp
         // @ts-ignore
@@ -416,7 +418,7 @@ export default function ControlDetail() {
                                 numItems={2}
                                 className=" w-full gap-4 mb-6 mt-4"
                             >
-                                <Card className="h-fit min-h-[228px]">
+                                <Card className="h-fit min-h-[258px] max-h-[258px]">
                                     <KeyValuePairs
                                         columns={2}
                                         items={GetKeyValue()}
@@ -534,7 +536,7 @@ export default function ControlDetail() {
                               
                             </Flex> */}
                                 </Card>
-                                <Card className="max-h-[228px] overflow-scroll">
+                                <Card className="max-h-[258px] overflow-scroll">
                                     <Editor
                                         onValueChange={() => 1}
                                         highlight={(text) =>
@@ -552,7 +554,7 @@ export default function ControlDetail() {
                                         }
                                         className="w-full bg-white dark:bg-gray-900 dark:text-gray-50 font-mono text-sm"
                                         style={{
-                                            minHeight: '200px',
+                                            minHeight: '228px',
                                         }}
                                         placeholder="-- write your SQL query here"
                                     />
@@ -590,9 +592,7 @@ export default function ControlDetail() {
                                                     )
                                                 }}
                                             >
-                                                <Link
-                                                    to={`/finder?tab_id=1`}
-                                                >
+                                                <Link to={`/finder?tab_id=1`}>
                                                     Open in Query
                                                 </Link>
                                             </Button>
