@@ -161,7 +161,7 @@ export default function ControlDetail() {
                     <CopyToClipboard
                         variant="inline"
                         textToCopy={
-                            controlDetail?.resourceType?.resource_type || ''
+                            controlDetail?.resourceType?.resource_type || ''                            
                         }
                         copySuccessText="Resource type copied to clipboard"
                     />
@@ -418,7 +418,7 @@ export default function ControlDetail() {
                                 numItems={2}
                                 className=" w-full gap-4 mb-6 mt-4"
                             >
-                                <Card className="h-fit min-h-[228px] max-h-[228px]">
+                                <Card className="h-fit min-h-[258px] max-h-[258px]">
                                     <KeyValuePairs
                                         columns={2}
                                         items={GetKeyValue()}
@@ -536,7 +536,7 @@ export default function ControlDetail() {
                               
                             </Flex> */}
                                 </Card>
-                                <Card className="max-h-[228px] overflow-scroll">
+                                <Card className="max-h-[258px] overflow-scroll">
                                     <Editor
                                         onValueChange={() => 1}
                                         highlight={(text) =>

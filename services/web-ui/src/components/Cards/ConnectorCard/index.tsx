@@ -116,19 +116,7 @@ export default function ConnectorCard({
  
 
     const onClick = () => {
-        if (status === true && (count || 0) > 0) {
-            navigate(`${connector}`, { state: { name, id } })
-            return
-        }
-        
-        if (
-            tier ===
-            GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
-        ) {
-            navigate(`${connector}`, { state: { name, id } })
-            return
-        }
-        navigate(`${connector}/../../request-access?connector=${title}`) // it's a hack!
+       onClickCard?.();
     }
 
     return (

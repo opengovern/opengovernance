@@ -6,7 +6,7 @@ import {
     useSearchParams,
 } from 'react-router-dom'
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
-import { useAtomValue } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 
 import axios from 'axios'
 import { useEffect, useState } from 'react'
@@ -32,6 +32,7 @@ import { Label } from '@headlessui/react/dist/components/label/label'
 import { GetActions, GetDetailsActions, GetTableColumns, GetTableColumnsDefintion, GetViewFields, RenderTableField } from '../utils'
 import { update } from '@react-spring/web'
 import UpdateIntegration from './Update'
+import { notificationAtom } from '../../../../store'
 
 interface IntegrationListProps {
     name?: string
@@ -68,6 +69,7 @@ export default function IntegrationList({
     const [openInfo, setOpenInfo] = useState(false)
     const [confirmModal, setConfirmModal] = useState(false)
     const [action, setAction] = useState()
+    const setNotification = useSetAtom(notificationAtom)
 
     const GetIntegrations = () => {
         setLoading(true)
@@ -113,6 +115,40 @@ export default function IntegrationList({
                 setLoading(false)
             })
     }
+     const DisableIntegration = () => {
+         setLoading(true)
+         let url = ''
+         if (window.location.origin === 'http://localhost:3000') {
+             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+         } else {
+             url = window.location.origin
+         }
+         // @ts-ignore
+         const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+         const config = {
+             headers: {
+                 Authorization: `Bearer ${token}`,
+             },
+         }
+
+         axios
+             .put(
+                 `${url}/main/integration/api/v1/integrations/types/${integration_type}/disable`,
+                 {},
+                 config
+             )
+             .then((res) => {
+                 setLoading(false)
+             })
+             .catch((err) => {
+                 setLoading(false)
+                  setNotification({
+                      text: `Error: ${err.response.data.message}`,
+                      type: 'error',
+                  })
+             })
+     }
     const CheckActionsClick = (action: any) => {
         setAction(action)
         if (action.type === "update") {
@@ -421,6 +457,14 @@ export default function IntegrationList({
                                                     }}
                                                 >
                                                     Reload
+                                                </Button>
+                                                <Button
+                                                    // icon={PencilIcon}
+                                                    onClick={() => {
+                                                        DisableIntegration()
+                                                    }}
+                                                >
+                                                    Disable Integration
                                                 </Button>
                                             </Flex>
                                         }
