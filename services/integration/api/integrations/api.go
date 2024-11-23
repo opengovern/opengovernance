@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -1015,7 +1016,18 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	container.Command = []string{cnf.DescriberRunCommand}
 	describerDeployment.Spec.Template.Spec.Containers[0] = container
 
-	err = h.kubeClient.Create(ctx, &describerDeployment)
+	newDeployment := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cnf.DescriberDeploymentName,
+			Namespace: currentNamespace,
+			Labels: map[string]string{
+				"app": cnf.DescriberDeploymentName,
+			},
+		},
+		Spec: describerDeployment.Spec,
+	}
+
+	err = h.kubeClient.Create(ctx, &newDeployment)
 	if err != nil {
 		return err
 	}
@@ -1041,7 +1053,18 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	containerManuals.Command = []string{cnf.DescriberRunCommand}
 	describerDeploymentManuals.Spec.Template.Spec.Containers[0] = containerManuals
 
-	err = h.kubeClient.Create(ctx, &describerDeploymentManuals)
+	newDeploymentManuals := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cnf.DescriberDeploymentName + "-manuals",
+			Namespace: currentNamespace,
+			Labels: map[string]string{
+				"app": cnf.DescriberDeploymentName + "-manuals",
+			},
+		},
+		Spec: describerDeploymentManuals.Spec,
+	}
+
+	err = h.kubeClient.Create(ctx, &newDeploymentManuals)
 	if err != nil {
 		return err
 	}
@@ -1061,8 +1084,6 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 			return err
 		}
 
-		describerScaledObject.ObjectMeta.Name = cnf.DescriberDeploymentName + "-scaled-object"
-		describerScaledObject.ObjectMeta.Annotations = map[string]string{}
 		describerScaledObject.Spec.ScaleTargetRef.Name = cnf.DescriberDeploymentName
 
 		trigger := describerScaledObject.Spec.Triggers[0]
@@ -1070,7 +1091,15 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 		trigger.Metadata["consumer"] = cnf.NatsConsumerGroup + "-service"
 		describerScaledObject.Spec.Triggers[0] = trigger
 
-		err = h.kubeClient.Create(ctx, &describerScaledObject)
+		newScaledObject := kedav1alpha1.ScaledObject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cnf.DescriberDeploymentName + "-scaled-object",
+				Namespace: currentNamespace,
+			},
+			Spec: describerScaledObject.Spec,
+		}
+
+		err = h.kubeClient.Create(ctx, &newScaledObject)
 		if err != nil {
 			return err
 		}
@@ -1085,8 +1114,6 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 			return err
 		}
 
-		describerScaledObjectManuals.ObjectMeta.Name = cnf.DescriberDeploymentName + "manuals-scaled-object"
-		describerScaledObjectManuals.ObjectMeta.Annotations = map[string]string{}
 		describerScaledObjectManuals.Spec.ScaleTargetRef.Name = cnf.DescriberDeploymentName + "-manuals"
 
 		triggerManuals := describerScaledObjectManuals.Spec.Triggers[0]
@@ -1094,7 +1121,15 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 		triggerManuals.Metadata["consumer"] = cnf.NatsConsumerGroupManuals + "-service"
 		describerScaledObjectManuals.Spec.Triggers[0] = triggerManuals
 
-		err = h.kubeClient.Create(ctx, &describerScaledObjectManuals)
+		newScaledObjectManuals := kedav1alpha1.ScaledObject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cnf.DescriberDeploymentName + "-manuals-scaled-object",
+				Namespace: currentNamespace,
+			},
+			Spec: describerScaledObjectManuals.Spec,
+		}
+
+		err = h.kubeClient.Create(ctx, &newScaledObjectManuals)
 		if err != nil {
 			return err
 		}
