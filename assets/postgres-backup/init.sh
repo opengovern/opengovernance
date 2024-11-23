@@ -4,10 +4,6 @@ set -e
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt - Running init script the 1st time Primary PostgreSql container is created...";
 
-
-workspaceDatabaseName="workspace"
-workspaceUserName="workspace_service"
-
 authDatabaseName="auth"
 authUserName="auth_service"
 
@@ -60,15 +56,6 @@ echo "$dt - Running: psql -v ON_ERROR_STOP=1 --username postgres --dbname postgr
 
 PGPASSWORD="postgres" psql -v ON_ERROR_STOP=1 --username "postgres" --dbname "postgres" <<-EOSQL
 
-   
-
-CREATE DATABASE $workspaceDatabaseName;
-CREATE USER $workspaceUserName WITH PASSWORD '$POSTGRES_WORKSPACE_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$workspaceDatabaseName" to $workspaceUserName;
-
-\c "$workspaceDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-GRANT ALL ON SCHEMA public TO $workspaceUserName;
 
 
 CREATE DATABASE $subscriptionDatabaseName;
@@ -203,9 +190,6 @@ GRANT ALL PRIVILEGES ON DATABASE "$migratorDatabaseName" to $migratorUserName;
 CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
 CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $migratorUserName;
-GRANT pg_read_all_data TO $workspaceUserName;
-GRANT pg_write_all_data TO $workspaceUserName;
-GRANT ALL ON SCHEMA public TO $workspaceUserName;
 GRANT pg_read_all_data TO $metadataUserName;
 GRANT pg_write_all_data TO $metadataUserName;
 GRANT ALL ON SCHEMA public TO $metadataUserName;
