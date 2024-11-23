@@ -905,6 +905,27 @@ func (h API) GetIntegrationType(c echo.Context) error {
 		h.logger.Error("failed to convert credentials to API model", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration to API model")
 	}
+	integrationSetups, err := h.database.ListIntegrationTypeSetup()
+	if err != nil {
+		h.logger.Error("failed to get integration setups", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration setups")
+	}
+
+	integrationSetupsMap := make(map[integration.Type]models2.IntegrationTypeSetup)
+	for _, is := range integrationSetups {
+		integrationSetupsMap[is.IntegrationType] = is
+	}
+
+	enabled := false
+	if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
+		if v, ok := integrationSetupsMap[integration_type.ParseType(integrationType.IntegrationType)]; ok {
+			if v.Enabled {
+				enabled = true
+			}
+		}
+	}
+	item.Enabled = enabled
+
 	return c.JSON(http.StatusOK, item)
 }
 
