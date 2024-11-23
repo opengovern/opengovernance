@@ -700,7 +700,7 @@ export default function ImpactedResources({
                         columnDisplay={[
                             { id: 'resourceName', visible: true },
                             { id: 'resourceType', visible: true },
-                            { id: 'providerConnectionName', visible: true },
+                            // { id: 'providerConnectionName', visible: true },
                             // { id: 'totalCount', visible: true },
                             // { id: 'severity', visible: true },
                             // { id: 'evaluatedAt', visible: true },

@@ -245,7 +245,7 @@ export default function Dashboard() {
                 </Title>
                 <Cal
                     namespace="try-enterprise"
-                    calLink="team/opengovernance/try-enterprise"
+                    calLink="team/opencomply/try-enterprise"
                     style={{
                         width: '100%',
                         height: '100%',
@@ -260,7 +260,7 @@ export default function Dashboard() {
             </Title>
             <Cal
                 namespace="try-enterprise"
-                calLink="team/opengovernance/try-enterprise"
+                calLink="team/opencomply/try-enterprise"
                 style={{
                     width: '100%',
                     height: '100%',
