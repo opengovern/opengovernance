@@ -14,13 +14,20 @@ type CloudFlareAccountIntegration struct{}
 
 func (i *CloudFlareAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
-		NatsScheduledJobsTopic: cloudflareDescriberLocal.JobQueueTopic,
-		NatsManualJobsTopic:    cloudflareDescriberLocal.JobQueueTopicManuals,
-		NatsStreamName:         cloudflareDescriberLocal.StreamName,
+		NatsScheduledJobsTopic:   cloudflareDescriberLocal.JobQueueTopic,
+		NatsManualJobsTopic:      cloudflareDescriberLocal.JobQueueTopicManuals,
+		NatsStreamName:           cloudflareDescriberLocal.StreamName,
+		NatsConsumerGroup:        cloudflareDescriberLocal.ConsumerGroup,
+		NatsConsumerGroupManuals: cloudflareDescriberLocal.ConsumerGroupManuals,
 
 		SteampipePluginName: "cloudflare",
 
 		UISpecFileName: "cloudflare-account.json",
+
+		DescriberImageAddress:   cloudflareDescriberLocal.DescriberImageAddress,
+		DescriberImageTagKey:    cloudflareDescriberLocal.DescriberImageTagKey,
+		DescriberRunCommand:     cloudflareDescriberLocal.DescriberRunCommand,
+		DescriberDeploymentName: cloudflareDescriberLocal.DescriberDeploymentName,
 	}
 }
 
