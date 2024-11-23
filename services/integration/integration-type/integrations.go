@@ -6,6 +6,8 @@ import (
 	awsConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription"
 	azureConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
+	cloudflare_account "github.com/opengovern/opengovernance/services/integration/integration-type/cloudflare-account"
+	cloudflareConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/cloudflare-account/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team"
 	digitalOceanConfigs "github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team/configs"
 	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory"
@@ -22,6 +24,7 @@ const (
 	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
 	IntegrationTypeGithubAccount     = githubConfigs.IntegrationTypeGithubAccount
 	IntegrationTypeDigitalOceanTeam  = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
+	IntegrationTypeCloudflareAccount = cloudflareConfigs.IntegrationNameCloudflareAccount
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -30,6 +33,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeEntraIdDirectory,
 	IntegrationTypeGithubAccount,
 	IntegrationTypeDigitalOceanTeam,
+	IntegrationTypeCloudflareAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -38,6 +42,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeEntraIdDirectory:  &entra_id_directory.EntraIdDirectoryIntegration{},
 	IntegrationTypeGithubAccount:     &github_account.GithubAccountIntegration{},
 	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
+	IntegrationTypeCloudflareAccount: &cloudflare_account.CloudFlareAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
