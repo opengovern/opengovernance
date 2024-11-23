@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import '~react-complex-tree/lib/style-modern.css';
 @import "@cloudscape-design/global-styles/index.css";
 
 @layer utilities {
