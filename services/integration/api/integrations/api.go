@@ -1005,6 +1005,13 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "current namespace lookup failed")
 	}
 
+	setup, _ := h.database.GetIntegrationTypeSetup(integrationTypeName)
+	if setup != nil {
+		if setup.Enabled {
+			return echo.NewHTTPError(http.StatusBadRequest, "the integration type is already enabled")
+		}
+	}
+
 	// Scheduled deployment
 	var describerDeployment appsv1.Deployment
 	err := h.kubeClient.Get(ctx, client.ObjectKey{
@@ -1183,6 +1190,11 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 
 	integrationTypeName := c.Param("integration_type")
 
+	setup, _ := h.database.GetIntegrationTypeSetup(integrationTypeName)
+	if setup == nil || !setup.Enabled {
+		return echo.NewHTTPError(http.StatusBadRequest, "the integration type is already disabled")
+	}
+
 	var integrationTypes []integration.Type
 	integrationTypes = append(integrationTypes, integration.Type(integrationTypeName))
 
@@ -1213,12 +1225,12 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 	}, &describerDeployment)
 	if err != nil {
 		h.logger.Error("failed to get manual deployment", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get manual deployment")
-	}
-	err = h.kubeClient.Delete(ctx, &describerDeployment)
-	if err != nil {
-		h.logger.Error("failed to delete deployment", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete deployment")
+	} else {
+		err = h.kubeClient.Delete(ctx, &describerDeployment)
+		if err != nil {
+			h.logger.Error("failed to delete deployment", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete deployment")
+		}
 	}
 
 	// Manual deployment
@@ -1229,12 +1241,12 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 	}, &describerDeploymentManuals)
 	if err != nil {
 		h.logger.Error("failed to get manual deployment", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get manual deployment")
-	}
-	err = h.kubeClient.Delete(ctx, &describerDeploymentManuals)
-	if err != nil {
-		h.logger.Error("failed to delete manual deployment", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete manual deployment")
+	} else {
+		err = h.kubeClient.Delete(ctx, &describerDeploymentManuals)
+		if err != nil {
+			h.logger.Error("failed to delete manual deployment", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete manual deployment")
+		}
 	}
 
 	kedaEnabled, ok := os.LookupEnv("KEDA_ENABLED")
@@ -1250,12 +1262,12 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 		}, &describerScaledObject)
 		if err != nil {
 			h.logger.Error("failed to get scaled object", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get scaled object")
-		}
-		err = h.kubeClient.Delete(ctx, &describerScaledObject)
-		if err != nil {
-			h.logger.Error("failed to delete scaled object", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete scaled object")
+		} else {
+			err = h.kubeClient.Delete(ctx, &describerScaledObject)
+			if err != nil {
+				h.logger.Error("failed to delete scaled object", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete scaled object")
+			}
 		}
 
 		// Manual ScaledObject
@@ -1266,12 +1278,12 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 		}, &describerScaledObjectManuals)
 		if err != nil {
 			h.logger.Error("failed to get manual scaled object", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get manual scaled object")
-		}
-		err = h.kubeClient.Delete(ctx, &describerScaledObjectManuals)
-		if err != nil {
-			h.logger.Error("failed to delete manual scaled object", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete manual scaled object")
+		} else {
+			err = h.kubeClient.Delete(ctx, &describerScaledObjectManuals)
+			if err != nil {
+				h.logger.Error("failed to delete manual scaled object", zap.Error(err))
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete manual scaled object")
+			}
 		}
 	}
 
