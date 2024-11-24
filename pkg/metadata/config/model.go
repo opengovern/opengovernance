@@ -19,6 +19,6 @@ type Config struct {
 	PrimaryDomainURL             string `yaml:"primary_domain_url" koanf:"primary_domain_url"`
 	DexGrpcAddr                  string `yaml:"dex_grpc_addr" koanf:"dex_grpc_addr"`
 	SampledataIntegrationsCheck  string `yaml:"sampledata_integrations_check" koanf:"sampledata_integrations_check"`
-	DexPublicClientRedirectUris  string `yaml:"dex_public_client_redirect_uris"`
-	DexPrivateClientRedirectUris string `yaml:"dex_private_client_redirect_uris"`
+	DexPublicClientRedirectUris  string `yaml:"dex_public_client_redirect_uris" koanf:"dex_public_client_redirect_uris"`
+	DexPrivateClientRedirectUris string `yaml:"dex_private_client_redirect_uris" koanf:"dex_private_client_redirect_uris"`
 }
