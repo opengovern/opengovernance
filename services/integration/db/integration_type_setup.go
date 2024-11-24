@@ -32,7 +32,7 @@ func (db Database) ListIntegrationTypeSetup() ([]models.IntegrationTypeSetup, er
 func (db Database) UpdateIntegrationTypeSetup(integrationTypeSetup *models.IntegrationTypeSetup) error {
 	tx := db.Orm.
 		Where("integration_type = ?", integrationTypeSetup.IntegrationType).
-		Update("enabled = ?", integrationTypeSetup.Enabled)
+		Update("enabled", integrationTypeSetup.Enabled)
 	if tx.Error != nil {
 		return tx.Error
 	}
