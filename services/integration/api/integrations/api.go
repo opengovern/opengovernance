@@ -1262,7 +1262,7 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 		var describerScaledObjectManuals kedav1alpha1.ScaledObject
 		err = h.kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: currentNamespace,
-			Name:      cnf.DescriberDeploymentName + "manuals-scaled-object",
+			Name:      cnf.DescriberDeploymentName + "-manuals-scaled-object",
 		}, &describerScaledObjectManuals)
 		if err != nil {
 			h.logger.Error("failed to get manual scaled object", zap.Error(err))
