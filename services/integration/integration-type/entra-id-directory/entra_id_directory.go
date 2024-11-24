@@ -19,7 +19,7 @@ func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationC
 		NatsConsumerGroup:        entraidDescriberLocal.ConsumerGroup,
 		NatsConsumerGroupManuals: entraidDescriberLocal.ConsumerGroupManuals,
 
-		SteampipePluginName: "azuread",
+		SteampipePluginName: "entraid",
 
 		UISpecFileName: "entraid-directory.json",
 
