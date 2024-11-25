@@ -298,7 +298,7 @@ func (db Database) ListJobsWithRunnersCompleted(manuals bool) ([]model.Complianc
 	query := `
 SELECT * FROM compliance_jobs j WHERE status IN ('RUNNERS_IN_PROGRESS', 'SINK_IN_PROGRESS') AND are_all_runners_queued = TRUE AND
 	(select count(*) from compliance_runners where parent_job_id = j.id AND 
-	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= 3))
+	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= 1))
 	                                         ) = 0
 `
 	if manuals {
