@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const runnerRetryCount = 1
+
 func (db Database) CreateRunnerJobs(tx *gorm.DB, runners []*model.ComplianceRunner) error {
 	if tx == nil {
 		tx = db.ORM
@@ -80,7 +82,7 @@ func (db Database) UpdateTimedOutInProgressRunners() error {
 }
 
 func (db Database) RetryFailedRunners() error {
-	tx := db.ORM.Exec("UPDATE compliance_runners SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() WHERE status = 'FAILED' AND retry_count < 1 AND updated_at < NOW() - interval '5 minutes'")
+	tx := db.ORM.Exec("UPDATE compliance_runners SET retry_count = retry_count + 1, status = 'CREATED', updated_at = NOW() WHERE status = 'FAILED' AND retry_count < ? AND updated_at < NOW() - interval '5 minutes'", runnerRetryCount)
 	if tx.Error != nil {
 		return tx.Error
 	}
