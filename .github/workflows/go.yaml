@@ -13,6 +13,14 @@ on:
           - "true"
           - "false"
         default: "false"
+      buildPostgres:
+        type: choice
+        description: "build postgres images "
+        options:
+          - "true"
+          - "false"
+        default: "false"
+        
       servicesList:
         type: string
         description: "List of services to build"
@@ -871,9 +879,11 @@ jobs:
 
   deploy-postgres:
     runs-on: ubuntu-latest
+    if: github.event.inputs.buildPostgres == 'true'
+
     needs:
-      - build
       - tag
+   
     permissions:
       id-token: write
       contents: read
