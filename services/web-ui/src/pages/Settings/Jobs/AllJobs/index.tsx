@@ -51,178 +51,7 @@ import {
 } from '@cloudscape-design/components'
 import KButton from '@cloudscape-design/components/button'
 import KeyValuePairs from '@cloudscape-design/components/key-value-pairs'
-const columns = () => {
-    const temp: IColumn<any, any>[] = [
-        {
-            field: 'id',
-            headerName: 'Job ID',
-            type: 'string',
-            sortable: true,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-            hide: true,
-        },
-        {
-            field: 'createdAt',
-            headerName: 'Created At',
-            type: 'string',
-            sortable: true,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-            hide: false,
-            cellRenderer: (params: any) => {
-                return (
-                    <>{`${params.value.split('T')[0]} ${
-                        params.value.split('T')[1].split('.')[0]
-                    } `}</>
-                )
-            },
-        },
 
-        {
-            field: 'type',
-            headerName: 'Job Type',
-            type: 'string',
-            sortable: true,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-        },
-        {
-            field: 'connectionID',
-            headerName: 'OpenGovernance Connection ID',
-            type: 'string',
-            sortable: true,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-            hide: true,
-        },
-        {
-            field: 'connectionProviderID',
-            headerName: 'Account ID',
-            type: 'string',
-            sortable: false,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-            hide: true,
-        },
-        {
-            field: 'connectionProviderName',
-            headerName: 'Account Name',
-            type: 'string',
-            sortable: false,
-            filter: false,
-            resizable: true,
-            suppressMenu: true,
-            hide: true,
-        },
-        {
-            field: 'title',
-            headerName: 'Title',
-            type: 'string',
-            sortable: false,
-            filter: false,
-            resizable: true,
-            suppressMenu: false,
-        },
-
-        {
-            field: 'status',
-            headerName: 'Status',
-            type: 'string',
-            sortable: true,
-            suppressMenu: true,
-            filter: false,
-            resizable: true,
-            cellRenderer: (
-                param: ValueFormatterParams<GithubComKaytuIoKaytuEnginePkgDescribeApiJob>
-            ) => {
-                let jobStatus = ''
-                let jobColor: Color = 'gray'
-                switch (param.data?.status) {
-                    case 'CREATED':
-                        jobStatus = 'created'
-                        break
-                    case 'QUEUED':
-                        jobStatus = 'queued'
-                        break
-                    case 'IN_PROGRESS':
-                        jobStatus = 'in progress'
-                        jobColor = 'orange'
-                        break
-                    case 'RUNNERS_IN_PROGRESS':
-                        jobStatus = 'in progress'
-                        jobColor = 'orange'
-                        break
-                    case 'SUMMARIZER_IN_PROGRESS':
-                        jobStatus = 'summarizing'
-                        jobColor = 'orange'
-                        break
-                    case 'OLD_RESOURCE_DELETION':
-                        jobStatus = 'summarizing'
-                        jobColor = 'orange'
-                        break
-                    case 'SUCCEEDED':
-                        jobStatus = 'succeeded'
-                        jobColor = 'emerald'
-                        break
-                    case 'COMPLETED':
-                        jobStatus = 'completed'
-                        jobColor = 'emerald'
-                        break
-                    case 'FAILED':
-                        jobStatus = 'failed'
-                        jobColor = 'red'
-                        break
-                    case 'COMPLETED_WITH_FAILURE':
-                        jobStatus = 'completed with failed'
-                        jobColor = 'red'
-                        break
-                    case 'TIMEOUT':
-                        jobStatus = 'time out'
-                        jobColor = 'red'
-                        break
-                    default:
-                        jobStatus = String(param.data?.status)
-                }
-
-                return <Badge color={jobColor}>{jobStatus}</Badge>
-            },
-        },
-        {
-            field: 'updatedAt',
-            headerName: 'Updated At',
-            type: 'date',
-            sortable: true,
-            filter: false,
-            suppressMenu: true,
-            resizable: true,
-            hide: false,
-            cellRenderer: (params: any) => {
-                return (
-                    <>{`${params.value.split('T')[0]} ${
-                        params.value.split('T')[1].split('.')[0]
-                    } `}</>
-                )
-            },
-        },
-        {
-            field: 'failureReason',
-            headerName: 'Failure Reason',
-            type: 'string',
-            sortable: false,
-            suppressMenu: true,
-            filter: true,
-            resizable: true,
-            hide: true,
-        },
-    ]
-    return temp
-}
 
 const jobTypes = [
     {
@@ -276,6 +105,11 @@ export default function SettingsALLJobs() {
         return temp
     }
     const [open, setOpen] = useState(false)
+     const [queries, setQueries] = useState({
+         tokens: [],
+         operation: 'and',
+     })
+
     const [clickedJob, setClickedJob] =
         useState<GithubComKaytuIoKaytuEnginePkgDescribeApiJob>()
     const [searchParams, setSearchParams] = useSearchParams()
@@ -290,99 +124,93 @@ export default function SettingsALLJobs() {
     const [jobs, setJobs] = useState([])
     const [page, setPage] = useState(0)
     const [sort, setSort] = useState('updatedAt')
-    const [sortOrder,setSortOrder]= useState(true)
+    const [sortOrder, setSortOrder] = useState(true)
 
     const [totalCount, setTotalCount] = useState(0)
     const [totalPage, setTotalPage] = useState(0)
     const [propertyOptions, setPropertyOptions] = useState()
-  const [date, setDate] = useState({
-      key: 'previous-6-hours',
-      amount: 6,
-      unit: 'hour',
-      type: 'relative',
-  })
+    const [date, setDate] = useState({
+        key: 'previous-6-hours',
+        amount: 6,
+        unit: 'hour',
+        type: 'relative',
+    })
     const [filter, setFilter] = useState({
         label: 'Recent Incidents',
         value: '1',
     })
-      useEffect(() => {
-          // @ts-ignore
-          if (filter) {
-              // @ts-ignore
+    useEffect(() => {
+        // @ts-ignore
+        if (filter) {
+            // @ts-ignore
 
-              if (filter.value == '1') {
-                  setDate({
-                      key: 'previous-6-hours',
-                      amount: 6,
-                      unit: 'hour',
-                      type: 'relative',
-                  })
-                  setQueries({
-                      tokens: [
-                          {
-                              propertyKey: 'job_type',
-                              value: 'compliance',
-                              operator: '=',
-                          },
-                      ],
-                      operation: 'and',
-                  })
-              }
-              // @ts-ignore
-              else if (filter.value == '2') {
-                  setDate({
-                      key: 'previous-6-hours',
-                      amount: 6,
-                      unit: 'hour',
-                      type: 'relative',
-                  })
-                  setQueries({
-                      tokens: [
-                          {
-                              propertyKey: 'job_type',
-                              value: 'compliance',
-                              operator: '=',
-                          },
-                          {
-                              propertyKey: 'job_status',
-                              value: 'FAILED',
-                              operator: '=',
-                          },
-                      ],
-                      operation: 'and',
-                  })
-              } else if (filter.value == '3') {
-                  setDate({
-                      key: 'previous-7-days',
-                      amount: 7,
-                      unit: 'day',
-                      type: 'relative',
-                  })
-                  setQueries({
-                      tokens: [
-                          {
-                              propertyKey: 'job_type',
-                              value: 'discovery',
-                              operator: '=',
-                          },
-                          {
-                              propertyKey: 'job_status',
-                              value: 'FAILED',
-                              operator: '=',
-                          },
-                      ],
-                      operation: 'and',
-                  })
-              }
-          }
-      }, [filter])
-    const [queries, setQueries] = useState({
-        tokens: [],
-        operation: 'and',
-    })
-
-  
-
+            if (filter.value == '1') {
+                setDate({
+                    key: 'previous-6-hours',
+                    amount: 6,
+                    unit: 'hour',
+                    type: 'relative',
+                })
+                setQueries({
+                    tokens: [
+                        {
+                            propertyKey: 'job_type',
+                            value: 'compliance',
+                            operator: '=',
+                        },
+                    ],
+                    operation: 'and',
+                })
+            }
+            // @ts-ignore
+            else if (filter.value == '2') {
+                setDate({
+                    key: 'previous-6-hours',
+                    amount: 6,
+                    unit: 'hour',
+                    type: 'relative',
+                })
+                setQueries({
+                    tokens: [
+                        {
+                            propertyKey: 'job_type',
+                            value: 'compliance',
+                            operator: '=',
+                        },
+                        {
+                            propertyKey: 'job_status',
+                            value: 'FAILED',
+                            operator: '=',
+                        },
+                    ],
+                    operation: 'and',
+                })
+            } else if (filter.value == '3') {
+                setDate({
+                    key: 'previous-7-days',
+                    amount: 7,
+                    unit: 'day',
+                    type: 'relative',
+                })
+                setQueries({
+                    tokens: [
+                        {
+                            propertyKey: 'job_type',
+                            value: 'discovery',
+                            operator: '=',
+                        },
+                        {
+                            propertyKey: 'job_status',
+                            value: 'FAILED',
+                            operator: '=',
+                        },
+                    ],
+                    operation: 'and',
+                })
+            }
+        }
+    }, [filter])
+   
     const arrayToString = (arr: string[], title: string) => {
         let temp = ``
         arr.map((item, index) => {
@@ -414,9 +242,9 @@ export default function SettingsALLJobs() {
             window.history.pushState({}, '', `?${searchParams.toString()}`)
         }
     }, [jobTypeFilter, statusFilter])
-
+    
     const GetRows = () => {
-        setLoading(true);
+        setLoading(true)
         const api = new Api()
         api.instance = AxiosAPI
         const status_filter = []
@@ -427,8 +255,7 @@ export default function SettingsALLJobs() {
             } else if (item.propertyKey == 'job_type') {
                 jobType_filter.push(item.value)
             }
-        }
-        )
+        })
         let body = {
             pageStart: page * 15,
             pageEnd: (page + 1) * 15,
@@ -438,11 +265,10 @@ export default function SettingsALLJobs() {
             sortBy: sort,
             sortOrder: sortOrder ? 'DESC' : 'ASC',
         }
-        if(date){
-            if(date.type =='relative'){
+        if (date) {
+            if (date.type == 'relative') {
                 body.interval = `${date.amount} ${date.unit}s`
-            }
-            else{
+            } else {
                 body.from = date.startDate
                 body.to = date.endDate
             }
@@ -500,7 +326,7 @@ export default function SettingsALLJobs() {
                             ) / 15
                     )
                 )
-        setLoading(false)
+                setLoading(false)
 
                 // params.success({
                 //     rowData: resp.data.jobs || [],
@@ -511,14 +337,16 @@ export default function SettingsALLJobs() {
             })
             .catch((err) => {
                 console.log(err)
-        setLoading(false)
+                setLoading(false)
 
                 // params.fail()
             })
     }
+
     useEffect(() => {
+
         GetRows()
-    }, [queries, date,page,sort,sortOrder])
+    }, [queries, date, page, sort, sortOrder])
 
     const clickedJobDetails = [
         { title: 'ID', value: clickedJob?.id },
@@ -526,7 +354,10 @@ export default function SettingsALLJobs() {
         { title: 'Type', value: clickedJob?.type },
         { title: 'Created At', value: clickedJob?.createdAt },
         { title: 'Updated At', value: clickedJob?.updatedAt },
-        { title: 'OpenGovernance Connection ID', value: clickedJob?.connectionID },
+        {
+            title: 'OpenGovernance Connection ID',
+            value: clickedJob?.connectionID,
+        },
         { title: 'Account ID', value: clickedJob?.connectionProviderID },
         { title: 'Account Name', value: clickedJob?.connectionProviderName },
         { title: 'Status', value: clickedJob?.status },
@@ -767,7 +598,7 @@ export default function SettingsALLJobs() {
                                         },
                                         {
                                             label: 'All Discovery Jobs',
-                                            value: '3'
+                                            value: '3',
                                         },
                                     ]}
                                 />
