@@ -140,6 +140,7 @@ export default function IntegrationList({
              )
              .then((res) => {
                  setLoading(false)
+                 navigate('/integrations')
              })
              .catch((err) => {
                  setLoading(false)
