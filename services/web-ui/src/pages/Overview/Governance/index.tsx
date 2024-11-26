@@ -12,7 +12,7 @@ export default function Governance() {
             <Flex justifyContent="between">
                 <Flex justifyContent="start" className="gap-2 ">
                     <Icon icon={ShieldCheckIcon} className="p-0" />
-                    <Title className="font-semibold">Compliance</Title>
+                    <Title className="font-semibold">Compliance Frameworks</Title>
                 </Flex>
                 <a
                     target="__blank"

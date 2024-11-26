@@ -249,7 +249,7 @@ export default function QueryDetail({
                     loading={false}
                     loadingText="Running"
                 >
-                    {/* <Link to={`/finder?tab_id=1`}> */}
+                    {/* <Link to={`/cloudql?tab_id=1`}> */}
                     Run in Query
                     {/* </Link>{' '} */}
                 </Button>

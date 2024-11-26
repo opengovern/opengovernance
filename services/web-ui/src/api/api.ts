@@ -2320,6 +2320,13 @@ export enum GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityConnectionLif
     ConnectionLifecycleStateInProgress = 'IN_PROGRESS',
     ConnectionLifecycleStateArchived = 'ARCHIVED',
 }
+export interface ConnectorCountField {
+    total:    number;
+    active:   number;
+    inactive: number;
+    archived: number;
+    demo:     number;
+}
 
 
 export interface GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityConnectorCount {
@@ -2334,6 +2341,7 @@ export interface GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityConnecto
     long_description: string
     logo: string
     enabled: boolean
+    count: ConnectorCountField
 }
 
 
@@ -5722,13 +5730,16 @@ export class Api<
         apiV1ConnectorsList: (
             per_page: number,
             cursor: number,
+            sort_by?: string,
+            sort_order?: string,
+            has_integration?: boolean,
             params: RequestParams = {}
         ) =>
             this.request<
                 GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityConnectorResponse,
                 any
             >({
-                path: `/integration/api/v1/integrations/types?per_page=${per_page}&cursor=${cursor}`,
+                path: `/integration/api/v1/integrations/types?per_page=${per_page}&cursor=${cursor}&sort_by=${sort_by}&sort_order=${sort_order}&has_integration=${has_integration}`,
                 method: 'GET',
                 secure: true,
                 format: 'json',

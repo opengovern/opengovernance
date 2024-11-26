@@ -900,13 +900,13 @@ export default function Filter({ onApply, type, setDate }: IFilters) {
                 ) {
                     f?.data?.map((d) => {
                         options.push({
-                            propertyKey: f.id.toString(),
+                            propertyKey: f?.id?.toString(),
                             // @ts-ignore
 
-                            label: d?.label.toString(),
+                            label: d?.label?.toString(),
                             // @ts-ignore
 
-                            value: d?.value.toString(),
+                            value: d?.value?.toString(),
                             // @ts-ignore
 
                             iconSvg: d?.iconSvg?.toString(),

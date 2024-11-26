@@ -592,7 +592,7 @@ export default function ControlDetail() {
                                                     )
                                                 }}
                                             >
-                                                <Link to={`/finder?tab_id=1`}>
+                                                <Link to={`/cloudql?tab_id=1`}>
                                                     Open in Query
                                                 </Link>
                                             </Button>

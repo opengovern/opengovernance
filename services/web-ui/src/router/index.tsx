@@ -427,12 +427,12 @@ const authRoutes = [
 
     {
         key: 'Search',
-        path: '/finder',
+        path: '/cloudql',
         element: <Search />,
     },
     {
         key: 'Search Main',
-        path: '/finder-dashboard',
+        path: '/cloudql-dashboard',
         element: <SearchLanding />,
     },
     // {

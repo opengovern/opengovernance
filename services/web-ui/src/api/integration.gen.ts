@@ -1041,6 +1041,9 @@ interface IuseIntegrationApiV1ConnectorsListState {
 export const useIntegrationApiV1ConnectorsList = (
     perPage: number,
     cursor: number,
+    hasIntegration?: boolean,
+    sortBy?: string,
+    sortOrder?: string,
     params: RequestParams = {},
     autoExecute = true,
     overwriteWorkspace: string | undefined = undefined
@@ -1064,6 +1067,9 @@ export const useIntegrationApiV1ConnectorsList = (
     const sendRequest = (
         reqperPage: number,
         reqcursor: number,
+        reqSortBy: string | undefined,
+        reqSortOrder: string | undefined,
+        reqHasIntegration: boolean | undefined,
         abortCtrl: AbortController,
         reqparams: RequestParams
     ) => {
@@ -1088,7 +1094,14 @@ export const useIntegrationApiV1ConnectorsList = (
 
             const reqparamsSignal = { ...reqparams, signal: abortCtrl.signal }
             api.integration
-                .apiV1ConnectorsList(reqperPage, reqcursor, reqparamsSignal)
+                .apiV1ConnectorsList(
+                    reqperPage,
+                    reqcursor,
+                    reqSortBy,
+                    reqSortOrder,
+                    reqHasIntegration,
+                    reqparamsSignal
+                )
                 .then((resp) => {
                     setState({
                         ...state,
@@ -1133,7 +1146,15 @@ export const useIntegrationApiV1ConnectorsList = (
             controller.abort()
             const newController = new AbortController()
             setController(newController)
-            sendRequest(perPage, cursor, newController, params)
+            sendRequest(
+                perPage,
+                cursor,
+                sortBy,
+                sortOrder,
+                hasIntegration,
+                newController,
+                params
+            )
         }
     }, [lastInput])
 
@@ -1141,22 +1162,47 @@ export const useIntegrationApiV1ConnectorsList = (
     const { isLoading } = state
     const { isExecuted } = state
     const { error } = state
-    const sendNow = (reqperPage: number, reqCursor: number) => {
+    const sendNow = (
+        reqperPage: number,
+        reqCursor: number,
+        reqSortBy: string,
+        reqSortOrder: string,
+        reqHasIntegration: boolean
+    ) => {
         controller.abort()
         const newController = new AbortController()
         setController(newController)
-        sendRequest(reqperPage, reqCursor, newController, params)
+        sendRequest(
+            reqperPage,
+            reqCursor,
+            reqSortBy,
+            reqSortOrder,
+            reqHasIntegration,
+            newController,
+            params
+        )
     }
 
     const sendNowWithParams = (
         reqPerPage: number,
         reqCursor: number,
+        reqSortBy: string,
+        reqSortOrder: string,
+        reqHasIntegration: boolean,
         reqparams: RequestParams
     ) => {
         controller.abort()
         const newController = new AbortController()
         setController(newController)
-        sendRequest(reqPerPage, reqCursor, newController, reqparams)
+        sendRequest(
+            reqPerPage,
+            reqCursor,
+            reqSortBy,
+            reqSortOrder,
+            reqHasIntegration,
+            newController,
+            reqparams
+        )
     }
 
     return {

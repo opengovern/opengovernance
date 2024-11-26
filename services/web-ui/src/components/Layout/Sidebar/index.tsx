@@ -438,8 +438,8 @@ export default function Sidebar({  currentPage }: ISidebar) {
             // },
 
             {
-                name: 'Finder',
-                page: ['finder-dashboard', 'finder'],
+                name: 'CloudQL',
+                page: ['cloudql-dashboard', 'cloudql'],
                 icon: MagnifyingGlassIcon,
                 isPreview: false,
                 // children: [
@@ -537,7 +537,7 @@ export default function Sidebar({  currentPage }: ISidebar) {
             className={`z-50 !max-h-screen h-full  ${
                 collapsed ? 'w-20' : ' w-60'
             }
-             pt-4 bg-openg-950 dark:bg-gray-950 relative border-r border-r-gray-700`}
+             pt-4 bg-openg-950  dark:bg-gray-950 relative border-r border-r-gray-700`}
         >
             <Flex
                 flexDirection="col"
@@ -546,13 +546,13 @@ export default function Sidebar({  currentPage }: ISidebar) {
             >
                 <a
                     className={`cursor-pointer ${
-                        collapsed ? '' : 'mr-6'
+                        collapsed ? '' : 'pl-4 mr-6'
                     } w-full`}
                     href={`/`}
                 >
                     <Flex
                         justifyContent={collapsed ? 'center' : 'between'}
-                        className={`pb-[17px] pt-[6px] `}
+                        className={`pb-[17px] pt-[6px]  `}
                     >
                         {collapsed ? <OpenGovernance /> : <OpenGovernanceBig />}
 

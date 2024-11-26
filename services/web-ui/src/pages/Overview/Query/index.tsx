@@ -77,7 +77,7 @@ export default function Query({ height }: IQuery) {
                 </Flex>
                 <a
                     target="__blank"
-                    href={`/finder?tab_id=0`}
+                    href={`/cloudql?tab_id=0`}
                     className=" cursor-pointer"
                 >
                     <Button
@@ -87,7 +87,7 @@ export default function Query({ height }: IQuery) {
                         iconPosition="right"
                         className="my-3"
                         // onClick={() => {
-                        //     navigate(`/finder?tab_id=0`)
+                        //     navigate(`/cloudql?tab_id=0`)
                         // }}
                     >
                         All Queries
@@ -168,7 +168,7 @@ export default function Query({ height }: IQuery) {
                                       onClick={() => {
                                           setRunQuery(q?.query || '')
                                           navigate(
-                                              `/finder?tab_id=1`
+                                              `/cloudql?tab_id=1`
                                           )
                                       }}
                                   >

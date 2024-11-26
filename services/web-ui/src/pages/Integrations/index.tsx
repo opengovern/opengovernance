@@ -22,7 +22,7 @@ import ConnectorCard from '../../components/Cards/ConnectorCard'
 import Spinner from '../../components/Spinner'
 import { useIntegrationApiV1ConnectorsList } from '../../api/integration.gen'
 import TopHeader from '../../components/Layout/Header'
-import { Button, Modal, Pagination } from '@cloudscape-design/components'
+import { Box, Button, Cards, Link, Modal, Pagination, SpaceBetween } from '@cloudscape-design/components'
 import { GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier } from '../../api/api'
 import { useNavigate } from 'react-router-dom'
 import { get } from 'http'
@@ -34,7 +34,7 @@ export default function Integrations() {
         response: responseConnectors,
         isLoading: connectorsLoading,
         sendNow: getList,
-    } = useIntegrationApiV1ConnectorsList(9, pageNo)
+    } = useIntegrationApiV1ConnectorsList(9, pageNo, undefined, 'count', 'desc')
     const [open, setOpen] = useState(false)
     const navigate = useNavigate();
     const [selected, setSelected] = useState()
@@ -46,7 +46,7 @@ export default function Integrations() {
     //@ts-ignore
     const totalPages = Math.ceil(responseConnectors?.total_count / 9)
     useEffect(() => {
-        getList(9, pageNo)
+        getList(9, pageNo,'count','desc',undefined)
     }, [pageNo])
     const EnableIntegration = ()=>{
          setLoading(true)
@@ -221,7 +221,203 @@ export default function Integrations() {
                                         </div>
                                     </div>
                                     <div className="flex items-center w-full">
-                                        <Grid
+                                        <Cards
+                                            ariaLabels={{
+                                                itemSelectionLabel: (e, t) =>
+                                                    `select ${t.name}`,
+                                                selectionGroupLabel:
+                                                    'Item selection',
+                                            }}
+                                            onSelectionChange={({ detail }) => {
+                                                const connector =
+                                                    detail?.selectedItems[0]
+                                                if (
+                                                    connector.enabled ===
+                                                        false &&
+                                                    connector?.tier ===
+                                                        GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
+                                                ) {
+                                                    setOpen(true)
+                                                    setSelected(connector)
+                                                    return
+                                                }
+
+                                                if (
+                                                    connector?.tier ===
+                                                    GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
+                                                ) {
+                                                    const name = connector?.name
+                                                    const id = connector?.id
+                                                    navigate(
+                                                        `${connector.platform_name}`,
+                                                        {
+                                                            state: {
+                                                                name,
+                                                                id,
+                                                            },
+                                                        }
+                                                    )
+                                                    return
+                                                }
+                                                navigate(
+                                                    `${connector.platform_name}/../../request-access?connector=${connector.title}`
+                                                )
+                                            }}
+                                            selectedItems={[]}
+                                            cardDefinition={{
+                                                header: (item) => (
+                                                    <Link
+                                                        className="w-100"
+                                                        onClick={() => {
+                                                            // if (item.tier === 'Community') {
+                                                            //     navigate(
+                                                            //         '/integrations/' +
+                                                            //             item.schema_id +
+                                                            //             '/schema'
+                                                            //     )
+                                                            // } else {
+                                                            //     // setOpen(true);
+                                                            // }
+                                                        }}
+                                                    >
+                                                        <div className="w-100 flex flex-row justify-between">
+                                                            <span>
+                                                                {item.title}
+                                                            </span>
+                                                            {/* <div className="flex flex-row gap-1 items-center">
+                                    {GetTierIcon(item.tier)}
+                                    <span className="text-white">{item.tier}</span>
+                                </div> */}
+                                                        </div>
+                                                    </Link>
+                                                ),
+                                                sections: [
+                                                    {
+                                                        id: 'logo',
+                                                        // header :(<>
+                                                        //     <div className="flex justify-end">
+                                                        //         <span>{'Status'}</span>
+                                                        //     </div>
+                                                        // </>),
+
+                                                        content: (item) => (
+                                                            <div className="w-100 flex flex-row items-center  justify-between  ">
+                                                                <img
+                                                                    className="w-[50px] h-[50px]"
+                                                                    src={
+                                                                        item.logo
+                                                                    }
+                                                                    onError={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.currentTarget.onerror =
+                                                                            null
+                                                                        e.currentTarget.src =
+                                                                            'https://raw.githubusercontent.com/opengovern/website/main/connectors/icons/default.svg'
+                                                                    }}
+                                                                    alt="placeholder"
+                                                                />
+                                                                {/* <span>{item.status ? 'Enabled' : 'Disable'}</span> */}
+                                                            </div>
+                                                        ),
+                                                    },
+                                                    // {
+                                                    //     id: 'description',
+                                                    //     header: (
+                                                    //         <>
+                                                    //             <div className="flex justify-between">
+                                                    //                 <span>{'Description'}</span>
+                                                    //                 <span>{'Table'}</span>
+                                                    //             </div>
+                                                    //         </>
+                                                    //     ),
+                                                    //     content: (item) => (
+                                                    //         <>
+                                                    //             <div className="flex justify-between">
+                                                    //                 <span className="max-w-60">
+                                                    //                     {item.description}
+                                                    //                 </span>
+                                                    //                 <span>
+                                                    //                     {item.count ? item.count : '--'}
+                                                    //                 </span>
+                                                    //             </div>
+                                                    //         </>
+                                                    //     ),
+                                                    // },
+                                                    // {
+                                                    //     id: 'status',
+                                                    //     header: 'Status',
+                                                    //     content: (item) =>
+                                                    //         item.status ? 'Enabled' : 'Disabled',
+                                                    //     width: 70,
+                                                    // },
+                                                    {
+                                                        id: 'integrattoin',
+                                                        header: 'Integrations',
+                                                        content: (item) =>
+                                                            item?.count
+                                                                ? item.count
+                                                                : '--',
+                                                        width: 50,
+                                                    },
+                                                    // {
+                                                    //   id: "tier",
+                                                    //   header: "Tier",
+                                                    //   content: (item) => item.tier,
+                                                    //   width: 85,
+                                                    // },
+                                                    // {
+                                                    //   id: "tables",
+                                                    //   header: "Table",
+                                                    //   content: (item) => (item.count ? item.count : "--"),
+                                                    //   width: 15,
+                                                    // },
+                                                ],
+                                            }}
+                                            cardsPerRow={[
+                                                { cards: 1 },
+                                                { minWidth: 750, cards: 3 },
+                                                { minWidth: 680, cards: 2 },
+                                            ]}
+                                            // @ts-ignore
+                                            items={connectorList?.map(
+                                                (type) => {
+                                                    return {
+                                                        id: type.id,
+                                                        tier: type.tier,
+                                                        enabled: type.enabled,
+                                                        platform_name:
+                                                            type.platform_name,
+                                                        // description: type.Description,
+                                                        title: type.title,
+                                                        name: type.name,
+                                                        count: type?.count
+                                                            ?.total,
+                                                        // schema_id: type?.schema_ids[0],
+                                                        // SourceCode: type.SourceCode,
+                                                        logo: type.logo,
+                                                    }
+                                                }
+                                            )}
+                                            loadingText="Loading resources"
+                                            stickyHeader
+                                            entireCardClickable
+                                            variant="full-page"
+                                            selectionType="single"
+                                            trackBy="name"
+                                            empty={
+                                                <Box
+                                                    margin={{ vertical: 'xs' }}
+                                                    textAlign="center"
+                                                    color="inherit"
+                                                >
+                                                    <SpaceBetween size="m">
+                                                        <b>No resources</b>
+                                                    </SpaceBetween>
+                                                </Box>
+                                            }
+                                        />
+                                        {/* <Grid
                                             numItemsMd={3}
                                             numItemsLg={3}
                                             className="gap-[70px] mt-6 w-full justify-items-center"
@@ -305,7 +501,7 @@ export default function Integrations() {
                                                     )
                                                 }
                                             )}
-                                        </Grid>
+                                        </Grid> */}
                                     </div>
                                 </main>
                             </div>
