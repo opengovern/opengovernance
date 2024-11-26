@@ -59,6 +59,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context, manuals bool) error {
 		}
 
 		if len(runners) == 0 {
+			s.logger.Info("no created runners found skipping")
 			break
 		}
 

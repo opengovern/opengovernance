@@ -544,7 +544,12 @@ export default function Sidebar({  currentPage }: ISidebar) {
                 justifyContent="start"
                 className={`h-full ${collapsed ? 'w-full' : 'w-full'}`}
             >
-                <a className=" cursor-pointer mr-6 w-full" href={`/`}>
+                <a
+                    className={`cursor-pointer ${
+                        collapsed ? '' : 'mr-6'
+                    } w-full`}
+                    href={`/`}
+                >
                     <Flex
                         justifyContent={collapsed ? 'center' : 'between'}
                         className={`pb-[17px] pt-[6px] `}
@@ -947,7 +952,7 @@ export default function Sidebar({  currentPage }: ISidebar) {
                             )}
                     </div>
                 </Flex>
-                <Utilities isCollapsed={collapsed}  />
+                <Utilities isCollapsed={collapsed} />
             </Flex>
         </Flex>
     )
