@@ -34,7 +34,7 @@ export default function Integrations() {
         response: responseConnectors,
         isLoading: connectorsLoading,
         sendNow: getList,
-    } = useIntegrationApiV1ConnectorsList(9, pageNo)
+    } = useIntegrationApiV1ConnectorsList(9, pageNo, undefined, 'count', 'desc')
     const [open, setOpen] = useState(false)
     const navigate = useNavigate();
     const [selected, setSelected] = useState()
@@ -46,7 +46,7 @@ export default function Integrations() {
     //@ts-ignore
     const totalPages = Math.ceil(responseConnectors?.total_count / 9)
     useEffect(() => {
-        getList(9, pageNo)
+        getList(9, pageNo,'count','desc',undefined)
     }, [pageNo])
     const EnableIntegration = ()=>{
          setLoading(true)
@@ -229,13 +229,36 @@ export default function Integrations() {
                                                     'Item selection',
                                             }}
                                             onSelectionChange={({ detail }) => {
-                                                // const item = detail?.selectedItems[0]
-                                                // if (item.tier === 'Community' && item?.SourceCode != '') {
-                                                //     navigate('/integrations/' + item.schema_id + '/schema')
-                                                // } else {
-                                                //     setOpen(true)
-                                                // }
-                                                // setSelectedItems(detail?.selectedItems ?? []);
+                                                const connector =
+                                                    detail?.selectedItems[0]
+                                                if (
+                                                    connector.enabled === false
+                                                ) {
+                                                    setOpen(true)
+                                                    setSelected(connector)
+                                                    return
+                                                }
+
+                                                if (
+                                                    connector?.tier ===
+                                                    GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
+                                                ) {
+                                                    const name = connector?.name
+                                                    const id = connector?.id
+                                                    navigate(
+                                                        `${connector.platform_name}`,
+                                                        {
+                                                            state: {
+                                                                name,
+                                                                id,
+                                                            },
+                                                        }
+                                                    )
+                                                    return
+                                                }
+                                                navigate(
+                                                    `${connector.platform_name}/../../request-access?connector=${connector.title}`
+                                                )
                                             }}
                                             selectedItems={[]}
                                             cardDefinition={{
@@ -256,7 +279,7 @@ export default function Integrations() {
                                                     >
                                                         <div className="w-100 flex flex-row justify-between">
                                                             <span>
-                                                                {item.name}
+                                                                {item.title}
                                                             </span>
                                                             {/* <div className="flex flex-row gap-1 items-center">
                                     {GetTierIcon(item.tier)}
@@ -328,7 +351,10 @@ export default function Integrations() {
                                                     {
                                                         id: 'integrattoin',
                                                         header: 'Integrations',
-                                                        content: (item) => 0,
+                                                        content: (item) =>
+                                                            item?.count
+                                                                ? item.count
+                                                                : '--',
                                                         width: 50,
                                                     },
                                                     // {
@@ -356,10 +382,14 @@ export default function Integrations() {
                                                     return {
                                                         id: type.id,
                                                         tier: type.tier,
-                                                        status: type.enabled,
+                                                        enabled: type.enabled,
+                                                        platform_name:
+                                                            type.platform_name,
                                                         // description: type.Description,
-                                                        name: type.label,
-                                                        count: 0,
+                                                        title: type.title,
+                                                        name: type.name,
+                                                        count: type?.count
+                                                            ?.total,
                                                         // schema_id: type?.schema_ids[0],
                                                         // SourceCode: type.SourceCode,
                                                         logo: type.logo,

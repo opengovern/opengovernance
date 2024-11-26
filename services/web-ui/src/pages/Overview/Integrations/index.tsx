@@ -206,9 +206,9 @@ const {
     isLoading: connectorsLoading,
     sendNow: getList,
     
-} = useIntegrationApiV1ConnectorsList(9, 1,{},false)
+} = useIntegrationApiV1ConnectorsList(9, 1,undefined,'count','desc',{},false)
 
-useEffect(()=>{getList(4,1)},[])
+useEffect(()=>{getList(4,1,'count','desc',false)},[])
     
     return (
         <Card
@@ -445,7 +445,7 @@ useEffect(()=>{getList(4,1)},[])
                             id: 'integrattoin',
                             header: 'Integrations',
                             content: (item) =>
-                              0,
+                              item?.count ? item.count : '--',
                             width:50,
                         },
                         // {
@@ -471,7 +471,7 @@ useEffect(()=>{getList(4,1)},[])
                         status: type.enabled,
                         // description: type.Description,
                         name: type.label,
-                        count: 0,
+                        count: type?.count?.total,
                         // schema_id: type?.schema_ids[0],
                         // SourceCode: type.SourceCode,
                         logo: type.logo,
