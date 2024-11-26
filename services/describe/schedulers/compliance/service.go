@@ -2,6 +2,8 @@ package compliance
 
 import (
 	"context"
+	authAPI "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/jq"
@@ -17,6 +19,7 @@ import (
 )
 
 const JobSchedulingInterval = 1 * time.Minute
+const CleanupInterval = 10 * time.Minute
 
 type JobScheduler struct {
 	runSetupNatsStreams     func(context.Context) error
@@ -79,6 +82,29 @@ func (s *JobScheduler) Run(ctx context.Context) {
 	utils.EnsureRunGoroutine(func() {
 		s.logger.Fatal("ComplianceSummarizerResult consumer exited", zap.Error(s.RunComplianceSummarizerResultsConsumer(ctx)))
 	})
+	utils.EnsureRunGoroutine(func() {
+		s.CleanupComplianceResults(ctx)
+	})
+}
+
+func (s *JobScheduler) CleanupComplianceResults(ctx context.Context) {
+	s.logger.Info("Cleanup compliance results scheduler")
+
+	t := ticker.NewTicker(CleanupInterval, time.Second*10)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		integrations, err := s.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authAPI.AdminRole}, nil)
+		if err != nil {
+			s.logger.Error("Failed to list sources", zap.Error(err))
+			continue
+		}
+		integrationIds := make([]string, 0)
+		for _, integration := range integrations.Integrations {
+			integrationIds = append(integrationIds, integration.IntegrationID)
+		}
+		s.cleanupComplianceResultsNotInIntegrations(ctx, integrationIds)
+	}
 }
 
 func (s *JobScheduler) RunScheduler() {

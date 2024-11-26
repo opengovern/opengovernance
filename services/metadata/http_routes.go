@@ -19,8 +19,6 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	model2 "github.com/opengovern/opengovernance/jobs/demo-importer-job/db/model"
 	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
-	client4 "github.com/opengovern/opengovernance/services/compliance/client"
-	client3 "github.com/opengovern/opengovernance/services/describe/client"
 	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
 	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
 	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
@@ -316,21 +314,12 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Workspace does not contain sample data")
 	}
 
-	schedulerURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	schedulerClient := client3.NewSchedulerServiceClient(schedulerURL)
+	integrationURL := strings.ReplaceAll(h.cfg.Integration.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	integrationClient := integrationClient.NewIntegrationServiceClient(integrationURL)
 
-	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
-	complianceClient := client4.NewComplianceClient(complianceURL)
-
-	err = schedulerClient.PurgeSampleData(ctx)
+	err = integrationClient.PurgeSampleData(ctx)
 	if err != nil {
-		h.logger.Error("failed to purge scheduler data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge scheduler data")
-	}
-	err = complianceClient.PurgeSampleData(ctx)
-	if err != nil {
-		h.logger.Error("failed to purge compliance data", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to purge compliance data")
+		return err
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -348,7 +337,7 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/workspace/api/v3/sample/sync [put]
+//	@Router			/metadata/api/v3/sample/sync [put]
 func (h HttpHandler) SyncDemo(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
 

@@ -70,6 +70,7 @@ func (h API) Register(g *echo.Group) {
 	g.POST("/:IntegrationID", httpserver.AuthorizeHandler(h.Update, api.EditorRole))
 	g.GET("/integration-groups", httpserver.AuthorizeHandler(h.ListIntegrationGroups, api.ViewerRole))
 	g.GET("/integration-groups/:integrationGroupName", httpserver.AuthorizeHandler(h.GetIntegrationGroup, api.ViewerRole))
+	g.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api.EditorRole))
 
 	types := g.Group("/types")
 	types.GET("", httpserver.AuthorizeHandler(h.ListIntegrationTypes, api.ViewerRole))
@@ -1294,6 +1295,25 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to disable integration type in the database", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to disable integration type in the database")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		Delete integrations with SAMPLE_INTEGRATION state
+//	@Description	Delete integrations with SAMPLE_INTEGRATION state
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200
+//	@Router			/integration/api/v1/integrations/sample/purge [put]
+func (h API) PurgeSampleData(c echo.Context) error {
+	err := h.database.DeleteSampleIntegrations()
+	if err != nil {
+		h.logger.Error("failed to delete sample integrations", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete sample integrations")
 	}
 
 	return c.NoContent(http.StatusOK)

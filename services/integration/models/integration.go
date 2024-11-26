@@ -16,6 +16,7 @@ const (
 	IntegrationStateActive   IntegrationState = "ACTIVE"
 	IntegrationStateInactive IntegrationState = "INACTIVE"
 	IntegrationStateArchived IntegrationState = "ARCHIVED"
+	IntegrationStateSample   IntegrationState = "SAMPLE_INTEGRATION"
 )
 
 type Integration struct {
