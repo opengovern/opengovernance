@@ -1,13 +1,11 @@
 package compliance
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -148,7 +146,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
 	v3.POST("/compliance_result", httpserver2.AuthorizeHandler(h.GetComplianceResultV2, authApi.ViewerRole))
 
-	v3.PUT("/sample/purge", httpserver2.AuthorizeHandler(h.PurgeSampleData, authApi.AdminRole))
 	v3.GET("/jobs/history", httpserver2.AuthorizeHandler(h.ListComplianceJobsHistory, authApi.ViewerRole))
 
 	v3.GET("/benchmarks/:benchmark_id/nested", httpserver2.AuthorizeHandler(h.ListBenchmarksNestedForBenchmark, authApi.ViewerRole))
@@ -7090,128 +7087,6 @@ func (h *HttpHandler) ListBenchmarksFilters(echoCtx echo.Context) error {
 	}
 
 	return echoCtx.JSON(http.StatusOK, response)
-}
-
-// PurgeSampleData godoc
-//
-//	@Summary		List all workspaces with owner id
-//	@Description	Returns all workspaces with owner id
-//	@Security		BearerToken
-//	@Tags			workspace
-//	@Accept			json
-//	@Produce		json
-//	@Param			ignore_source_ids	query	[]string	false	"ignore_source_ids"
-//	@Success		200
-//	@Router			/compliance/api/v3/sample/purge [put]
-func (s *HttpHandler) PurgeSampleData(c echo.Context) error {
-	err := s.db.CleanupAllBenchmarkAssignments()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete benchmark assignments")
-	}
-
-	cfg := opensearchapi.Config{
-		Client: opensearch.Config{
-			Addresses:           []string{s.conf.ElasticSearch.Address},
-			Username:            s.conf.ElasticSearch.Username,
-			Password:            s.conf.ElasticSearch.Password,
-			CompressRequestBody: true,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		},
-	}
-	esClient, err := opensearchapi.NewClient(cfg)
-	if err != nil || esClient == nil {
-		s.logger.Error("failed to create elasticsearch client", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create elasticsearch client")
-	}
-
-	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
-		Indices: []string{"aws_*"},
-	}); err != nil {
-		s.logger.Error("failed to delete aws resources", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete aws resources")
-	}
-	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
-		Indices: []string{"microsoft_*"},
-	}); err != nil {
-		s.logger.Error("failed to delete microsoft resources", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete microsoft resources")
-	}
-	if _, err = esClient.Indices.Delete(c.Request().Context(), opensearchapi.IndicesDeleteReq{
-		Indices: []string{"*,-.*"},
-	}); err != nil {
-		s.logger.Error("failed to delete complianceResults indices", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete complianceResults indices")
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
-// Function to delete documents based on query
-func deleteDocuments(c echo.Context, esClient *opensearchapi.Client, s *zap.Logger, specifiedIntegrationIDs []string) error {
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"terms": map[string]interface{}{
-				"integration_id": specifiedIntegrationIDs,
-			},
-		},
-	}
-
-	indicesToDelete := []string{"compliance_results"}
-
-	// Helper function to perform delete_by_query
-	deleteByQuery := func(ctx context.Context, index string, query map[string]interface{}) error {
-		body, err := json.Marshal(query)
-		if err != nil {
-			return fmt.Errorf("failed to marshal query: %w", err)
-		}
-
-		req := opensearchapi.DocumentDeleteByQueryReq{
-			Indices: []string{index},
-			Body:    bytes.NewReader(body),
-		}
-
-		res, err := esClient.Client.Do(ctx, req, nil)
-		if err != nil {
-			return fmt.Errorf("delete_by_query request failed: %w", err)
-		}
-
-		if res.StatusCode >= 400 {
-			responseBody, _ := io.ReadAll(res.Body)
-			return fmt.Errorf("delete_by_query failed with status %d: %s", res.StatusCode, string(responseBody))
-		}
-
-		return nil
-	}
-
-	// Delete from specific indices
-	for _, index := range indicesToDelete {
-	}
-	if err := deleteByQuery(c.Request().Context(), "inventory_summary", query); err != nil {
-		s.Error(fmt.Sprintf("failed to delete documents from index %s", "inventory_summary"), zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to delete documents from index %s", index))
-	}
-
-	// Fetch all indices
-	res, err := esClient.Cat.Indices(c.Request().Context(), nil)
-	if err != nil {
-		s.Error("failed to fetch all indices", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch all indices")
-	}
-
-	// Delete documents from all indices with the specified integration_id
-	for _, index := range res.Indices {
-		if err := deleteByQuery(c.Request().Context(), index.Index, query); err != nil {
-			s.Warn(fmt.Sprintf("skipping index %s due to error or missing field", index), zap.Error(err))
-			// Continue on errors for non-critical indices
-		}
-	}
-
-	s.Info("Document deletion completed successfully.")
-	return nil
 }
 
 // GetControlsResourceCategories godoc
