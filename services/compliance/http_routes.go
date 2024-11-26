@@ -2,7 +2,6 @@ package compliance
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,8 +38,6 @@ import (
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	"github.com/opengovern/opencomply/services/metadata/models"
-	"github.com/opensearch-project/opensearch-go/v4"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
