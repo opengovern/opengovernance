@@ -9,7 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/types"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/types"
 	"go.uber.org/zap"
 )
 

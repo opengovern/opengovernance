@@ -8,12 +8,12 @@ import (
 
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
-	"github.com/opengovern/opengovernance/services/compliance/api"
+	runner "github.com/opengovern/opencomply/jobs/compliance-runner-job"
+	"github.com/opengovern/opencomply/services/compliance/api"
 
 	"github.com/opengovern/og-util/pkg/ticker"
-	describeApi "github.com/opengovern/opengovernance/services/describe/api"
-	"github.com/opengovern/opengovernance/services/describe/db/model"
+	describeApi "github.com/opengovern/opencomply/services/describe/api"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 	"go.uber.org/zap"
 )
 

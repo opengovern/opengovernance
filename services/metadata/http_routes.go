@@ -17,12 +17,12 @@ import (
 	api3 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	model2 "github.com/opengovern/opengovernance/jobs/demo-importer-job/db/model"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
-	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
-	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
-	client2 "github.com/opengovern/opengovernance/services/inventory/client"
+	model2 "github.com/opengovern/opencomply/jobs/demo-importer-job/db/model"
+	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	integrationApi "github.com/opengovern/opencomply/services/integration/api/models"
+	integrationClient "github.com/opengovern/opencomply/services/integration/client"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
+	client2 "github.com/opengovern/opencomply/services/inventory/client"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -37,9 +37,9 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/services/metadata/api"
-	"github.com/opengovern/opengovernance/services/metadata/internal/src"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/api"
+	"github.com/opengovern/opencomply/services/metadata/internal/src"
+	"github.com/opengovern/opencomply/services/metadata/models"
 )
 
 func (h HttpHandler) Register(r *echo.Echo) {

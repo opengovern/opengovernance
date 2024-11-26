@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opencomply/pkg/types"
 	"strings"
 	"time"
 
@@ -15,8 +15,8 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/services/describe/api"
-	"github.com/opengovern/opengovernance/services/describe/es"
+	"github.com/opengovern/opencomply/services/describe/api"
+	"github.com/opengovern/opencomply/services/describe/es"
 	"go.uber.org/zap"
 )
 

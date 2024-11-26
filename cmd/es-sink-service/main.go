@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	esSink "github.com/opengovern/opengovernance/services/es-sink"
+	esSink "github.com/opengovern/opencomply/services/es-sink"
 	"os"
 	"os/signal"
 	"syscall"

@@ -14,7 +14,7 @@ import (
 	config2 "github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/services/auth/db"
+	"github.com/opengovern/opencomply/services/auth/db"
 
 	"crypto/rand"
 
@@ -27,7 +27,7 @@ var (
 	dexAuthDomain         = os.Getenv("DEX_AUTH_DOMAIN")
 	dexAuthPublicClientID = os.Getenv("DEX_AUTH_PUBLIC_CLIENT_ID")
 	dexGrpcAddress        = os.Getenv("DEX_GRPC_ADDR")
-	httpServerAddress = os.Getenv("HTTP_ADDRESS")
+	httpServerAddress     = os.Getenv("HTTP_ADDRESS")
 	platformHost          = os.Getenv("PLATFORM_HOST")
 	platformKeyEnabledStr = os.Getenv("PLATFORM_KEY_ENABLED")
 	platformPublicKeyStr  = os.Getenv("PLATFORM_PUBLIC_KEY")
@@ -72,7 +72,7 @@ func start(ctx context.Context) error {
 
 	// setup postgres connection
 	cfg := postgres.Config{
-        Host:    conf.PostgreSQL.Host,
+		Host:    conf.PostgreSQL.Host,
 		Port:    conf.PostgreSQL.Port,
 		User:    conf.PostgreSQL.Username,
 		Passwd:  conf.PostgreSQL.Password,
@@ -215,8 +215,8 @@ func start(ctx context.Context) error {
 	}
 
 	authServer := &Server{
-		host:              platformHost,
-		platformPublicKey: platformPublicKey,
+		host:                platformHost,
+		platformPublicKey:   platformPublicKey,
 		dexVerifier:         dexVerifier,
 		logger:              logger,
 		db:                  adb,

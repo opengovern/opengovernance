@@ -1,6 +1,6 @@
 package db
 
-import "github.com/opengovern/opengovernance/services/integration/models"
+import "github.com/opengovern/opencomply/services/integration/models"
 
 // GetIntegrationTypeSetup Get Integration Type Setup
 func (db Database) GetIntegrationTypeSetup(integrationTypeName string) (*models.IntegrationTypeSetup, error) {

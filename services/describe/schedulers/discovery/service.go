@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	"github.com/opengovern/opengovernance/services/compliance/client"
-	config2 "github.com/opengovern/opengovernance/services/describe/config"
-	"github.com/opengovern/opengovernance/services/describe/db"
+	"github.com/opengovern/opencomply/pkg/utils"
+	"github.com/opengovern/opencomply/services/compliance/client"
+	config2 "github.com/opengovern/opencomply/services/describe/config"
+	"github.com/opengovern/opencomply/services/describe/db"
 	"go.uber.org/zap"
 )
 

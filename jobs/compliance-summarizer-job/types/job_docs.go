@@ -3,7 +3,7 @@ package types
 import (
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opencomply/pkg/types"
 	"go.uber.org/zap"
 )
 

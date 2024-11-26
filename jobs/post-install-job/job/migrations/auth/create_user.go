@@ -7,8 +7,8 @@ import (
 	dexApi "github.com/dexidp/dex/api/v2"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
-	"github.com/opengovern/opengovernance/services/auth/db"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/services/auth/db"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -83,7 +83,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		FullName:              conf.DefaultDexUserEmail,
 		Role:                  role,
 		ExternalId:            fmt.Sprintf("local|%s", conf.DefaultDexUserEmail),
-		ConnectorId:             "local",
+		ConnectorId:           "local",
 		IsActive:              true,
 		RequirePasswordChange: true,
 	}
@@ -92,7 +92,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		logger.Error("Auth Migrator: failed to create user in database", zap.Error(err))
 		return err
 	}
-	
+
 	return nil
 }
 

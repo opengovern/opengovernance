@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
-	awsDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/aws-account/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	awsDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/aws-account/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/aws-account/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/aws-account/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 )
 
 type AwsCloudAccountIntegration struct{}

@@ -8,10 +8,10 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/db"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/job/types"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/jobs/post-install-job/db"
+	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	"github.com/opengovern/opencomply/jobs/post-install-job/job/types"
 	"go.uber.org/zap"
 )
 
@@ -91,10 +91,10 @@ func InitializeJob(
 			return nil, err
 		}
 	}
-	if(conf.IsManual){
-	w.commitRefs, err = GitClone(conf, logger)
-	}else{
-		w.commitRefs ="no fetch"
+	if conf.IsManual {
+		w.commitRefs, err = GitClone(conf, logger)
+	} else {
+		w.commitRefs = "no fetch"
 
 	}
 	if err != nil {
@@ -120,9 +120,9 @@ func (w *Job) Run(ctx context.Context) error {
 
 	jobsStatus := make(map[string]model.JobInfo)
 	var migrationList map[string]types.Migration
-	if(w.conf.IsManual){
+	if w.conf.IsManual {
 		migrationList = manualMigrations
-	}else{
+	} else {
 		migrationList = migrations
 	}
 	for name, _ := range migrationList {

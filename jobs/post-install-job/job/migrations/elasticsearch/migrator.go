@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
 	"go.uber.org/zap"
 )
 
@@ -46,17 +46,17 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		logger.Error("failed to create es client due to", zap.Error(err))
 		return err
 	}
-	counter:= 0
+	counter := 0
 	for {
 		err := elastic.Healthcheck(ctx)
 		if err != nil {
 			counter++
 			if counter < 10 {
-			logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
-			time.Sleep(5 * time.Second)
-			continue
+				logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
+				time.Sleep(5 * time.Second)
+				continue
 			}
-		
+
 			logger.Error("failed to check es healthcheck due to", zap.Error(err))
 			return err
 		}

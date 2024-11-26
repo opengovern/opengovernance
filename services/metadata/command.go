@@ -9,8 +9,8 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/og-util/pkg/vault"
-	"github.com/opengovern/opengovernance/services/metadata/config"
-	vault2 "github.com/opengovern/opengovernance/services/metadata/vault"
+	"github.com/opengovern/opencomply/services/metadata/config"
+	vault2 "github.com/opengovern/opencomply/services/metadata/vault"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

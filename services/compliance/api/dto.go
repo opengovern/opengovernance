@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/integration"
-	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 )
 
 const (

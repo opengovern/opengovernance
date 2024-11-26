@@ -19,18 +19,18 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	runner2 "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	runner2 "github.com/opengovern/opencomply/jobs/compliance-runner-job"
+	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
+	"github.com/opengovern/opencomply/pkg/utils"
+	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"github.com/sony/sonyflake"
 
-	complianceapi "github.com/opengovern/opengovernance/services/compliance/api"
-	"github.com/opengovern/opengovernance/services/describe/api"
-	"github.com/opengovern/opengovernance/services/describe/db"
-	model2 "github.com/opengovern/opengovernance/services/describe/db/model"
-	"github.com/opengovern/opengovernance/services/describe/es"
+	complianceapi "github.com/opengovern/opencomply/services/compliance/api"
+	"github.com/opengovern/opencomply/services/describe/api"
+	"github.com/opengovern/opencomply/services/describe/db"
+	model2 "github.com/opengovern/opencomply/services/describe/db/model"
+	"github.com/opengovern/opencomply/services/describe/es"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -319,7 +319,7 @@ func (h HttpServer) CountJobsByDate(ctx echo.Context) error {
 			includeCost = &v
 		}
 		count, err = h.DB.CountDescribeJobsByDate(includeCost, time.UnixMilli(startDate), time.UnixMilli(endDate))
-	
+
 	case api.JobType_Compliance:
 		count, err = h.DB.CountComplianceJobsByDate(time.UnixMilli(startDate), time.UnixMilli(endDate))
 	default:
@@ -869,10 +869,6 @@ func (h HttpServer) GetComplianceBenchmarkStatus(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, lastComplianceJob.ToApi())
 }
-
-
-
-
 
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
 	resourceType := ctx.Param("resource_type")
@@ -1628,7 +1624,6 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, jobsResult)
 }
 
-
 // GetAsyncQueryRunJobStatus godoc
 //
 //	@Summary	Get async query run job status by job id
@@ -2132,8 +2127,6 @@ func (h HttpServer) GetIntegrationLastDiscoveryJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, job)
 }
 
-
-
 // GetDescribeJobsHistoryByIntegration godoc
 //
 //	@Summary	Get describe jobs history for give connection
@@ -2518,7 +2511,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		 strings.ToLower(request.JobType) != "query" {
+		strings.ToLower(request.JobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -2584,7 +2577,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 			for _, j := range jobs {
 				jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 			}
-		
+
 		}
 	case "status":
 		for _, status := range request.Status {
@@ -2613,7 +2606,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				for _, j := range jobs {
 					jobIDs = append(jobIDs, strconv.Itoa(int(j.ID)))
 				}
-			
+
 			}
 		}
 	default:
@@ -2750,7 +2743,7 @@ func (h HttpServer) CancelJob(ctx echo.Context) error {
 				failureReason = "job is already in progress, unable to cancel"
 				break
 			}
-		
+
 		case "query":
 			jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
 			if err != nil {
@@ -2824,7 +2817,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	if strings.ToLower(request.JobType) != "compliance" && strings.ToLower(request.JobType) != "discovery" &&
-		 strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
+		strings.ToLower(request.JobType) != "query_run" && strings.ToLower(request.JobType) != "queryrun" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -2896,7 +2889,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					UpdatedAt: j.UpdatedAt,
 				})
 			}
-		
+
 		}
 	case "integration_info":
 		var integrations []integrationapi.Integration
@@ -2962,7 +2955,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 					UpdatedAt: j.UpdatedAt,
 				})
 			}
-		
+
 		}
 	case "status":
 		for _, status := range request.Status {
@@ -2995,7 +2988,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 						UpdatedAt: j.UpdatedAt,
 					})
 				}
-			
+
 			}
 		}
 	case "benchmark":
@@ -3103,7 +3096,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 	}
 
 	if strings.ToLower(jobType) != "compliance" && strings.ToLower(jobType) != "discovery" &&
-		 strings.ToLower(jobType) != "query" {
+		strings.ToLower(jobType) != "query" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job type")
 	}
 
@@ -3138,7 +3131,7 @@ func (h HttpServer) ListJobsInterval(ctx echo.Context) error {
 				UpdatedAt: j.UpdatedAt,
 			})
 		}
-	
+
 	case "query":
 		jobs, err := h.DB.ListQueryRunnerJobForInterval(convertedInterval, triggerType, createdBy)
 		if err != nil {
@@ -3310,7 +3303,7 @@ func (h HttpServer) PurgeSampleData(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete checkup jobs")
 	}
-	
+
 	return c.NoContent(http.StatusOK)
 }
 

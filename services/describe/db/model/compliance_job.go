@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
-	summarizer "github.com/opengovern/opengovernance/jobs/compliance-summarizer-job"
-	"github.com/opengovern/opengovernance/services/describe/api"
+	runner "github.com/opengovern/opencomply/jobs/compliance-runner-job"
+	summarizer "github.com/opengovern/opencomply/jobs/compliance-summarizer-job"
+	"github.com/opengovern/opencomply/services/describe/api"
 	"gorm.io/gorm"
 )
 

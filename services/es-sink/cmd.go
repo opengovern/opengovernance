@@ -3,12 +3,12 @@ package es_sink
 import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/jq"
-	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/koanf"
-	"github.com/opengovern/opengovernance/services/es-sink/api"
-	"github.com/opengovern/opengovernance/services/es-sink/config"
-	"github.com/opengovern/opengovernance/services/es-sink/grpcApi"
-	"github.com/opengovern/opengovernance/services/es-sink/service"
+	es "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opencomply/services/es-sink/api"
+	"github.com/opengovern/opencomply/services/es-sink/config"
+	"github.com/opengovern/opencomply/services/es-sink/grpcApi"
+	"github.com/opengovern/opencomply/services/es-sink/service"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

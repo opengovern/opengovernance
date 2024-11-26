@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/integration/api/models"
+	"github.com/opengovern/opencomply/services/integration/api/models"
 	"net/http"
 )
 

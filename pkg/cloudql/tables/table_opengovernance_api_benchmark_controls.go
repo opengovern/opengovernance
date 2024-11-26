@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	og_client "github.com/opengovern/opengovernance/pkg/cloudql/client"
-	compliance "github.com/opengovern/opengovernance/services/compliance/api"
+	og_client "github.com/opengovern/opencomply/pkg/cloudql/client"
+	compliance "github.com/opengovern/opencomply/services/compliance/api"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/quals"

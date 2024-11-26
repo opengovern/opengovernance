@@ -12,7 +12,7 @@ import (
 	"github.com/opengovern/og-util/pkg/integration"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/services/inventory/api"
+	"github.com/opengovern/opencomply/services/inventory/api"
 )
 
 type InventoryServiceClient interface {
@@ -91,7 +91,6 @@ func (s *inventoryClient) ListQueriesV2(ctx *httpclient.Context) (*api.ListQueri
 	}
 	return &namedQuery, nil
 }
-
 
 func (s *inventoryClient) GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error) {
 	url := fmt.Sprintf("%s/api/v3/tables/categories", s.baseURL)
@@ -341,5 +340,3 @@ func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]ap
 	}
 	return response, nil
 }
-
-

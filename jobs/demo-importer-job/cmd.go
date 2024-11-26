@@ -11,12 +11,12 @@ import (
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/postgres"
-	db2 "github.com/opengovern/opengovernance/jobs/demo-importer-job/db"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/fetch"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/types"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/worker"
-	"github.com/opengovern/opengovernance/services/metadata/client"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	db2 "github.com/opengovern/opencomply/jobs/demo-importer-job/db"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/fetch"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/types"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/worker"
+	"github.com/opengovern/opencomply/services/metadata/client"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/spf13/cobra"
@@ -106,7 +106,7 @@ func Command() *cobra.Command {
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
 			err = worker.ImportSQLFiles(cnf, types.PostgresqlBackupPath)
-			if(err != nil) {
+			if err != nil {
 				return fmt.Errorf("failure while importing sql files to postgres: %w", err)
 			}
 			psqlMigratorCfg := postgres.Config{

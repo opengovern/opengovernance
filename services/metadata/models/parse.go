@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	metadataErrors "github.com/opengovern/opengovernance/services/metadata/errors"
+	metadataErrors "github.com/opengovern/opencomply/services/metadata/errors"
 )
 
 func (t ConfigMetadataType) SerializeValue(value any) (string, error) {

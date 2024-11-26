@@ -3,7 +3,7 @@ package database
 import (
 	"errors"
 
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

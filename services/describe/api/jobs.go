@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
+	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
 )
 
 type JobType string
@@ -125,8 +125,6 @@ type BenchmarkAuditHistoryResponse struct {
 	Items      []BenchmarkAuditHistoryItem `json:"items"`
 	TotalCount int                         `json:"total_count"`
 }
-
-
 
 type RunBenchmarkByIdRequest struct {
 	IntegrationInfo []struct {

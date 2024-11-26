@@ -10,7 +10,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 
 	"github.com/opengovern/og-util/pkg/source"
-	compliance "github.com/opengovern/opengovernance/services/compliance/api"
+	compliance "github.com/opengovern/opencomply/services/compliance/api"
 )
 
 type ComplianceServiceClient interface {
@@ -30,7 +30,6 @@ type ComplianceServiceClient interface {
 	ListQueries(ctx *httpclient.Context) ([]compliance.Query, error)
 	ListControl(ctx *httpclient.Context, controlIDs []string, tags map[string][]string) ([]compliance.Control, error)
 	GetControlDetails(ctx *httpclient.Context, controlID string) (*compliance.GetControlDetailsResponse, error)
-	PurgeSampleData(ctx *httpclient.Context) error
 	SyncQueries(ctx *httpclient.Context) error
 }
 
@@ -65,18 +64,6 @@ func (s *complianceClient) ListAssignmentsByBenchmark(ctx *httpclient.Context, b
 		return nil, err
 	}
 	return &response, nil
-}
-
-func (s *complianceClient) PurgeSampleData(ctx *httpclient.Context) error {
-	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
-
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
-		}
-		return err
-	}
-	return nil
 }
 
 func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error) {

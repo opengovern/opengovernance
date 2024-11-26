@@ -5,7 +5,7 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 
-	"github.com/opengovern/opengovernance/services/metadata/errors"
+	"github.com/opengovern/opencomply/services/metadata/errors"
 )
 
 type ConfigMetadataType string

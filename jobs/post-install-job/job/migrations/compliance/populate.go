@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
-	"github.com/opengovern/opengovernance/services/compliance/db"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/services/compliance/db"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"

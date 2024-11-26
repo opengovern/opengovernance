@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"strconv"
 	"time"
 

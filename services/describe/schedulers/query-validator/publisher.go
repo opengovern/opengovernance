@@ -9,8 +9,8 @@ import (
 
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	queryvalidator "github.com/opengovern/opengovernance/jobs/query-validator-job"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	queryvalidator "github.com/opengovern/opencomply/jobs/query-validator-job"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	"go.uber.org/zap"
 )
 

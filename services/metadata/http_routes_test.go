@@ -17,9 +17,9 @@ import (
 	idocker "github.com/opengovern/og-util/pkg/dockertest"
 	"github.com/opengovern/og-util/pkg/postgres"
 
-	"github.com/opengovern/opengovernance/services/metadata/api"
-	"github.com/opengovern/opengovernance/services/metadata/internal/database"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/api"
+	"github.com/opengovern/opencomply/services/metadata/internal/database"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"go.uber.org/zap"
 
 	"github.com/labstack/echo/v4"

@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/opengovern/opengovernance/services/inventory/api"
+	"github.com/opengovern/opencomply/services/inventory/api"
 )
 
 type QueryRunResult struct {

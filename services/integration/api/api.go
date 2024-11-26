@@ -4,9 +4,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/og-util/pkg/vault"
-	"github.com/opengovern/opengovernance/services/integration/api/credentials"
-	"github.com/opengovern/opengovernance/services/integration/api/integrations"
-	"github.com/opengovern/opengovernance/services/integration/db"
+	"github.com/opengovern/opencomply/services/integration/api/credentials"
+	"github.com/opengovern/opencomply/services/integration/api/integrations"
+	"github.com/opengovern/opencomply/services/integration/db"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

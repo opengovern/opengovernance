@@ -4,9 +4,9 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/opengovern/opengovernance/pkg/cloudql/sdk/config"
-	"github.com/opengovern/opengovernance/pkg/cloudql/sdk/pg"
-	integration "github.com/opengovern/opengovernance/services/integration/models"
+	"github.com/opengovern/opencomply/pkg/cloudql/sdk/config"
+	"github.com/opengovern/opencomply/pkg/cloudql/sdk/pg"
+	integration "github.com/opengovern/opencomply/services/integration/models"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 )
 

@@ -6,7 +6,7 @@ import (
 	"github.com/opengovern/og-util/pkg/integration"
 
 	"github.com/opengovern/og-util/pkg/describe/enums"
-	"github.com/opengovern/opengovernance/services/describe/api"
+	"github.com/opengovern/opencomply/services/describe/api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

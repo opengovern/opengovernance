@@ -3,7 +3,7 @@ package models
 import (
 	"strings"
 
-	"github.com/opengovern/opengovernance/services/metadata/errors"
+	"github.com/opengovern/opencomply/services/metadata/errors"
 )
 
 type QueryParameterKey string

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/models"
 )
 
 func (db Database) ListApp() ([]models.PlatformConfiguration, error) {

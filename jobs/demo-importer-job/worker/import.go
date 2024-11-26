@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/db"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/db/model"
-	"github.com/opengovern/opengovernance/jobs/demo-importer-job/types"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/db"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/db/model"
+	"github.com/opengovern/opencomply/jobs/demo-importer-job/types"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
 )
@@ -159,8 +159,9 @@ func updateJob(migratorDb db.Database, m *model.Migration, status string, jobsSt
 	}
 	return nil
 }
+
 // execute psql command with configs
-func ImportSQLFiles(config types.DemoImporterConfig,path string) error {
+func ImportSQLFiles(config types.DemoImporterConfig, path string) error {
 
 	cmd := exec.Command("psql", "-h", config.PostgreSQL.Host, "-p", config.PostgreSQL.Port, "-U", config.PostgreSQL.Username, "-d", "describe", "-f", path+"/describe.sql")
 	cmd.Env = os.Environ()
@@ -197,6 +198,6 @@ func ImportSQLFiles(config types.DemoImporterConfig,path string) error {
 	if err != nil {
 		return fmt.Errorf("error executing psql command: %s", string(out))
 	}
-	
+
 	return nil
 }

@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	integrationClient "github.com/opengovern/opengovernance/services/integration/client"
-	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	integrationClient "github.com/opengovern/opencomply/services/integration/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 
 	"github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
-	describeClient "github.com/opengovern/opengovernance/services/describe/client"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	describeClient "github.com/opengovern/opencomply/services/describe/client"
 	"go.uber.org/zap"
 )
 
