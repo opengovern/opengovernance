@@ -232,7 +232,10 @@ export default function Integrations() {
                                                 const connector =
                                                     detail?.selectedItems[0]
                                                 if (
-                                                    connector.enabled === false
+                                                    connector.enabled ===
+                                                        false &&
+                                                    connector?.tier ===
+                                                        GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier.TierCommunity
                                                 ) {
                                                     setOpen(true)
                                                     setSelected(connector)
