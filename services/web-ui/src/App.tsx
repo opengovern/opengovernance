@@ -143,7 +143,7 @@ export default function App() {
                             </Title>
                             <Text className="mb-6 text-center">
                                 Your session has expired. Please log in again to
-                                continue accessing OpenComply platform
+                                continue accessing opencomply platform
                             </Text>
                             <Button
                                 icon={ArrowPathIcon}

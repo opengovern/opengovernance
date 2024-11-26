@@ -23,17 +23,10 @@ import MemberInvite from '../../Settings/Members/MemberInvite'
 
 const navList = [
     {
-        title: 'Connect',
-        description: 'Setup Integrations and enable visibility',
-        icon: Cable,
-        link: 'integrations',
-        new: true,
-    },
-    {
-        title: 'Invite',
-        description: 'Add new users and govern as a team',
-        icon: User,
-        link: 'settings/authentication?action=invite',
+        title: 'CloudQL',
+        description: 'See all workloads - from code to cloud',
+        icon: Cube,
+        link: 'cloudql?tab_id=0',
         new: true,
     },
     {
@@ -44,12 +37,20 @@ const navList = [
         new: true,
     },
     {
-        title: 'Inventory',
-        description: 'See all workloads - from code to cloud',
-        icon: Cube,
-        link: 'finder?tab_id=0',
+        title: 'Invite',
+        description: 'Add new users and govern as a team',
+        icon: User,
+        link: 'settings/authentication?action=invite',
         new: true,
     },
+    {
+        title: 'Connect',
+        description: 'Setup Integrations and enable visibility',
+        icon: Cable,
+        link: 'integrations',
+        new: true,
+    },
+
     // {
     //     title: 'Spend',
     //     description: 'See Cloud Spend across clouds, regions, and accounts',

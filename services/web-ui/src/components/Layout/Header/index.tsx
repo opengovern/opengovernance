@@ -366,7 +366,7 @@ export default function TopHeader({
         if (url[2] === 'infrastructure-metrics') {
             return 'Inventory'
         }
-        return url[2] ? kebabCaseToLabel(url[2]) : 'OpenComply'
+        return url[2] ? kebabCaseToLabel(url[2]) : 'opencomply'
     }
 
     const subPages = () => {

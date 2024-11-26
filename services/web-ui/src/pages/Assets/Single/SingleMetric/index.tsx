@@ -233,7 +233,7 @@ export default function SingleMetric({
                                 setQuery(modalData)
                             }}
                         >
-                            <Link to={`/finder?tab_id=1`}>Open in Query</Link>
+                            <Link to={`/cloudql?tab_id=1`}>Open in Query</Link>
                         </Button>
                         <Button onClick={() => setModalData('')}>Close</Button>
                     </Flex>
@@ -453,7 +453,7 @@ export default function SingleMetric({
                                 </Text>
                             </ListItem>
                             <ListItem className="py-6">
-                                <Text>OpenComply connection ID</Text>
+                                <Text>opencomply connection ID</Text>
                                 <Text className="text-gray-800">
                                     {selectedRow?.connection_id}
                                 </Text>

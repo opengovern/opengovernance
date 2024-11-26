@@ -19,6 +19,7 @@ import { useAtom, useSetAtom } from 'jotai'
 import { ForbiddenAtom, meAtom, notificationAtom } from '../../store'
 import { useAuth } from '../../utilities/auth'
 import { useAuthApiV1UserInviteCreate } from '../../api/auth.gen'
+import Integrations from './Integrations'
 
 export default function Overview() {
    
@@ -380,10 +381,10 @@ export default function Overview() {
                                     ...userData,
                                     password: event.detail.value,
                                 })
-                                 setUserErrors({
-                                     ...userErrors,
-                                     password: '',
-                                 })
+                                setUserErrors({
+                                    ...userErrors,
+                                    password: '',
+                                })
                             }}
                         />
                     </FormField>
@@ -401,10 +402,10 @@ export default function Overview() {
                                     ...userData,
                                     confirm: event.detail.value,
                                 })
-                                 setUserErrors({
-                                     ...userErrors,
-                                     password: '',
-                                 })
+                                setUserErrors({
+                                    ...userErrors,
+                                    password: '',
+                                })
                             }}
                         />
                     </FormField>
@@ -481,7 +482,8 @@ export default function Overview() {
                     </Flex>
                 </Col>
                 <Col numColSpan={2}>
-                    <Query height={880} />
+                    {/* <Query height={880} /> */}
+                    <Integrations height={875} />
                 </Col>
             </Grid>
 

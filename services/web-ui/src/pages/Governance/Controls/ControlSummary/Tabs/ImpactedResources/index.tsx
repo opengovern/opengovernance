@@ -155,7 +155,7 @@ const columns = (
         },
         {
             field: 'connectionID',
-            headerName: 'OpenComply connection ID',
+            headerName: 'opencomply connection ID',
             type: 'string',
             hide: true,
             enableRowGroup: true,

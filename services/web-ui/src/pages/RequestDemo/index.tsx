@@ -69,7 +69,7 @@ export default function RequestDemo() {
                         <span className="font-bold text-gray-800">
                             Book a Demo
                         </span>{' '}
-                        to navigate OpenComply product
+                        to navigate opencomply product
                     </Text>
                     <Flex
                         flexDirection="row"
