@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
 	"go.uber.org/zap"
 )
 

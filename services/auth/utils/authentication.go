@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opengovern/opengovernance/services/auth/db"
+	"github.com/opengovern/opencomply/services/auth/db"
 )
 
 type Service struct {
@@ -29,7 +29,7 @@ type User struct {
 	Role          string    `json:"role"`
 	IsActive      bool      `json:"is_active"`
 	ConnectorId   string    `json:"connector_id"`
-	ExternalId string `json:"external_id"`
+	ExternalId    string    `json:"external_id"`
 }
 
 func DbUserToApi(u *db.User) (*User, error) {
@@ -71,7 +71,6 @@ func GetUserByEmail(email string, database db.Database) (*User, error) {
 	if !user.IsActive {
 		return nil, errors.New("user disabled")
 	}
-	
 
 	resp, err := DbUserToApi(user)
 	if err != nil {

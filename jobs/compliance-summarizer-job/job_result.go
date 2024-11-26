@@ -3,7 +3,7 @@ package summarizer
 import (
 	"time"
 
-	"github.com/opengovern/opengovernance/jobs/compliance-summarizer-job/types"
+	"github.com/opengovern/opencomply/jobs/compliance-summarizer-job/types"
 )
 
 type ComplianceSummarizerStatus string

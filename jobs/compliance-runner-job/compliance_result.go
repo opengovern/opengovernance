@@ -10,10 +10,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/types"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	"github.com/opengovern/opengovernance/services/compliance/api"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	"github.com/opengovern/opencomply/pkg/types"
+	"github.com/opengovern/opencomply/pkg/utils"
+	"github.com/opengovern/opencomply/services/compliance/api"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"go.uber.org/zap"
 )
 

@@ -2,11 +2,11 @@ package entra_id_directory
 
 import (
 	"encoding/json"
-	entraidDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/entra-id-directory/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	entraidDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 )
 
 type EntraIdDirectoryIntegration struct{}

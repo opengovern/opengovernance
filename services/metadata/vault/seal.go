@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/vault"
-	"github.com/opengovern/opengovernance/services/metadata/config"
+	"github.com/opengovern/opencomply/services/metadata/config"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

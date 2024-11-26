@@ -12,10 +12,10 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/job/git"
-	"github.com/opengovern/opengovernance/pkg/types"
-	"github.com/opengovern/opengovernance/services/compliance/db"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/jobs/post-install-job/job/git"
+	"github.com/opengovern/opencomply/pkg/types"
+	"github.com/opengovern/opencomply/services/compliance/db"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"go.uber.org/zap"
 )
 

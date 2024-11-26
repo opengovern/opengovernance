@@ -8,7 +8,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 
 	"github.com/opengovern/og-util/pkg/config"
-	config3 "github.com/opengovern/opengovernance/services/inventory/config"
+	config3 "github.com/opengovern/opencomply/services/inventory/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )

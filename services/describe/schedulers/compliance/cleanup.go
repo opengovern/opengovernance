@@ -5,7 +5,7 @@ import (
 	"fmt"
 	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
-	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opencomply/pkg/types"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )

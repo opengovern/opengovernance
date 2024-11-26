@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	"github.com/opengovern/opencomply/services/integration/models"
 	"gorm.io/gorm/clause"
 )
 

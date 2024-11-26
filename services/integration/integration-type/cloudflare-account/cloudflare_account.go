@@ -3,11 +3,11 @@ package cloudflare_account
 import (
 	"encoding/json"
 	"github.com/jackc/pgtype"
-	cloudflareDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/cloudflare-account/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/cloudflare-account/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/cloudflare-account/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	cloudflareDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 )
 
 type CloudFlareAccountIntegration struct{}

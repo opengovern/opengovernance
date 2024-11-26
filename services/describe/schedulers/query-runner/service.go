@@ -5,15 +5,15 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/jq"
-	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/ticker"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
-	"github.com/opengovern/opengovernance/services/describe/config"
-	"github.com/opengovern/opengovernance/services/describe/db"
-	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
+	"github.com/opengovern/opencomply/pkg/utils"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	"github.com/opengovern/opencomply/services/describe/config"
+	"github.com/opengovern/opencomply/services/describe/db"
+	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
 	"go.uber.org/zap"
 )
 

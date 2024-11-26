@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
+	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
 	"go.uber.org/zap"
 	"time"
 )

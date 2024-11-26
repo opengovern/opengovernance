@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/integration"
-	"github.com/opengovern/opengovernance/pkg/types"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	"github.com/opengovern/opencomply/pkg/types"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 )
 
 type Control struct {

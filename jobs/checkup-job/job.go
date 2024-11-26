@@ -9,14 +9,14 @@ import (
 	authAPI "github.com/opengovern/og-util/pkg/api"
 	shared_entities "github.com/opengovern/og-util/pkg/api/shared-entities"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/jobs/checkup-job/config"
-	authClient "github.com/opengovern/opengovernance/services/auth/client"
-	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	"github.com/opengovern/opencomply/jobs/checkup-job/config"
+	authClient "github.com/opengovern/opencomply/services/auth/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 	"golang.org/x/net/context"
 
 	"github.com/go-errors/errors"
-	"github.com/opengovern/opengovernance/jobs/checkup-job/api"
-	"github.com/opengovern/opengovernance/services/integration/client"
+	"github.com/opengovern/opencomply/jobs/checkup-job/api"
+	"github.com/opengovern/opencomply/services/integration/client"
 	"go.uber.org/zap"
 )
 

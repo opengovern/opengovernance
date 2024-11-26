@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/opengovern/opengovernance/services/integration"
+	"github.com/opengovern/opencomply/services/integration"
 )
 
 func main() {

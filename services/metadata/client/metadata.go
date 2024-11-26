@@ -9,9 +9,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/metadata/api"
+	"github.com/opengovern/opencomply/services/metadata/api"
 
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/models"
 )
 
 var ErrConfigNotFound = errors.New("config not found")

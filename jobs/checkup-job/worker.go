@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/opengovern/og-util/pkg/jq"
-	"github.com/opengovern/opengovernance/jobs/checkup-job/config"
-	authClient "github.com/opengovern/opengovernance/services/auth/client"
-	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	"github.com/opengovern/opencomply/jobs/checkup-job/config"
+	authClient "github.com/opengovern/opencomply/services/auth/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/opengovern/opengovernance/services/integration/client"
+	"github.com/opengovern/opencomply/services/integration/client"
 	"go.uber.org/zap"
 )
 

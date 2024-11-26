@@ -1,8 +1,8 @@
 package src
 
 import (
-	"github.com/opengovern/opengovernance/services/metadata/internal/database"
-	"github.com/opengovern/opengovernance/services/metadata/models"
+	"github.com/opengovern/opencomply/services/metadata/internal/database"
+	"github.com/opengovern/opencomply/services/metadata/models"
 )
 
 const (

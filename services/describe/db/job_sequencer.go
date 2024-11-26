@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opengovern/opengovernance/services/describe/db/model"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 )
 
 // Deprecated

@@ -8,11 +8,11 @@ import (
 
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/services/describe/db/model"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/opengovern/opengovernance/services/describe/api"
+	"github.com/opengovern/opencomply/services/describe/api"
 )
 
 type TimeRangeFilter struct {
@@ -141,8 +141,6 @@ func (s *schedulerClient) RunQuery(ctx *httpclient.Context, queryID string) (*mo
 	return &job, nil
 }
 
-
-
 func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {
 	url := fmt.Sprintf("%s/api/v1/describe/status/%s", s.baseURL, resourceType)
 
@@ -168,8 +166,6 @@ func (s *schedulerClient) GetLatestComplianceJobForBenchmark(ctx *httpclient.Con
 	}
 	return res, nil
 }
-
-
 
 func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.IntegrationDescribeStatus, error) {
 	url := fmt.Sprintf("%s/api/v1/describe/connection/status?connection_id=%s", s.baseURL, connectionID)

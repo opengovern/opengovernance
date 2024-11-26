@@ -10,7 +10,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 
 	"github.com/opengovern/og-util/pkg/source"
-	compliance "github.com/opengovern/opengovernance/services/compliance/api"
+	compliance "github.com/opengovern/opencomply/services/compliance/api"
 )
 
 type ComplianceServiceClient interface {

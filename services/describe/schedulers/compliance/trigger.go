@@ -6,11 +6,11 @@ import (
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/integration"
-	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
-	integrationapi "github.com/opengovern/opengovernance/services/integration/api/models"
+	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
+	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
 
-	runner "github.com/opengovern/opengovernance/jobs/compliance-runner-job"
-	"github.com/opengovern/opengovernance/services/describe/db/model"
+	runner "github.com/opengovern/opencomply/jobs/compliance-runner-job"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 	"go.uber.org/zap"
 )
 

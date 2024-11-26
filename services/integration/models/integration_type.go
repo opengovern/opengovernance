@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/services/integration/api/models"
+	"github.com/opengovern/opencomply/services/integration/api/models"
 )
 
 type IntegrationType struct {

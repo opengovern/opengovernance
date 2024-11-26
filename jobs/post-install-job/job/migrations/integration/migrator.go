@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/config"
-	"github.com/opengovern/opengovernance/jobs/post-install-job/db"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
-	integrationModels "github.com/opengovern/opengovernance/services/integration/models"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/jobs/post-install-job/db"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
+	integrationModels "github.com/opengovern/opencomply/services/integration/models"
 	"gorm.io/gorm/clause"
 
 	"github.com/opengovern/og-util/pkg/postgres"

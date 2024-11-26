@@ -2,11 +2,11 @@ package azure_subscription
 
 import (
 	"encoding/json"
-	azureDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/azure-subscription/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	azureDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 )
 
 type AzureSubscriptionIntegration struct{}

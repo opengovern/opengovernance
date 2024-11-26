@@ -3,11 +3,11 @@ package digitalocean_team
 import (
 	"context"
 	"encoding/json"
-	digitaloceanDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/digitalocean-team/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	digitaloceanDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 )
 
 type DigitaloceanTeamIntegration struct{}

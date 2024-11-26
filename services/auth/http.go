@@ -19,17 +19,17 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/services/auth/utils"
+	"github.com/opengovern/opencomply/services/auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/opengovern/opengovernance/services/auth/db"
+	"github.com/opengovern/opencomply/services/auth/db"
 
 	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
-	"github.com/opengovern/opengovernance/services/auth/api"
+	"github.com/opengovern/opencomply/services/auth/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

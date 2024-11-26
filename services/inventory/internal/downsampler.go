@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/haoel/downsampling/core"
-	"github.com/opengovern/opengovernance/services/inventory/api"
+	"github.com/opengovern/opencomply/services/inventory/api"
 )
 
 func resourceTypeTrendDataPointsToPoints(trendDataPoints []api.ResourceTypeTrendDatapoint) []core.Point {

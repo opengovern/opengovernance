@@ -17,10 +17,10 @@ import (
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/integration"
-	queryrunner "github.com/opengovern/opengovernance/jobs/query-runner-job"
-	"github.com/opengovern/opengovernance/pkg/types"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
-	"github.com/opengovern/opengovernance/services/inventory/rego_runner"
+	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
+	"github.com/opengovern/opencomply/pkg/types"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
+	"github.com/opengovern/opencomply/services/inventory/rego_runner"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 
 	"github.com/labstack/echo/v4"
@@ -28,10 +28,10 @@ import (
 	"github.com/opengovern/og-util/pkg/model"
 	esSdk "github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	integrationApi "github.com/opengovern/opengovernance/services/integration/api/models"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
-	"github.com/opengovern/opengovernance/services/inventory/es"
+	"github.com/opengovern/opencomply/pkg/utils"
+	integrationApi "github.com/opengovern/opencomply/services/integration/api/models"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
+	"github.com/opengovern/opencomply/services/inventory/es"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -65,8 +65,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, api.ViewerRole))
 
 	v2 := e.Group("/api/v2")
-
-
 
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api.ViewerRole))
@@ -169,10 +167,6 @@ func (h *HttpHandler) getIntegrationTypesFromIntegrationIDs(ctx echo.Context, in
 
 	return integrationTypes, nil
 }
-
-
-
-
 
 // ListQueries godoc
 //
@@ -489,8 +483,6 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	return ctx.JSON(200, res)
 }
 
-
-
 func (h *HttpHandler) RunSQLNamedQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
@@ -774,9 +766,6 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, result)
 }
-
-
-
 
 // ListResourceCollectionsMetadata godoc
 //

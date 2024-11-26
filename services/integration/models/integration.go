@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/integration"
-	api "github.com/opengovern/opengovernance/services/integration/api/models"
+	api "github.com/opengovern/opencomply/services/integration/api/models"
 	"time"
 )
 

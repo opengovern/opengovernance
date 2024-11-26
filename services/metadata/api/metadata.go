@@ -3,9 +3,9 @@ package api
 import (
 	"time"
 
-	"github.com/opengovern/opengovernance/jobs/post-install-job/db/model"
-	authApi "github.com/opengovern/opengovernance/services/auth/api"
-	api "github.com/opengovern/opengovernance/services/integration/api/models"
+	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	authApi "github.com/opengovern/opencomply/services/auth/api"
+	api "github.com/opengovern/opencomply/services/integration/api/models"
 )
 
 type SetConfigMetadataRequest struct {

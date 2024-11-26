@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/opengovern/opengovernance/services/describe/db/model"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 	"gorm.io/gorm"
 )
 

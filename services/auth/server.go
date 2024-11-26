@@ -19,8 +19,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opengovernance/services/auth/db"
-	"github.com/opengovern/opengovernance/services/auth/utils"
+	"github.com/opengovern/opencomply/services/auth/db"
+	"github.com/opengovern/opencomply/services/auth/utils"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 )
@@ -129,7 +129,7 @@ func (s *Server) UpdateLastLogin(claim *userClaim) {
 			ExternalId: claim.ExternalUserID,
 			LastLogin:  *claim.UserLastLogin,
 			CreatedAt:  *claim.MemberSince,
-			Email: claim.Email,
+			Email:      claim.Email,
 		}
 	}
 }
@@ -175,8 +175,8 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		return unAuth, nil
 	}
 
-	theUser, err := utils.GetUserByEmail( user.Email, s.db)
-	if err != nil  {
+	theUser, err := utils.GetUserByEmail(user.Email, s.db)
+	if err != nil {
 		s.logger.Warn("failed to get user",
 			zap.String("userId", user.ExternalUserID),
 			zap.String("email", user.Email),
@@ -187,9 +187,9 @@ func (s *Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoy
 		if errors.Is(err, errors.New("user not found")) {
 			return unAuth, nil
 		}
-		
+
 	}
-	if(theUser == nil){
+	if theUser == nil {
 		return unAuth, nil
 	}
 	user.Role = (api.Role)(theUser.Role)
@@ -287,9 +287,8 @@ func (s *Server) Verify(ctx context.Context, authToken string) (*userClaim, erro
 		s.logger.Info("dex verifier claims", zap.Any("claims", claimsMap))
 
 		return &userClaim{
-			Email:          claimsMap.Email,
-			EmailVerified:  claimsMap.EmailVerified,
-			
+			Email:         claimsMap.Email,
+			EmailVerified: claimsMap.EmailVerified,
 		}, nil
 	} else {
 		s.logger.Error("dex verifier verify error", zap.Error(err))

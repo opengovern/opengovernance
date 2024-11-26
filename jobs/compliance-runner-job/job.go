@@ -11,15 +11,15 @@ import (
 
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	"github.com/opengovern/opengovernance/services/compliance/api"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	"github.com/opengovern/opencomply/services/compliance/api"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	"github.com/opengovern/opengovernance/pkg/types"
-	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
-	es2 "github.com/opengovern/opengovernance/services/compliance/es"
+	"github.com/opengovern/opencomply/pkg/types"
+	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
+	es2 "github.com/opengovern/opencomply/services/compliance/es"
 	"go.uber.org/zap"
 )
 

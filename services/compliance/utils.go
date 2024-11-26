@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/opengovern/og-util/pkg/model"
-	opengovernanceTypes "github.com/opengovern/opengovernance/pkg/types"
-	"github.com/opengovern/opengovernance/services/compliance/api"
-	"github.com/opengovern/opengovernance/services/compliance/es"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	opengovernanceTypes "github.com/opengovern/opencomply/pkg/types"
+	"github.com/opengovern/opencomply/services/compliance/api"
+	"github.com/opengovern/opencomply/services/compliance/es"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"go.uber.org/zap"
 )
 

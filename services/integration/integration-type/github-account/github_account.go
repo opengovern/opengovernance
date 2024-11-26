@@ -3,11 +3,11 @@ package github_account
 import (
 	"encoding/json"
 	"github.com/jackc/pgtype"
-	githubDescriberLocal "github.com/opengovern/opengovernance/services/integration/integration-type/github-account/configs"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/github-account/discovery"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/github-account/healthcheck"
-	"github.com/opengovern/opengovernance/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opengovernance/services/integration/models"
+	githubDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/github-account/configs"
+	"github.com/opengovern/opencomply/services/integration/integration-type/github-account/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/github-account/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	"github.com/opengovern/opencomply/services/integration/models"
 	"strconv"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"os"
 	"time"
 
@@ -17,10 +17,10 @@ import (
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	complianceApi "github.com/opengovern/opengovernance/services/compliance/api"
-	complianceClient "github.com/opengovern/opengovernance/services/compliance/client"
-	inventoryClient "github.com/opengovern/opengovernance/services/inventory/client"
-	metadataClient "github.com/opengovern/opengovernance/services/metadata/client"
+	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 	"go.uber.org/zap"
 )
 

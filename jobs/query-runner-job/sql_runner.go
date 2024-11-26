@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	inventoryApi "github.com/opengovern/opengovernance/services/inventory/api"
+	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	"go.uber.org/zap"
 )
 

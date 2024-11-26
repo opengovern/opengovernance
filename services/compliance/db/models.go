@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opengovernance/pkg/utils"
-	integration_type "github.com/opengovern/opengovernance/services/integration/integration-type"
+	"github.com/opengovern/opencomply/pkg/utils"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -15,9 +15,9 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/opengovern/og-util/pkg/model"
-	"github.com/opengovern/opengovernance/pkg/types"
+	"github.com/opengovern/opencomply/pkg/types"
 
-	"github.com/opengovern/opengovernance/services/compliance/api"
+	"github.com/opengovern/opencomply/services/compliance/api"
 
 	"gorm.io/gorm"
 )

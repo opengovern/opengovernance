@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/opengovern/og-util/pkg/config"
-	config2 "github.com/opengovern/opengovernance/services/describe/config"
+	config2 "github.com/opengovern/opencomply/services/describe/config"
 	"github.com/spf13/cobra"
 )
 

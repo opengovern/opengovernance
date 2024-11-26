@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/opengovern/opengovernance/services/integration/models"
+import "github.com/opengovern/opencomply/services/integration/models"
 
 type IntegrationConfiguration struct {
 	NatsScheduledJobsTopic   string
