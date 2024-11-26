@@ -37,6 +37,19 @@ func (db Database) DeleteIntegration(IntegrationID uuid.UUID) error {
 	return nil
 }
 
+// DeleteSampleIntegrations deletes a integration
+func (db Database) DeleteSampleIntegrations() error {
+	tx := db.Orm.
+		Where("integration_type = ?", models.IntegrationStateSample).
+		Unscoped().
+		Delete(&models.Integration{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 // ListIntegration list Integration
 func (db Database) ListIntegration(types []integration.Type) ([]models.Integration, error) {
 	var integrations []models.Integration

@@ -19,6 +19,7 @@ type IntegrationServiceClient interface {
 	ListCredentials(ctx *httpclient.Context) (*models.ListCredentialsResponse, error)
 	GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error)
 	ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error)
+	PurgeSampleData(ctx *httpclient.Context) error
 }
 
 type integrationClient struct {
@@ -148,4 +149,17 @@ func (c *integrationClient) ListIntegrationGroups(ctx *httpclient.Context) ([]mo
 	}
 
 	return integrationGroup, nil
+}
+
+func (c *integrationClient) PurgeSampleData(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v1/integrations/sample/purge", c.baseURL)
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+
+	return nil
 }

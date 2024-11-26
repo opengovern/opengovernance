@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/opengovern/opengovernance/pkg/types"
 	"strings"
 	"time"
 
@@ -303,6 +304,21 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			err = s.es.Delete(key, idx)
 			if err != nil {
 				s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+				return
+			}
+
+			resourceFinding := types.ResourceFinding{
+				PlatformResourceID: hit.Source.PlatformID,
+				ResourceType:       strings.ToLower(hit.Source.ResourceType),
+			}
+			deletedCount += 1
+			keys, idx = resourceFinding.KeysAndIndex()
+			key = es2.HashOf(keys...)
+			resourceFinding.EsID = key
+			resourceFinding.EsIndex = idx
+			err = s.es.Delete(key, idx)
+			if err != nil {
+				s.logger.Error("failed to delete resource finding from open-search", zap.Error(err))
 				return
 			}
 		}
