@@ -22,9 +22,10 @@ type ListIntegrationTypesItem struct {
 	ID           int64                           `json:"id"`
 	Name         string                          `json:"name"`
 	PlatformName string                          `json:"platform_name"`
+	Tier         string                          `json:"tier"`
 	Title        string                          `json:"title"`
 	Logo         string                          `json:"logo"`
-	State        string                          `json:"state"`
+	Enabled      bool                            `json:"enabled"`
 	Count        IntegrationTypeIntegrationCount `json:"count"`
 }
 

@@ -850,7 +850,6 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 	var items []models.ListIntegrationTypesItem
 	for _, integrationType := range integrationTypes {
 		enabled := false
-		state := "disabled"
 		integrations, err := h.database.ListIntegrationsByFilters(nil, []string{integrationType.IntegrationType}, nil, nil)
 		if err != nil {
 			h.logger.Error("failed to list integrations", zap.Error(err))
@@ -881,7 +880,6 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 			if v, ok := integrationSetupsMap[integration_type.ParseType(integrationType.IntegrationType)]; ok {
 				if v.Enabled {
 					enabled = true
-					state = "enabled"
 				}
 			}
 		}
@@ -895,8 +893,9 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 			Name:         integrationType.Name,
 			Title:        integrationType.Label,
 			PlatformName: integrationType.IntegrationType,
+			Tier:         integrationType.Tier,
 			Logo:         integrationType.Logo,
-			State:        state,
+			Enabled:      enabled,
 			Count:        count,
 		})
 	}
