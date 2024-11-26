@@ -907,6 +907,9 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 		})
 		if sortBy == "count" {
 			sort.Slice(items, func(i, j int) bool {
+				if items[i].Count.Total == items[j].Count.Total {
+					return items[i].ID < items[j].ID
+				}
 				return items[i].Count.Total > items[j].Count.Total
 			})
 		}
@@ -916,6 +919,9 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 		})
 		if sortBy == "count" {
 			sort.Slice(items, func(i, j int) bool {
+				if items[i].Count.Total == items[j].Count.Total {
+					return items[i].ID < items[j].ID
+				}
 				return items[i].Count.Total < items[j].Count.Total
 			})
 		}
