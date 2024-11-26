@@ -891,12 +891,13 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 			}
 		}
 		items = append(items, models.ListIntegrationTypesItem{
-			ID:    integrationType.ID,
-			Name:  integrationType.Name,
-			Title: integrationType.Label,
-			Logo:  integrationType.Logo,
-			State: state,
-			Count: count,
+			ID:           integrationType.ID,
+			Name:         integrationType.Name,
+			Title:        integrationType.Label,
+			PlatformName: integrationType.IntegrationType,
+			Logo:         integrationType.Logo,
+			State:        state,
+			Count:        count,
 		})
 	}
 

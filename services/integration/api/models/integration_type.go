@@ -19,12 +19,13 @@ type IntegrationTypeIntegrationCount struct {
 }
 
 type ListIntegrationTypesItem struct {
-	ID    int64                           `json:"id"`
-	Name  string                          `json:"name"`
-	Title string                          `json:"title"`
-	Logo  string                          `json:"logo"`
-	State string                          `json:"state"`
-	Count IntegrationTypeIntegrationCount `json:"count"`
+	ID           int64                           `json:"id"`
+	Name         string                          `json:"name"`
+	PlatformName string                          `json:"platform_name"`
+	Title        string                          `json:"title"`
+	Logo         string                          `json:"logo"`
+	State        string                          `json:"state"`
+	Count        IntegrationTypeIntegrationCount `json:"count"`
 }
 
 type ListIntegrationTypesResponse struct {
