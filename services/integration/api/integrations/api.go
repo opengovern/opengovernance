@@ -801,20 +801,27 @@ func (h API) DeleteIntegrationType(c echo.Context) error {
 
 // ListIntegrationTypes godoc
 //
-//	@Summary		List integration types
-//	@Description	List integration types
-//	@Security		BearerToken
-//	@Tags			credentials
-//	@Produce		json
-//	@Param			per_page	query		int		false	"PerPage"
-//	@Param			cursor		query		int		false	"Cursor"
-//	@Param			enabled		query		bool	false	"Enabled"
-//	@Success		200			{object}	models.ListIntegrationTypesResponse
-//	@Router			/integration/api/v1/integrations/types [get]
+//		@Summary		List integration types
+//		@Description	List integration types
+//		@Security		BearerToken
+//		@Tags			credentials
+//		@Produce		json
+//		@Param			per_page		query		int		false	"PerPage"
+//		@Param			cursor			query		int		false	"Cursor"
+//		@Param			enabled			query		bool	false	"Enabled"
+//		@Param			has_integration query 		bool 	false	"Has Integrations"
+//	 	@Param 			sort_by			query		string  false 	"Sort By (id, count)"
+//		@Param			sort_order 		query		string	false 	"Sort Order (asc, desc)"
+//
+// @Success		200			{object}	models.ListIntegrationTypesResponse
+// @Router			/integration/api/v1/integrations/types [get]
 func (h API) ListIntegrationTypes(c echo.Context) error {
 	perPageStr := c.QueryParam("per_page")
 	cursorStr := c.QueryParam("cursor")
 	filteredEnabled := c.QueryParam("enabled")
+	hasIntegration := c.QueryParam("has_integration")
+	sortBy := c.QueryParam("sort_by")
+	sortOrder := c.QueryParam("sort_order")
 	var perPage, cursor int64
 	if perPageStr != "" {
 		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
@@ -840,18 +847,41 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 		integrationSetupsMap[is.IntegrationType] = is
 	}
 
-	var items []models.IntegrationType
+	var items []models.ListIntegrationTypesItem
 	for _, integrationType := range integrationTypes {
 		enabled := false
-		item, err := integrationType.ToApi()
+		state := "disabled"
+		integrations, err := h.database.ListIntegrationsByFilters(nil, []string{integrationType.IntegrationType}, nil, nil)
 		if err != nil {
-			h.logger.Error("failed to convert integration types to API model", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to convert integration types to API model")
+			h.logger.Error("failed to list integrations", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
+		}
+		if hasIntegration == "true" {
+			if len(integrations) == 0 {
+				continue
+			}
+		}
+		count := models.IntegrationTypeIntegrationCount{}
+		for _, i := range integrations {
+			count.Total += 1
+			if i.State == models2.IntegrationStateActive {
+				count.Active += 1
+			}
+			if i.State == models2.IntegrationStateInactive {
+				count.Inactive += 1
+			}
+			if i.State == models2.IntegrationStateArchived {
+				count.Archived += 1
+			}
+			if i.State == models2.IntegrationStateSample {
+				count.Demo += 1
+			}
 		}
 		if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
 			if v, ok := integrationSetupsMap[integration_type.ParseType(integrationType.IntegrationType)]; ok {
 				if v.Enabled {
 					enabled = true
+					state = "enabled"
 				}
 			}
 		}
@@ -860,14 +890,37 @@ func (h API) ListIntegrationTypes(c echo.Context) error {
 				continue
 			}
 		}
-		item.Enabled = enabled
-		items = append(items, *item)
+		items = append(items, models.ListIntegrationTypesItem{
+			ID:    integrationType.ID,
+			Name:  integrationType.Name,
+			Title: integrationType.Label,
+			Logo:  integrationType.Logo,
+			State: state,
+			Count: count,
+		})
 	}
 
 	totalCount := len(items)
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].ID < items[j].ID
-	})
+	if sortOrder == "desc" {
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].ID > items[j].ID
+		})
+		if sortBy == "count" {
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].Count.Total > items[j].Count.Total
+			})
+		}
+	} else {
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].ID < items[j].ID
+		})
+		if sortBy == "count" {
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].Count.Total < items[j].Count.Total
+			})
+		}
+	}
+
 	if perPage != 0 {
 		if cursor == 0 {
 			items = utils.Paginate(1, perPage, items)
