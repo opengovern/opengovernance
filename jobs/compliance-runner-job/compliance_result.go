@@ -65,10 +65,10 @@ func (w *Job) ExtractComplianceResults(_ *zap.Logger, benchmarkCache map[string]
 		var platformResourceID, integrationID, resourceID, resourceName, reason string
 		var costImpact *float64
 		var status types.ComplianceStatus
-		if v, ok := recordValue["og_resource_id"].(string); ok {
+		if v, ok := recordValue["platform_resource_id"].(string); ok {
 			platformResourceID = v
 		}
-		if v, ok := recordValue["og_account_id"].(string); ok {
+		if v, ok := recordValue["platform_account_id"].(string); ok {
 			integrationID = v
 		}
 		if v, ok := recordValue["og_table_name"].(string); ok && resourceType == "" {
