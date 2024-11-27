@@ -470,7 +470,7 @@ useEffect(()=>{getList(4,1,'count','desc',false)},[])
                         tier: type.tier,
                         status: type.enabled,
                         // description: type.Description,
-                        name: type.label,
+                        name: type.title,
                         count: type?.count?.total,
                         // schema_id: type?.schema_ids[0],
                         // SourceCode: type.SourceCode,
