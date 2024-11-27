@@ -385,7 +385,7 @@ func (h *HttpHandler) GetComplianceResults(echoCtx echo.Context) error {
 			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", finding.PlatformResourceID),
+				zap.String("platform_resource_id", finding.PlatformResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)
@@ -1845,7 +1845,7 @@ func (h *HttpHandler) GetComplianceResultDriftEvents(echoCtx echo.Context) error
 			response.ComplianceResultDriftEvents[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", findingEvent.PlatformResourceID),
+				zap.String("platform_resource_id", findingEvent.PlatformResourceID),
 				zap.String("resource_id", findingEvent.ResourceID),
 				zap.String("controlId", findingEvent.ControlID),
 			)
@@ -5978,7 +5978,7 @@ func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
 			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
 		} else {
 			h.logger.Warn("lookup resource not found",
-				zap.String("og_resource_id", finding.PlatformResourceID),
+				zap.String("platform_resource_id", finding.PlatformResourceID),
 				zap.String("resource_id", finding.ResourceID),
 				zap.String("controlId", finding.ControlID),
 			)

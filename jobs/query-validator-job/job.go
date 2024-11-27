@@ -81,12 +81,12 @@ func (w *Worker) RunJob(ctx context.Context, job Job) error {
 			}
 			w.logger.Info("Start Checks")
 			var platformResourceID string
-			if v, ok := recordValue["og_resource_id"].(string); ok {
+			if v, ok := recordValue["platform_resource_id"].(string); ok {
 				platformResourceID = v
 			} else {
 				return fmt.Errorf(string(MissingPlatformResourceIDQueryError))
 			}
-			if _, ok := recordValue["og_account_id"].(string); !ok {
+			if _, ok := recordValue["platform_account_id"].(string); !ok {
 				return fmt.Errorf(string(MissingAccountIDQueryError))
 			}
 			w.logger.Info("Check Resource Exist")
