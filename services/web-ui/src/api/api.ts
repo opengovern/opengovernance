@@ -2334,6 +2334,7 @@ export interface GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityConnecto
     name: string
     platform_name: string
     label: string
+    title: string
     tier: string
     annotations: null
     labels: null
