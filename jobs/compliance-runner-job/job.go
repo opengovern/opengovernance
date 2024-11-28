@@ -212,7 +212,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 			f := f
 			err = w.esClient.Delete(f.EsID, types.ComplianceResultsIndex)
 			if err != nil {
-				w.logger.Error("failed to delete old compliance result", zap.Error(err))
+				w.logger.Error("failed to remove old compliance result", zap.Error(err))
 				closePaginator()
 				return 0, err
 			}

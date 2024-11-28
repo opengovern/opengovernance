@@ -20,7 +20,6 @@ on:
           - "true"
           - "false"
         default: "false"
-        
       servicesList:
         type: string
         description: "List of services to build"
