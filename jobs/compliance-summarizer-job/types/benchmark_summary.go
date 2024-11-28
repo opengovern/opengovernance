@@ -71,7 +71,11 @@ type BenchmarkSummary struct {
 }
 
 func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
-	return []string{b.BenchmarkID, fmt.Sprintf("%d", b.JobID)}, types.BenchmarkSummaryIndex
+	keys := []string{
+		b.BenchmarkID,
+		fmt.Sprintf("%d", b.JobID),
+	}
+	return keys, types.BenchmarkSummaryIndex
 }
 
 func (r *BenchmarkSummaryResult) addComplianceResult(complianceResult types.ComplianceResult) {
