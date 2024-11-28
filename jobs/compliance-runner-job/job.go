@@ -176,15 +176,15 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 
 	newComplianceResults := make([]types.ComplianceResult, 0, len(complianceResults))
-	complianceResultDriftEvents := make([]types.ComplianceResultDriftEvent, 0, len(complianceResults))
+	//complianceResultDriftEvents := make([]types.ComplianceResultDriftEvent, 0, len(complianceResults))
 
-	trackDrifts := false
-	for _, f := range j.ExecutionPlan.Callers {
-		if f.TracksDriftEvents {
-			trackDrifts = true
-			break
-		}
-	}
+	//trackDrifts := false
+	//for _, f := range j.ExecutionPlan.Callers {
+	//	if f.TracksDriftEvents {
+	//		trackDrifts = true
+	//		break
+	//	}
+	//}
 
 	filtersJSON, _ := json.Marshal(filters)
 	w.logger.Info("Old complianceResult query", zap.Int("length", len(complianceResults)), zap.String("filters", string(filtersJSON)))
@@ -210,95 +210,102 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		w.logger.Info("Old complianceResult", zap.Int("length", len(oldComplianceResults)))
 		for _, f := range oldComplianceResults {
 			f := f
-			newComplianceResult, ok := complianceResultsMap[f.EsID]
-			if !ok {
-				if f.StateActive {
-					f := f
-					f.StateActive = false
-					f.LastUpdatedAt = j.CreatedAt.UnixMilli()
-					f.RunnerID = j.ID
-					f.ComplianceJobID = j.ParentJobID
-					f.EvaluatedAt = j.CreatedAt.UnixMilli()
-					reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.PlatformResourceID)
-					f.Reason = reason
-					fs := types.ComplianceResultDriftEvent{
-						ComplianceResultEsID:     f.EsID,
-						ParentComplianceJobID:    j.ParentJobID,
-						ComplianceJobID:          j.ID,
-						PreviousComplianceStatus: f.ComplianceStatus,
-						ComplianceStatus:         f.ComplianceStatus,
-						PreviousStateActive:      true,
-						StateActive:              f.StateActive,
-						EvaluatedAt:              j.CreatedAt.UnixMilli(),
-						Reason:                   reason,
-
-						BenchmarkID:        f.BenchmarkID,
-						ControlID:          f.ControlID,
-						IntegrationID:      f.IntegrationID,
-						IntegrationType:    f.IntegrationType,
-						Severity:           f.Severity,
-						PlatformResourceID: f.PlatformResourceID,
-						ResourceID:         f.ResourceID,
-						ResourceType:       f.ResourceType,
-					}
-					keys, idx := fs.KeysAndIndex()
-					fs.EsID = es.HashOf(keys...)
-					fs.EsIndex = idx
-
-					w.logger.Info("ComplianceResult is not found in the query result setting it to inactive", zap.Any("complianceResult", f), zap.Any("event", fs))
-					if trackDrifts {
-						complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
-					}
-					newComplianceResults = append(newComplianceResults, f)
-				} else {
-					w.logger.Info("Old complianceResult found, it's inactive. doing nothing", zap.Any("complianceResult", f))
-				}
-				continue
+			err = w.esClient.Delete(f.EsID, types.ComplianceResultsIndex)
+			if err != nil {
+				w.logger.Error("failed to delete old compliance result", zap.Error(err))
+				closePaginator()
+				return 0, err
 			}
-
-			if (f.ComplianceStatus != newComplianceResult.ComplianceStatus) ||
-				(f.StateActive != newComplianceResult.StateActive) {
-				newComplianceResult.LastUpdatedAt = j.CreatedAt.UnixMilli()
-				newComplianceResult.RunnerID = j.ID
-				newComplianceResult.ComplianceJobID = j.ParentJobID
-				fs := types.ComplianceResultDriftEvent{
-					ComplianceResultEsID:     f.EsID,
-					ParentComplianceJobID:    j.ParentJobID,
-					ComplianceJobID:          j.ID,
-					PreviousComplianceStatus: f.ComplianceStatus,
-					ComplianceStatus:         newComplianceResult.ComplianceStatus,
-					PreviousStateActive:      f.StateActive,
-					StateActive:              newComplianceResult.StateActive,
-					EvaluatedAt:              j.CreatedAt.UnixMilli(),
-					Reason:                   newComplianceResult.Reason,
-
-					BenchmarkID:        newComplianceResult.BenchmarkID,
-					ControlID:          newComplianceResult.ControlID,
-					IntegrationID:      newComplianceResult.IntegrationID,
-					IntegrationType:    newComplianceResult.IntegrationType,
-					Severity:           newComplianceResult.Severity,
-					PlatformResourceID: newComplianceResult.PlatformResourceID,
-					ResourceID:         newComplianceResult.ResourceID,
-					ResourceType:       newComplianceResult.ResourceType,
-				}
-				keys, idx := fs.KeysAndIndex()
-				fs.EsID = es.HashOf(keys...)
-				fs.EsIndex = idx
-
-				w.logger.Info("ComplianceResult status changed", zap.Any("old", f), zap.Any("new", newComplianceResult), zap.Any("event", fs))
-				if trackDrifts {
-					complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
-				}
-			} else {
-				w.logger.Info("ComplianceResult status didn't change. doing nothing", zap.Any("complianceResult", newComplianceResult))
-				newComplianceResult.LastUpdatedAt = f.LastUpdatedAt
-				newComplianceResult.RunnerID = j.ID
-				newComplianceResult.ComplianceJobID = j.ParentJobID
-			}
-
-			newComplianceResults = append(newComplianceResults, newComplianceResult)
-			delete(complianceResultsMap, f.EsID)
-			delete(complianceResultsMap, newComplianceResult.EsID)
+			// Just Delete old Results for now
+			//newComplianceResult, ok := complianceResultsMap[f.EsID]
+			//if !ok {
+			//	if f.StateActive {
+			//		f := f
+			//		f.StateActive = false
+			//		f.LastUpdatedAt = j.CreatedAt.UnixMilli()
+			//		f.RunnerID = j.ID
+			//		f.ComplianceJobID = j.ParentJobID
+			//		f.EvaluatedAt = j.CreatedAt.UnixMilli()
+			//		reason := fmt.Sprintf("Engine didn't found resource %s in the query result", f.PlatformResourceID)
+			//		f.Reason = reason
+			//		fs := types.ComplianceResultDriftEvent{
+			//			ComplianceResultEsID:     f.EsID,
+			//			ParentComplianceJobID:    j.ParentJobID,
+			//			ComplianceJobID:          j.ID,
+			//			PreviousComplianceStatus: f.ComplianceStatus,
+			//			ComplianceStatus:         f.ComplianceStatus,
+			//			PreviousStateActive:      true,
+			//			StateActive:              f.StateActive,
+			//			EvaluatedAt:              j.CreatedAt.UnixMilli(),
+			//			Reason:                   reason,
+			//
+			//			BenchmarkID:        f.BenchmarkID,
+			//			ControlID:          f.ControlID,
+			//			IntegrationID:      f.IntegrationID,
+			//			IntegrationType:    f.IntegrationType,
+			//			Severity:           f.Severity,
+			//			PlatformResourceID: f.PlatformResourceID,
+			//			ResourceID:         f.ResourceID,
+			//			ResourceType:       f.ResourceType,
+			//		}
+			//		keys, idx := fs.KeysAndIndex()
+			//		fs.EsID = es.HashOf(keys...)
+			//		fs.EsIndex = idx
+			//
+			//		w.logger.Info("ComplianceResult is not found in the query result setting it to inactive", zap.Any("complianceResult", f), zap.Any("event", fs))
+			//		if trackDrifts {
+			//			complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
+			//		}
+			//		newComplianceResults = append(newComplianceResults, f)
+			//	} else {
+			//		w.logger.Info("Old complianceResult found, it's inactive. doing nothing", zap.Any("complianceResult", f))
+			//	}
+			//	continue
+			//}
+			//
+			//if (f.ComplianceStatus != newComplianceResult.ComplianceStatus) ||
+			//	(f.StateActive != newComplianceResult.StateActive) {
+			//	newComplianceResult.LastUpdatedAt = j.CreatedAt.UnixMilli()
+			//	newComplianceResult.RunnerID = j.ID
+			//	newComplianceResult.ComplianceJobID = j.ParentJobID
+			//	fs := types.ComplianceResultDriftEvent{
+			//		ComplianceResultEsID:     f.EsID,
+			//		ParentComplianceJobID:    j.ParentJobID,
+			//		ComplianceJobID:          j.ID,
+			//		PreviousComplianceStatus: f.ComplianceStatus,
+			//		ComplianceStatus:         newComplianceResult.ComplianceStatus,
+			//		PreviousStateActive:      f.StateActive,
+			//		StateActive:              newComplianceResult.StateActive,
+			//		EvaluatedAt:              j.CreatedAt.UnixMilli(),
+			//		Reason:                   newComplianceResult.Reason,
+			//
+			//		BenchmarkID:        newComplianceResult.BenchmarkID,
+			//		ControlID:          newComplianceResult.ControlID,
+			//		IntegrationID:      newComplianceResult.IntegrationID,
+			//		IntegrationType:    newComplianceResult.IntegrationType,
+			//		Severity:           newComplianceResult.Severity,
+			//		PlatformResourceID: newComplianceResult.PlatformResourceID,
+			//		ResourceID:         newComplianceResult.ResourceID,
+			//		ResourceType:       newComplianceResult.ResourceType,
+			//	}
+			//	keys, idx := fs.KeysAndIndex()
+			//	fs.EsID = es.HashOf(keys...)
+			//	fs.EsIndex = idx
+			//
+			//	w.logger.Info("ComplianceResult status changed", zap.Any("old", f), zap.Any("new", newComplianceResult), zap.Any("event", fs))
+			//	if trackDrifts {
+			//		complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
+			//	}
+			//} else {
+			//	w.logger.Info("ComplianceResult status didn't change. doing nothing", zap.Any("complianceResult", newComplianceResult))
+			//	newComplianceResult.LastUpdatedAt = f.LastUpdatedAt
+			//	newComplianceResult.RunnerID = j.ID
+			//	newComplianceResult.ComplianceJobID = j.ParentJobID
+			//}
+			//
+			//newComplianceResults = append(newComplianceResults, newComplianceResult)
+			//delete(complianceResultsMap, f.EsID)
+			//delete(complianceResultsMap, newComplianceResult.EsID)
 		}
 	}
 	closePaginator()
@@ -306,45 +313,45 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		newComplianceResult.LastUpdatedAt = j.CreatedAt.UnixMilli()
 		newComplianceResult.RunnerID = j.ID
 		newComplianceResult.ComplianceJobID = j.ParentJobID
-		fs := types.ComplianceResultDriftEvent{
-			ComplianceResultEsID:  newComplianceResult.EsID,
-			ParentComplianceJobID: j.ParentJobID,
-			ComplianceJobID:       j.ID,
-			ComplianceStatus:      newComplianceResult.ComplianceStatus,
-			StateActive:           newComplianceResult.StateActive,
-			EvaluatedAt:           j.CreatedAt.UnixMilli(),
-			Reason:                newComplianceResult.Reason,
+		//fs := types.ComplianceResultDriftEvent{
+		//	ComplianceResultEsID:  newComplianceResult.EsID,
+		//	ParentComplianceJobID: j.ParentJobID,
+		//	ComplianceJobID:       j.ID,
+		//	ComplianceStatus:      newComplianceResult.ComplianceStatus,
+		//	StateActive:           newComplianceResult.StateActive,
+		//	EvaluatedAt:           j.CreatedAt.UnixMilli(),
+		//	Reason:                newComplianceResult.Reason,
+		//
+		//	BenchmarkID:        newComplianceResult.BenchmarkID,
+		//	ControlID:          newComplianceResult.ControlID,
+		//	IntegrationID:      newComplianceResult.IntegrationID,
+		//	IntegrationType:    newComplianceResult.IntegrationType,
+		//	Severity:           newComplianceResult.Severity,
+		//	PlatformResourceID: newComplianceResult.PlatformResourceID,
+		//	ResourceID:         newComplianceResult.ResourceID,
+		//	ResourceType:       newComplianceResult.ResourceType,
+		//}
+		//keys, idx := fs.KeysAndIndex()
+		//fs.EsID = es.HashOf(keys...)
+		//fs.EsIndex = idx
 
-			BenchmarkID:        newComplianceResult.BenchmarkID,
-			ControlID:          newComplianceResult.ControlID,
-			IntegrationID:      newComplianceResult.IntegrationID,
-			IntegrationType:    newComplianceResult.IntegrationType,
-			Severity:           newComplianceResult.Severity,
-			PlatformResourceID: newComplianceResult.PlatformResourceID,
-			ResourceID:         newComplianceResult.ResourceID,
-			ResourceType:       newComplianceResult.ResourceType,
-		}
-		keys, idx := fs.KeysAndIndex()
-		fs.EsID = es.HashOf(keys...)
-		fs.EsIndex = idx
-
-		w.logger.Info("New complianceResult", zap.Any("complianceResult", newComplianceResult), zap.Any("event", fs))
-		if trackDrifts {
-			complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
-		}
+		//w.logger.Info("New complianceResult", zap.Any("complianceResult", newComplianceResult), zap.Any("event", fs))
+		//if trackDrifts {
+		//	complianceResultDriftEvents = append(complianceResultDriftEvents, fs)
+		//}
 		newComplianceResults = append(newComplianceResults, newComplianceResult)
 	}
 
 	var docs []es.Doc
-	if trackDrifts {
-		for _, fs := range complianceResultDriftEvents {
-			keys, idx := fs.KeysAndIndex()
-			fs.EsID = es.HashOf(keys...)
-			fs.EsIndex = idx
-
-			docs = append(docs, fs)
-		}
-	}
+	//if trackDrifts {
+	//	for _, fs := range complianceResultDriftEvents {
+	//		keys, idx := fs.KeysAndIndex()
+	//		fs.EsID = es.HashOf(keys...)
+	//		fs.EsIndex = idx
+	//
+	//		docs = append(docs, fs)
+	//	}
+	//}
 	for _, f := range newComplianceResults {
 		keys, idx := f.KeysAndIndex()
 		f.EsID = es.HashOf(keys...)
