@@ -15,6 +15,8 @@ import (
 	github_account "github.com/opengovern/opencomply/services/integration/integration-type/github-account"
 	githubConfigs "github.com/opengovern/opencomply/services/integration/integration-type/github-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+	openai_project "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
+	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
 	"strings"
 )
 
@@ -25,6 +27,7 @@ const (
 	IntegrationTypeGithubAccount     = githubConfigs.IntegrationTypeGithubAccount
 	IntegrationTypeDigitalOceanTeam  = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
 	IntegrationTypeCloudflareAccount = cloudflareConfigs.IntegrationNameCloudflareAccount
+	IntegrationTypeOpenAIProject     = openaiConfigs.IntegrationTypeOpenaiProject
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -34,6 +37,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeGithubAccount,
 	IntegrationTypeDigitalOceanTeam,
 	IntegrationTypeCloudflareAccount,
+	IntegrationTypeOpenAIProject,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -43,6 +47,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeGithubAccount:     &github_account.GithubAccountIntegration{},
 	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
 	IntegrationTypeCloudflareAccount: &cloudflare_account.CloudFlareAccountIntegration{},
+	IntegrationTypeOpenAIProject:     &openai_project.OpenAIProjectIntegration{},
 }
 
 func ParseType(str string) integration.Type {
