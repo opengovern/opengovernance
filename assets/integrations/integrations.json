@@ -99,15 +99,15 @@
   },
   {
     "id": 8,
-    "integration_type": "slack_account",
-    "name": "Slack",
+    "integration_type": "linode_account",
+    "name": "Linode",
     "tier": "Community",
-    "tags": { "usage": ["Communication", "Collaboration"] },
-    "Description": "Connect Slack to manage channels and messages.",
-    "Icon": "slack.svg",
-    "Availability": "PREVIEW",
-    "SourceCode": "",
-    "schema_ids": []
+    "tags": { "usage": ["Public Cloud"] },
+    "Description": "Connect Linode to manage cloud accounts.",
+    "Icon": "linode.svg",
+    "Availability": "GA",
+    "SourceCode": "https://github.com/opengovern/og-describer-linode",
+    "schema_ids": ["linode"]
   },
 
   {
