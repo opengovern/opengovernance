@@ -6,16 +6,18 @@ import (
 	awsConfigs "github.com/opengovern/opencomply/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription"
 	azureConfigs "github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription/configs"
-	cloudflare_account "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account"
+	cloudflareaccount "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account"
 	cloudflareConfigs "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team"
 	digitalOceanConfigs "github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory"
 	entraidConfigs "github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/configs"
-	github_account "github.com/opengovern/opencomply/services/integration/integration-type/github-account"
+	githubaccount "github.com/opengovern/opencomply/services/integration/integration-type/github-account"
 	githubConfigs "github.com/opengovern/opencomply/services/integration/integration-type/github-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
-	openai_project "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
+	linodeaccount "github.com/opengovern/opencomply/services/integration/integration-type/linode-account"
+	linodeConfigs "github.com/opengovern/opencomply/services/integration/integration-type/linode-account/configs"
+	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
 	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
 	"strings"
 )
@@ -28,6 +30,7 @@ const (
 	IntegrationTypeDigitalOceanTeam  = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
 	IntegrationTypeCloudflareAccount = cloudflareConfigs.IntegrationNameCloudflareAccount
 	IntegrationTypeOpenAIProject     = openaiConfigs.IntegrationTypeOpenaiProject
+	IntegrationTypeLinodeProject     = linodeConfigs.IntegrationTypeLinodeProject
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -38,16 +41,18 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeDigitalOceanTeam,
 	IntegrationTypeCloudflareAccount,
 	IntegrationTypeOpenAIProject,
+	IntegrationTypeLinodeProject,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeAWSAccount:        &aws_account.AwsCloudAccountIntegration{},
 	IntegrationTypeAzureSubscription: &azure_subscription.AzureSubscriptionIntegration{},
 	IntegrationTypeEntraIdDirectory:  &entra_id_directory.EntraIdDirectoryIntegration{},
-	IntegrationTypeGithubAccount:     &github_account.GithubAccountIntegration{},
+	IntegrationTypeGithubAccount:     &githubaccount.GithubAccountIntegration{},
 	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
-	IntegrationTypeCloudflareAccount: &cloudflare_account.CloudFlareAccountIntegration{},
-	IntegrationTypeOpenAIProject:     &openai_project.OpenAIProjectIntegration{},
+	IntegrationTypeCloudflareAccount: &cloudflareaccount.CloudFlareAccountIntegration{},
+	IntegrationTypeOpenAIProject:     &openaiproject.OpenAIProjectIntegration{},
+	IntegrationTypeLinodeProject:     &linodeaccount.OpenAIProjectIntegration{},
 }
 
 func ParseType(str string) integration.Type {
