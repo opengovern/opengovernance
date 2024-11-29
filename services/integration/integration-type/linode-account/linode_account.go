@@ -8,6 +8,7 @@ import (
 	"github.com/opengovern/opencomply/services/integration/integration-type/linode-account/discovery"
 	"github.com/opengovern/opencomply/services/integration/integration-type/linode-account/healthcheck"
 	"github.com/opengovern/opencomply/services/integration/models"
+	"strconv"
 )
 
 type OpenAIProjectIntegration struct{}
@@ -66,7 +67,7 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	integrations = append(integrations, models.Integration{
-		ProviderID: string(rune(account.ID)),
+		ProviderID: strconv.Itoa(account.ID),
 		Name:       account.Username,
 		Labels:     integrationLabelsJsonb,
 	})
