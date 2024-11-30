@@ -1,16 +1,5 @@
 [
-  {
-    "id": 0,
-    "integration_type": "platform",
-    "name": "Platform",
-    "tier": "Community",
-    "tags": { "usage": ["OpenComply"] },
-    "Description": "Discover Users, Identities, Apps, Accounts.",
-    "Icon": "opencomply.svg",
-    "Availability": "GA",
-    "SourceCode": "https://github.com/opengovern/opencomply/",
-    "schema_ids": ["platform"]
-  },
+  
   {
     "id": 1,
     "integration_type": "aws_account",
