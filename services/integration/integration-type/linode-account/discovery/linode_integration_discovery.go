@@ -8,24 +8,21 @@ import (
 )
 
 type LinodeAccount struct {
-	ID             int    `json:"id"`
-	Email          string `json:"email"`
-	Username       string `json:"username"`
-	Company        string `json:"company"`
-	TaxID          string `json:"tax_id"`
-	CreditBalance  string `json:"credit_balance"`
-	Restricted     bool   `json:"restricted"`
-	BillingAddress struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Company   string `json:"company"`
-		Address1  string `json:"address_1"`
-		Address2  string `json:"address_2"`
-		City      string `json:"city"`
-		State     string `json:"state"`
-		Country   string `json:"country"`
-		Zip       string `json:"zip"`
-	} `json:"billing_address"`
+	Email             string `json:"email"`
+	Address1          string `json:"address_1"`
+	Address2          string `json:"address_2"`
+	Balance           string `json:"balance"`
+	BalanceUninvoiced string `json:"balance_uninvoiced"`
+	City              string `json:"city"`
+	Company           string `json:"company"`
+	Country           string `json:"country"`
+	FirstName         string `json:"first_name"`
+	LastName          string `json:"last_name"`
+	Euuid             string `json:"euuid"`
+	Phone             string `json:"phone"`
+	State             string `json:"state"`
+	TaxID             string `json:"tax_id"`
+	Zip               string `json:"zip"`
 }
 
 // LinodeIntegrationDiscovery fetches Linode account details using the provided token.

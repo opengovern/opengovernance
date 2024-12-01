@@ -8,7 +8,6 @@ import (
 	"github.com/opengovern/opencomply/services/integration/integration-type/linode-account/discovery"
 	"github.com/opengovern/opencomply/services/integration/integration-type/linode-account/healthcheck"
 	"github.com/opengovern/opencomply/services/integration/models"
-	"strconv"
 )
 
 type OpenAIProjectIntegration struct{}
@@ -55,7 +54,7 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	labels := map[string]string{
-		"Email": account.Email,
+		"State": account.State,
 	}
 	labelsJsonData, err := json.Marshal(labels)
 	if err != nil {
@@ -67,8 +66,8 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	integrations = append(integrations, models.Integration{
-		ProviderID: strconv.Itoa(account.ID),
-		Name:       account.Username,
+		ProviderID: account.Euuid,
+		Name:       account.Email,
 		Labels:     integrationLabelsJsonb,
 	})
 
