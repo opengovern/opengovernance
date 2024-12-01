@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type ConnectionGroup struct {
+type IntegrationGroup struct {
 	Name  string `json:"name" yaml:"name"`
 	Query string `json:"query" yaml:"query"`
 }
@@ -29,7 +29,7 @@ func (g *GitParser) ExtractConnectionGroups(queryPath string) error {
 				return fmt.Errorf("failure in reading file: %v", err)
 			}
 
-			var cg ConnectionGroup
+			var cg IntegrationGroup
 			err = yaml.Unmarshal(content, &cg)
 			if err != nil {
 				return err
