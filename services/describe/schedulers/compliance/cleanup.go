@@ -67,7 +67,7 @@ func getComplianceResultsNotInIntegrationsFromES(ctx context.Context, client ope
 	}
 	root["size"] = size
 	root["sort"] = []map[string]any{
-		{"described_at": "asc"},
+		{"evaluatedAt": "asc"},
 		{"_id": "desc"},
 	}
 
