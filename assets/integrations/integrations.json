@@ -1,5 +1,4 @@
 [
-  
   {
     "id": 1,
     "integration_type": "aws_account",
@@ -97,6 +96,18 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-linode",
     "schema_ids": ["linode"]
+  },
+  {
+    "id": 7,
+    "integration_type": "cohereai_account",
+    "name": "CohereAI",
+    "tier": "Community",
+    "tags": { "usage": ["AI Services"] },
+    "Description": "Integrate Cohere AI for language models and AI.",
+    "Icon": "openai.svg",
+    "Availability": "GA",
+    "SourceCode": "https://github.com/opengovern/og-describer-cohereai",
+    "schema_ids": ["cohereai"]
   },
 
   {
