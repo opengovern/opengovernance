@@ -3,6 +3,7 @@ package compliance
 import (
 	"context"
 	"fmt"
+	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/inventory"
 
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opencomply/jobs/post-install-job/config"
@@ -55,6 +56,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	p := GitParser{
 		logger:          logger,
 		controlsQueries: make(map[string]db.Query),
+		namedQueries:    make(map[string]inventory.NamedQuery),
 	}
 	if err := p.ExtractCompliance(config.ComplianceGitPath, config.ControlEnrichmentGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
