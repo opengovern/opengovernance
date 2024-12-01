@@ -1,6 +1,7 @@
 package shared
 
 type Query struct {
+	QueryID        *string          `json:"QueryID,omitempty" yaml:"QueryID,omitempty"`
 	ID             string           `json:"ID,omitempty" yaml:"ID,omitempty"`
 	Engine         string           `json:"Engine" yaml:"Engine"`
 	QueryToExecute string           `json:"QueryToExecute" yaml:"QueryToExecute"`

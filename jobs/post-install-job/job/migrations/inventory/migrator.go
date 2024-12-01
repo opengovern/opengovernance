@@ -3,9 +3,13 @@ package inventory
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/goccy/go-yaml"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/opengovern/og-util/pkg/model"
@@ -14,10 +18,13 @@ import (
 	"github.com/opengovern/opencomply/jobs/post-install-job/db"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"github.com/opengovern/opencomply/services/inventory"
+	"github.com/opengovern/opencomply/services/metadata/models"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+var QueryParameters []models.QueryParameter
 
 type ResourceType struct {
 	ResourceName         string
@@ -158,6 +165,158 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	if err != nil {
 		return fmt.Errorf("failure in azure transaction: %v", err)
 	}
+
+	err = populateQueries(ctx, logger, orm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func populateQueries(ctx context.Context, logger *zap.Logger, dbc *gorm.DB) error {
+	err := dbc.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+		tx.Model(&inventory.NamedQuery{}).Where("1=1").Unscoped().Delete(&inventory.NamedQuery{})
+		tx.Model(&inventory.NamedQueryTag{}).Where("1=1").Unscoped().Delete(&inventory.NamedQueryTag{})
+		tx.Model(&inventory.QueryParameter{}).Where("1=1").Unscoped().Delete(&inventory.QueryParameter{})
+		tx.Model(&inventory.Query{}).Where("1=1").Unscoped().Delete(&inventory.Query{})
+
+		err := filepath.Walk(config.QueriesGitPath, func(path string, info fs.FileInfo, err error) error {
+			if !info.IsDir() && strings.HasSuffix(path, ".yaml") {
+				return populateFinderItem(logger, tx, path, info)
+			}
+			return nil
+		})
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logger.Error("failed to get queries", zap.Error(err))
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func populateFinderItem(logger *zap.Logger, tx *gorm.DB, path string, info fs.FileInfo) error {
+	id := strings.TrimSuffix(info.Name(), ".yaml")
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var item NamedQuery
+	err = yaml.Unmarshal(content, &item)
+	if err != nil {
+		logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
+		return err
+	}
+
+	if item.ID != "" {
+		id = item.ID
+	}
+
+	var integrationTypes []string
+	for _, c := range item.IntegrationTypes {
+		integrationTypes = append(integrationTypes, string(c))
+	}
+
+	isBookmarked := false
+	tags := make([]inventory.NamedQueryTag, 0, len(item.Tags))
+	for k, v := range item.Tags {
+		if k == "platform_queries_bookmark" {
+			isBookmarked = true
+		}
+		tag := inventory.NamedQueryTag{
+			NamedQueryID: id,
+			Tag: model.Tag{
+				Key:   k,
+				Value: v,
+			},
+		}
+		tags = append(tags, tag)
+	}
+
+	dbMetric := inventory.NamedQuery{
+		ID:               id,
+		IntegrationTypes: integrationTypes,
+		Title:            item.Title,
+		Description:      item.Description,
+		IsBookmarked:     isBookmarked,
+		QueryID:          &id,
+	}
+	queryParams := []inventory.QueryParameter{}
+	for _, qp := range item.Query.Parameters {
+		queryParams = append(queryParams, inventory.QueryParameter{
+			Key:      qp.Key,
+			Required: qp.Required,
+			QueryID:  dbMetric.ID,
+		})
+		if qp.DefaultValue != nil {
+			queryParamObj := models.QueryParameter{
+				Key:   qp.Key,
+				Value: *qp.DefaultValue,
+			}
+			QueryParameters = append(QueryParameters, queryParamObj)
+		}
+	}
+	query := inventory.Query{
+		ID:             dbMetric.ID,
+		QueryToExecute: item.Query.QueryToExecute,
+		PrimaryTable:   item.Query.PrimaryTable,
+		ListOfTables:   item.Query.ListOfTables,
+		Engine:         item.Query.Engine,
+		Parameters:     queryParams,
+		Global:         item.Query.Global,
+	}
+	err = tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}}, // key column
+		DoNothing: true,
+	}).Create(&query).Error
+	if err != nil {
+		logger.Error("failure in Creating Query", zap.String("query_id", id), zap.Error(err))
+		return err
+	}
+	for _, param := range query.Parameters {
+		err = tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
+			DoNothing: true,
+		}).Create(&param).Error
+		if err != nil {
+			return fmt.Errorf("failure in query parameter insert: %v", err)
+		}
+	}
+
+	err = tx.Model(&inventory.NamedQuery{}).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}}, // key column
+		DoNothing: true,                          // column needed to be updated
+	}).Create(dbMetric).Error
+	if err != nil {
+		logger.Error("failure in insert query", zap.Error(err))
+		return err
+	}
+
+	// logger.Info("parsed the tags", zap.String("id", id), zap.Any("tags", tags))
+
+	if len(tags) > 0 {
+		for _, tag := range tags {
+			err = tx.Model(&inventory.NamedQueryTag{}).Create(&tag).Error
+			if err != nil {
+				logger.Error("failure in insert tags", zap.Error(err))
+				return err
+			}
+		}
+	}
+	// logger.Info("inserted tags", zap.String("id", id))
+	err = tx.Commit().Error
+	if err != nil {
+		logger.Error("failure in commit", zap.Error(err))
+		return err
+	}
+	// logger.Info("commit finish", zap.String("id", id))
 
 	return nil
 }

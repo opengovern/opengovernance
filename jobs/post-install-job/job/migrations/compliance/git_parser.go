@@ -3,6 +3,9 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lib/pq"
+	"github.com/opengovern/opencomply/jobs/post-install-job/config"
+	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/inventory"
 	"io/fs"
 	"os"
 	"path"
@@ -27,6 +30,7 @@ type GitParser struct {
 	queryParams     []models.QueryParameter
 	queryViews      []models.QueryView
 	controlsQueries map[string]db.Query
+	namedQueries    map[string]inventory.NamedQuery
 	Comparison      *git.ComparisonResultGrouped
 }
 
@@ -48,6 +52,37 @@ func populateMdMapFromPath(path string) (map[string]string, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (g *GitParser) ExtractNamedQueries() error {
+	err := filepath.Walk(config.QueriesGitPath, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() && strings.HasSuffix(path, ".yaml") {
+			id := strings.TrimSuffix(info.Name(), ".yaml")
+
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			var item inventory.NamedQuery
+			err = yaml.Unmarshal(content, &item)
+			if err != nil {
+				g.logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
+				return err
+			}
+
+			if item.ID != "" {
+				id = item.ID
+			}
+
+			g.namedQueries[id] = item
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrichmentBasePath string) error {
@@ -218,32 +253,84 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			}
 
 			if control.Query != nil {
-				q := db.Query{
-					ID:              control.ID,
-					QueryToExecute:  control.Query.QueryToExecute,
-					IntegrationType: control.IntegrationType,
-					PrimaryTable:    control.Query.PrimaryTable,
-					ListOfTables:    control.Query.ListOfTables,
-					Engine:          control.Query.Engine,
-					Global:          control.Query.Global,
-				}
-				g.controlsQueries[control.ID] = q
-				for _, parameter := range control.Query.Parameters {
-					q.Parameters = append(q.Parameters, db.QueryParameter{
-						QueryID:  control.ID,
-						Key:      parameter.Key,
-						Required: parameter.Required,
-					})
+				if control.Query.QueryID != nil {
+					query, ok := g.namedQueries[*control.Query.QueryID]
+					if !ok {
+						g.logger.Error("could not find the named query", zap.String("control", control.ID),
+							zap.String("query", *control.Query.QueryID))
+					} else {
+						paramsValues := make(map[string]string)
+						for _, pv := range control.Query.Parameters {
+							if pv.DefaultValue != nil {
+								paramsValues[pv.Key] = *pv.DefaultValue
+							}
+						}
+						var integrationTypes pq.StringArray
+						for _, it := range query.IntegrationTypes {
+							integrationTypes = append(integrationTypes, string(it))
+						}
+						q := db.Query{
+							ID:              control.ID,
+							QueryToExecute:  query.Query.QueryToExecute,
+							IntegrationType: integrationTypes,
+							PrimaryTable:    query.Query.PrimaryTable,
+							ListOfTables:    query.Query.ListOfTables,
+							Engine:          query.Query.Engine,
+							Global:          query.Query.Global,
+						}
+						g.controlsQueries[control.ID] = q
+						for _, parameter := range query.Query.Parameters {
+							q.Parameters = append(q.Parameters, db.QueryParameter{
+								QueryID:  control.ID,
+								Key:      parameter.Key,
+								Required: parameter.Required,
+							})
 
-					if parameter.DefaultValue != nil {
-						g.queryParams = append(g.queryParams, models.QueryParameter{
-							Key:   parameter.Key,
-							Value: *parameter.DefaultValue,
-						})
+							if v, ok := paramsValues[parameter.Key]; ok {
+								g.queryParams = append(g.queryParams, models.QueryParameter{
+									Key:   parameter.Key,
+									Value: v,
+								})
+							} else {
+								if parameter.DefaultValue != nil {
+									g.queryParams = append(g.queryParams, models.QueryParameter{
+										Key:   parameter.Key,
+										Value: *parameter.DefaultValue,
+									})
+								}
+							}
+						}
+						g.queries = append(g.queries, q)
+						p.QueryID = &control.ID
 					}
+				} else {
+					q := db.Query{
+						ID:              control.ID,
+						QueryToExecute:  control.Query.QueryToExecute,
+						IntegrationType: control.IntegrationType,
+						PrimaryTable:    control.Query.PrimaryTable,
+						ListOfTables:    control.Query.ListOfTables,
+						Engine:          control.Query.Engine,
+						Global:          control.Query.Global,
+					}
+					g.controlsQueries[control.ID] = q
+					for _, parameter := range control.Query.Parameters {
+						q.Parameters = append(q.Parameters, db.QueryParameter{
+							QueryID:  control.ID,
+							Key:      parameter.Key,
+							Required: parameter.Required,
+						})
+
+						if parameter.DefaultValue != nil {
+							g.queryParams = append(g.queryParams, models.QueryParameter{
+								Key:   parameter.Key,
+								Value: *parameter.DefaultValue,
+							})
+						}
+					}
+					g.queries = append(g.queries, q)
+					p.QueryID = &control.ID
 				}
-				g.queries = append(g.queries, q)
-				p.QueryID = &control.ID
 			}
 			g.controls = append(g.controls, p)
 		}
@@ -471,6 +558,9 @@ func (g GitParser) ExtractBenchmarksMetadata() error {
 }
 
 func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBasePath string) error {
+	if err := g.ExtractNamedQueries(); err != nil {
+		return err
+	}
 	if err := g.ExtractControls(path.Join(compliancePath, "controls"), controlEnrichmentBasePath); err != nil {
 		return err
 	}
@@ -488,6 +578,35 @@ func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBa
 }
 
 func (g *GitParser) ExtractQueryViews(viewsPath string) error {
+	return filepath.WalkDir(viewsPath, func(path string, d fs.DirEntry, err error) error {
+		if !strings.HasSuffix(path, ".yaml") {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			g.logger.Error("failed to read query view", zap.String("path", path), zap.Error(err))
+			return err
+		}
+
+		var obj QueryView
+		err = yaml.Unmarshal(content, &obj)
+		if err != nil {
+			g.logger.Error("failed to unmarshal query view", zap.String("path", path), zap.Error(err))
+			return err
+		}
+
+		g.queryViews = append(g.queryViews, models.QueryView{
+			ID:           obj.ID,
+			Query:        obj.Query,
+			Dependencies: obj.Dependencies,
+		})
+
+		return nil
+	})
+}
+
+func (g *GitParser) ExtractQueries(viewsPath string) error {
 	return filepath.WalkDir(viewsPath, func(path string, d fs.DirEntry, err error) error {
 		if !strings.HasSuffix(path, ".yaml") {
 			return nil
