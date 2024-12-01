@@ -286,7 +286,9 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			resource.EsIndex = idx
 			err = s.es.Delete(key, idx)
 			if err != nil {
-				s.logger.Error("failed to delete resource from open-search", zap.Error(err))
+				if !strings.Contains(err.Error(), "404 Not Found") {
+					s.logger.Error("failed to delete resource from open-search", zap.Error(err))
+				}
 			}
 
 			lookupResource := es2.LookupResource{
@@ -302,7 +304,9 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			lookupResource.EsIndex = idx
 			err = s.es.Delete(key, idx)
 			if err != nil {
-				s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+				if !strings.Contains(err.Error(), "404 Not Found") {
+					s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
+				}
 			}
 
 			resourceFinding := types.ResourceFinding{
@@ -316,9 +320,13 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			resourceFinding.EsIndex = idx
 			err = s.es.Delete(key, idx)
 			if err != nil {
-				s.logger.Error("failed to delete resource finding from open-search", zap.Error(err))
+				if !strings.Contains(err.Error(), "404 Not Found") {
+					s.logger.Error("failed to delete resource finding from open-search", zap.Error(err))
+				}
 			}
 		}
+		s.logger.Info("deleted resource count", zap.Int("count", totalDeletedCount),
+			zap.Any("deleted integrations", deletedIntegrationIDs))
 	}
 	s.logger.Info("total deleted resource count", zap.Int("count", totalDeletedCount),
 		zap.Any("deleted integrations", deletedIntegrationIDs))
