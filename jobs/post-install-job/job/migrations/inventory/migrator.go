@@ -310,13 +310,6 @@ func populateFinderItem(logger *zap.Logger, tx *gorm.DB, path string, info fs.Fi
 			}
 		}
 	}
-	// logger.Info("inserted tags", zap.String("id", id))
-	err = tx.Commit().Error
-	if err != nil {
-		logger.Error("failure in commit", zap.Error(err))
-		return err
-	}
-	// logger.Info("commit finish", zap.String("id", id))
 
 	return nil
 }
