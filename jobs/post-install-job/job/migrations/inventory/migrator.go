@@ -166,7 +166,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return fmt.Errorf("failure in azure transaction: %v", err)
 	}
 
-	err = populateQueries(ctx, logger, orm)
+	err = populateQueries(logger, dbm)
 	if err != nil {
 		return err
 	}
@@ -174,8 +174,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	return nil
 }
 
-func populateQueries(ctx context.Context, logger *zap.Logger, dbc *gorm.DB) error {
-	err := dbc.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+func populateQueries(logger *zap.Logger, db db.Database) error {
+	err := db.ORM.Transaction(func(tx *gorm.DB) error {
 
 		tx.Model(&inventory.NamedQuery{}).Where("1=1").Unscoped().Delete(&inventory.NamedQuery{})
 		tx.Model(&inventory.NamedQueryTag{}).Where("1=1").Unscoped().Delete(&inventory.NamedQueryTag{})
