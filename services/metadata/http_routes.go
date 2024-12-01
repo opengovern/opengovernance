@@ -852,37 +852,14 @@ func (h HttpHandler) SampleDataLoaded(echoCtx echo.Context) (bool, error) {
 		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list integrations")
 	}
 
-	integrationChecks := strings.Split(h.cfg.SampledataIntegrationsCheck, ",")
-	integrationsMap := make(map[string]bool)
-	for _, c := range integrationChecks {
-		integrationsMap[c] = true
-	}
-
-	credentials, err := integrationClient.ListCredentials(ctx)
-	if err != nil {
-		h.logger.Error("failed to list credentials", zap.Error(err))
-		return false, echo.NewHTTPError(http.StatusInternalServerError, "failed to list credentials")
-	}
-	credentialsMap := make(map[string]bool)
-	for _, c := range credentials.Credentials {
-		credentialsMap[c.ID] = true
-	}
-
-	if len(integrations.Integrations) == 0 {
-		return false, nil
-	}
-
-	for _, c := range integrations.Integrations {
-		if _, ok := integrationsMap[c.IntegrationID]; !ok {
-			return false, nil
-		} else {
-			if _, ok2 := credentialsMap[c.CredentialID]; ok2 {
-				return false, nil
-			}
+	loaded := false
+	for _, integration := range integrations.Integrations {
+		if integration.State == integrationApi.IntegrationStateSample {
+			loaded = true
 		}
 	}
 
-	return true, nil
+	return loaded, nil
 }
 
 // VaultConfigured godoc
