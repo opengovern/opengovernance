@@ -287,7 +287,6 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			err = s.es.Delete(key, idx)
 			if err != nil {
 				s.logger.Error("failed to delete resource from open-search", zap.Error(err))
-				return
 			}
 
 			lookupResource := es2.LookupResource{
@@ -304,7 +303,6 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			err = s.es.Delete(key, idx)
 			if err != nil {
 				s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
-				return
 			}
 
 			resourceFinding := types.ResourceFinding{
@@ -319,7 +317,6 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 			err = s.es.Delete(key, idx)
 			if err != nil {
 				s.logger.Error("failed to delete resource finding from open-search", zap.Error(err))
-				return
 			}
 		}
 	}
