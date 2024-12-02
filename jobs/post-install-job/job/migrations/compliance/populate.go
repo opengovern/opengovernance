@@ -54,9 +54,9 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	dbMetadata := db.Database{Orm: ormMetadata}
 
 	p := GitParser{
-		logger:          logger,
-		controlsQueries: make(map[string]db.Query),
-		namedQueries:    make(map[string]inventory.NamedQuery),
+		logger:               logger,
+		controlsQueries:      make(map[string]db.Query),
+		namedQueries:         make(map[string]inventory.NamedQuery),
 	}
 	if err := p.ExtractCompliance(config.ComplianceGitPath, config.ControlEnrichmentGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))

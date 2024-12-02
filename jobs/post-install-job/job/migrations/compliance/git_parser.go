@@ -23,17 +23,16 @@ import (
 )
 
 type GitParser struct {
-	logger               *zap.Logger
-	benchmarks           []db.Benchmark
-	controls             []db.Control
-	queries              []db.Query
-	queryParams          []models.QueryParameterValues
-	queryViews           []models.QueryView
-	queryViewsQueries    []models.Query
-	controlsQueries      map[string]db.Query
-	queryViewsQueriesMap map[string]models.Query
-	namedQueries         map[string]inventory.NamedQuery
-	Comparison           *git.ComparisonResultGrouped
+	logger            *zap.Logger
+	benchmarks        []db.Benchmark
+	controls          []db.Control
+	queries           []db.Query
+	queryParams       []models.QueryParameterValues
+	queryViews        []models.QueryView
+	queryViewsQueries []models.Query
+	controlsQueries   map[string]db.Query
+	namedQueries      map[string]inventory.NamedQuery
+	Comparison        *git.ComparisonResultGrouped
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -631,7 +630,6 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 						Engine:          query.Query.Engine,
 						Global:          query.Query.Global,
 					}
-					g.queryViewsQueriesMap[obj.ID] = q
 					for _, parameter := range query.Query.Parameters {
 						q.Parameters = append(q.Parameters, models.Parameters{
 							QueryID:  obj.ID,
@@ -665,7 +663,6 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 					Engine:         obj.Query.Engine,
 					Global:         obj.Query.Global,
 				}
-				g.queryViewsQueriesMap[obj.ID] = q
 				for _, parameter := range obj.Query.Parameters {
 					q.Parameters = append(q.Parameters, models.Parameters{
 						QueryID:  obj.ID,
