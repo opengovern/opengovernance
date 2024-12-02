@@ -801,20 +801,20 @@ func (h API) DeleteIntegrationType(c echo.Context) error {
 
 // ListIntegrationTypes godoc
 //
-//		@Summary		List integration types
-//		@Description	List integration types
-//		@Security		BearerToken
-//		@Tags			credentials
-//		@Produce		json
-//		@Param			per_page		query		int		false	"PerPage"
-//		@Param			cursor			query		int		false	"Cursor"
-//		@Param			enabled			query		bool	false	"Enabled"
-//		@Param			has_integration query 		bool 	false	"Has Integrations"
-//	 	@Param 			sort_by			query		string  false 	"Sort By (id, count)"
-//		@Param			sort_order 		query		string	false 	"Sort Order (asc, desc)"
+//	@Summary		List integration types
+//	@Description	List integration types
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			per_page		query		int		false	"PerPage"
+//	@Param			cursor			query		int		false	"Cursor"
+//	@Param			enabled			query		bool	false	"Enabled"
+//	@Param			has_integration	query		bool	false	"Has Integrations"
+//	@Param			sort_by			query		string	false	"Sort By (id, count)"
+//	@Param			sort_order		query		string	false	"Sort Order (asc, desc)"
 //
-// @Success		200			{object}	models.ListIntegrationTypesResponse
-// @Router			/integration/api/v1/integrations/types [get]
+//	@Success		200				{object}	models.ListIntegrationTypesResponse
+//	@Router			/integration/api/v1/integrations/types [get]
 func (h API) ListIntegrationTypes(c echo.Context) error {
 	perPageStr := c.QueryParam("per_page")
 	cursorStr := c.QueryParam("cursor")

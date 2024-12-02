@@ -986,7 +986,7 @@ func (h *HttpHandler) GetComplianceResultKPIs(echoCtx echo.Context) error {
 //	@Param			count				path		int												true	"Count"
 //	@Param			integrationId		query		[]string										false	"integration IDs to filter by (inclusive)"
 //	@Param			notIntegrationId	query		[]string										false	"integration IDs to filter by (exclusive)"
-//	@Param			integrationGroup		query		[]string										false	"integration groups to filter by "
+//	@Param			integrationGroup	query		[]string										false	"integration groups to filter by "
 //	@Param			integrationTypes	query		[]integration.Type								false	"integration type to filter by"
 //	@Param			benchmarkId			query		[]string										false	"BenchmarkID"
 //	@Param			controlId			query		[]string										false	"ControlID"
@@ -1443,7 +1443,7 @@ func (h *HttpHandler) GetTopFieldByComplianceResultCount(echoCtx echo.Context) e
 //	@Param			benchmarkId			path		string											true	"BenchmarkID"
 //	@Param			field				path		string											true	"Field"	Enums(resourceType,integrationID,resourceID,service)
 //	@Param			integrationId		query		[]string										false	"integration IDs to filter by"
-//	@Param			integrationGroup		query		[]string										false	"integration groups to filter by "
+//	@Param			integrationGroup	query		[]string										false	"integration groups to filter by "
 //	@Param			resourceCollection	query		[]string										false	"Resource collection IDs to filter by"
 //	@Param			integrationTypes	query		[]integration.Type								false	"Integration type to filter by"
 //	@Param			severities			query		[]opengovernanceTypes.ComplianceResultSeverity	false	"Severities to filter by defaults to all severities except passed"
@@ -1524,10 +1524,10 @@ func (h *HttpHandler) GetComplianceResultsFieldCountByControls(echoCtx echo.Cont
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string		true	"BenchmarkID"
-//	@Param			integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param			benchmarkId			path		string		true	"BenchmarkID"
+//	@Param			integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param			integrationGroup	query		[]string	false	"integration groups to filter by "
-//	@Success		200				{object}	api.GetAccountsComplianceResultsSummaryResponse
+//	@Success		200					{object}	api.GetAccountsComplianceResultsSummaryResponse
 //	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -1623,10 +1623,10 @@ func (h *HttpHandler) GetAccountsComplianceResultsSummary(echoCtx echo.Context) 
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string		true	"BenchmarkID"
-//	@Param			integrationId	query		[]string	false	"Integration IDs to filter by"
+//	@Param			benchmarkId			path		string		true	"BenchmarkID"
+//	@Param			integrationId		query		[]string	false	"Integration IDs to filter by"
 //	@Param			integrationGroup	query		[]string	false	"Integration groups to filter by "
-//	@Success		200				{object}	api.GetServicesComplianceResultsSummaryResponse
+//	@Success		200					{object}	api.GetServicesComplianceResultsSummaryResponse
 //	@Router			/compliance/api/v1/compliance_result/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesComplianceResultsSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -2528,13 +2528,13 @@ func addToControlSeverityResultV2(controlSeverityResult api.BenchmarkControlsSev
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			integrationId		query		[]string		false	"Integration IDs to filter by"
-//	@Param			integrationGroup		query		[]string		false	"Integration groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			integrationId		query		[]string			false	"Integration IDs to filter by"
+//	@Param			integrationGroup	query		[]string			false	"Integration groups to filter by "
+//	@Param			resourceCollection	query		[]string			false	"Resource collection IDs to filter by"
 //	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
-//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
-//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
+//	@Param			tag					query		[]string			false	"Key-Value tags in key=value format to filter by"
+//	@Param			timeAt				query		int					false	"timestamp for values in epoch seconds"
+//	@Param			topAccountCount		query		int					false	"Top account count"	default(3)
 //	@Success		200					{object}	api.ListBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
@@ -2748,13 +2748,13 @@ func (h *HttpHandler) ListBenchmarksSummary(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string			true	"Benchmark ID"
-//	@Param			integrationId		query		[]string		false	"integration IDs to filter by"
-//	@Param			integrationGroup		query		[]string		false	"integration groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			benchmark_id		path		string				true	"Benchmark ID"
+//	@Param			integrationId		query		[]string			false	"integration IDs to filter by"
+//	@Param			integrationGroup	query		[]string			false	"integration groups to filter by "
+//	@Param			resourceCollection	query		[]string			false	"Resource collection IDs to filter by"
 //	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
-//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
-//	@Param			topAccountCount		query		int				false	"Top account count"	default(3)
+//	@Param			timeAt				query		int					false	"timestamp for values in epoch seconds"
+//	@Param			topAccountCount		query		int					false	"Top account count"	default(3)
 //	@Success		200					{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(echoCtx echo.Context) error {
@@ -3036,12 +3036,12 @@ func (h *HttpHandler) populateBenchmarkControlSummary(ctx context.Context, bench
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id	path		string		true	"Benchmark ID"
-//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		benchmark_id		path		string		true	"Benchmark ID"
+//	@Param		integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param		integrationGroup	query		[]string	false	"integration groups to filter by"
-//	@Param		timeAt			query		int			false	"timestamp for values in epoch seconds"
-//	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
-//	@Success	200				{object}	api.BenchmarkControlSummary
+//	@Param		timeAt				query		int			false	"timestamp for values in epoch seconds"
+//	@Param		tag					query		[]string	false	"Key-Value tags in key=value format to filter by"
+//	@Success	200					{object}	api.BenchmarkControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls [get]
 func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3142,11 +3142,11 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id	path		string		true	"Benchmark ID"
-//	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		benchmark_id		path		string		true	"Benchmark ID"
+//	@Param		controlId			path		string		true	"Control ID"
+//	@Param		integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
-//	@Success	200				{object}	api.ControlSummary
+//	@Success	200					{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/controls/{controlId} [get]
 func (h *HttpHandler) GetBenchmarkControl(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -3229,13 +3229,13 @@ func (h *HttpHandler) populateControlsMap(ctx context.Context, benchmarkID strin
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string			true	"Benchmark ID"
-//	@Param			integrationId		query		[]string		false	"integration IDs to filter by"
-//	@Param			integrationGroup		query		[]string		false	"integration groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			benchmark_id		path		string				true	"Benchmark ID"
+//	@Param			integrationId		query		[]string			false	"integration IDs to filter by"
+//	@Param			integrationGroup	query		[]string			false	"integration groups to filter by "
+//	@Param			resourceCollection	query		[]string			false	"Resource collection IDs to filter by"
 //	@Param			integrationTypes	query		[]integration.Type	false	"Integration type to filter by"
-//	@Param			startTime			query		int				false	"timestamp for start of the chart in epoch seconds"
-//	@Param			endTime				query		int				false	"timestamp for end of the chart in epoch seconds"
+//	@Param			startTime			query		int					false	"timestamp for start of the chart in epoch seconds"
+//	@Param			endTime				query		int					false	"timestamp for end of the chart in epoch seconds"
 //	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/trend [get]
 func (h *HttpHandler) GetBenchmarkTrend(echoCtx echo.Context) error {
@@ -3972,11 +3972,11 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		controlId		query		[]string	false	"Control IDs to filter by"
-//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		controlId			query		[]string	false	"Control IDs to filter by"
+//	@Param		integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
-//	@Param		tag				query		[]string	false	"Key-Value tags in key=value format to filter by"
-//	@Success	200				{object}	[]api.ControlSummary
+//	@Param		tag					query		[]string	false	"Key-Value tags in key=value format to filter by"
+//	@Success	200					{object}	[]api.ControlSummary
 //	@Router		/compliance/api/v1/controls/summary [get]
 func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -4086,10 +4086,10 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		controlId			path		string		true	"Control ID"
+//	@Param		integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param		integrationGroup	query		[]string	false	"integrationion groups to filter by "
-//	@Success	200				{object}	api.ControlSummary
+//	@Success	200					{object}	api.ControlSummary
 //	@Router		/compliance/api/v1/controls/{controlId}/summary [get]
 func (h *HttpHandler) GetControlSummary(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -4227,13 +4227,13 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		controlId		path		string		true	"Control ID"
-//	@Param		integrationId	query		[]string	false	"integration IDs to filter by"
+//	@Param		controlId			path		string		true	"Control ID"
+//	@Param		integrationId		query		[]string	false	"integration IDs to filter by"
 //	@Param		integrationGroup	query		[]string	false	"integration groups to filter by "
-//	@Param		startTime		query		int			false	"timestamp for start of the chart in epoch seconds"
-//	@Param		endTime			query		int			false	"timestamp for end of the chart in epoch seconds"
-//	@Param		granularity		query		string		false	"granularity of the chart"	Enums(daily,monthly)	Default(daily)
-//	@Success	200				{object}	[]api.ControlTrendDatapoint
+//	@Param		startTime			query		int			false	"timestamp for start of the chart in epoch seconds"
+//	@Param		endTime				query		int			false	"timestamp for end of the chart in epoch seconds"
+//	@Param		granularity			query		string		false	"granularity of the chart"	Enums(daily,monthly)	Default(daily)
+//	@Success	200					{object}	[]api.ControlTrendDatapoint
 //	@Router		/compliance/api/v1/controls/{controlId}/trend [get]
 func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
 	ctx := echoCtx.Request().Context()
@@ -4319,7 +4319,7 @@ func (h *HttpHandler) GetControlTrend(echoCtx echo.Context) error {
 //	@Param			benchmark_id		path		string		true	"Benchmark ID"
 //	@Param			auto_assign			query		bool		false	"Auto enable benchmark for integrations"
 //	@Param			integrationId		query		[]string	false	"integration ID or 'all' for everything"
-//	@Param			integrationGroup		query		[]string	false	"integration group"
+//	@Param			integrationGroup	query		[]string	false	"integration group"
 //	@Param			resourceCollection	query		[]string	false	"Resource collection"
 //	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/integration [post]
@@ -4738,7 +4738,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(echoCtx echo.Context) error {
 //	@Produce		json
 //	@Param			benchmark_id		path	string		true	"Benchmark ID"
 //	@Param			integrationId		query	[]string	false	"integration ID or 'all' for everything"
-//	@Param			integrationGroup		query	[]string	false	"integration Group "
+//	@Param			integrationGroup	query	[]string	false	"integration Group "
 //	@Param			resourceCollection	query	[]string	false	"Resource Collection"
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/integration [delete]
