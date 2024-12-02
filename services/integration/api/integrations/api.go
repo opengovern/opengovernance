@@ -79,6 +79,7 @@ func (h API) Register(g *echo.Group) {
 	types.DELETE("/:integrationTypeId", httpserver.AuthorizeHandler(h.DeleteIntegrationType, api.EditorRole))
 	types.PUT("/:integration_type/enable", httpserver.AuthorizeHandler(h.EnableIntegrationType, api.EditorRole))
 	types.PUT("/:integration_type/disable", httpserver.AuthorizeHandler(h.DisableIntegrationType, api.EditorRole))
+	types.PUT("/:integration_type/upgrade", httpserver.AuthorizeHandler(h.UpgradeIntegrationType, api.EditorRole))
 }
 
 // DiscoverIntegrations godoc
@@ -1373,6 +1374,142 @@ func (h API) PurgeSampleData(c echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to delete sample integrations", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete sample integrations")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// UpgradeIntegrationType godoc
+//
+//	@Summary		Upgrade integration type
+//	@Description	Upgrade integration type
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Success		200
+//	@Param			integration_type	path	string	true	"integration_type"
+//	@Router			/integration/api/v1/integrations/types/{integration_type}/upgrade [put]
+func (h API) UpgradeIntegrationType(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	integrationTypeName := c.Param("integration_type")
+
+	setup, _ := h.database.GetIntegrationTypeSetup(integrationTypeName)
+	if setup == nil || !setup.Enabled {
+		return echo.NewHTTPError(http.StatusBadRequest, "the integration type is not enabled")
+	}
+
+	var integrationTypes []integration.Type
+	integrationTypes = append(integrationTypes, integration.Type(integrationTypeName))
+
+	integrations, err := h.database.ListIntegration(integrationTypes)
+	if err != nil {
+		h.logger.Error("failed to list credentials", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
+	}
+	if len(integrations) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "integration type contains integrations, you can not disable it")
+	}
+
+	currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError, "current namespace lookup failed")
+	}
+	integrationType, ok := integration_type.IntegrationTypes[integration.Type(integrationTypeName)]
+	if !ok {
+		return echo.NewHTTPError(http.StatusNotFound, "invalid integration type")
+	}
+	cnf := integrationType.GetConfiguration()
+
+	// Scheduled deployment
+	var describerDeployment appsv1.Deployment
+	err = h.kubeClient.Get(ctx, client.ObjectKey{
+		Namespace: currentNamespace,
+		Name:      cnf.DescriberDeploymentName,
+	}, &describerDeployment)
+	if err != nil {
+		h.logger.Error("failed to get manual deployment", zap.Error(err))
+	} else {
+		err = h.kubeClient.Delete(ctx, &describerDeployment)
+		if err != nil {
+			h.logger.Error("failed to delete deployment", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete deployment")
+		}
+	}
+
+	describerDeployment.ObjectMeta.Name = cnf.DescriberDeploymentName
+	describerDeployment.Spec.Selector.MatchLabels["app"] = cnf.DescriberDeploymentName
+	describerDeployment.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName
+	describerDeployment.Spec.Template.Spec.ServiceAccountName = "og-describer"
+
+	describerImageTag, ok := os.LookupEnv(cnf.DescriberImageTagKey)
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not find describer image tag")
+	}
+
+	container := describerDeployment.Spec.Template.Spec.Containers[0]
+	container.Name = cnf.DescriberDeploymentName
+	container.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	container.Command = []string{cnf.DescriberRunCommand}
+	describerDeployment.Spec.Template.Spec.Containers[0] = container
+
+	newDeployment := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cnf.DescriberDeploymentName,
+			Namespace: currentNamespace,
+			Labels: map[string]string{
+				"app": cnf.DescriberDeploymentName,
+			},
+		},
+		Spec: describerDeployment.Spec,
+	}
+
+	err = h.kubeClient.Create(ctx, &newDeployment)
+	if err != nil {
+		return err
+	}
+
+	// Manual deployment
+	var describerDeploymentManuals appsv1.Deployment
+	err = h.kubeClient.Get(ctx, client.ObjectKey{
+		Namespace: currentNamespace,
+		Name:      cnf.DescriberDeploymentName + "-manuals",
+	}, &describerDeploymentManuals)
+	if err != nil {
+		h.logger.Error("failed to get manual deployment", zap.Error(err))
+	} else {
+		err = h.kubeClient.Delete(ctx, &describerDeploymentManuals)
+		if err != nil {
+			h.logger.Error("failed to delete manual deployment", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete manual deployment")
+		}
+	}
+
+	describerDeploymentManuals.ObjectMeta.Name = cnf.DescriberDeploymentName + "-manuals"
+	describerDeploymentManuals.Spec.Selector.MatchLabels["app"] = cnf.DescriberDeploymentName + "-manuals"
+	describerDeploymentManuals.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName + "-manuals"
+	describerDeploymentManuals.Spec.Template.Spec.ServiceAccountName = "og-describer"
+
+	containerManuals := describerDeploymentManuals.Spec.Template.Spec.Containers[0]
+	containerManuals.Name = cnf.DescriberDeploymentName
+	containerManuals.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	containerManuals.Command = []string{cnf.DescriberRunCommand}
+	describerDeploymentManuals.Spec.Template.Spec.Containers[0] = containerManuals
+
+	newDeploymentManuals := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cnf.DescriberDeploymentName + "-manuals",
+			Namespace: currentNamespace,
+			Labels: map[string]string{
+				"app": cnf.DescriberDeploymentName + "-manuals",
+			},
+		},
+		Spec: describerDeploymentManuals.Spec,
+	}
+
+	err = h.kubeClient.Create(ctx, &newDeploymentManuals)
+	if err != nil {
+		return err
 	}
 
 	return c.NoContent(http.StatusOK)
