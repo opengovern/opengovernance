@@ -4,7 +4,6 @@ var TablesToResourceTypes = map[string]string{
 	"entraid_group":                        "Microsoft.Entra/groups",
 	"entraid_group_membership":             "Microsoft.Entra/groupMemberships",
 	"entraid_device":                       "Microsoft.Entra/devices",
-	"entraid_sign_in_report":               "Microsoft.Entra/signInReports",
 	"entraid_application":                  "Microsoft.Entra/applications",
 	"entraid_app_registration":             "Microsoft.Entra/appRegistrations",
 	"entraid_enterprise_application":       "Microsoft.Entra/enterpriseApplication",
@@ -22,14 +21,12 @@ var TablesToResourceTypes = map[string]string{
 	"entraid_user":                         "Microsoft.Entra/users",
 	"entraid_directory_role":               "Microsoft.Entra/directoryroles",
 	"entraid_directory_setting":            "Microsoft.Entra/directorysettings",
-	"entraid_directory_audit_report":       "Microsoft.Entra/directoryauditreport",
 }
 
 var ResourceTypesList = []string{
 	"Microsoft.Entra/groups",
 	"Microsoft.Entra/groupMemberships",
 	"Microsoft.Entra/devices",
-	"Microsoft.Entra/signInReports",
 	"Microsoft.Entra/applications",
 	"Microsoft.Entra/appRegistrations",
 	"Microsoft.Entra/enterpriseApplication",
@@ -47,5 +44,4 @@ var ResourceTypesList = []string{
 	"Microsoft.Entra/users",
 	"Microsoft.Entra/directoryroles",
 	"Microsoft.Entra/directorysettings",
-	"Microsoft.Entra/directoryauditreport",
 }
