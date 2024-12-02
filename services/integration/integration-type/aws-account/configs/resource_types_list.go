@@ -446,6 +446,10 @@ var TablesToResourceTypes = map[string]string{
 	"aws_identitystore_group_membership":              "AWS::IdentityStore::GroupMembership",
 }
 
+var OrganizationMasterResourceTypesList = []string{
+	"AWS::IAM::Policy",
+}
+
 var ResourceTypesList = []string{
 	"AWS::Redshift::Snapshot",
 	"AWS::IAM::AccountSummary",
@@ -601,7 +605,6 @@ var ResourceTypesList = []string{
 	"AWS::CostExplorer::ByUsageTypeDaily",
 	"AWS::EKS::Addon",
 	"AWS::CostExplorer::ByServiceMonthly",
-	"AWS::IAM::Policy",
 	"AWS::Redshift::Cluster",
 	"AWS::WAFRegional::Rule",
 	"AWS::WAFRegional::RuleGroup",
