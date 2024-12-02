@@ -24,8 +24,6 @@ func (i *EntraIdDirectoryIntegration) GetConfiguration() interfaces.IntegrationC
 		UISpecFileName: "entraid-directory.json",
 
 		DescriberDeploymentName: entraidDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   entraidDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    entraidDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     entraidDescriberLocal.DescriberRunCommand,
 	}
 }

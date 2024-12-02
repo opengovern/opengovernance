@@ -26,8 +26,6 @@ func (i *GithubAccountIntegration) GetConfiguration() interfaces.IntegrationConf
 		UISpecFileName: "github-account.json",
 
 		DescriberDeploymentName: githubDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   githubDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    githubDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     githubDescriberLocal.DescriberRunCommand,
 	}
 }

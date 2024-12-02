@@ -25,8 +25,6 @@ func (i *CohereAIProjectIntegration) GetConfiguration() interfaces.IntegrationCo
 		UISpecFileName: "cohereai-project.json",
 
 		DescriberDeploymentName: cohereaiDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   cohereaiDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    cohereaiDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     cohereaiDescriberLocal.DescriberRunCommand,
 	}
 }
@@ -54,7 +52,7 @@ func (i *CohereAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 		return nil, err
 	}
 	labels := map[string]string{
-		"ApiKey": credentials.APIKey,
+		"ApiKey":     credentials.APIKey,
 		"ClientName": credentials.ClientName,
 	}
 	labelsJsonData, err := json.Marshal(labels)

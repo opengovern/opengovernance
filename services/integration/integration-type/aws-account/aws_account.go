@@ -29,8 +29,6 @@ func (i *AwsCloudAccountIntegration) GetConfiguration() interfaces.IntegrationCo
 		UISpecFileName: "aws-cloud-account.json",
 
 		DescriberDeploymentName: awsDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   awsDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    awsDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     awsDescriberLocal.DescriberRunCommand,
 	}
 }

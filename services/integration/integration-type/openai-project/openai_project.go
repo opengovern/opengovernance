@@ -24,8 +24,6 @@ func (i *OpenAIProjectIntegration) GetConfiguration() interfaces.IntegrationConf
 		UISpecFileName: "openai-project.json",
 
 		DescriberDeploymentName: openaiDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   openaiDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    openaiDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     openaiDescriberLocal.DescriberRunCommand,
 	}
 }
