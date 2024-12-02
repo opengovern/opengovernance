@@ -937,9 +937,31 @@ func (h HttpHandler) GetViews(echoCtx echo.Context) error {
 
 	apiViews := make([]api.View, 0, len(views))
 	for _, view := range views {
+		var query api.Query
+		if view.Query != nil {
+			var parameters []api.Parameters
+			for _, p := range view.Query.Parameters {
+				parameters = append(parameters, api.Parameters{
+					Key:      p.Key,
+					Required: p.Required,
+				})
+			}
+			query = api.Query{
+				ID:             view.Query.ID,
+				QueryToExecute: view.Query.QueryToExecute,
+				PrimaryTable:   view.Query.PrimaryTable,
+				ListOfTables:   view.Query.ListOfTables,
+				Parameters:     parameters,
+				Engine:         view.Query.Engine,
+				Global:         view.Query.Global,
+			}
+		}
+
 		apiViews = append(apiViews, api.View{
 			ID:           view.ID,
-			Query:        view.Query,
+			Title:        view.Title,
+			Description:  view.Description,
+			Query:        query,
 			Dependencies: view.Dependencies,
 		})
 	}
