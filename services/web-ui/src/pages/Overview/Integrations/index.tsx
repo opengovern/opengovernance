@@ -474,7 +474,7 @@ useEffect(()=>{getList(4,1,'count','desc',false)},[])
                         count: type?.count?.total,
                         // schema_id: type?.schema_ids[0],
                         // SourceCode: type.SourceCode,
-                        logo: type.logo,
+                        logo: `https://raw.githubusercontent.com/opengovern/website/main/connectors/icons/${type.logo}`,
                     }
                 })}
                 loadingText="Loading resources"

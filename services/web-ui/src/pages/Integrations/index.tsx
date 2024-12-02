@@ -395,7 +395,7 @@ export default function Integrations() {
                                                             ?.total,
                                                         // schema_id: type?.schema_ids[0],
                                                         // SourceCode: type.SourceCode,
-                                                        logo: type.logo,
+                                                        logo: `https://raw.githubusercontent.com/opengovern/website/main/connectors/icons/${type.logo}`,
                                                     }
                                                 }
                                             )}
