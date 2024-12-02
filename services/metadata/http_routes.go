@@ -69,8 +69,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v3.GET("/about", httpserver.AuthorizeHandler(h.GetAbout, api3.ViewerRole))
 	v3.GET("/vault/configured", httpserver.AuthorizeHandler(h.VaultConfigured, api3.ViewerRole))
 
-	v3.PUT("/views/reload", httpserver.AuthorizeHandler(h.ReloadViews, api3.AdminRole))
-	v3.GET("/views/checkpoint", httpserver.AuthorizeHandler(h.GetViewsCheckpoint, api3.AdminRole))
+	views := v3.Group("/views")
+	views.PUT("/reload", httpserver.AuthorizeHandler(h.ReloadViews, api3.AdminRole))
+	views.GET("/checkpoint", httpserver.AuthorizeHandler(h.GetViewsCheckpoint, api3.AdminRole))
+	views.GET("", httpserver.AuthorizeHandler(h.GetViews, api3.ViewerRole))
 }
 
 var tracer = otel.Tracer("metadata")
@@ -911,5 +913,38 @@ func (h HttpHandler) ReloadViews(echoCtx echo.Context) error {
 func (h HttpHandler) GetViewsCheckpoint(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, api.GetViewsCheckpointResponse{
 		Checkpoint: h.viewCheckpoint,
+	})
+}
+
+// GetViews godoc
+//
+//	@Summary		Get views
+//
+//	@Description	Returns the views
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.GetViewsResponse
+//	@Router			/metadata/api/v3/views [get]
+func (h HttpHandler) GetViews(echoCtx echo.Context) error {
+	views, err := h.db.ListQueryViews()
+	if err != nil {
+		h.logger.Error("failed to list views", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list views")
+	}
+
+	apiViews := make([]api.View, 0, len(views))
+	for _, view := range views {
+		apiViews = append(apiViews, api.View{
+			ID:           view.ID,
+			Query:        view.Query,
+			Dependencies: view.Dependencies,
+		})
+	}
+
+	return echoCtx.JSON(http.StatusOK, api.GetViewsResponse{
+		Views: apiViews,
 	})
 }
