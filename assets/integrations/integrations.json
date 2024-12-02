@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "integration_type": "aws_account",
+    "integration_type": "aws_cloud_account",
     "name": "Amazon Web Services (AWS)",
     "tier": "Community",
     "tags": { "usage": ["Public Cloud"] },
@@ -53,7 +53,7 @@
   },
   {
     "id": 5,
-    "integration_type": "digitalocean_account",
+    "integration_type": "digitalocean_team",
     "name": "DigitalOcean",
     "tier": "Community",
     "tags": { "usage": ["Public Cloud"] },
@@ -80,7 +80,7 @@
 
   {
     "id": 7,
-    "integration_type": "openai_account",
+    "integration_type": "openai_project",
     "name": "OpenAI",
     "tier": "Community",
     "tags": { "usage": ["AI Services"] },
@@ -105,7 +105,7 @@
     "PackageTag": "local-v0.1.4"
   },
   {
-    "id": 7,
+    "id": 9,
     "integration_type": "cohereai_account",
     "name": "CohereAI",
     "tier": "Community",
@@ -117,9 +117,8 @@
     "schema_ids": ["cohereai"],
     "PackageTag": "local-v0.2.0"
   },
-
   {
-    "id": 9,
+    "id": 10,
     "integration_type": "slack_account",
     "name": "Slack",
     "tier": "Community",
@@ -132,7 +131,7 @@
   },
 
   {
-    "id": 10,
+    "id": 11,
     "integration_type": "google_workspace",
     "name": "Google Workspace",
     "tier": "Community",
@@ -144,25 +143,13 @@
     "schema_ids": ["google_workspace"]
   },
   {
-    "id": 11,
+    "id": 12,
     "integration_type": "doppler_account",
     "name": "Doppler",
     "tier": "Free",
     "tags": { "usage": ["Secrets Management"] },
     "Description": "Manage and sync env variables and secrets.",
     "Icon": "doppler.svg",
-    "Availability": "Planned for Dec 2024",
-    "SourceCode": "",
-    "schema_ids": []
-  },
-  {
-    "id": 12,
-    "integration_type": "fly_io_account",
-    "name": "Fly.io",
-    "tier": "Free",
-    "tags": { "usage": ["DevOps", "Cloud Services"] },
-    "Description": "Deploy and manage applications with Fly.io.",
-    "Icon": "fly_io.svg",
     "Availability": "Planned for Dec 2024",
     "SourceCode": "",
     "schema_ids": []
@@ -512,6 +499,18 @@
     "Description": "Inventory Networks, Gateways, Radios.",
     "Icon": "cisco.svg",
     "Availability": "Planned for Feb 2025",
+    "SourceCode": "",
+    "schema_ids": []
+  },
+  {
+    "id": 42,
+    "integration_type": "fly_io_account",
+    "name": "Fly.io",
+    "tier": "Free",
+    "tags": { "usage": ["DevOps", "Cloud Services"] },
+    "Description": "Deploy and manage applications with Fly.io.",
+    "Icon": "fly_io.svg",
+    "Availability": "Planned for Dec 2024",
     "SourceCode": "",
     "schema_ids": []
   }
