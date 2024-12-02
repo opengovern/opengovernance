@@ -36,7 +36,7 @@ func (i *EntraIdDirectoryIntegration) HealthCheck(jsonData []byte, providerId st
 	}
 
 	return healthcheck.EntraidIntegrationHealthcheck(healthcheck.Config{
-		TenantID:     configs.TenantID,
+		TenantID:     providerId,
 		ClientID:     configs.ClientID,
 		ClientSecret: configs.ClientPassword,
 		CertPath:     "",
