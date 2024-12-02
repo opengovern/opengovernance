@@ -186,6 +186,7 @@ type IntegrationType struct {
 	Icon             string              `json:"Icon"`
 	Availability     string              `json:"Availability"`
 	SourceCode       string              `json:"SourceCode"`
+	PackageURL       string              `json:"PackageURL"`
 	PackageTag       string              `json:"PackageTag"`
 	Enabled          bool                `json:"enabled"`
 	SchemaIDs        []string            `json:"schema_ids"`
@@ -223,7 +224,7 @@ func IntegrationTypesMigration(logger *zap.Logger, dbm db.Database, onboardFileP
 				Description:      obj.Description,
 				Logo:             obj.Icon,
 				Enabled:          obj.Enabled,
-				PackageURL:       obj.SourceCode,
+				PackageURL:       obj.PackageURL,
 				PackageTag:       obj.PackageTag,
 			}
 			if _, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType.IntegrationType)]; ok {
