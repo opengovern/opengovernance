@@ -1,6 +1,8 @@
 package integration_type
 
 import (
+	"strings"
+
 	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/opencomply/services/integration/integration-type/aws-account"
 	awsConfigs "github.com/opengovern/opencomply/services/integration/integration-type/aws-account/configs"
@@ -8,6 +10,8 @@ import (
 	azureConfigs "github.com/opengovern/opencomply/services/integration/integration-type/azure-subscription/configs"
 	cloudflareaccount "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account"
 	cloudflareConfigs "github.com/opengovern/opencomply/services/integration/integration-type/cloudflare-account/configs"
+	cohereaiproject "github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project"
+	cohereaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team"
 	digitalOceanConfigs "github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory"
@@ -19,7 +23,6 @@ import (
 	linodeConfigs "github.com/opengovern/opencomply/services/integration/integration-type/linode-account/configs"
 	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
 	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
-	"strings"
 )
 
 const (
@@ -31,6 +34,7 @@ const (
 	IntegrationTypeCloudflareAccount = cloudflareConfigs.IntegrationNameCloudflareAccount
 	IntegrationTypeOpenAIProject     = openaiConfigs.IntegrationTypeOpenaiProject
 	IntegrationTypeLinodeProject     = linodeConfigs.IntegrationTypeLinodeProject
+	IntegrationTypeCohereAIProject   = cohereaiConfigs.IntegrationTypeCohereaiProject
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -42,6 +46,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeCloudflareAccount,
 	IntegrationTypeOpenAIProject,
 	IntegrationTypeLinodeProject,
+	IntegrationTypeCohereAIProject,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -52,7 +57,8 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
 	IntegrationTypeCloudflareAccount: &cloudflareaccount.CloudFlareAccountIntegration{},
 	IntegrationTypeOpenAIProject:     &openaiproject.OpenAIProjectIntegration{},
-	IntegrationTypeLinodeProject:     &linodeaccount.OpenAIProjectIntegration{},
+	IntegrationTypeLinodeProject:     &linodeaccount.LinodeAccountIntegration{},
+	IntegrationTypeCohereAIProject:   &cohereaiproject.CohereAIProjectIntegration{},
 }
 
 func ParseType(str string) integration.Type {
