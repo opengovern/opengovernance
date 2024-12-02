@@ -84,16 +84,17 @@ type Query struct {
 }
 
 type ListQueryV2Request struct {
-	TitleFilter      string              `json:"title_filter"`
-	IntegrationTypes []string            `json:"integration_types"`
-	HasParameters    *bool               `json:"has_parameters"`
-	IsBookmarked     *bool               `json:"is_bookmarked"`
-	PrimaryTable     []string            `json:"primary_table"`
-	ListOfTables     []string            `json:"list_of_tables"`
-	Tags             map[string][]string `json:"tags"`
-	TagsRegex        *string             `json:"tags_regex"`
-	Cursor           *int64              `json:"cursor"`
-	PerPage          *int64              `json:"per_page"`
+	TitleFilter       string              `json:"title_filter"`
+	IntegrationTypes  []string            `json:"integration_types"`
+	HasParameters     *bool               `json:"has_parameters"`
+	IntegrationExists bool                `json:"integration_exists"`
+	IsBookmarked      bool                `json:"is_bookmarked"`
+	PrimaryTable      []string            `json:"primary_table"`
+	ListOfTables      []string            `json:"list_of_tables"`
+	Tags              map[string][]string `json:"tags"`
+	TagsRegex         *string             `json:"tags_regex"`
+	Cursor            *int64              `json:"cursor"`
+	PerPage           *int64              `json:"per_page"`
 }
 
 type ListQueryRequest struct {
