@@ -267,8 +267,10 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 
 	var items []inventoryApi.NamedQueryItemV2
 	for _, item := range queries {
-		if !(item.IsBookmarked == req.IsBookmarked) {
-			continue
+		if req.IsBookmarked {
+			if !item.IsBookmarked {
+				continue
+			}
 		}
 		if req.IntegrationExists {
 			integrationExists := false
