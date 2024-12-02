@@ -14,8 +14,6 @@ type IntegrationConfiguration struct {
 	UISpecFileName string
 
 	DescriberDeploymentName string
-	DescriberImageAddress   string
-	DescriberImageTagKey    string
 	DescriberRunCommand     string
 }
 

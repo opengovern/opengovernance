@@ -35,7 +35,7 @@ func (db Database) GetIntegrationType(id string) (*models.IntegrationType, error
 	var integrationType models.IntegrationType
 	tx := db.Orm.
 		Model(&models.IntegrationType{}).
-		Where("id = ?", id).
+		Where("integration_type = ?", id).
 		First(&integrationType)
 	if tx.Error != nil {
 		return nil, tx.Error
