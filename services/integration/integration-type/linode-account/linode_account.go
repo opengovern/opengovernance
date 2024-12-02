@@ -10,9 +10,9 @@ import (
 	"github.com/opengovern/opencomply/services/integration/models"
 )
 
-type OpenAIProjectIntegration struct{}
+type LinodeAccountIntegration struct{}
 
-func (i *OpenAIProjectIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+func (i *LinodeAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic:   linodeDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:      linodeDescriberLocal.JobQueueTopicManuals,
@@ -31,7 +31,7 @@ func (i *OpenAIProjectIntegration) GetConfiguration() interfaces.IntegrationConf
 	}
 }
 
-func (i *OpenAIProjectIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
+func (i *LinodeAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
 	var credentials linodeDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -42,7 +42,7 @@ func (i *OpenAIProjectIntegration) HealthCheck(jsonData []byte, providerId strin
 	return isHealthy, err
 }
 
-func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
+func (i *LinodeAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
 	var credentials linodeDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -74,11 +74,11 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	return integrations, nil
 }
 
-func (i *OpenAIProjectIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
+func (i *LinodeAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return linodeDescriberLocal.ResourceTypesList, nil
 }
 
-func (i *OpenAIProjectIntegration) GetResourceTypeFromTableName(tableName string) string {
+func (i *LinodeAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
 	if v, ok := linodeDescriberLocal.TablesToResourceTypes[tableName]; ok {
 		return v
 	}
