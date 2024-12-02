@@ -7,7 +7,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-digitalocean:0.0.1 as digitalocean
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-cloudflare:0.0.1 as cloudflare
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-openai:0.0.1 as openai
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-linode:0.0.1 as linode
-FROM ${PLUGIN_REGISTRY}/steampipe-plugin-linode:0.0.1 as cohereai
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-cohereai:0.0.1 as cohereai
 
 FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
 
