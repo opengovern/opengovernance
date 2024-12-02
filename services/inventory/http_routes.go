@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"net/http"
 	"regexp"
 	"sort"
@@ -256,6 +257,11 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 
 	var items []inventoryApi.NamedQueryItemV2
 	for _, item := range queries {
+		if req.IsBookmarked != nil {
+			if !(item.IsBookmarked == *req.IsBookmarked) {
+				continue
+			}
+		}
 		tags := item.GetTagsMap()
 		if tags == nil || len(tags) == 0 {
 			tags = make(map[string][]string)
@@ -1283,14 +1289,22 @@ func (h *HttpHandler) GetResourceCategories(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			named_query
 //	@Param			queries	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
+//	 	@Param 			is_bookmarked 	query 	bool 		false	"is bookmarked filter"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	inventoryApi.GetResourceCategoriesResponse
 //	@Router			/inventory/api/v3/queries/categories [get]
 func (h *HttpHandler) GetQueriesResourceCategories(ctx echo.Context) error {
 	queryIds := httpserver.QueryArrayParam(ctx, "queries")
+	isBookmarkedStr := ctx.Param("is_bookmarked")
+	var isBookmarked *bool
+	if isBookmarkedStr == "true" {
+		isBookmarked = aws.Bool(true)
+	} else if isBookmarkedStr == "false" {
+		isBookmarked = aws.Bool(false)
+	}
 
-	queries, err := h.db.ListQueries(queryIds, nil, nil, nil)
+	queries, err := h.db.ListQueries(queryIds, nil, nil, nil, isBookmarked)
 	if err != nil {
 		h.logger.Error("could not find queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
@@ -1365,20 +1379,29 @@ func (h *HttpHandler) GetTablesResourceCategories(ctx echo.Context) error {
 
 // GetCategoriesQueries godoc
 //
-//	@Summary		Get list of controls for given categories
-//	@Description	Get list of controls for given categories
-//	@Security		BearerToken
-//	@Tags			named_query
-//	@Param			categories	query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Accepts		json
-//	@Produce		json
-//	@Success		200	{object}	[]string
-//	@Router			/compliance/api/v3/categories/queries [get]
+//		@Summary		Get list of controls for given categories
+//		@Description	Get list of controls for given categories
+//		@Security		BearerToken
+//		@Tags			named_query
+//		@Param			categories		query	[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
+//	 	@Param 			is_bookmarked 	query 	bool 		false	"is bookmarked filter"
+//		@Accepts		json
+//		@Produce		json
+//		@Success		200	{object}	[]string
+//		@Router			/inventory/api/v3/categories/queries [get]
 func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 	categories, err := h.db.ListUniqueCategoriesAndTablesForTables(nil)
 	if err != nil {
 		h.logger.Error("failed to list resource categories", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
+	}
+
+	isBookmarkedStr := ctx.Param("is_bookmarked")
+	var isBookmarked *bool
+	if isBookmarkedStr == "true" {
+		isBookmarked = aws.Bool(true)
+	} else if isBookmarkedStr == "false" {
+		isBookmarked = aws.Bool(false)
 	}
 
 	categoriesFilter := httpserver.QueryArrayParam(ctx, "categories")
@@ -1417,7 +1440,7 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 			tablesFilter = append(tablesFilter, k)
 		}
 
-		queries, err := h.db.ListQueries(nil, nil, tablesFilter, nil)
+		queries, err := h.db.ListQueries(nil, nil, tablesFilter, nil, isBookmarked)
 		if err != nil {
 			h.logger.Error("could not find queries", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not find queries")
@@ -1470,12 +1493,20 @@ func (h *HttpHandler) GetCategoriesQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Param			parameters	query	[]string	false	"Parameters filter by"
+//	 	@Param 			is_bookmarked 	query 	bool 		false	"is bookmarked filter"
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	inventoryApi.GetParametersQueriesResponse
 //	@Router			/compliance/api/v3/parameters/controls [get]
 func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 	parameters := httpserver.QueryArrayParam(ctx, "parameters")
+	isBookmarkedStr := ctx.Param("is_bookmarked")
+	var isBookmarked *bool
+	if isBookmarkedStr == "true" {
+		isBookmarked = aws.Bool(true)
+	} else if isBookmarkedStr == "false" {
+		isBookmarked = aws.Bool(false)
+	}
 
 	var err error
 	if len(parameters) == 0 {
@@ -1488,7 +1519,7 @@ func (h *HttpHandler) GetParametersQueries(ctx echo.Context) error {
 
 	var parametersQueries []inventoryApi.ParametersQueries
 	for _, p := range parameters {
-		queries, err := h.db.ListQueries(nil, nil, nil, []string{p})
+		queries, err := h.db.ListQueries(nil, nil, nil, []string{p}, isBookmarked)
 		if err != nil {
 			h.logger.Error("failed to get list of controls", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of controls")
