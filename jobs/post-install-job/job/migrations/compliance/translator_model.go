@@ -30,7 +30,10 @@ type Control struct {
 }
 
 type QueryView struct {
-	ID           string   `json:"id" yaml:"ID"`
-	Query        string   `json:"query" yaml:"Query"`
+	ID          string        `json:"id" yaml:"ID"`
+	Title       string        `json:"title" yaml:"Title"`
+	Description string        `json:"description" yaml:"Description"`
+	Query       *shared.Query `json:"query" yaml:"Query"`
+
 	Dependencies []string `json:"dependencies" yaml:"Dependencies"`
 }
