@@ -243,13 +243,14 @@ export default function QueryDetail({
                     onClick={() => {
                         // @ts-ignore
                         setQuery(query?.query?.queryToExecute)
-                        setTab(1)
+                        setTab("0")
+                        // debugger
                     }}
                     disabled={false}
                     loading={false}
                     loadingText="Running"
                 >
-                    {/* <Link to={`/cloudql?tab_id=1`}> */}
+                    {/* <Link to={`/cloudql`}> */}
                     Run in Query
                     {/* </Link>{' '} */}
                 </Button>

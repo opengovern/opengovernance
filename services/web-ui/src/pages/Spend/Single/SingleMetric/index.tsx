@@ -452,7 +452,7 @@ export default function SingleSpendMetric({
                                 setQuery(modalData)
                             }}
                         >
-                            <Link to={`/cloudql?tab_id=1`}>
+                            <Link to={`/cloudql`}>
                                 Open in Query
                             </Link>
                         </Button>

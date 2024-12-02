@@ -303,7 +303,7 @@ export default function ControlDetail({
                                                         loadingText="Running"
                                                     >
                                                         <Link
-                                                            to={`/cloudql?tab_id=1`}
+                                                            to={`/cloudql`}
                                                         >
                                                             Run in Query
                                                         </Link>{' '}

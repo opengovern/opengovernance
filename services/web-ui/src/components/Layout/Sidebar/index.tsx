@@ -439,7 +439,7 @@ export default function Sidebar({  currentPage }: ISidebar) {
 
             {
                 name: 'CloudQL',
-                page: ['cloudql-dashboard', 'cloudql'],
+                page: ['cloudql', 'cloudql'],
                 icon: MagnifyingGlassIcon,
                 isPreview: false,
                 // children: [

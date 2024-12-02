@@ -313,7 +313,7 @@ useEffect(()=>{getList(4,1,'count','desc',false)},[])
                                       onClick={() => {
                                           setRunQuery(q?.query || '')
                                           navigate(
-                                              `/cloudql?tab_id=1`
+                                              `/cloudql`
                                           )
                                       }}
                                   >

@@ -233,7 +233,7 @@ export default function SingleMetric({
                                 setQuery(modalData)
                             }}
                         >
-                            <Link to={`/cloudql?tab_id=1`}>Open in Query</Link>
+                            <Link to={`/cloudql`}>Open in Query</Link>
                         </Button>
                         <Button onClick={() => setModalData('')}>Close</Button>
                     </Flex>

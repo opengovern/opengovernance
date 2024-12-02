@@ -20,7 +20,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAtom } from 'jotai'
 import { useState } from 'react'
 import { useInventoryApiV1QueryList } from '../../../api/inventory.gen'
-import { runQueryAtom } from '../../../store'
+import { queryAtom } from '../../../store'
 import { getErrorMessage } from '../../../types/apierror'
 import { GithubComKaytuIoKaytuEnginePkgInventoryApiSmartQueryItem } from '../../../api/api'
 
@@ -53,7 +53,7 @@ const getQueries = (
 export default function Query({ height }: IQuery) {
     const workspace = useParams<{ ws: string }>().ws
     const navigate = useNavigate()
-    const [runQuery, setRunQuery] = useAtom(runQueryAtom)
+    const [runQuery, setRunQuery] = useAtom(queryAtom)
     const [open, setOpen] = useState(0)
 
     const {
@@ -168,7 +168,7 @@ export default function Query({ height }: IQuery) {
                                       onClick={() => {
                                           setRunQuery(q?.query || '')
                                           navigate(
-                                              `/cloudql?tab_id=1`
+                                              `/cloudql`
                                           )
                                       }}
                                   >

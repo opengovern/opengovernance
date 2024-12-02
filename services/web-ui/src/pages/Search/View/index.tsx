@@ -72,7 +72,6 @@ import AxiosAPI from '../../../api/ApiConfig'
 import { snakeCaseToLabel } from '../../../utilities/labelMaker'
 import { numberDisplay } from '../../../utilities/numericDisplay'
 import TopHeader from '../../../components/Layout/Header'
-import QueryDetail from './QueryDetail'
 import { array } from 'prop-types'
 import KFilter from '../../../components/Filter'
 import KTable from '@cloudscape-design/components/table'
@@ -89,6 +88,7 @@ import {
 } from '@cloudscape-design/components'
 import { AppLayout, SplitPanel } from '@cloudscape-design/components'
 import { useIntegrationApiV1EnabledConnectorsList } from '../../../api/integration.gen'
+import axios from 'axios'
 
 export const getTable = (
     headers: string[] | undefined,
@@ -210,7 +210,7 @@ export interface Props {
     setTab: Function
 }
 
-export default function AllQueries({ setTab }: Props) {
+export default function View({ setTab }: Props) {
     const [runQuery, setRunQuery] = useAtom(runQueryAtom)
     const [loading, setLoading] = useState(false)
     const [savedQuery, setSavedQuery] = useAtom(queryAtom)
@@ -268,69 +268,34 @@ export default function AllQueries({ setTab }: Props) {
     //         Cursor: 0,
     //         PerPage:25
     //     })
-    const recordToArray = (record?: Record<string, string[]> | undefined) => {
-        if (record === undefined) {
-            return []
-        }
-
-        return Object.keys(record).map((key) => {
-            return {
-                value: key,
-                resource_types: record[key],
-            }
-        })
-    }
-
-    const ConvertParams = (array: string[], key: string) => {
-        return `[${array[0]}]`
-        // let temp = ''
-        // array.map((item,index)=>{
-        //     if(index ===0){
-        //         temp = temp + item
-        //     }
-        //     else{
-        //         temp = temp +'&'+key+'='+item
-        //     }
-        // })
-        // return temp
-    }
-
+   
     const getRows = () => {
+        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
         setLoading(true)
-        const api = new Api()
-        api.instance = AxiosAPI
-
-        let body = {
-            //  title_filter: '',
-            tags: query?.tags,
-            integration_types: query?.providers,
-            list_of_tables: query?.list_of_tables,
-            cursor: page,
-            per_page: 15,
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
         }
-        // if (!body.integration_types) {
-        //     delete body['integration_types']
-        // } else {
-        //     // @ts-ignore
-        //     body['integration_types'] = ConvertParams(
-        //         // @ts-ignore
-        //         [body?.integration_types],
-        //         'integration_types'
-        //     )
-        // }
-        api.inventory
-            .apiV2QueryList(body)
-            .then((resp) => {
-                if (resp.data.items) {
-                    setRows(resp.data.items)
-                } else {
-                    setRows([])
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+        axios
+            .get(`${url}/main/metadata/api/v3/views`, config)
+            .then((res) => {
+                if (res.data) {
+                    setRows(res.data.views)
                 }
-                setTotalCount(resp.data.total_count)
-                setTotalPage(Math.ceil(resp.data.total_count / 15))
                 setLoading(false)
             })
             .catch((err) => {
+                console.log(err)
                 setLoading(false)
             })
     }
@@ -398,7 +363,14 @@ export default function AllQueries({ setTab }: Props) {
             setOptions(temp_option)
             setProperties(property)
         }
-    }, [filterExec, categoryExec, filtersLoading, categoryLoading, TypesExec,TypesLoading])
+    }, [
+        filterExec,
+        categoryExec,
+        filtersLoading,
+        categoryLoading,
+        TypesExec,
+        TypesLoading,
+    ])
 
     useEffect(() => {
         if (filterQuery) {
@@ -482,14 +454,15 @@ export default function AllQueries({ setTab }: Props) {
                     >
                         <>
                             {selectedRow ? (
-                                <QueryDetail
-                                    // type="resource"
-                                    query={selectedRow}
-                                    open={openSlider}
-                                    onClose={() => setOpenSlider(false)}
-                                    onRefresh={() => window.location.reload()}
-                                    setTab={setTab}
-                                />
+                                <></>
+                                // <QueryDetail
+                                //     // type="resource"
+                                //     query={selectedRow}
+                                //     open={openSlider}
+                                //     onClose={() => setOpenSlider(false)}
+                                //     onRefresh={() => window.location.reload()}
+                                //     setTab={setTab}
+                                // />
                             ) : (
                                 <Spinner />
                             )}
