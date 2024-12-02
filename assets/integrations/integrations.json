@@ -10,6 +10,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-aws",
     "schema_ids": ["aws"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-aws",
     "PackageTag": "local-v0.1.4"
   },
   {
@@ -23,6 +24,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-azure",
     "schema_ids": ["azure"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-azure",
     "PackageTag": "local-v0.1.5"
   },
   {
@@ -36,6 +38,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-entraid",
     "schema_ids": ["entraid", "azuread", "aad"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-entraid",
     "PackageTag": "local-v0.1.18"
   },
   {
@@ -49,6 +52,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-github",
     "schema_ids": ["github"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-github",
     "PackageTag": "local-v0.1.3"
   },
   {
@@ -62,6 +66,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-digitalocean",
     "schema_ids": ["digitalocean"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-digitalocean",
     "PackageTag": "local-v0.0.4"
   },
   {
@@ -75,6 +80,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-cloudflare",
     "schema_ids": ["cloudflare"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-cloudflare",
     "PackageTag": "local-v0.2.6"
   },
 
@@ -89,6 +95,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-openai",
     "schema_ids": ["openai"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-openai",
     "PackageTag": "local-v0.1.11"
   },
   {
@@ -102,6 +109,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-linode",
     "schema_ids": ["linode"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-linode",
     "PackageTag": "local-v0.1.4"
   },
   {
@@ -115,6 +123,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-cohereai",
     "schema_ids": ["cohereai"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-cohereai",
     "PackageTag": "local-v0.2.0"
   },
   {
