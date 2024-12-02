@@ -20,7 +20,7 @@ import (
 
 // Global constants for required permissions and required licenses
 var requiredPermissions = []string{"Directory.Read.All", "User.Read.All"}
-var requiredLicenses = []string{"AAD_PREMIUM_P2"}
+var requiredLicenses = []string{"EMSPREMIUM", "AAD_PREMIUM_P1", "AAD_PREMIUM_P2"}
 
 // Config represents the JSON input configuration
 type Config struct {
