@@ -81,7 +81,7 @@ func (db Database) GetQueriesWithFilters(search *string) ([]NamedQuery, error) {
 	return res, nil
 }
 
-func (db Database) ListQueries(queryIdsFilter []string, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
+func (db Database) ListQueries(queryIdsFilter []string, primaryTable []string, listOfTables []string, params []string, isBookmarked *bool) ([]NamedQuery, error) {
 	var s []NamedQuery
 
 	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*")
@@ -89,6 +89,11 @@ func (db Database) ListQueries(queryIdsFilter []string, primaryTable []string, l
 	if len(queryIdsFilter) > 0 {
 		m = m.Where("id in ?", queryIdsFilter)
 	}
+
+	if isBookmarked != nil {
+		m = m.Where("is_bookmarked = ?", *isBookmarked)
+	}
+
 	if len(params) > 0 || len(primaryTable) > 0 || len(listOfTables) > 0 {
 		m = m.Joins("JOIN queries q ON q.id = named_queries.query_id")
 	}

@@ -87,6 +87,7 @@ type ListQueryV2Request struct {
 	TitleFilter      string              `json:"title_filter"`
 	IntegrationTypes []string            `json:"integration_types"`
 	HasParameters    *bool               `json:"has_parameters"`
+	IsBookmarked     *bool               `json:"is_bookmarked"`
 	PrimaryTable     []string            `json:"primary_table"`
 	ListOfTables     []string            `json:"list_of_tables"`
 	Tags             map[string][]string `json:"tags"`
