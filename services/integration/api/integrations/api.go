@@ -1072,10 +1072,15 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "the integration type is already enabled")
 		}
 	}
+	integrationTypeInfo, err := h.database.GetIntegrationType(integrationTypeName)
+	if err != nil {
+		h.logger.Error("failed to get integration type", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration type")
+	}
 
 	// Scheduled deployment
 	var describerDeployment appsv1.Deployment
-	err := h.kubeClient.Get(ctx, client.ObjectKey{
+	err = h.kubeClient.Get(ctx, client.ObjectKey{
 		Namespace: currentNamespace,
 		Name:      "og-describer-aws",
 	}, &describerDeployment)
@@ -1094,14 +1099,9 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	describerDeployment.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName
 	describerDeployment.Spec.Template.Spec.ServiceAccountName = "og-describer"
 
-	describerImageTag, ok := os.LookupEnv(cnf.DescriberImageTagKey)
-	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "could not find describer image tag")
-	}
-
 	container := describerDeployment.Spec.Template.Spec.Containers[0]
 	container.Name = cnf.DescriberDeploymentName
-	container.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	container.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	container.Command = []string{cnf.DescriberRunCommand}
 	describerDeployment.Spec.Template.Spec.Containers[0] = container
 
@@ -1138,7 +1138,7 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 
 	containerManuals := describerDeploymentManuals.Spec.Template.Spec.Containers[0]
 	containerManuals.Name = cnf.DescriberDeploymentName
-	containerManuals.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	containerManuals.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	containerManuals.Command = []string{cnf.DescriberRunCommand}
 	describerDeploymentManuals.Spec.Template.Spec.Containers[0] = containerManuals
 
@@ -1421,6 +1421,12 @@ func (h API) UpgradeIntegrationType(c echo.Context) error {
 	}
 	cnf := integrationType.GetConfiguration()
 
+	integrationTypeInfo, err := h.database.GetIntegrationType(integrationTypeName)
+	if err != nil {
+		h.logger.Error("failed to get integration type", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration type")
+	}
+
 	// Scheduled deployment
 	var describerDeployment appsv1.Deployment
 	err = h.kubeClient.Get(ctx, client.ObjectKey{
@@ -1442,14 +1448,9 @@ func (h API) UpgradeIntegrationType(c echo.Context) error {
 	describerDeployment.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName
 	describerDeployment.Spec.Template.Spec.ServiceAccountName = "og-describer"
 
-	describerImageTag, ok := os.LookupEnv(cnf.DescriberImageTagKey)
-	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, "could not find describer image tag")
-	}
-
 	container := describerDeployment.Spec.Template.Spec.Containers[0]
 	container.Name = cnf.DescriberDeploymentName
-	container.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	container.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	container.Command = []string{cnf.DescriberRunCommand}
 	describerDeployment.Spec.Template.Spec.Containers[0] = container
 
@@ -1492,7 +1493,7 @@ func (h API) UpgradeIntegrationType(c echo.Context) error {
 
 	containerManuals := describerDeploymentManuals.Spec.Template.Spec.Containers[0]
 	containerManuals.Name = cnf.DescriberDeploymentName
-	containerManuals.Image = fmt.Sprintf("%s:%s", cnf.DescriberImageAddress, describerImageTag)
+	containerManuals.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	containerManuals.Command = []string{cnf.DescriberRunCommand}
 	describerDeploymentManuals.Spec.Template.Spec.Containers[0] = containerManuals
 

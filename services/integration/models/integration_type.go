@@ -17,6 +17,8 @@ type IntegrationType struct {
 	Description      string
 	Logo             string
 	Enabled          bool
+	PackageURL       string
+	PackageTag       string
 }
 
 func (it *IntegrationType) ToApi() (*models.IntegrationType, error) {
