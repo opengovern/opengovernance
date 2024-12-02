@@ -39,7 +39,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-entraid",
     "schema_ids": ["entraid", "azuread", "aad"],
     "PackageURL": "ghcr.io/opengovern/og-describer-entraid",
-    "PackageTag": "local-v0.1.18"
+    "PackageTag": "local-v0.2.0"
   },
   {
     "id": 4,
