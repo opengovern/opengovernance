@@ -20,7 +20,7 @@ import (
 
 // Global constants for required permissions and required licenses
 var requiredPermissions = []string{"Directory.Read.All", "User.Read.All"}
-var requiredLicenses = []string{"AAD_PREMIUM_P2"}
+var requiredLicenses = []string{"EMSPREMIUM", "AAD_PREMIUM_P1", "AAD_PREMIUM_P2"}
 
 // Config represents the JSON input configuration
 type Config struct {
@@ -258,7 +258,7 @@ func getTenantInfo(ctx context.Context, credential azcore.TokenCredential, confi
 	// Healthy if primary domain is present, and both required permissions and licenses are assigned
 	hasPrimaryDomain := tenantInfo.PrimaryDomain != ""
 	hasAllPermissions := hasAllElements(requiredPermissions, assignedPermissions)
-	hasAllLicenses := hasAllElements(requiredLicenses, licenses)
+	hasAllLicenses := hasAnyElements(requiredLicenses, licenses)
 
 	tenantInfo.Healthy = hasPrimaryDomain && hasAllPermissions && hasAllLicenses
 	tenantInfo.HealthCheckDetails = healthDetails
@@ -368,4 +368,20 @@ func hasAllElements(required, assigned []string) bool {
 	}
 
 	return true
+}
+
+// hasAnyElements checks if any elements of required are present in assigned.
+func hasAnyElements(required, assigned []string) bool {
+	assignedSet := make(map[string]struct{})
+	for _, item := range assigned {
+		assignedSet[item] = struct{}{}
+	}
+
+	for _, req := range required {
+		if _, found := assignedSet[req]; found {
+			return true
+		}
+	}
+
+	return false
 }

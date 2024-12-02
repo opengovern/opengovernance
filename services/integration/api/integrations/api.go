@@ -1402,15 +1402,6 @@ func (h API) UpgradeIntegrationType(c echo.Context) error {
 	var integrationTypes []integration.Type
 	integrationTypes = append(integrationTypes, integration.Type(integrationTypeName))
 
-	integrations, err := h.database.ListIntegration(integrationTypes)
-	if err != nil {
-		h.logger.Error("failed to list credentials", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list credential")
-	}
-	if len(integrations) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "integration type contains integrations, you can not disable it")
-	}
-
 	currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
 	if !ok {
 		return echo.NewHTTPError(http.StatusInternalServerError, "current namespace lookup failed")
