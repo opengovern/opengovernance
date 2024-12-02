@@ -242,6 +242,16 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		search = &req.TitleFilter
 	}
 
+	integrationTypes := make(map[string]bool)
+	integrations, err := h.integrationClient.ListIntegrations(&httpclient.Context{UserRole: api.AdminRole}, nil)
+	if err != nil {
+		h.logger.Error("failed to get integrations list", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integrations list")
+	}
+	for _, i := range integrations.Integrations {
+		integrationTypes[i.IntegrationType.String()] = true
+	}
+
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
@@ -257,11 +267,21 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 
 	var items []inventoryApi.NamedQueryItemV2
 	for _, item := range queries {
-		if req.IsBookmarked != nil {
-			if !(item.IsBookmarked == *req.IsBookmarked) {
+		if !(item.IsBookmarked == req.IsBookmarked) {
+			continue
+		}
+		if req.IntegrationExists {
+			integrationExists := false
+			for _, i := range item.IntegrationTypes {
+				if _, ok := integrationTypes[i]; ok {
+					integrationExists = true
+				}
+			}
+			if !integrationExists {
 				continue
 			}
 		}
+
 		tags := item.GetTagsMap()
 		if tags == nil || len(tags) == 0 {
 			tags = make(map[string][]string)
