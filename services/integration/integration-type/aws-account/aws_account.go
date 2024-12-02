@@ -7,8 +7,11 @@ import (
 	awsDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/aws-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/aws-account/discovery"
 	"github.com/opengovern/opencomply/services/integration/integration-type/aws-account/healthcheck"
+	labelsPackage "github.com/opengovern/opencomply/services/integration/integration-type/aws-account/labels"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opencomply/services/integration/models"
+	"golang.org/x/net/context"
+	"strconv"
 )
 
 type AwsCloudAccountIntegration struct{}
@@ -49,6 +52,7 @@ func (i *AwsCloudAccountIntegration) HealthCheck(jsonData []byte, providerId str
 }
 
 func (i *AwsCloudAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
+	ctx := context.Background()
 	var credentials awsDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -68,11 +72,20 @@ func (i *AwsCloudAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 			return nil, fmt.Errorf(a.Details.Error)
 		}
 
+		isOrganizationMaster, err := labelsPackage.IsOrganizationMasterAccount(ctx, labelsPackage.AWSConfigInput{
+			AccessKeyID:              credentials.AwsAccessKeyID,
+			SecretAccessKey:          credentials.AwsSecretAccessKey,
+			RoleNameInPrimaryAccount: credentials.RoleToAssumeInMainAccount,
+			CrossAccountRoleARN:      a.Labels.CrossAccountRoleARN,
+			ExternalID:               credentials.ExternalID,
+		})
+
 		labels := map[string]string{
-			"RoleNameInMainAccount": a.Labels.RoleNameInMainAccount,
-			"AccountType":           a.Labels.AccountType,
-			"CrossAccountRoleARN":   a.Labels.CrossAccountRoleARN,
-			"ExternalID":            a.Labels.ExternalID,
+			"RoleNameInMainAccount":               a.Labels.RoleNameInMainAccount,
+			"AccountType":                         a.Labels.AccountType,
+			"CrossAccountRoleARN":                 a.Labels.CrossAccountRoleARN,
+			"ExternalID":                          a.Labels.ExternalID,
+			"integration/aws/organization-master": strconv.FormatBool(isOrganizationMaster),
 		}
 		labelsJsonData, err := json.Marshal(labels)
 		if err != nil {
@@ -94,8 +107,12 @@ func (i *AwsCloudAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	return integrations, nil
 }
 
-func (i *AwsCloudAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return awsDescriberLocal.ResourceTypesList, nil
+func (i *AwsCloudAccountIntegration) GetResourceTypesByLabels(labels map[string]string) ([]string, error) {
+	resourceTypes := awsDescriberLocal.ResourceTypesList
+	if labels["integration/aws/organization-master"] == "true" {
+		resourceTypes = append(resourceTypes, awsDescriberLocal.OrganizationMasterResourceTypesList...)
+	}
+	return resourceTypes, nil
 }
 
 func (i *AwsCloudAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
