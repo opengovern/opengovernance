@@ -25,8 +25,6 @@ func (i *DigitaloceanTeamIntegration) GetConfiguration() interfaces.IntegrationC
 		UISpecFileName: "digitalocean-team.json",
 
 		DescriberDeploymentName: digitaloceanDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   digitaloceanDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    digitaloceanDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     digitaloceanDescriberLocal.DescriberRunCommand,
 	}
 }

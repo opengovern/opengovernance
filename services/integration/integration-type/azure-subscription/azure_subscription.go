@@ -24,8 +24,6 @@ func (i *AzureSubscriptionIntegration) GetConfiguration() interfaces.Integration
 		UISpecFileName: "azure-subscription.json",
 
 		DescriberDeploymentName: azureDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   azureDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    azureDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     azureDescriberLocal.DescriberRunCommand,
 	}
 }

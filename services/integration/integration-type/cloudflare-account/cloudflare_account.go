@@ -24,8 +24,6 @@ func (i *CloudFlareAccountIntegration) GetConfiguration() interfaces.Integration
 
 		UISpecFileName: "cloudflare-account.json",
 
-		DescriberImageAddress:   cloudflareDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    cloudflareDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     cloudflareDescriberLocal.DescriberRunCommand,
 		DescriberDeploymentName: cloudflareDescriberLocal.DescriberDeploymentName,
 	}

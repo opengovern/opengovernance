@@ -25,8 +25,6 @@ func (i *LinodeAccountIntegration) GetConfiguration() interfaces.IntegrationConf
 		UISpecFileName: "openai-project.json",
 
 		DescriberDeploymentName: linodeDescriberLocal.DescriberDeploymentName,
-		DescriberImageAddress:   linodeDescriberLocal.DescriberImageAddress,
-		DescriberImageTagKey:    linodeDescriberLocal.DescriberImageTagKey,
 		DescriberRunCommand:     linodeDescriberLocal.DescriberRunCommand,
 	}
 }
