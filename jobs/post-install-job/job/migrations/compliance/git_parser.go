@@ -631,7 +631,7 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 						Global:          query.Query.Global,
 					}
 					for _, parameter := range query.Query.Parameters {
-						q.Parameters = append(q.Parameters, models.Parameters{
+						q.Parameters = append(q.Parameters, models.QueryParameter{
 							QueryID:  obj.ID,
 							Key:      parameter.Key,
 							Required: parameter.Required,
@@ -664,7 +664,7 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 					Global:         obj.Query.Global,
 				}
 				for _, parameter := range obj.Query.Parameters {
-					q.Parameters = append(q.Parameters, models.Parameters{
+					q.Parameters = append(q.Parameters, models.QueryParameter{
 						QueryID:  obj.ID,
 						Key:      parameter.Key,
 						Required: parameter.Required,

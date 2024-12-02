@@ -54,9 +54,9 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	dbMetadata := db.Database{Orm: ormMetadata}
 
 	p := GitParser{
-		logger:               logger,
-		controlsQueries:      make(map[string]db.Query),
-		namedQueries:         make(map[string]inventory.NamedQuery),
+		logger:          logger,
+		controlsQueries: make(map[string]db.Query),
+		namedQueries:    make(map[string]inventory.NamedQuery),
 	}
 	if err := p.ExtractCompliance(config.ComplianceGitPath, config.ControlEnrichmentGitPath); err != nil {
 		logger.Error("failed to extract controls and benchmarks", zap.Error(err))
@@ -125,8 +125,8 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	missingQueryViewsQueries := make(map[string]bool)
 	err = dbMetadata.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		tx.Model(&models.QueryView{}).Where("1=1").Unscoped().Delete(&models.QueryView{})
-		tx.Model(&models.Parameters{}).Where("1=1").Unscoped().Delete(&models.Parameters{})
-		tx.Model(&models.Query{}).Where("1=1").Unscoped().Delete(&models.Parameters{})
+		tx.Model(&models.QueryParameter{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
+		tx.Model(&models.Query{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
 		for _, obj := range p.queryViewsQueries {
 			obj.QueryViews = nil
 			err := tx.Clauses(clause.OnConflict{

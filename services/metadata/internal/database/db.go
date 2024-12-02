@@ -20,7 +20,7 @@ func (db Database) Initialize() error {
 		&models.QueryView{},
 		&models.QueryViewTag{},
 		&models.Query{},
-		&models.Parameters{},
+		&models.QueryParameter{},
 		&models.PlatformConfiguration{},
 	)
 	if err != nil {
