@@ -180,7 +180,7 @@ initLoop:
 				continue
 			}
 
-			query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query
+			query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query.QueryToExecute
 			_, err = selfClient.GetConnection().Exec(ctx, query)
 			if strings.Contains(err.Error(), "SQLSTATE 42P01") {
 				continue initLoop
