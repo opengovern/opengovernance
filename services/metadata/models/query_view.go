@@ -28,14 +28,14 @@ type Query struct {
 	PrimaryTable    *string
 	ListOfTables    pq.StringArray `gorm:"type:text[]"`
 	Engine          string
-	QueryViews      []QueryView  `gorm:"foreignKey:QueryID"`
-	Parameters      []Parameters `gorm:"foreignKey:QueryID"`
+	QueryViews      []QueryView      `gorm:"foreignKey:QueryID"`
+	Parameters      []QueryParameter `gorm:"foreignKey:QueryID"`
 	Global          bool
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
 
-type Parameters struct {
+type QueryParameter struct {
 	QueryID  string `gorm:"primaryKey"`
 	Key      string `gorm:"primaryKey"`
 	Required bool   `gorm:"not null"`
