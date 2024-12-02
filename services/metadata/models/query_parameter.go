@@ -2,28 +2,28 @@ package models
 
 import "github.com/opengovern/opencomply/services/metadata/api"
 
-type QueryParameter struct {
+type QueryParameterValues struct {
 	Key   string `gorm:"primaryKey"`
 	Value string `gorm:"type:text;not null"`
 }
 
-func (qp QueryParameter) GetKey() string {
+func (qp QueryParameterValues) GetKey() string {
 	return qp.Key
 }
 
-func (qp QueryParameter) GetValue() string {
+func (qp QueryParameterValues) GetValue() string {
 	return qp.Value
 }
 
-func (qp QueryParameter) ToAPI() api.QueryParameter {
+func (qp QueryParameterValues) ToAPI() api.QueryParameter {
 	return api.QueryParameter{
 		Key:   qp.Key,
 		Value: qp.Value,
 	}
 }
 
-func QueryParameterFromAPI(apiQP api.QueryParameter) QueryParameter {
-	var qp QueryParameter
+func QueryParameterFromAPI(apiQP api.QueryParameter) QueryParameterValues {
+	var qp QueryParameterValues
 	qp.Key = apiQP.Key
 	qp.Value = apiQP.Value
 	return qp

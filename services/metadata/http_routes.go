@@ -237,7 +237,7 @@ func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "no query parameters provided")
 	}
 
-	dbQueryParams := make([]*models.QueryParameter, 0, len(req.QueryParameters))
+	dbQueryParams := make([]*models.QueryParameterValues, 0, len(req.QueryParameters))
 	for _, apiParam := range req.QueryParameters {
 		//key, err := models.ParseQueryParameterKey(apiParam.Key)
 		//if err != nil {
