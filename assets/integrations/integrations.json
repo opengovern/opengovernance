@@ -94,7 +94,7 @@
   {
     "id": 8,
     "integration_type": "linode_account",
-    "name": "Linode",
+    "name": "Linode (Akamai)",
     "tier": "Community",
     "tags": { "usage": ["Public Cloud"] },
     "Description": "Connect Linode to manage cloud accounts.",
