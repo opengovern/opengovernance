@@ -114,7 +114,7 @@
   },
   {
     "id": 9,
-    "integration_type": "cohereai_account",
+    "integration_type": "cohereai_project",
     "name": "CohereAI",
     "tier": "Community",
     "tags": { "usage": ["AI Services"] },
