@@ -4,6 +4,29 @@ import (
 	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/shared"
 )
 
+type FrameworkFile struct {
+	Framework Framework `json:"framework"`
+}
+
+type FrameworkMetadata struct {
+	Defaults struct {
+		AutoAssign        *bool `json:"auto-assign"`
+		Enabled           bool  `json:"enabled"`
+		TracksDriftEvents bool  `json:"tracks-drift-events"`
+	} `json:"defaults"`
+	Tags map[string][]string `json:"tags"`
+}
+
+type Framework struct {
+	ID           string            `json:"id" yaml:"id"`
+	Title        string            `json:"title" yaml:"title"`
+	Description  string            `json:"description" yaml:"description"`
+	SectionCode  string            `json:"section-code" yaml:"section-code"`
+	Metadata     FrameworkMetadata `json:"metadata" yaml:"metadata"`
+	ControlGroup []Framework       `json:"control-group" yaml:"control-group"`
+	Controls     []string          `json:"controls" yaml:"controls"`
+}
+
 type Benchmark struct {
 	ID                string              `json:"ID" yaml:"ID"`
 	Title             string              `json:"Title" yaml:"Title"`

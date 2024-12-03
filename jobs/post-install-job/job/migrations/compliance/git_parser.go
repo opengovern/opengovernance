@@ -23,16 +23,17 @@ import (
 )
 
 type GitParser struct {
-	logger            *zap.Logger
-	benchmarks        []db.Benchmark
-	controls          []db.Control
-	queries           []db.Query
-	queryParams       []models.QueryParameterValues
-	queryViews        []models.QueryView
-	queryViewsQueries []models.Query
-	controlsQueries   map[string]db.Query
-	namedQueries      map[string]inventory.NamedQuery
-	Comparison        *git.ComparisonResultGrouped
+	logger             *zap.Logger
+	benchmarks         []db.Benchmark
+	frameworksChildren map[string][]string
+	controls           []db.Control
+	queries            []db.Query
+	queryParams        []models.QueryParameterValues
+	queryViews         []models.QueryView
+	queryViewsQueries  []models.Query
+	controlsQueries    map[string]db.Query
+	namedQueries       map[string]inventory.NamedQuery
+	Comparison         *git.ComparisonResultGrouped
 }
 
 func populateMdMapFromPath(path string) (map[string]string, error) {
@@ -341,6 +342,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 
 func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
+	var frameworks []FrameworkFile
 	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
 		if !strings.HasSuffix(filepath.Base(path), ".yaml") {
 			return nil
@@ -352,13 +354,23 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			return err
 		}
 
-		var obj Benchmark
-		err = yaml.Unmarshal(content, &obj)
-		if err != nil {
-			g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
-			return err
+		if len(content) >= 9 && string(content[:9]) == "framework:" {
+			var obj FrameworkFile
+			err = yaml.Unmarshal(content, &obj)
+			if err != nil {
+				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
+				return err
+			}
+			frameworks = append(frameworks, obj)
+		} else {
+			var obj Benchmark
+			err = yaml.Unmarshal(content, &obj)
+			if err != nil {
+				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
+				return err
+			}
+			benchmarks = append(benchmarks, obj)
 		}
-		benchmarks = append(benchmarks, obj)
 
 		return nil
 	})
@@ -368,6 +380,23 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	}
 	// g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
 
+	err = g.HandleBenchmarks(benchmarks)
+	if err != nil {
+		return err
+	}
+
+	err = g.HandleFrameworks(frameworks)
+	if err != nil {
+		return err
+	}
+
+	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
+	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
+
+	return nil
+}
+
+func (g *GitParser) HandleBenchmarks(benchmarks []Benchmark) error {
 	children := map[string][]string{}
 	for _, o := range benchmarks {
 		tags := make([]db.BenchmarkTag, 0, len(o.Tags))
@@ -398,7 +427,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			Controls:          nil,
 		}
 		metadataJsonb := pgtype.JSONB{}
-		err = metadataJsonb.Set([]byte(""))
+		err := metadataJsonb.Set([]byte(""))
 		if err != nil {
 			return err
 		}
@@ -442,10 +471,100 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		g.benchmarks[idx] = benchmark
 	}
 	// g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
+	return nil
+}
 
-	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
-	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
+func (g *GitParser) HandleFrameworks(frameworks []FrameworkFile) error {
+	for _, o := range frameworks {
+		framework := o.Framework
+		err := g.HandleSingleFramework(framework)
+		if err != nil {
+			return err
+		}
+	}
+	// g.logger.Info("Extracted benchmarks 2", zap.Int("count", len(g.benchmarks)))
 
+	for idx, benchmark := range g.benchmarks {
+		for _, childID := range g.frameworksChildren[benchmark.ID] {
+			for _, child := range g.benchmarks {
+				if child.ID == childID {
+					benchmark.Children = append(benchmark.Children, child)
+				}
+			}
+		}
+
+		if len(g.frameworksChildren[benchmark.ID]) != len(benchmark.Children) {
+			//fmt.Printf("could not find some benchmark children, %d != %d", len(children[benchmark.ID]), len(benchmark.Children))
+		}
+		g.benchmarks[idx] = benchmark
+	}
+	// g.logger.Info("Extracted benchmarks 3", zap.Int("count", len(g.benchmarks)))
+	return nil
+}
+
+func (g *GitParser) HandleSingleFramework(framework Framework) error {
+	tags := make([]db.BenchmarkTag, 0, len(framework.Metadata.Tags))
+	for tagKey, tagValue := range framework.Metadata.Tags {
+		tags = append(tags, db.BenchmarkTag{
+			Tag: model.Tag{
+				Key:   tagKey,
+				Value: tagValue,
+			},
+			BenchmarkID: framework.ID,
+		})
+	}
+
+	autoAssign := true
+	if framework.Metadata.Defaults.AutoAssign != nil {
+		autoAssign = *framework.Metadata.Defaults.AutoAssign
+	}
+
+	b := db.Benchmark{
+		ID:                framework.ID,
+		Title:             framework.Title,
+		DisplayCode:       framework.SectionCode,
+		Description:       framework.Description,
+		AutoAssign:        autoAssign,
+		TracksDriftEvents: framework.Metadata.Defaults.TracksDriftEvents,
+		Tags:              tags,
+		Children:          nil,
+		Controls:          nil,
+	}
+	metadataJsonb := pgtype.JSONB{}
+	err := metadataJsonb.Set([]byte(""))
+	if err != nil {
+		return err
+	}
+	b.Metadata = metadataJsonb
+
+	for _, controls := range g.controls {
+		if contains(framework.Controls, controls.ID) {
+			b.Controls = append(b.Controls, controls)
+		}
+	}
+
+	integrationTypes := make(map[string]bool)
+	for _, c := range b.Controls {
+		for _, it := range c.IntegrationType {
+			integrationTypes[it] = true
+		}
+	}
+	var integrationTypesList []string
+	for k, _ := range integrationTypes {
+		integrationTypesList = append(integrationTypesList, k)
+	}
+	b.IntegrationType = integrationTypesList
+
+	for _, group := range framework.ControlGroup {
+		if len(group.Controls) > 0 || len(group.ControlGroup) > 0 {
+			err = g.HandleSingleFramework(group)
+			if err != nil {
+				return err
+			}
+		}
+		g.frameworksChildren[framework.ID] = append(g.frameworksChildren[framework.ID], group.ID)
+	}
+	g.benchmarks = append(g.benchmarks, b)
 	return nil
 }
 
