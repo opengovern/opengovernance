@@ -17,7 +17,12 @@ import {
 } from '@tremor/react'
 import { useEffect } from 'react'
 import ReactJson from '@microlink/react-json-view'
-import { CheckCircleIcon, PlayCircleIcon, TagIcon, XCircleIcon } from '@heroicons/react/24/outline'
+import {
+    CheckCircleIcon,
+    PlayCircleIcon,
+    TagIcon,
+    XCircleIcon,
+} from '@heroicons/react/24/outline'
 import {
     GithubComKaytuIoKaytuEnginePkgComplianceApiConformanceStatus,
     GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding,
@@ -51,7 +56,7 @@ interface IResourceFindingDetail {
     setTab: Function
 }
 
-export default function QueryDetail({
+export default function ViewDetail({
     query,
     open,
     onClose,
@@ -118,7 +123,7 @@ export default function QueryDetail({
 
     return (
         <>
-            <KeyValuePairs
+            {/* <KeyValuePairs
                 columns={4}
                 items={[
                     {
@@ -180,7 +185,7 @@ export default function QueryDetail({
                         ),
                     },
                 ]}
-            />
+            /> */}
             {/* <Grid className="w-full gap-4 mb-6" numItems={1}>
                 <Flex
                     flexDirection="row"
@@ -243,7 +248,7 @@ export default function QueryDetail({
                     onClick={() => {
                         // @ts-ignore
                         setQuery(query?.query?.queryToExecute)
-                        setTab("3")
+                        setTab('3')
                         // debugger
                     }}
                     disabled={false}
@@ -257,9 +262,7 @@ export default function QueryDetail({
             </Flex>
             <Card className=" py-3 mb-2 relative ">
                 <Editor
-                    onValueChange={(text) => {
-                        
-                    }}
+                    onValueChange={(text) => {}}
                     highlight={(text) => highlight(text, languages.sql, 'sql')}
                     // @ts-ignore
                     value={query?.query?.queryToExecute || ''}

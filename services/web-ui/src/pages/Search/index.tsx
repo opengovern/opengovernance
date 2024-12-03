@@ -69,26 +69,26 @@ import { URLSearchParams } from 'url'
 export default function Search() {
     const [tab,setTab] = useState<number>(0);
     // find query params for tabs
-    const [searchParams, setSearchParams] = useSearchParams()
+    // const [searchParams, setSearchParams] = useSearchParams()
     const [show, setShow] = useState<boolean>(true)
 
-    useEffect(() => {
-       const tab_id = searchParams.get('tab_id')
-        switch (tab_id) {
-            case '1':
-                setShow(true)
-                setTab(1)
-                break
-            case '0':
-                setShow(true)
-                setTab(0)
-                break
-            default:
-                setTab(0)
-                break
+    // useEffect(() => {
+    //    const tab_id = searchParams.get('tab_id')
+    //     switch (tab_id) {
+    //         case '1':
+    //             setShow(true)
+    //             setTab(1)
+    //             break
+    //         case '0':
+    //             setShow(true)
+    //             setTab(0)
+    //             break
+    //         default:
+    //             setTab(0)
+    //             break
 
-        }
-    }, [searchParams])
+    //     }
+    // }, [searchParams])
 
     return (
         <>
@@ -96,7 +96,7 @@ export default function Search() {
             {show ? (
                 <>
                     {' '}
-                    <TabGroup
+                    {/* <TabGroup
                         index={tab}
                         onIndexChange={(index) => {
                             setTab(index)
@@ -136,7 +136,8 @@ export default function Search() {
                                 )}
                             </TabPanel>
                         </TabPanels>
-                    </TabGroup>
+                    </TabGroup> */}
+                    <Query />
                 </>
             ) : (
                 <>

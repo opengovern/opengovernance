@@ -111,7 +111,7 @@ export default function SearchLanding() {
                                     <Card
                                         className=" cursor-pointer flex justify-center items-center"
                                         onClick={() => {
-                                            navigate('/cloudql?tab_id=1')
+                                            navigate('/cloudql')
                                         }}
                                     >
                                         <Flex

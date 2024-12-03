@@ -1139,14 +1139,14 @@ export default function AllQueries({ setTab }: Props) {
             {/* </Flex> */}
             {/* </Flex> */}
             {/* )} */}
-            <QueryDetail
+            {/* <QueryDetail
                 // type="resource"
                 query={selectedRow}
                 open={openSlider}
                 onClose={() => setOpenSlider(false)}
                 onRefresh={() => window.location.reload()}
                 setTab={setTab}
-            />
+            /> */}
         </>
     )
 }

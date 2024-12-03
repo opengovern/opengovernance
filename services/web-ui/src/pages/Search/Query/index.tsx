@@ -63,6 +63,7 @@ import {
     Modal,
     Pagination,
     SpaceBetween,
+    Tabs,
 } from '@cloudscape-design/components'
 import AceEditor from 'react-ace-builds'
 // import 'ace-builds/src-noconflict/theme-github'
@@ -76,6 +77,9 @@ import 'ace-builds/css/theme/xcode.css'
 
 import CodeEditor from '@cloudscape-design/components/code-editor'
 import KButton from '@cloudscape-design/components/button'
+import AllQueries from '../All Query'
+import View from '../View'
+import Bookmarks from '../Bookmarks'
 export const getTable = (
     headers: string[] | undefined,
     details: any[][] | undefined,
@@ -188,7 +192,7 @@ export default function Query() {
     const [runQuery, setRunQuery] = useAtom(runQueryAtom)
     const [loaded, setLoaded] = useState(false)
     const [savedQuery, setSavedQuery] = useAtom(queryAtom)
-    const [code, setCode] = useState(savedQuery || '')
+    const [code, setCode] = useState(savedQuery ? savedQuery : "")
     const [selectedIndex, setSelectedIndex] = useState(0)
     const [searchCategory, setSearchCategory] = useState('')
     const [selectedRow, setSelectedRow] = useState({})
@@ -200,10 +204,11 @@ export default function Query() {
     const [autoRun, setAutoRun] = useState(false)
     const [engine, setEngine] = useState('cloudql')
     const [page, setPage] = useState(0)
+    const [tab,setTab] = useState("0")
 
     const [preferences, setPreferences] = useState(undefined)
-    const { response: categories, isLoading: categoryLoading } =
-        useInventoryApiV2AnalyticsCategoriesList()
+    // const { response: categories, isLoading: categoryLoading } =
+    //     useInventoryApiV2AnalyticsCategoriesList()
 
     const {
         response: queryResponse,
@@ -240,6 +245,7 @@ export default function Query() {
     useEffect(() => {
         if (code.length) setShowEditor(true)
     }, [code])
+
     const [ace, setAce] = useState()
 
     useEffect(() => {
@@ -265,14 +271,14 @@ export default function Query() {
             .finally(() => {})
     }, [])
 
-    useEffect(() => {
-        if (runQuery.length > 0) {
-            setCode(runQuery)
-            setShowEditor(true)
-            setRunQuery('')
-            setAutoRun(true)
-        }
-    }, [runQuery])
+    // useEffect(() => {
+    //     if (runQuery.length > 0) {
+    //         setCode(runQuery)
+    //         setShowEditor(true)
+    //         setRunQuery('')
+    //         setAutoRun(true)
+    //     }
+    // }, [runQuery])
 
     const recordToArray = (record?: Record<string, string[]> | undefined) => {
         if (record === undefined) {
@@ -293,11 +299,19 @@ export default function Query() {
                 .count,
         [queryResponse, isDemo]
     )
+        useEffect(() => {
+            if(savedQuery.length >0 && savedQuery !== ""){
+            setCode(savedQuery)
+            setAutoRun(true)
+
+            }
+        }, [savedQuery])
+
 
     return (
         <>
             <TopHeader />
-            {categoryLoading ? (
+            {isLoading ? (
                 <Spinner className="mt-56" />
             ) : (
                 <Flex alignItems="start" flexDirection="col">
@@ -429,11 +443,54 @@ export default function Query() {
                             }}
                         />
                     </Flex>
+                    <Tabs
+                        className="mt-2"
+                        activeTabId={tab}
+                        onChange={(e) => setTab(e.detail.activeTabId)}
+                        tabs={[
+                            {
+                                id: '0',
+                                label: 'Getting Started',
+                                content: (
+                                    <>
+                                        <Bookmarks setTab={setTab} />
+                                    </>
+                                ),
+                            },
 
-                    <Flex flexDirection="col" className="w-full ">
-                        <Flex flexDirection="col" className="mb-4">
-                            {/* <Card className="relative overflow-hidden"> */}
-                            {/* <AceEditor
+                            {
+                                id: '1',
+                                label: 'All Queries',
+                                content: (
+                                    <>
+                                        <AllQueries setTab={setTab} />
+                                    </>
+                                ),
+                            },
+                            {
+                                id: '2',
+                                label: 'Views',
+                                content: (
+                                    <>
+                                        <View setTab={setTab} />
+                                    </>
+                                ),
+                            },
+                            {
+                                id: '3',
+                                label: 'Result',
+                                content: (
+                                    <>
+                                        <Flex
+                                            flexDirection="col"
+                                            className="w-full "
+                                        >
+                                            <Flex
+                                                flexDirection="col"
+                                                className="mb-4"
+                                            >
+                                                {/* <Card className="relative overflow-hidden"> */}
+                                                {/* <AceEditor
                                             mode="java"
                                             theme="github"
                                             onChange={(text) => {
@@ -444,7 +501,7 @@ export default function Query() {
                                             value={code}
                                         /> */}
 
-                            {/* <Editor
+                                                {/* <Editor
                                             onValueChange={(text) => {
                                                 setSavedQuery('')
                                                 setCode(text)
@@ -465,60 +522,83 @@ export default function Query() {
                                             }}
                                             placeholder="-- write your SQL query here"
                                         /> */}
-                            {isLoading && isExecuted && (
-                                <Spinner className="bg-white/30 backdrop-blur-sm top-0 left-0 absolute flex justify-center items-center w-full h-full" />
-                            )}
-                            {/* </Card> */}
-                            <Flex className="w-full mt-4">
-                                <Flex justifyContent="start" className="gap-1">
-                                    <Text className="mr-2 w-fit">
-                                        Maximum rows:
-                                    </Text>
-                                    <Select
-                                        enableClear={false}
-                                        className="w-56"
-                                        placeholder="1,000"
-                                    >
-                                        <SelectItem
-                                            value="1000"
-                                            onClick={() => setPageSize(1000)}
-                                        >
-                                            1,000
-                                        </SelectItem>
-                                        <SelectItem
-                                            value="3000"
-                                            onClick={() => setPageSize(3000)}
-                                        >
-                                            3,000
-                                        </SelectItem>
-                                        <SelectItem
-                                            value="5000"
-                                            onClick={() => setPageSize(5000)}
-                                        >
-                                            5,000
-                                        </SelectItem>
-                                        <SelectItem
-                                            value="10000"
-                                            onClick={() => setPageSize(10000)}
-                                        >
-                                            10,000
-                                        </SelectItem>
-                                    </Select>
-                                    <Text className="mr-2 w-fit">Engine:</Text>
-                                    <Select
-                                        enableClear={false}
-                                        className="w-56"
-                                        value={engine}
-                                    >
-                                        <SelectItem
-                                            value="odysseus-sql"
-                                            onClick={() =>
-                                                setEngine('odysseus-sql')
-                                            }
-                                        >
-                                            CloudQL
-                                        </SelectItem>
-                                        {/* <SelectItem
+                                                {isLoading && isExecuted && (
+                                                    <Spinner className="bg-white/30 backdrop-blur-sm top-0 left-0 absolute flex justify-center items-center w-full h-full" />
+                                                )}
+                                                {/* </Card> */}
+                                                <Flex className="w-full mt-4">
+                                                    <Flex
+                                                        justifyContent="start"
+                                                        className="gap-1"
+                                                    >
+                                                        <Text className="mr-2 w-fit">
+                                                            Maximum rows:
+                                                        </Text>
+                                                        <Select
+                                                            enableClear={false}
+                                                            className="w-56"
+                                                            placeholder="1,000"
+                                                        >
+                                                            <SelectItem
+                                                                value="1000"
+                                                                onClick={() =>
+                                                                    setPageSize(
+                                                                        1000
+                                                                    )
+                                                                }
+                                                            >
+                                                                1,000
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="3000"
+                                                                onClick={() =>
+                                                                    setPageSize(
+                                                                        3000
+                                                                    )
+                                                                }
+                                                            >
+                                                                3,000
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="5000"
+                                                                onClick={() =>
+                                                                    setPageSize(
+                                                                        5000
+                                                                    )
+                                                                }
+                                                            >
+                                                                5,000
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="10000"
+                                                                onClick={() =>
+                                                                    setPageSize(
+                                                                        10000
+                                                                    )
+                                                                }
+                                                            >
+                                                                10,000
+                                                            </SelectItem>
+                                                        </Select>
+                                                        <Text className="mr-2 w-fit">
+                                                            Engine:
+                                                        </Text>
+                                                        <Select
+                                                            enableClear={false}
+                                                            className="w-56"
+                                                            value={engine}
+                                                        >
+                                                            <SelectItem
+                                                                value="odysseus-sql"
+                                                                onClick={() =>
+                                                                    setEngine(
+                                                                        'odysseus-sql'
+                                                                    )
+                                                                }
+                                                            >
+                                                                CloudQL
+                                                            </SelectItem>
+                                                            {/* <SelectItem
                                             value="odysseus-rego"
                                             onClick={() =>
                                                 setEngine('odysseus-rego')
@@ -526,183 +606,224 @@ export default function Query() {
                                         >
                                             Odysseus Rego
                                         </SelectItem> */}
-                                    </Select>
-                                </Flex>
-                                <Flex className="w-max gap-x-3">
-                                    {!!code.length && (
-                                        <KButton
-                                            className="  w-max min-w-max  "
-                                            onClick={() => setCode('')}
-                                            iconSvg={
-                                                <CommandLineIcon className="w-5 " />
-                                            }
-                                        >
-                                            Clear editor
-                                        </KButton>
-                                    )}
-                                    <KButton
-                                        // icon={PlayCircleIcon}
-                                        variant="primary"
-                                        className="w-max  min-w-[300px]  "
-                                        onClick={() => sendNow()}
-                                        disabled={!code.length}
-                                        loading={isLoading && isExecuted}
-                                        loadingText="Running"
-                                        iconSvg={
-                                            <PlayCircleIcon className="w-5 " />
-                                        }
-                                    >
-                                        Run
-                                    </KButton>
-                                </Flex>
-                            </Flex>
-                            <Flex className="w-full">
-                                {!isLoading && isExecuted && error && (
-                                    <Flex
-                                        justifyContent="start"
-                                        className="w-fit"
-                                    >
-                                        <Icon
-                                            icon={ExclamationCircleIcon}
-                                            color="rose"
-                                        />
-                                        <Text color="rose">
-                                            {getErrorMessage(error)}
-                                        </Text>
-                                    </Flex>
-                                )}
-                                {!isLoading && isExecuted && queryResponse && (
-                                    <Flex
-                                        justifyContent="start"
-                                        className="w-fit"
-                                    >
-                                        {memoCount === pageSize ? (
-                                            <>
-                                                <Icon
-                                                    icon={ExclamationCircleIcon}
-                                                    color="amber"
-                                                    className="ml-0 pl-0"
+                                                        </Select>
+                                                    </Flex>
+                                                    <Flex className="w-max gap-x-3">
+                                                        {!!code.length && (
+                                                            <KButton
+                                                                className="  w-max min-w-max  "
+                                                                onClick={() =>
+                                                                    setCode('')
+                                                                }
+                                                                iconSvg={
+                                                                    <CommandLineIcon className="w-5 " />
+                                                                }
+                                                            >
+                                                                Clear editor
+                                                            </KButton>
+                                                        )}
+                                                        <KButton
+                                                            // icon={PlayCircleIcon}
+                                                            variant="primary"
+                                                            className="w-max  min-w-[300px]  "
+                                                            onClick={() =>
+                                                                sendNow()
+                                                            }
+                                                            disabled={
+                                                                !code.length
+                                                            }
+                                                            loading={
+                                                                isLoading &&
+                                                                isExecuted
+                                                            }
+                                                            loadingText="Running"
+                                                            iconSvg={
+                                                                <PlayCircleIcon className="w-5 " />
+                                                            }
+                                                        >
+                                                            Run
+                                                        </KButton>
+                                                    </Flex>
+                                                </Flex>
+                                                <Flex className="w-full">
+                                                    {!isLoading &&
+                                                        isExecuted &&
+                                                        error && (
+                                                            <Flex
+                                                                justifyContent="start"
+                                                                className="w-fit"
+                                                            >
+                                                                <Icon
+                                                                    icon={
+                                                                        ExclamationCircleIcon
+                                                                    }
+                                                                    color="rose"
+                                                                />
+                                                                <Text color="rose">
+                                                                    {getErrorMessage(
+                                                                        error
+                                                                    )}
+                                                                </Text>
+                                                            </Flex>
+                                                        )}
+                                                    {!isLoading &&
+                                                        isExecuted &&
+                                                        queryResponse && (
+                                                            <Flex
+                                                                justifyContent="start"
+                                                                className="w-fit"
+                                                            >
+                                                                {memoCount ===
+                                                                pageSize ? (
+                                                                    <>
+                                                                        <Icon
+                                                                            icon={
+                                                                                ExclamationCircleIcon
+                                                                            }
+                                                                            color="amber"
+                                                                            className="ml-0 pl-0"
+                                                                        />
+                                                                        <Text color="amber">
+                                                                            {`Row limit of ${numberDisplay(
+                                                                                pageSize,
+                                                                                0
+                                                                            )} reached, results are truncated`}
+                                                                        </Text>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Icon
+                                                                            icon={
+                                                                                CheckCircleIcon
+                                                                            }
+                                                                            color="emerald"
+                                                                        />
+                                                                        <Text color="emerald">
+                                                                            Success
+                                                                        </Text>
+                                                                    </>
+                                                                )}
+                                                            </Flex>
+                                                        )}
+                                                </Flex>
+                                            </Flex>
+                                            <Grid
+                                                numItems={1}
+                                                className="w-full"
+                                            >
+                                                <KTable
+                                                    className="   min-h-[450px]   "
+                                                    // resizableColumns
+                                                    // variant="full-page"
+                                                    renderAriaLive={({
+                                                        firstIndex,
+                                                        lastIndex,
+                                                        totalItemsCount,
+                                                    }) =>
+                                                        `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
+                                                    }
+                                                    onSortingChange={(
+                                                        event
+                                                    ) => {
+                                                        // setSort(event.detail.sortingColumn.sortingField)
+                                                        // setSortOrder(!sortOrder)
+                                                    }}
+                                                    // sortingColumn={sort}
+                                                    // sortingDescending={sortOrder}
+                                                    // sortingDescending={sortOrder == 'desc' ? true : false}
+                                                    // @ts-ignore
+                                                    // stickyHeader={true}
+                                                    resizableColumns={true}
+                                                    // stickyColumns={
+                                                    //  {   first:1,
+                                                    //     last: 1}
+                                                    // }
+                                                    onRowClick={(event) => {
+                                                        const row =
+                                                            event.detail.item
+                                                        // @ts-ignore
+                                                        setSelectedRow(row)
+                                                        setOpenDrawer(true)
+                                                    }}
+                                                    columnDefinitions={
+                                                        getTable(
+                                                            queryResponse?.headers,
+                                                            queryResponse?.result,
+                                                            isDemo
+                                                        ).columns
+                                                    }
+                                                    columnDisplay={
+                                                        getTable(
+                                                            queryResponse?.headers,
+                                                            queryResponse?.result,
+                                                            isDemo
+                                                        ).column_def
+                                                    }
+                                                    enableKeyboardNavigation
+                                                    // @ts-ignore
+                                                    items={getTable(
+                                                        queryResponse?.headers,
+                                                        queryResponse?.result,
+                                                        isDemo
+                                                    ).rows?.slice(
+                                                        page * 10,
+                                                        (page + 1) * 10
+                                                    )}
+                                                    loading={isLoading}
+                                                    loadingText="Loading resources"
+                                                    // stickyColumns={{ first: 0, last: 1 }}
+                                                    // stripedRows
+                                                    trackBy="id"
+                                                    empty={
+                                                        <Box
+                                                            margin={{
+                                                                vertical: 'xs',
+                                                            }}
+                                                            textAlign="center"
+                                                            color="inherit"
+                                                        >
+                                                            <SpaceBetween size="m">
+                                                                <b>
+                                                                    No Results
+                                                                </b>
+                                                            </SpaceBetween>
+                                                        </Box>
+                                                    }
+                                                    header={
+                                                        <Header className="w-full">
+                                                            Results{' '}
+                                                            <span className=" font-medium">
+                                                                ({memoCount})
+                                                            </span>
+                                                        </Header>
+                                                    }
+                                                    pagination={
+                                                        <Pagination
+                                                            currentPageIndex={
+                                                                page + 1
+                                                            }
+                                                            pagesCount={Math.ceil(
+                                                                // @ts-ignore
+                                                                getTable(
+                                                                    queryResponse?.headers,
+                                                                    queryResponse?.result,
+                                                                    isDemo
+                                                                ).rows.length /
+                                                                    10
+                                                            )}
+                                                            onChange={({
+                                                                detail,
+                                                            }) =>
+                                                                setPage(
+                                                                    detail.currentPageIndex -
+                                                                        1
+                                                                )
+                                                            }
+                                                        />
+                                                    }
                                                 />
-                                                <Text color="amber">
-                                                    {`Row limit of ${numberDisplay(
-                                                        pageSize,
-                                                        0
-                                                    )} reached, results are truncated`}
-                                                </Text>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Icon
-                                                    icon={CheckCircleIcon}
-                                                    color="emerald"
-                                                />
-                                                <Text color="emerald">
-                                                    Success
-                                                </Text>
-                                            </>
-                                        )}
-                                    </Flex>
-                                )}
-                            </Flex>
-                        </Flex>
-                        <Grid numItems={1} className="w-full">
-                            <KTable
-                                className="   min-h-[450px]   "
-                                // resizableColumns
-                                // variant="full-page"
-                                renderAriaLive={({
-                                    firstIndex,
-                                    lastIndex,
-                                    totalItemsCount,
-                                }) =>
-                                    `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
-                                }
-                                onSortingChange={(event) => {
-                                    // setSort(event.detail.sortingColumn.sortingField)
-                                    // setSortOrder(!sortOrder)
-                                }}
-                                // sortingColumn={sort}
-                                // sortingDescending={sortOrder}
-                                // sortingDescending={sortOrder == 'desc' ? true : false}
-                                // @ts-ignore
-                                // stickyHeader={true}
-                                resizableColumns={true}
-                                // stickyColumns={
-                                //  {   first:1,
-                                //     last: 1}
-                                // }
-                                onRowClick={(event) => {
-                                    const row = event.detail.item
-                                    // @ts-ignore
-                                    setSelectedRow(row)
-                                    setOpenDrawer(true)
-                                }}
-                                columnDefinitions={
-                                    getTable(
-                                        queryResponse?.headers,
-                                        queryResponse?.result,
-                                        isDemo
-                                    ).columns
-                                }
-                                columnDisplay={
-                                    getTable(
-                                        queryResponse?.headers,
-                                        queryResponse?.result,
-                                        isDemo
-                                    ).column_def
-                                }
-                                enableKeyboardNavigation
-                                // @ts-ignore
-                                items={getTable(
-                                    queryResponse?.headers,
-                                    queryResponse?.result,
-                                    isDemo
-                                ).rows?.slice(page * 10, (page + 1) * 10)}
-                                loading={isLoading}
-                                loadingText="Loading resources"
-                                // stickyColumns={{ first: 0, last: 1 }}
-                                // stripedRows
-                                trackBy="id"
-                                empty={
-                                    <Box
-                                        margin={{
-                                            vertical: 'xs',
-                                        }}
-                                        textAlign="center"
-                                        color="inherit"
-                                    >
-                                        <SpaceBetween size="m">
-                                            <b>No Results</b>
-                                        </SpaceBetween>
-                                    </Box>
-                                }
-                                header={
-                                    <Header className="w-full">
-                                        Results{' '}
-                                        <span className=" font-medium">
-                                            ({memoCount})
-                                        </span>
-                                    </Header>
-                                }
-                                pagination={
-                                    <Pagination
-                                        currentPageIndex={page + 1}
-                                        pagesCount={Math.ceil(
-                                            // @ts-ignore
-                                            getTable(
-                                                queryResponse?.headers,
-                                                queryResponse?.result,
-                                                isDemo
-                                            ).rows.length / 10
-                                        )}
-                                        onChange={({ detail }) =>
-                                            setPage(detail.currentPageIndex - 1)
-                                        }
-                                    />
-                                }
-                            />
-                        </Grid>
-                        {/* <TabGroup
+                                            </Grid>
+                                            {/* <TabGroup
                             id="tabs"
                             index={selectedIndex}
                             onIndexChange={setSelectedIndex}
@@ -854,7 +975,12 @@ export default function Query() {
                                 </TabPanel>
                             </TabPanels>
                         </TabGroup> */}
-                    </Flex>
+                                        </Flex>
+                                    </>
+                                ),
+                            },
+                        ]}
+                    />
                 </Flex>
             )}
         </>
