@@ -1,4 +1,4 @@
-package healthcheck
+package discovery
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 )
 
@@ -15,14 +16,32 @@ type ConnectorResponse struct {
 }
 
 
+
+
 type Connector struct {
 	ID                string    `json:"id"`
-	
+	Name              string    `json:"name"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	OrganizationID    string    `json:"organization_id"`
+	Description       string    `json:"description"`
+	URL               string    `json:"url"`
+	Excludes          []string  `json:"excludes"`
+	AuthType          string    `json:"auth_type"`
+	Oauth             Oauth     `json:"oauth"`
+	AuthStatus        string    `json:"auth_status"`
+	Active            bool      `json:"active"`
+	ContinueOnFailure bool      `json:"continue_on_failure"`
+}
+
+type Oauth struct {
+	AuthorizeURL string `json:"authorize_url"`
+	TokenURL     string `json:"token_url"`
 }
 
 
 
-func CohereAIIntegrationDiscovery(apiKey string) (*ConnectorResponse, error) {
+func CohereAIIntegrationDiscovery(apiKey string) ([]Connector, error) {
 	if apiKey == "" {
 		return nil, errors.New("API key is required")
 	}
@@ -65,5 +84,5 @@ func CohereAIIntegrationDiscovery(apiKey string) (*ConnectorResponse, error) {
 		return nil, nil // Token valid but no accessible models
 	}
 
-	return &modelsResponse, nil // Token valid and has access
+	return modelsResponse.Connectors, nil // Token valid and has access
 }

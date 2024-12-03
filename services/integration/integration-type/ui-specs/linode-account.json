@@ -1,50 +1,39 @@
 {
-  "integration_type_id": "cohereai_project",
-  "integration_name": "CohereAI Project",
-  "help_text_md": "Cohere AI  .",
-  "platform_documentation": "https://cohere.ai",
-  "provider_documentation": "https://cohere.ai",
-  "icon": "cohere.svg",
+  "integration_type_id": "linode_account",
+  "integration_name": "Linode Account",
+  "help_text_md": "Linode  .",
+  "platform_documentation": "https://www.linode.com/",
+  "provider_documentation": "https://www.linode.com/",
+  "icon": "linode.svg",
   "discover": {
     "credentials": [
       {
-        "type": "api_key",
-        "label": "API Key",
+        "type": "token",
+        "label": "Personal Access Token (PAT)",
         "priority": 1,
         "fields": [
           {
-            "name": "api_key",
-            "label": "API Key",
+            "name": "token",
+            "label": "Personal Access Token (PAT)",
             "inputType": "text",
             "required": true,
             "order": 1,
             "validation": {
-              "pattern": "^[A-Z0-9]{120}$",
-              "errorMessage": "API Key must be a 120-character alphanumeric string."
+              "pattern": "^[A-Z0-9]{200}$",
+              "errorMessage": "Token must be a 40-character alphanumeric string."
             },
-            "info": "Please provide your Cohere AI API Key.",
-            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
-          },
-          {
-            "name": "client_name",
-            "label": "Client Name",
-            "inputType": "text",
-            "required": true,
-            "order": 2,
-            "info": "Please provide your Cohere AI Profile Name."
+            "info": "Please provide your Token .",
+            "external_help_url": "https://www.linode.com/"
           }
-        
+          
         ]
       }
-    
     ],
     "integrations": [
       {
-        "label": "CohereAI Project",
-        "type": "cohereai_project",
-        "fields": [
-          
-        ]
+        "label": "Linode Account",
+        "type": "linode_account",
+        "fields": []
       }
     ]
   },

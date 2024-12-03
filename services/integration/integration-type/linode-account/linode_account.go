@@ -1,4 +1,4 @@
-package openai_project
+package linode_account
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func (i *LinodeAccountIntegration) GetConfiguration() interfaces.IntegrationConf
 
 		SteampipePluginName: "linode",
 
-		UISpecFileName: "openai-project.json",
+		UISpecFileName: "linode-account.json",
 
 		DescriberDeploymentName: linodeDescriberLocal.DescriberDeploymentName,
 		DescriberRunCommand:     linodeDescriberLocal.DescriberRunCommand,

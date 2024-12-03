@@ -2,11 +2,12 @@ package cohereai_project
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	cohereaiDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/discovery"
+
 	"github.com/opengovern/opencomply/services/integration/models"
 )
 
@@ -36,7 +37,7 @@ func (i *CohereAIProjectIntegration) HealthCheck(jsonData []byte, providerId str
 		return false, err
 	}
 
-	isHealthy, err := healthcheck.OpenAIIntegrationHealthcheck(credentials.APIKey)
+	isHealthy, err := healthcheck.CohereAIIntegrationHealthcheck(credentials.APIKey)
 	return isHealthy, err
 }
 
@@ -47,13 +48,16 @@ func (i *CohereAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 		return nil, err
 	}
 	var integrations []models.Integration
-	_, err = healthcheck.OpenAIIntegrationHealthcheck(credentials.APIKey)
-	if err != nil {
-		return nil, err
+	connectors, err1 := discovery.CohereAIIntegrationDiscovery(credentials.APIKey)
+	if err1 != nil {
+		return nil, err1
 	}
 	labels := map[string]string{
-		"ApiKey":     credentials.APIKey,
 		"ClientName": credentials.ClientName,
+		
+	}
+	if(len(connectors) > 0){
+		labels["OrganizationID"] = connectors[0].OrganizationID
 	}
 	labelsJsonData, err := json.Marshal(labels)
 	if err != nil {
@@ -64,11 +68,16 @@ func (i *CohereAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	if err != nil {
 		return nil, err
 	}
-	integrations = append(integrations, models.Integration{
-		ProviderID: uuid.New().String(),
-		Name:       credentials.ClientName,
+	// for in esponse
+	for _, connector := range connectors {
+integrations = append(integrations, models.Integration{
+		ProviderID: connector.ID,
+		Name:       connector.Name,
 		Labels:     integrationLabelsJsonb,
 	})
+	}
+
+	
 
 	return integrations, nil
 }

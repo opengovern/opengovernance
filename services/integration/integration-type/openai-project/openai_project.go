@@ -6,6 +6,8 @@ import (
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	openaiDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/discovery"
+
 	"github.com/opengovern/opencomply/services/integration/models"
 )
 
@@ -46,12 +48,12 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	var integrations []models.Integration
-	_, err = healthcheck.OpenAIIntegrationHealthcheck(credentials.APIKey)
-	if err != nil {
-		return nil, err
+	orgResponse, err1 := discovery.OpenAIIntegrationDiscovery(credentials.APIKey)
+	if err1 != nil {
+		return nil, err1
 	}
 	labels := map[string]string{
-		"OrganizationID": credentials.OrganizationID,
+		"OrganizationID": orgResponse.OrganizationID,
 	}
 	labelsJsonData, err := json.Marshal(labels)
 	if err != nil {
@@ -62,11 +64,18 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	if err != nil {
 		return nil, err
 	}
-	integrations = append(integrations, models.Integration{
-		ProviderID: credentials.ProjectID,
-		Name:       credentials.ProjectName,
+	// for in thr orgResponse.Projects
+	for _, project := range orgResponse.Projects {
+integrations = append(integrations, models.Integration{
+		ProviderID: project.ID,
+		Name:       project.Name,
 		Labels:     integrationLabelsJsonb,
 	})
+
+	}
+
+
+	
 
 	return integrations, nil
 }

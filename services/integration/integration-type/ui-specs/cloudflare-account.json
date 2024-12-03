@@ -19,8 +19,8 @@
             "required": true,
             "order": 1,
             "validation": {
-              "pattern": "^[a-zA-Z0-9-_]{40}$",
-              "errorMessage": "API Token must be a 40-character alphanumeric string with dashes or underscores."
+              "pattern": "^[a-zA-Z0-9-_]{120}$",
+              "errorMessage": "API Token must be a 120-character alphanumeric string with dashes or underscores."
             },
             "info": "Your Cloudflare API Token with appropriate permissions.",
             "external_help_url": "https://developers.cloudflare.com/api/tokens/create/"

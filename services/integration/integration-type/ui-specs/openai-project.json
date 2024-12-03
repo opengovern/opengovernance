@@ -1,5 +1,5 @@
 {
-  "integration_type_id": "openaiai_project",
+  "integration_type_id": "openai_project",
   "integration_name": "OPENAI Project",
   "help_text_md": "OPEN AI  .",
   "platform_documentation": "https://openai.com/",
