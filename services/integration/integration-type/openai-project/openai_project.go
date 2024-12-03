@@ -65,10 +65,10 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	// for in thr orgResponse.Projects
-	for _, project := range orgResponse.Projects {
+	for _, project := range orgResponse.Projects.Data {
 integrations = append(integrations, models.Integration{
 		ProviderID: project.ID,
-		Name:       project.Name,
+		Name:       project.Title,
 		Labels:     integrationLabelsJsonb,
 	})
 

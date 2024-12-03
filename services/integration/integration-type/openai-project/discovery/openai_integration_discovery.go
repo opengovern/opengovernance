@@ -10,10 +10,12 @@ import (
 
 type OrganizationResponse struct {
 	OrganizationID string `json:"organization"`
-	Projects       []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"projects"`
+	Projects       struct {
+		Data []struct {
+			ID   string `json:"id"`
+			Title string `json:"title"`
+		}
+	}
 }
 
 func OpenAIIntegrationDiscovery(apiKey string) (*OrganizationResponse, error) {
