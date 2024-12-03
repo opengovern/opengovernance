@@ -205,14 +205,15 @@ export const RenderInputField = (
     value: any
 ) => {
     // handle tet and password
+    console.log(field)
     if (field.inputType == 'text' || field.inputType == 'password') {
         return (
             <FormField
                 className="w-full"
                 label={field.label}
                 errorText={
-                    !CheckCondition(field.validation.pattern, value)
-                        ? field.validation.errorMessage
+                    !CheckCondition(field?.validation?.pattern, value)
+                        ? field?.validation?.errorMessage
                         : ''
                 }
             >
