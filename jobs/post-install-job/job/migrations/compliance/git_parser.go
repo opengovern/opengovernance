@@ -398,6 +398,17 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 		return err
 	}
 
+	var newBenchmarks []db.Benchmark
+	for _, b := range g.benchmarks {
+		if b.ID == "" {
+			g.logger.Error("benchmark id should not be empty", zap.String("id", b.ID), zap.String("title", b.Title),
+				zap.Any("benchmark", b))
+			continue
+		}
+		newBenchmarks = append(newBenchmarks, b)
+	}
+	g.benchmarks = newBenchmarks
+
 	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
 	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
 
