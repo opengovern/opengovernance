@@ -354,20 +354,26 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 			return err
 		}
 
-		if len(content) >= 9 && string(content[:9]) == "framework:" {
+		if len(content) >= 9 && string(content[:10]) == "framework:" {
 			var obj FrameworkFile
 			err = yaml.Unmarshal(content, &obj)
 			if err != nil {
 				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
 				return err
 			}
+			if obj.Framework.ID == "" {
+				g.logger.Error("failed to extract benchmark from framework", zap.String("path", path))
+			}
 			frameworks = append(frameworks, obj.Framework)
-		} else if len(content) >= 13 && string(content[:13]) == "control-group:" {
+		} else if len(content) >= 13 && string(content[:14]) == "control-group:" {
 			var obj ControlGroupFile
 			err = yaml.Unmarshal(content, &obj)
 			if err != nil {
 				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
 				return err
+			}
+			if obj.ControlGroup.ID == "" {
+				g.logger.Error("failed to extract benchmark from framework", zap.String("path", path))
 			}
 			frameworks = append(frameworks, obj.ControlGroup)
 		} else {
@@ -401,8 +407,7 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var newBenchmarks []db.Benchmark
 	for _, b := range g.benchmarks {
 		if b.ID == "" {
-			g.logger.Error("benchmark id should not be empty", zap.String("id", b.ID), zap.String("title", b.Title),
-				zap.Any("benchmark", b))
+			g.logger.Error("benchmark id should not be empty", zap.String("id", b.ID), zap.String("title", b.Title))
 			continue
 		}
 		newBenchmarks = append(newBenchmarks, b)
