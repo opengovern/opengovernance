@@ -19,24 +19,13 @@
             "required": true,
             "order": 1,
             "validation": {
-              "pattern": "^[A-Z0-9]{200}$",
-              "errorMessage": "API Key must be a 40-character alphanumeric string."
+              "pattern": "^[A-Z0-9]{300}$",
+              "errorMessage": "API Key must be a 300-character alphanumeric string."
             },
             "info": "Please provide your Cohere AI API Key.",
             "external_help_url": "https://docs.aws.amazon.com/access-key-id"
-          },
-          {
-            "name": "project_name",
-            "label": "Project Name",
-            "inputType": "text",
-            "required": true,
-            "order": 2,
-            "info": "Please provide your Open AI Project Name.",
-            "validation": {
-              "pattern": "^[A-Z0-9]{200}$",
-              "errorMessage": "Please specify project name ."
-            }
           }
+         
         ]
       }
     ],
