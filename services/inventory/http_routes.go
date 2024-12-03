@@ -256,8 +256,62 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithTagsFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithTagsFilters")
 
+	var tablesFilter []string
+	if len(req.Categories) > 0 {
+
+		categories, err := h.db.ListUniqueCategoriesAndTablesForTables(nil)
+		if err != nil {
+			h.logger.Error("failed to list resource categories", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to list resource categories")
+		}
+		categoriesFilterMap := make(map[string]bool)
+		for _, c := range req.Categories {
+			categoriesFilterMap[c] = true
+		}
+
+		var categoriesApi []inventoryApi.ResourceCategory
+		for _, c := range categories {
+			if _, ok := categoriesFilterMap[c.Category]; !ok && len(req.Categories) > 0 {
+				continue
+			}
+			resourceTypes, err := h.db.ListCategoryResourceTypes(c.Category)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "list category resource types")
+			}
+			var resourceTypesApi []inventoryApi.ResourceTypeV2
+			for _, r := range resourceTypes {
+				resourceTypesApi = append(resourceTypesApi, r.ToApi())
+			}
+			categoriesApi = append(categoriesApi, inventoryApi.ResourceCategory{
+				Category:  c.Category,
+				Resources: resourceTypesApi,
+			})
+		}
+
+		tablesFilterMap := make(map[string]string)
+
+		for _, c := range categoriesApi {
+			for _, r := range c.Resources {
+				tablesFilterMap[r.SteampipeTable] = r.ResourceID
+			}
+		}
+		if len(req.ListOfTables) > 0 {
+			for _, t := range req.ListOfTables {
+				if _, ok := tablesFilterMap[t]; ok {
+					tablesFilter = append(tablesFilter, t)
+				}
+			}
+		} else {
+			for t, _ := range tablesFilterMap {
+				tablesFilter = append(tablesFilter, t)
+			}
+		}
+	} else {
+		tablesFilter = req.ListOfTables
+	}
+
 	queries, err := h.db.ListQueriesByFilters(search, req.Tags, req.IntegrationTypes, req.HasParameters, req.PrimaryTable,
-		req.ListOfTables, nil)
+		tablesFilter, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
