@@ -342,7 +342,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 
 func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	var benchmarks []Benchmark
-	var frameworks []FrameworkFile
+	var frameworks []Framework
 	err := filepath.WalkDir(complianceBenchmarksPath, func(path string, d fs.DirEntry, err error) error {
 		if !strings.HasSuffix(filepath.Base(path), ".yaml") {
 			return nil
@@ -361,7 +361,15 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
 				return err
 			}
-			frameworks = append(frameworks, obj)
+			frameworks = append(frameworks, obj.Framework)
+		} else if len(content) >= 13 && string(content[:13]) == "control-group:" {
+			var obj ControlGroupFile
+			err = yaml.Unmarshal(content, &obj)
+			if err != nil {
+				g.logger.Error("failed to unmarshal benchmark", zap.String("path", path), zap.Error(err))
+				return err
+			}
+			frameworks = append(frameworks, obj.ControlGroup)
 		} else {
 			var obj Benchmark
 			err = yaml.Unmarshal(content, &obj)
@@ -474,10 +482,9 @@ func (g *GitParser) HandleBenchmarks(benchmarks []Benchmark) error {
 	return nil
 }
 
-func (g *GitParser) HandleFrameworks(frameworks []FrameworkFile) error {
-	for _, o := range frameworks {
-		framework := o.Framework
-		err := g.HandleSingleFramework(framework)
+func (g *GitParser) HandleFrameworks(frameworks []Framework) error {
+	for _, f := range frameworks {
+		err := g.HandleSingleFramework(f)
 		if err != nil {
 			return err
 		}
@@ -503,20 +510,40 @@ func (g *GitParser) HandleFrameworks(frameworks []FrameworkFile) error {
 }
 
 func (g *GitParser) HandleSingleFramework(framework Framework) error {
-	tags := make([]db.BenchmarkTag, 0, len(framework.Metadata.Tags))
-	for tagKey, tagValue := range framework.Metadata.Tags {
-		tags = append(tags, db.BenchmarkTag{
-			Tag: model.Tag{
-				Key:   tagKey,
-				Value: tagValue,
-			},
-			BenchmarkID: framework.ID,
-		})
+	var tags []db.BenchmarkTag
+	if framework.Metadata != nil {
+		tags = make([]db.BenchmarkTag, 0, len(framework.Metadata.Tags))
+		for tagKey, tagValue := range framework.Metadata.Tags {
+			tags = append(tags, db.BenchmarkTag{
+				Tag: model.Tag{
+					Key:   tagKey,
+					Value: tagValue,
+				},
+				BenchmarkID: framework.ID,
+			})
+		}
+	} else {
+		tags = make([]db.BenchmarkTag, 0, len(framework.Tags))
+		for tagKey, tagValue := range framework.Tags {
+			tags = append(tags, db.BenchmarkTag{
+				Tag: model.Tag{
+					Key:   tagKey,
+					Value: tagValue,
+				},
+				BenchmarkID: framework.ID,
+			})
+		}
 	}
 
 	autoAssign := true
-	if framework.Metadata.Defaults.AutoAssign != nil {
-		autoAssign = *framework.Metadata.Defaults.AutoAssign
+	if framework.Metadata != nil {
+		if framework.Metadata.Defaults.AutoAssign != nil {
+			autoAssign = *framework.Metadata.Defaults.AutoAssign
+		}
+	}
+	tracksDriftEvents := false
+	if framework.Metadata != nil {
+		tracksDriftEvents = framework.Metadata.Defaults.TracksDriftEvents
 	}
 
 	b := db.Benchmark{
@@ -525,7 +552,7 @@ func (g *GitParser) HandleSingleFramework(framework Framework) error {
 		DisplayCode:       framework.SectionCode,
 		Description:       framework.Description,
 		AutoAssign:        autoAssign,
-		TracksDriftEvents: framework.Metadata.Defaults.TracksDriftEvents,
+		TracksDriftEvents: tracksDriftEvents,
 		Tags:              tags,
 		Children:          nil,
 		Controls:          nil,

@@ -8,6 +8,10 @@ type FrameworkFile struct {
 	Framework Framework `json:"framework"`
 }
 
+type ControlGroupFile struct {
+	ControlGroup Framework `json:"control-group"`
+}
+
 type FrameworkMetadata struct {
 	Defaults struct {
 		AutoAssign        *bool `json:"auto-assign"`
@@ -18,13 +22,14 @@ type FrameworkMetadata struct {
 }
 
 type Framework struct {
-	ID           string            `json:"id" yaml:"id"`
-	Title        string            `json:"title" yaml:"title"`
-	Description  string            `json:"description" yaml:"description"`
-	SectionCode  string            `json:"section-code" yaml:"section-code"`
-	Metadata     FrameworkMetadata `json:"metadata" yaml:"metadata"`
-	ControlGroup []Framework       `json:"control-group" yaml:"control-group"`
-	Controls     []string          `json:"controls" yaml:"controls"`
+	ID           string             `json:"id" yaml:"id"`
+	Title        string             `json:"title" yaml:"title"`
+	Description  string             `json:"description" yaml:"description"`
+	SectionCode  string             `json:"section-code" yaml:"section-code"`
+	Metadata     *FrameworkMetadata `json:"metadata" yaml:"metadata"`
+	Tags         map[string][]string  `json:"tags" yaml:"tags"`
+	ControlGroup []Framework        `json:"control-group" yaml:"control-group"`
+	Controls     []string           `json:"controls" yaml:"controls"`
 }
 
 type Benchmark struct {
