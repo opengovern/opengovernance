@@ -17,7 +17,8 @@ type View struct {
 }
 
 type GetViewsResponse struct {
-	Views []View `json:"views"`
+	TotalCount int    `json:"total_count"`
+	Views      []View `json:"views"`
 }
 
 type Query struct {

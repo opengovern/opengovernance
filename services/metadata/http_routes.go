@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opengovern/opencomply/pkg/utils"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -926,6 +928,8 @@ func (h HttpHandler) GetViewsCheckpoint(echoCtx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
+//	@Param			cursor		query	int		false	"Cursor"
+//	@Param			per_page	query	int		false	"Per Page"
 //	@Success		200	{object}	api.GetViewsResponse
 //	@Router			/metadata/api/v3/views [get]
 func (h HttpHandler) GetViews(echoCtx echo.Context) error {
@@ -933,6 +937,22 @@ func (h HttpHandler) GetViews(echoCtx echo.Context) error {
 	if err != nil {
 		h.logger.Error("failed to list views", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list views")
+	}
+
+	var cursor, perPage int64
+	cursorStr := echoCtx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := echoCtx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 
 	apiViews := make([]api.View, 0, len(views))
@@ -966,7 +986,20 @@ func (h HttpHandler) GetViews(echoCtx echo.Context) error {
 		})
 	}
 
+	totalCount := len(apiViews)
+	sort.Slice(apiViews, func(i, j int) bool {
+		return apiViews[i].ID < apiViews[j].ID
+	})
+	if perPage != 0 {
+		if cursor == 0 {
+			apiViews = utils.Paginate(1, perPage, apiViews)
+		} else {
+			apiViews = utils.Paginate(cursor, perPage, apiViews)
+		}
+	}
+
 	return echoCtx.JSON(http.StatusOK, api.GetViewsResponse{
-		Views: apiViews,
+		Views:      apiViews,
+		TotalCount: totalCount,
 	})
 }
