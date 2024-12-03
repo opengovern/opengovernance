@@ -79,6 +79,7 @@ import CodeEditor from '@cloudscape-design/components/code-editor'
 import KButton from '@cloudscape-design/components/button'
 import AllQueries from '../All Query'
 import View from '../View'
+import Bookmarks from '../Bookmarks'
 export const getTable = (
     headers: string[] | undefined,
     details: any[][] | undefined,
@@ -206,8 +207,8 @@ export default function Query() {
     const [tab,setTab] = useState("0")
 
     const [preferences, setPreferences] = useState(undefined)
-    const { response: categories, isLoading: categoryLoading } =
-        useInventoryApiV2AnalyticsCategoriesList()
+    // const { response: categories, isLoading: categoryLoading } =
+    //     useInventoryApiV2AnalyticsCategoriesList()
 
     const {
         response: queryResponse,
@@ -310,7 +311,7 @@ export default function Query() {
     return (
         <>
             <TopHeader />
-            {categoryLoading ? (
+            {isLoading ? (
                 <Spinner className="mt-56" />
             ) : (
                 <Flex alignItems="start" flexDirection="col">
@@ -449,6 +450,34 @@ export default function Query() {
                         tabs={[
                             {
                                 id: '0',
+                                label: 'Getting Started',
+                                content: (
+                                    <>
+                                        <Bookmarks setTab={setTab} />
+                                    </>
+                                ),
+                            },
+
+                            {
+                                id: '1',
+                                label: 'All Queries',
+                                content: (
+                                    <>
+                                        <AllQueries setTab={setTab} />
+                                    </>
+                                ),
+                            },
+                            {
+                                id: '2',
+                                label: 'Views',
+                                content: (
+                                    <>
+                                        <View setTab={setTab} />
+                                    </>
+                                ),
+                            },
+                            {
+                                id: '3',
                                 label: 'Result',
                                 content: (
                                     <>
@@ -947,24 +976,6 @@ export default function Query() {
                             </TabPanels>
                         </TabGroup> */}
                                         </Flex>
-                                    </>
-                                ),
-                            },
-                            {
-                                id: '1',
-                                label: 'All Queries',
-                                content: (
-                                    <>
-                                        <AllQueries setTab={setTab} />
-                                    </>
-                                ),
-                            },
-                            {
-                                id: '2',
-                                label: 'Views',
-                                content: (
-                                    <>
-                                        <View setTab={setTab} />
                                     </>
                                 ),
                             },
