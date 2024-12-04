@@ -184,6 +184,8 @@ export default function CreateIntegration({
             .then((res) => {
                 GetList()
                 onClose()
+                setSelectedCredential(-1)
+                setDescribed(false)
                 setLoading(false)
             })
             .catch((err) => {

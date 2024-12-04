@@ -97,7 +97,7 @@ export default function Integrations() {
                         className="gap-3"
                     >
                         <Button
-                            loading={loading}
+                            // loading={loading}
                             disabled={loading}
                             onClick={() => setOpen(false)}
                             className="mt-6"
