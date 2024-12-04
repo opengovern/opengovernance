@@ -9,8 +9,8 @@ import (
 
 // Config represents the JSON input configuration
 type Config struct {
-	Token    string `json:"token"`
-	MemberID string `json:"member_id"`
+	Token     string `json:"token"`
+	AccountID string `json:"account_id"`
 }
 
 // AccountDetail defines the minimal information for account.
@@ -21,14 +21,14 @@ type AccountDetail struct {
 }
 
 // Discover retrieves member information
-func Discover(ctx context.Context, conn *cloudflare.API, memberID string) (*cloudflare.Account, error) {
+func Discover(ctx context.Context, conn *cloudflare.API, accountID string) (*cloudflare.Account, error) {
 	// Get account associated with token
-	account, _, err := conn.Accounts(ctx, cloudflare.PaginationOptions{})
+	account, _, err := conn.Account(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &account[0], nil
+	return &account, nil
 }
 
 func CloudflareIntegrationDiscovery(cfg Config) (*AccountDetail, error) {
@@ -48,7 +48,7 @@ func CloudflareIntegrationDiscovery(cfg Config) (*AccountDetail, error) {
 	}
 
 	// Get the member Discover
-	account, err := Discover(ctx, conn, cfg.MemberID)
+	account, err := Discover(ctx, conn, cfg.AccountID)
 	if err != nil {
 		return nil, err
 	}

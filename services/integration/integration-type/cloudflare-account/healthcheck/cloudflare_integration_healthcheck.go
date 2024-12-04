@@ -2,7 +2,6 @@ package healthcheck
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/cloudflare/cloudflare-go"
 	"time"
@@ -10,45 +9,16 @@ import (
 
 // Config represents the JSON input configuration
 type Config struct {
-	Token    string `json:"token"`
-	MemberID string `json:"memberID"`
-}
-
-// HealthStatus represents the structure of the JSON output
-type HealthStatus struct {
-	MemberID string  `json:"member_id"`
-	Healthy  bool    `json:"healthy"`
-	Details  Details `json:"details"`
-}
-
-// Details contains all roles permissions of member
-type Details struct {
-	RolePermissions RolePermissions `json:"role_permissions"`
-}
-
-// RolePermissions contains name of each role and its permissions
-type RolePermissions struct {
-	Name        string                                      `json:"name"`
-	Permissions map[string]cloudflare.AccountRolePermission `json:"permissions"`
+	Token     string `json:"token"`
+	AccountID string `json:"account_id"`
 }
 
 // IsHealthy checks the member accesses
-func IsHealthy(ctx context.Context, conn *cloudflare.API) error {
-	// Get account associated with token
-	account, _, err := conn.Accounts(ctx, cloudflare.PaginationOptions{})
+func IsHealthy(ctx context.Context, conn *cloudflare.API, accountID string) error {
+	// Get accounts associated with token
+	_, _, err := conn.Account(ctx, accountID)
 	if err != nil {
 		return err
-	}
-
-	// Get account roles
-	roles, err := conn.AccountRoles(ctx, account[0].ID)
-
-	for _, role := range roles {
-		if role.Name == "Super Administrator - All Privileges" {
-			if role.Permissions["access"].Read != true || role.Permissions["access"].Edit != true {
-				return errors.New("user is not healthy due to missing permission")
-			}
-		}
 	}
 
 	return nil
@@ -71,7 +41,7 @@ func CloudflareIntegrationHealthcheck(cfg Config) (bool, error) {
 	}
 
 	// Now process permissions for the admin user of account
-	err = IsHealthy(ctx, conn)
+	err = IsHealthy(ctx, conn, cfg.AccountID)
 	if err != nil {
 		return false, err
 	}
