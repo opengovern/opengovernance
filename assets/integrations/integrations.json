@@ -37,7 +37,7 @@
     "Icon": "entraid.svg",
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-entraid",
-    "schema_ids": ["entraid", "azuread", "aad"],
+    "schema_ids": ["entraid"],
     "PackageURL": "ghcr.io/opengovern/og-describer-entraid",
     "PackageTag": "local-v0.2.0"
   },
