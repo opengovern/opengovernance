@@ -58,6 +58,9 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	accounts, err := discovery.GithubIntegrationDiscovery(discovery.Config{
 		Token: credentials.PatToken,
 	})
+	if err != nil {
+		return nil, err
+	}
 	for _, a := range accounts {
 		labels := map[string]string{
 			"OrganizationName": a.Login,

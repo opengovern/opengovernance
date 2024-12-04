@@ -2,11 +2,9 @@ package discovery
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/google/go-github/v66/github"
@@ -132,12 +130,7 @@ func GithubIntegrationDiscovery(cfg Config) ([]OrgDetail, error) {
 	// Get the list of active organizations using Discover
 	orgs, err := Discover(ctx, client)
 	if err != nil {
-		output := Output{
-			Error: err.Error(),
-		}
-		jsonOutput, _ := json.Marshal(output)
-		fmt.Println(string(jsonOutput))
-		os.Exit(1)
+		return nil, err
 	}
 
 	// Prepare the minimal organization information
@@ -153,12 +146,7 @@ func GithubIntegrationDiscovery(cfg Config) ([]OrgDetail, error) {
 
 	// If user doesn't have access to any active organizations, error out
 	if len(detailedOrgs) == 0 {
-		output := Output{
-			Error: "No active organizations found. User does not have access to any active organizations.",
-		}
-		jsonOutput, _ := json.Marshal(output)
-		fmt.Println(string(jsonOutput))
-		os.Exit(1)
+		return nil, fmt.Errorf("no active organizations found. User does not have access to any active organizations")
 	}
 
 	return detailedOrgs, nil
