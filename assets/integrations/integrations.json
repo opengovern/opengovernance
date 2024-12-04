@@ -136,7 +136,7 @@
     "Icon": "gcp.svg",
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-googleworkspace",
-    "schema_ids": ["google_workspace"]
+    "schema_ids": ["googleworkspace"]
   },
   {
     "id": 10,
