@@ -9,7 +9,7 @@
     "credentials": [
       {
         "type": "Project ",
-        "label": "By Project ",
+        "label": "Project ",
         "priority": 1,
         "fields": [
           {

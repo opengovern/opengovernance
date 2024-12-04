@@ -127,6 +127,18 @@
     "PackageTag": "local-v0.2.0"
   },
   {
+    "id": 11,
+    "integration_type": "google_workspace",
+    "name": "Google Workspace",
+    "tier": "Community",
+    "tags": { "usage": ["Identity Providers", "Collaboration"] },
+    "Description": "Inventory and govern Identities, Users, Groups.",
+    "Icon": "gcp.svg",
+    "Availability": "GA",
+    "SourceCode": "https://github.com/opengovern/og-describer-googleworkspace",
+    "schema_ids": ["google_workspace"]
+  },
+  {
     "id": 10,
     "integration_type": "slack_account",
     "name": "Slack",
@@ -139,18 +151,6 @@
     "schema_ids": []
   },
 
-  {
-    "id": 11,
-    "integration_type": "google_workspace",
-    "name": "Google Workspace",
-    "tier": "Premium",
-    "tags": { "usage": ["Identity Providers", "Collaboration"] },
-    "Description": "Inventory and govern Identities, Users, Groups.",
-    "Icon": "gcp.svg",
-    "Availability": "PREVIEW",
-    "SourceCode": "",
-    "schema_ids": ["google_workspace"]
-  },
   {
     "id": 12,
     "integration_type": "doppler_account",
