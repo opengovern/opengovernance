@@ -2,11 +2,13 @@ package openai_project
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	openaiDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
-	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/healthcheck"
 	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/healthcheck"
 
 	"github.com/opengovern/opencomply/services/integration/models"
 )
@@ -64,6 +66,7 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(orgResponse.Data.Projects.Data)
 	// for in thr orgResponse.Projects
 	for _, project := range orgResponse.Data.Projects.Data {
 integrations = append(integrations, models.Integration{

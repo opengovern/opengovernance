@@ -53,10 +53,11 @@ func OpenAIIntegrationDiscovery(apiKey string) (*OrganizationResponse, error) {
 
 	// Parse the response
 	var orgResponse OrganizationResponse
+
 	err = json.NewDecoder(resp.Body).Decode(&orgResponse)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %v", err)
 	}
-
+		fmt.Println(orgResponse)
 	return &orgResponse, nil
 }
