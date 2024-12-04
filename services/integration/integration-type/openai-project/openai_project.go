@@ -2,13 +2,10 @@ package openai_project
 
 import (
 	"encoding/json"
-
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	openaiDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
-	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/discovery"
 	"github.com/opengovern/opencomply/services/integration/integration-type/openai-project/healthcheck"
-
 	"github.com/opengovern/opencomply/services/integration/models"
 )
 
@@ -49,37 +46,27 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	var integrations []models.Integration
-	orgResponse, err1 := discovery.OpenAIIntegrationDiscovery(credentials.APIKey)
-	if err1 != nil {
-		return nil, err1
+	_, err = healthcheck.OpenAIIntegrationHealthcheck(credentials.APIKey)
+	if err != nil {
+		return nil, err
 	}
-		for _, org := range orgResponse {
-			labels := map[string]string{
-			"OrganizationID": org.ID,
-		}
-		labelsJsonData, err := json.Marshal(labels)
-		if err != nil {
-			return nil, err
-		}
-		integrationLabelsJsonb := pgtype.JSONB{}
-		err = integrationLabelsJsonb.Set(labelsJsonData)
-		if err != nil {
-			return nil, err
-		}
-		
-		// for in thr orgResponse.Projects
-		for _, project := range org.Projects.Data {
+	labels := map[string]string{
+		"OrganizationID": credentials.OrganizationID,
+	}
+	labelsJsonData, err := json.Marshal(labels)
+	if err != nil {
+		return nil, err
+	}
+	integrationLabelsJsonb := pgtype.JSONB{}
+	err = integrationLabelsJsonb.Set(labelsJsonData)
+	if err != nil {
+		return nil, err
+	}
 	integrations = append(integrations, models.Integration{
-			ProviderID: project.ID,
-			Name:       project.Title,
-			Labels:     integrationLabelsJsonb,
-		})
-
-		}
-	}
-
-
-	
+		ProviderID: credentials.ProjectID,
+		Name:       credentials.ProjectName,
+		Labels:     integrationLabelsJsonb,
+	})
 
 	return integrations, nil
 }

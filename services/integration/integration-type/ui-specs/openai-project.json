@@ -8,8 +8,8 @@
   "discover": {
     "credentials": [
       {
-        "type": "api_key",
-        "label": "Project API Key",
+        "type": "Project ",
+        "label": "By Project ",
         "priority": 1,
         "fields": [
           {
@@ -22,9 +22,50 @@
               "pattern": "^[A-Z0-9]{300}$",
               "errorMessage": "API Key must be a 300-character alphanumeric string."
             },
-            "info": "Please provide your Cohere AI API Key.",
+            "info": "Please provide your OPENAI API Key.",
+            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
+          },
+           {
+             "name": "project_id",
+             "label": "Project ID",
+             "inputType": "text",
+             "required": true,
+             "order": 1,
+             "validation": {
+               "pattern": "^[A-Z0-9]{60}$",
+               "errorMessage": "Project ID must be a 60-character alphanumeric string."
+             },
+             "info": "Please provide your OPENAI API Key.",
+             "external_help_url": "https://docs.aws.amazon.com/access-key-id"
+           }
+         ,
+          {
+            "name": "project_name",
+            "label": "Project Name",
+            "inputType": "text",
+            "required": true,
+            "order": 1,
+            "validation": {
+              "pattern": "^[A-Z0-9]{10,120}$",
+              "errorMessage": "Project Name must be a 60-character alphanumeric string."
+            },
+            "info": "Please provide your OPENAI API Key.",
             "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           }
+         , {
+           "name": "organization_id",
+           "label": "Organization ID",
+           "inputType": "text",
+           "required": true,
+           "order": 1,
+           "validation": {
+             "pattern": "^[A-Z0-9]{20,120}$",
+             "errorMessage": "API Key must be a 60-character alphanumeric string."
+           },
+           "info": "Please provide your OPENAI API Key.",
+           "external_help_url": "https://docs.aws.amazon.com/access-key-id"
+         }
+         
          
         ]
       }

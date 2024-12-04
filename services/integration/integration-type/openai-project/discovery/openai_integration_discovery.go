@@ -31,8 +31,7 @@ type OrganizationResponseData struct {
 		}
 	}
 }
-
-func OpenAIIntegrationDiscovery(apiKey string) ([]OrganizationResponseData, error) {
+func OpenAIIntegrationDiscovery(apiKey string) (*OrganizationResponse, error) {
 	if apiKey == "" {
 		return nil, errors.New("API key is required")
 	}
@@ -65,19 +64,10 @@ func OpenAIIntegrationDiscovery(apiKey string) ([]OrganizationResponseData, erro
 
 	// Parse the response
 	var orgResponse OrganizationResponse
-
 	err = json.NewDecoder(resp.Body).Decode(&orgResponse)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %v", err)
 	}
-		
-	// Find not personal Organizations
-	var notPersonalOrgs []OrganizationResponseData
 
-	for _, org := range orgResponse.Data {
-		if !org.Personal {
-			notPersonalOrgs = append(notPersonalOrgs, org)
-		}
-	}
-	return notPersonalOrgs, nil
+	return &orgResponse, nil
 }
