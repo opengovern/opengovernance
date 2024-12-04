@@ -28,7 +28,7 @@
            {
              "name": "account_id",
              "label": "Account ID",
-             "fieldType": "text",
+             "inputType": "text",
              "required": true,
              "order": 1,
              "validation": {
