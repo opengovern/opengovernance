@@ -37,8 +37,7 @@ func (i *CloudFlareAccountIntegration) HealthCheck(jsonData []byte, providerId s
 	}
 
 	isHealthy, err := healthcheck.CloudflareIntegrationHealthcheck(healthcheck.Config{
-		Token:    credentials.Token,
-		MemberID: credentials.MemberID,
+		Token: credentials.Token,
 	})
 	return isHealthy, err
 }
@@ -50,12 +49,11 @@ func (i *CloudFlareAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]
 		return nil, err
 	}
 	var integrations []models.Integration
-	user, err := discovery.CloudflareIntegrationDiscovery(discovery.Config{
-		Token:    credentials.Token,
-		MemberID: credentials.MemberID,
+	account, err := discovery.CloudflareIntegrationDiscovery(discovery.Config{
+		Token: credentials.Token,
 	})
 	labels := map[string]string{
-		"Status": user.Status,
+		"Type": account.Type,
 	}
 	labelsJsonData, err := json.Marshal(labels)
 	if err != nil {
@@ -67,8 +65,8 @@ func (i *CloudFlareAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]
 		return nil, err
 	}
 	integrations = append(integrations, models.Integration{
-		ProviderID: user.ID,
-		Name:       user.Name,
+		ProviderID: account.ID,
+		Name:       account.Name,
 		Labels:     integrationLabelsJsonb,
 	})
 	return integrations, nil

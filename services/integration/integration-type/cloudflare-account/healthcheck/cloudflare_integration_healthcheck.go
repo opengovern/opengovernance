@@ -2,11 +2,9 @@ package healthcheck
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/cloudflare/cloudflare-go"
-	"log"
 	"time"
 )
 
@@ -35,47 +33,23 @@ type RolePermissions struct {
 }
 
 // IsHealthy checks the member accesses
-func IsHealthy(ctx context.Context, conn *cloudflare.API, memberID string) error {
+func IsHealthy(ctx context.Context, conn *cloudflare.API) error {
 	// Get account associated with token
 	account, _, err := conn.Accounts(ctx, cloudflare.PaginationOptions{})
 	if err != nil {
 		return err
 	}
 
-	status := HealthStatus{
-		MemberID: memberID,
-	}
+	// Get account roles
+	roles, err := conn.AccountRoles(ctx, account[0].ID)
 
-	// Get account member information
-	member, err := conn.AccountMember(ctx, account[0].ID, memberID)
-	if err != nil {
-		return err
-	}
-
-	healthy := true
-	for _, role := range member.Roles {
+	for _, role := range roles {
 		if role.Name == "Super Administrator - All Privileges" {
 			if role.Permissions["access"].Read != true || role.Permissions["access"].Edit != true {
-				healthy = false
-				return errors.New("member is not healthy due to missing permission")
+				return errors.New("user is not healthy due to missing permission")
 			}
-			rolePermissions := RolePermissions{
-				Name:        role.Name,
-				Permissions: role.Permissions,
-			}
-			status.Details.RolePermissions = rolePermissions
 		}
 	}
-
-	status.Healthy = healthy
-
-	// Marshal to JSON and print
-	output, err := json.MarshalIndent(status, "", "  ")
-	if err != nil {
-		log.Fatalf("Failed to marshal JSON: %v", err)
-	}
-
-	fmt.Println(string(output))
 
 	return nil
 }
@@ -96,8 +70,8 @@ func CloudflareIntegrationHealthcheck(cfg Config) (bool, error) {
 		return false, err
 	}
 
-	// Now process permissions for the specified member
-	err = IsHealthy(ctx, conn, cfg.MemberID)
+	// Now process permissions for the admin user of account
+	err = IsHealthy(ctx, conn)
 	if err != nil {
 		return false, err
 	}
