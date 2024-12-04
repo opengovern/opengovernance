@@ -30,7 +30,7 @@
              "label": "Account ID",
              "inputType": "text",
              "required": true,
-             "order": 1,
+             "order": 2,
              "validation": {
                "pattern": "^[a-zA-Z0-9-]{36}$",
                "errorMessage": "Account ID must be a 36-character UUID."
@@ -237,7 +237,7 @@
         "label": "Update",
         "editableFields": [
           "token",
-          "member_id"
+          "account_id"
         ]
       },
       {

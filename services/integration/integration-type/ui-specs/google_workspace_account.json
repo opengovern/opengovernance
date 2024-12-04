@@ -1,50 +1,55 @@
 {
-  "integration_type_id": "cohereai_project",
-  "integration_name": "CohereAI Project",
-  "help_text_md": "Cohere AI  .",
+  "integration_type_id": "google_workspace_account",
+  "integration_name": "Google workspace",
+  "help_text_md": "Google workspace  .",
   "platform_documentation": "https://cohere.ai",
   "provider_documentation": "https://cohere.ai",
-  "icon": "cohere.svg",
+  "icon": "gcp.svg",
   "discover": {
     "credentials": [
       {
-        "type": "api_key",
-        "label": "API Key",
+        "type": "key_file",
+        "label": "Key",
         "priority": 1,
         "fields": [
           {
-            "name": "api_key",
-            "label": "API Key",
+            "name": "admin_email",
+            "label": "Admin Email",
             "inputType": "text",
             "required": true,
             "order": 1,
-            "validation": {
-              "pattern": "^[A-Z0-9]{120}$",
-              "errorMessage": "API Key must be a 120-character alphanumeric string."
-            },
-            "info": "Please provide your Cohere AI API Key.",
+            "info": "Please provide your Google Workspace Admin Email.",
             "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           },
           {
-            "name": "client_name",
-            "label": "Client Name",
+            "name": "customer_id",
+            "label": "Customer ID",
             "inputType": "text",
             "required": true,
             "order": 2,
-            "info": "Please provide your Cohere AI Profile Name."
+            "info": "Please provide your Google Workspace Customer ID."
+          },
+          {
+            "name": "key_file",
+            "label": "Private Key",
+            "inputType": "file",
+            "required": true,
+            "order": 2,
+            "validation": {
+              "fileTypes": [".pem"],
+              "maxFileSizeMB": 5,
+              "errorMessage": "Please upload a valid PEM certificate file not exceeding 5MB."
+            },
+            "info": " Please provide your Google Workspace Private Key."
           }
-        
         ]
       }
-    
     ],
     "integrations": [
       {
         "label": "CohereAI Project",
         "type": "cohereai_project",
-        "fields": [
-          
-        ]
+        "fields": []
       }
     ]
   },
@@ -168,8 +173,9 @@
         "type": "update",
         "label": "Update",
         "editableFields": [
-        "api_key",
-        "client_name"
+            "admin_email",
+            "customer_id",
+            "key_file"
         ]
       },
       {
