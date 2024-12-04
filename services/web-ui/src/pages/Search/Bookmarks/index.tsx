@@ -247,7 +247,7 @@ export default function Bookmarks({ setTab }: Props) {
     })
     const [properties, setProperties] = useState<any[]>([])
     const [options, setOptions] = useState<any[]>([])
-    const [selectedOptions, setSelectedOptions] = useState()
+    const [selectedOptions, setSelectedOptions] = useState([])
     const [isLoading, setLoading] = useState(false)
     const [error, setError] = useState()
     const getRows = () => {
@@ -271,7 +271,7 @@ export default function Bookmarks({ setTab }: Props) {
             is_bookmarked: true,
         }
         // @ts-ignore
-        if(selectedOptions?.length > 0){
+        if (selectedOptions?.length > 0) {
             body = {
                 is_bookmarked: true,
                 // @ts-ignore
@@ -319,7 +319,7 @@ export default function Bookmarks({ setTab }: Props) {
             )
             .then((res) => {
                 if (res?.data) {
-                    const temp :any =[]
+                    const temp: any = []
                     res.data?.categories?.map((item: any) => {
                         temp.push({
                             label: item.category,
@@ -352,8 +352,63 @@ export default function Bookmarks({ setTab }: Props) {
                 <Spinner />
             ) : (
                 <>
-                    <Flex className="w-full mb-3 mt-2">
-                        <Multiselect
+                    <Flex
+                        className="w-full mb-3 mt-2 gap-2"
+                        flexDirection="row"
+                        justifyContent="start"
+                        alignItems="center"
+                    >
+                        <>
+                            {options?.map((item: any) => {
+                                return (
+                                    <>
+                                        <span
+                                            onClick={() => {
+                                                // check if the item is already selected remove it else add it
+                                                if (
+                                                    // @ts-ignore
+                                                    selectedOptions?.find(
+                                                        (i: any) =>
+                                                            i.value ===
+                                                            item.value
+                                                    )
+                                                ) {
+                                                    // @ts-ignore
+                                                    setSelectedOptions(
+                                                        // @ts-ignore
+                                                        selectedOptions?.filter(
+                                                            (i: any) =>
+                                                                i.value !==
+                                                                item.value
+                                                        )
+                                                    )
+                                                } else {
+                                                    // @ts-ignore
+
+                                                    setSelectedOptions([
+                                                        // @ts-ignore
+                                                        ...selectedOptions,
+                                                        // @ts-ignore
+                                                        item,
+                                                    ])
+                                                }
+                                            }}
+                                            className={`${
+                                                selectedOptions?.find(
+                                                    (i: any) =>
+                                                        i.value === item.value
+                                                )
+                                                    ? 'bg-openg-400'
+                                                    : 'bg-openg-900'
+                                            } cursor-pointer text-white   p-3 border  rounded-3xl w-max`}
+                                        >
+                                            {item.label}
+                                        </span>
+                                    </>
+                                )
+                            })}
+                        </>
+                        {/* <Multiselect
                             // @ts-ignore
                             selectedOptions={selectedOptions}
                             className="w-1/3"
@@ -367,7 +422,7 @@ export default function Bookmarks({ setTab }: Props) {
                             // Certificates | MLOps | DevOps | Keys | Certificates | Public Endpoints | Unprotected Data | Cloud Access | WAF
                             options={options}
                             loading={isLoading}
-                        />
+                        /> */}
                     </Flex>
                     <Grid className="gap-4" numItems={3}>
                         {rows
