@@ -9,12 +9,14 @@ import (
 )
 
 type OrganizationResponse struct {
-	OrganizationID string `json:"organization"`
+	Data struct {
+		ID string `json:"id"`
 	Projects       struct {
 		Data []struct {
 			ID   string `json:"id"`
 			Title string `json:"title"`
 		}
+	}
 	}
 }
 

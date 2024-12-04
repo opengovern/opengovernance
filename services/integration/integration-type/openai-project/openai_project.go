@@ -53,7 +53,7 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err1
 	}
 	labels := map[string]string{
-		"OrganizationID": orgResponse.OrganizationID,
+		"OrganizationID": orgResponse.Data.ID,
 	}
 	labelsJsonData, err := json.Marshal(labels)
 	if err != nil {
@@ -65,7 +65,7 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 		return nil, err
 	}
 	// for in thr orgResponse.Projects
-	for _, project := range orgResponse.Projects.Data {
+	for _, project := range orgResponse.Data.Projects.Data {
 integrations = append(integrations, models.Integration{
 		ProviderID: project.ID,
 		Name:       project.Title,
