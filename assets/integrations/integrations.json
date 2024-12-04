@@ -127,8 +127,8 @@
     "PackageTag": "local-v0.2.0"
   },
   {
-    "id": 11,
-    "integration_type": "google_workspace",
+    "id": 10,
+    "integration_type": "google_workspace_account",
     "name": "Google Workspace",
     "tier": "Community",
     "tags": { "usage": ["Identity Providers", "Collaboration"] },
@@ -139,7 +139,7 @@
     "schema_ids": ["googleworkspace"]
   },
   {
-    "id": 10,
+    "id": 11,
     "integration_type": "slack_account",
     "name": "Slack",
     "tier": "Premium",

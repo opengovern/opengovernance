@@ -1,54 +1,38 @@
 {
-  "integration_type_id": "google_workspace_account",
-  "integration_name": "Google workspace",
-  "help_text_md": "Google workspace  .",
-  "platform_documentation": "https://developers.google.com/workspace",
-  "provider_documentation": "https://developers.google.com/workspace",
-  "icon": "gcp.svg",
+  "integration_type_id": "digitalocean_team",
+  "integration_name": "Digital Ocean Team",
+  "help_text_md": "Digital Ocean  .",
+  "platform_documentation": "https://www.digitalocean.com/",
+  "provider_documentation": "https://www.digitalocean.com/",
+  "icon": "digitalocean.svg",
   "discover": {
     "credentials": [
       {
-        "type": "key_file",
-        "label": "Key",
+        "type": "auth_token",
+        "label": "Auth Token",
         "priority": 1,
         "fields": [
           {
-            "name": "admin_email",
-            "label": "Admin Email",
+            "name": "auth_token",
+            "label": "Auth token",
             "inputType": "text",
             "required": true,
             "order": 1,
-            "info": "Please provide your Google Workspace Admin Email.",
-            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
-          },
-          {
-            "name": "customer_id",
-            "label": "Customer ID",
-            "inputType": "text",
-            "required": true,
-            "order": 2,
-            "info": "Please provide your Google Workspace Customer ID."
-          },
-          {
-            "name": "key_file",
-            "label": "Private Key",
-            "inputType": "file",
-            "required": true,
-            "order": 2,
             "validation": {
-              "fileTypes": [".json"],
-              "maxFileSizeMB": 5,
-              "errorMessage": "Please upload a valid JSON certificate file not exceeding 5MB."
+              "pattern": "^[A-Z0-9]{120}$",
+              "errorMessage": "Auth Token must be a 120-character alphanumeric string."
             },
-            "info": " Please provide your Google Workspace Private Key."
+            "info": "Please provide your Digital Ocean Auth Token.",
+            "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           }
+         
         ]
       }
     ],
     "integrations": [
       {
-        "label": "Google workspace",
-        "type": "google-workspace-account",
+        "label": "Digital Ocean Team",
+        "type": "digitalocean-team",
         "fields": []
       }
     ]
@@ -172,11 +156,7 @@
       {
         "type": "update",
         "label": "Update",
-        "editableFields": [
-            "admin_email",
-            "customer_id",
-            "key_file"
-        ]
+        "editableFields": ["auth_token"]
       },
       {
         "type": "delete",
