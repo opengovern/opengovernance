@@ -248,7 +248,7 @@ func IntegrationTypesMigration(logger *zap.Logger, dbm db.Database, onboardFileP
 			err = integrationLabelsJsonb.Set(labelsJsonData)
 			integrationType.Labels = integrationLabelsJsonb
 
-			logger.Info("integrationType", zap.Any("obj", obj))
+			// logger.Info("integrationType", zap.Any("obj", obj))
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&integrationType).Error

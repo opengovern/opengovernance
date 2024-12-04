@@ -9,8 +9,9 @@ import (
 )
 
 type OrganizationResponse struct {
-	Data struct {
+	Data []struct {
 		ID string `json:"id"`
+		Personal bool `json:"personal"`
 	Projects       struct {
 		Data []struct {
 			ID   string `json:"id"`
@@ -20,7 +21,18 @@ type OrganizationResponse struct {
 	}
 }
 
-func OpenAIIntegrationDiscovery(apiKey string) (*OrganizationResponse, error) {
+type OrganizationResponseData struct {
+	ID string `json:"id"`
+		Personal bool `json:"personal"`
+	Projects       struct {
+		Data []struct {
+			ID   string `json:"id"`
+			Title string `json:"title"`
+		}
+	}
+}
+
+func OpenAIIntegrationDiscovery(apiKey string) ([]OrganizationResponseData, error) {
 	if apiKey == "" {
 		return nil, errors.New("API key is required")
 	}
@@ -58,6 +70,14 @@ func OpenAIIntegrationDiscovery(apiKey string) (*OrganizationResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %v", err)
 	}
-		fmt.Println(orgResponse)
-	return &orgResponse, nil
+		
+	// Find not personal Organizations
+	var notPersonalOrgs []OrganizationResponseData
+
+	for _, org := range orgResponse.Data {
+		if !org.Personal {
+			notPersonalOrgs = append(notPersonalOrgs, org)
+		}
+	}
+	return notPersonalOrgs, nil
 }

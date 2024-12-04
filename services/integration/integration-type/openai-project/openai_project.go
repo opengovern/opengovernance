@@ -2,7 +2,6 @@ package openai_project
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
@@ -54,27 +53,29 @@ func (i *OpenAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	if err1 != nil {
 		return nil, err1
 	}
-	labels := map[string]string{
-		"OrganizationID": orgResponse.Data.ID,
-	}
-	labelsJsonData, err := json.Marshal(labels)
-	if err != nil {
-		return nil, err
-	}
-	integrationLabelsJsonb := pgtype.JSONB{}
-	err = integrationLabelsJsonb.Set(labelsJsonData)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(orgResponse.Data.Projects.Data)
-	// for in thr orgResponse.Projects
-	for _, project := range orgResponse.Data.Projects.Data {
-integrations = append(integrations, models.Integration{
-		ProviderID: project.ID,
-		Name:       project.Title,
-		Labels:     integrationLabelsJsonb,
-	})
+		for _, org := range orgResponse {
+			labels := map[string]string{
+			"OrganizationID": org.ID,
+		}
+		labelsJsonData, err := json.Marshal(labels)
+		if err != nil {
+			return nil, err
+		}
+		integrationLabelsJsonb := pgtype.JSONB{}
+		err = integrationLabelsJsonb.Set(labelsJsonData)
+		if err != nil {
+			return nil, err
+		}
+		
+		// for in thr orgResponse.Projects
+		for _, project := range org.Projects.Data {
+	integrations = append(integrations, models.Integration{
+			ProviderID: project.ID,
+			Name:       project.Title,
+			Labels:     integrationLabelsJsonb,
+		})
 
+		}
 	}
 
 

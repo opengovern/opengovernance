@@ -227,7 +227,7 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 	}
 
 	integrations, err := integration.DiscoverIntegrations(jsonData)
-
+	h.logger.Info("discovered integrations", zap.Any("integrations", integrations))
 	var integrationsAPI []models.Integration
 	for _, i := range integrations {
 		integrationAPI, err := i.ToApi()
