@@ -23,6 +23,9 @@ import (
 	linodeConfigs "github.com/opengovern/opencomply/services/integration/integration-type/linode-account/configs"
 	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
 	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
+	google_workspace_account "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account"
+	googleConfig "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account/configs"
+
 )
 
 const (
@@ -35,6 +38,8 @@ const (
 	IntegrationTypeOpenAIProject     = openaiConfigs.IntegrationTypeOpenaiProject
 	IntegrationTypeLinodeProject     = linodeConfigs.IntegrationTypeLinodeProject
 	IntegrationTypeCohereAIProject   = cohereaiConfigs.IntegrationTypeCohereaiProject
+	IntegrationTypeGoogleWorkspaceAccount   = googleConfig.IntegrationTypeGoogleWorkspaceAccount
+
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -47,6 +52,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeOpenAIProject,
 	IntegrationTypeLinodeProject,
 	IntegrationTypeCohereAIProject,
+	IntegrationTypeGoogleWorkspaceAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -59,6 +65,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeOpenAIProject:     &openaiproject.OpenAIProjectIntegration{},
 	IntegrationTypeLinodeProject:     &linodeaccount.LinodeAccountIntegration{},
 	IntegrationTypeCohereAIProject:   &cohereaiproject.CohereAIProjectIntegration{},
+	IntegrationTypeGoogleWorkspaceAccount:   &google_workspace_account.GoogleWorkspaceAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
