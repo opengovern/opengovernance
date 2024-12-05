@@ -22,7 +22,7 @@ func (i *GoogleWorkspaceAccountIntegration) GetConfiguration() interfaces.Integr
 
 		SteampipePluginName: "googleworkspace",
 
-		UISpecFileName: "google_workspace_account.json",
+		UISpecFileName: "google-workspace-account.json",
 
 		DescriberDeploymentName: googleWorkspaceDescriberLocal.DescriberDeploymentName,
 		DescriberRunCommand:     googleWorkspaceDescriberLocal.DescriberRunCommand,
