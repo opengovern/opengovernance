@@ -2,7 +2,6 @@ package healthcheck
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"golang.org/x/oauth2/google"
@@ -14,9 +13,9 @@ import (
 
 // Config represents the JSON input configuration
 type Config struct {
-	AdminEmail string          `json:"admin_email"`
-	CustomerID string          `json:"customer_id"`
-	KeyFile    json.RawMessage `json:"key_file"`
+	AdminEmail string `json:"admin_email"`
+	CustomerID string `json:"customer_id"`
+	KeyFile    string `json:"key_file"`
 }
 
 const (
@@ -159,6 +158,7 @@ func GoogleWorkspaceIntegrationHealthcheck(cfg Config) (bool, error) {
 	if string(cfg.KeyFile) == "" {
 		return false, errors.New("key file must be configured")
 	}
+	keyFileData := []byte(cfg.KeyFile)
 
 	// Check for the admin email
 	if string(cfg.AdminEmail) == "" {
@@ -171,7 +171,7 @@ func GoogleWorkspaceIntegrationHealthcheck(cfg Config) (bool, error) {
 	}
 
 	// Create credentials using the service account key
-	config, err := google.JWTConfigFromJSON(cfg.KeyFile, requiredScopes...)
+	config, err := google.JWTConfigFromJSON(keyFileData, requiredScopes...)
 	if err != nil {
 		return false, fmt.Errorf("error creating JWT config: %v", err)
 	}
