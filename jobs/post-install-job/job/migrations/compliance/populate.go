@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/inventory"
+	"github.com/opengovern/opencomply/services/metadata/models"
 
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opencomply/jobs/post-install-job/config"
