@@ -56,13 +56,13 @@ type JobConfig struct {
 }
 
 func (w *Worker) Initialize(ctx context.Context, j Job) error {
-	providerAccountID := "all"
-	if j.ExecutionPlan.ProviderID != nil &&
-		*j.ExecutionPlan.ProviderID != "" {
-		providerAccountID = *j.ExecutionPlan.ProviderID
+	integrationID := "all"
+	if j.ExecutionPlan.IntegrationID != nil &&
+		*j.ExecutionPlan.IntegrationID != "" {
+		integrationID = *j.ExecutionPlan.IntegrationID
 	}
 
-	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID, providerAccountID)
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID, integrationID)
 	if err != nil {
 		w.logger.Error("failed to set account id", zap.Error(err))
 		return err
