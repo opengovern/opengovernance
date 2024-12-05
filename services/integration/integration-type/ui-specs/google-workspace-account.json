@@ -173,7 +173,6 @@
         "type": "update",
         "label": "Update",
         "editableFields": [
-
           "admin_email",
           "customer_id",
           "key_file"
@@ -213,7 +212,4 @@
       }
     ]
   }
-
 }
-
-

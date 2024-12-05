@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"golang.org/x/oauth2/google"
@@ -13,9 +12,9 @@ import (
 
 // Config represents the JSON input configuration
 type Config struct {
-	AdminEmail string          `json:"admin_email"`
-	CustomerID string          `json:"customer_id"`
-	KeyFile    json.RawMessage `json:"key_file"`
+	AdminEmail string `json:"admin_email"`
+	CustomerID string `json:"customer_id"`
+	KeyFile    string `json:"key_file"`
 }
 
 // CustomerDetail defines the minimal information for customer.
@@ -53,22 +52,23 @@ func GoogleWorkspaceIntegrationDiscovery(cfg Config) (*CustomerDetail, error) {
 	defer cancel()
 
 	// Check for the keyFile content
-	if string(cfg.KeyFile) == "" {
+	if cfg.KeyFile == "" {
 		return nil, errors.New("key file must be configured")
 	}
+	keyFileData := []byte(cfg.KeyFile)
 
 	// Check for the admin email
-	if string(cfg.AdminEmail) == "" {
+	if cfg.AdminEmail == "" {
 		return nil, errors.New("admin email must be configured")
 	}
 
 	// Check for the customer id
-	if string(cfg.CustomerID) == "" {
+	if cfg.CustomerID == "" {
 		return nil, errors.New("customer ID must be configured")
 	}
 
 	// Create credentials using the service account key
-	config, err := google.JWTConfigFromJSON(cfg.KeyFile, scopes...)
+	config, err := google.JWTConfigFromJSON(keyFileData, scopes...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating JWT config: %v", err)
 	}
