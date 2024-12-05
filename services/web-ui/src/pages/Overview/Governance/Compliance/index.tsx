@@ -156,15 +156,15 @@ export default function Compliance() {
                 </Button>
             </Flex> */}
             {loading ? (
-                <Flex flexDirection="col" className="gap-4">
-                    {[1, 2].map((i) => {
+                <Flex flexDirection="row" className="gap-1 flex-wrap">
+                    {[1, 2,3,4].map((i) => {
                         return (
-                            <Card className="p-3 dark:ring-gray-500">
+                            <Card className="p-3 dark:ring-gray-500 w-[calc(50%-0.25rem)]">
                                 <Flex
                                     flexDirection="col"
                                     alignItems="start"
                                     justifyContent="start"
-                                    className="animate-pulse"
+                                    className="animate-pulse w-full"
                                 >
                                     <div className="h-5 w-24 mb-2 bg-slate-200 dark:bg-slate-700 rounded" />
                                     <div className="h-5 w-24 mb-1 bg-slate-200 dark:bg-slate-700 rounded" />
