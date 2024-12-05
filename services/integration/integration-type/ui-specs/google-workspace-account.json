@@ -177,8 +177,6 @@
           "admin_email",
           "customer_id",
           "key_file"
-
-
         ]
       },
       {
@@ -218,4 +216,4 @@
 
 }
 
-}
+
