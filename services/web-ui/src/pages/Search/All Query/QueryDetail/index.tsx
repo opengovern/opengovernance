@@ -133,9 +133,11 @@ export default function QueryDetail({
                         label: 'Connector',
                         value: (
                             <>
-                                {query?.connectors?.map((item, index) => {
-                                    return `${item} `
-                                })}
+                                {query?.integration_types?.map(
+                                    (item, index) => {
+                                        return `${item} `
+                                    }
+                                )}
                             </>
                         ),
                     },
@@ -243,7 +245,7 @@ export default function QueryDetail({
                     onClick={() => {
                         // @ts-ignore
                         setQuery(query?.query?.queryToExecute)
-                        setTab("3")
+                        setTab('3')
                         // debugger
                     }}
                     disabled={false}
@@ -257,9 +259,7 @@ export default function QueryDetail({
             </Flex>
             <Card className=" py-3 mb-2 relative ">
                 <Editor
-                    onValueChange={(text) => {
-                        
-                    }}
+                    onValueChange={(text) => {}}
                     highlight={(text) => highlight(text, languages.sql, 'sql')}
                     // @ts-ignore
                     value={query?.query?.queryToExecute || ''}

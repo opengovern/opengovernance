@@ -2892,7 +2892,7 @@ export interface GithubComKaytuIoKaytuEnginePkgInventoryApiSmartQueryItemV2 {
     id: string
     title: string
     description: string
-    connectors: string[]
+    integration_types: string[]
     query: GithubComKaytuIoKaytuEnginePkgInventoryApiSmartQueryItemV2Query
     tags: GithubComKaytuIoKaytuEnginePkgInventoryApiListQueryRequestV2TagsFilter
 }
