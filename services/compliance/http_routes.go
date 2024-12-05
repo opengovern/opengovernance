@@ -7664,7 +7664,7 @@ func (h HttpHandler) GetAuditJobSummary(c echo.Context) error {
 	}
 	h.logger
 
-	auditSummary, err := es.GetAuditSummaryByJobID(c.Request().Context(), h.client, jobId)
+	auditSummary, err := es.GetAuditSummaryByJobID(c.Request().Context(), h.logger, h.client, jobId)
 	if err != nil {
 		h.logger.Error("failed to get audit job summary", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
