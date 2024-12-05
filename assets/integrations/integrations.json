@@ -124,7 +124,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-cohereai",
     "schema_ids": ["cohereai"],
     "PackageURL": "ghcr.io/opengovern/og-describer-cohereai",
-    "PackageTag": "local-v0.2.0"
+    "PackageTag": "local-v0.2.2"
   },
   {
     "id": 10,
@@ -136,7 +136,9 @@
     "Icon": "gcp.svg",
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-googleworkspace",
-    "schema_ids": ["googleworkspace"]
+    "schema_ids": ["googleworkspace"],
+    "PackageURL": "ghcr.io/opengovern/og-describer-googleworkspace",
+    "PackageTag": "local-v0.4.1"
   },
   {
     "id": 11,

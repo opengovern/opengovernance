@@ -183,7 +183,7 @@ func ListResources(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 
 	for _, index := range indexes {
 		paginator, err := k.NewResourcePaginator(es.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, resourceMapping,
-			"", nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index)
+			nil, encodedResourceCollectionFilters, clientType, true), d.QueryContext.Limit, index)
 		if err != nil {
 			plugin.Logger(ctx).Error("ListResources NewResourcePaginator", "error", err)
 			return nil, err

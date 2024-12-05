@@ -270,7 +270,7 @@ type BenchmarkControls struct {
 type QueryParameter struct {
 	QueryID  string `gorm:"primaryKey"`
 	Key      string `gorm:"primaryKey"`
-	Required bool   `gorm:"not null"`
+	Required bool   `gorm:"default:false"`
 }
 
 func (qp QueryParameter) ToApi() api.QueryParameter {

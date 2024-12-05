@@ -148,7 +148,7 @@ func ListLookupResources(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 	plugin.Logger(ctx).Trace("Columns", d.FetchType)
 	paginator, err := k.NewLookupResourcePaginator(
 		es.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, lookupMapping,
-			"", nil, encodedResourceCollectionFilters, clientType, true),
+			nil, encodedResourceCollectionFilters, clientType, true),
 		d.QueryContext.Limit)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListLookupResources NewLookupResourcePaginator", "error", err)
