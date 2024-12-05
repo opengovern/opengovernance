@@ -138,7 +138,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-googleworkspace",
     "schema_ids": ["googleworkspace"],
     "PackageURL": "ghcr.io/opengovern/og-describer-googleworkspace",
-    "PackageTag": "local-v0.4.0"
+    "PackageTag": "local-v0.4.1"
   },
   {
     "id": 11,
