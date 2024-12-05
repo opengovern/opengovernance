@@ -8,7 +8,6 @@ import (
 	"github.com/opengovern/og-util/pkg/postgres"
 	"github.com/opengovern/opencomply/jobs/post-install-job/config"
 	"github.com/opengovern/opencomply/services/compliance/db"
-	"github.com/opengovern/opencomply/services/metadata/models"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"
@@ -122,61 +121,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 		return err
 	}
 
-	loadedQueryViewsQueries := make(map[string]bool)
-	missingQueryViewsQueries := make(map[string]bool)
-	err = dbMetadata.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		tx.Model(&models.QueryView{}).Where("1=1").Unscoped().Delete(&models.QueryView{})
-		tx.Model(&models.QueryParameter{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
-		tx.Model(&models.Query{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
-		for _, obj := range p.queryViewsQueries {
-			obj.QueryViews = nil
-			err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}}, // key column
-				DoNothing: true,
-			}).Create(&obj).Error
-			if err != nil {
-				return err
-			}
-			for _, param := range obj.Parameters {
-				err = tx.Clauses(clause.OnConflict{
-					Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
-					DoNothing: true,
-				}).Create(&param).Error
-				if err != nil {
-					return fmt.Errorf("failure in query parameter insert: %v", err)
-				}
-			}
-			loadedQueryViewsQueries[obj.ID] = true
-		}
-		for _, obj := range p.queryViews {
-			if obj.QueryID != nil && !loadedQueryViewsQueries[*obj.QueryID] {
-				missingQueryViewsQueries[*obj.QueryID] = true
-				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
-				continue
-			}
-			err := tx.Create(&obj).Error
-			if err != nil {
-				logger.Error("error while inserting query view", zap.Error(err))
-				return err
-			}
-			for _, tag := range obj.Tags {
-				err = tx.Clauses(clause.OnConflict{
-					Columns:   []clause.Column{{Name: "key"}, {Name: "query_view_id"}}, // key columns
-					DoNothing: true,
-				}).Create(&tag).Error
-				if err != nil {
-					return fmt.Errorf("failure in control tag insert: %v", err)
-				}
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		logger.Error("failed to insert query views", zap.Error(err))
-		return err
-	}
-
 	missingQueries := make(map[string]bool)
 	err = dbm.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
@@ -269,6 +213,94 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	if err != nil {
 		logger.Info("inserted controls and benchmarks", zap.Error(err))
+		return err
+	}
+
+	loadedQueryViewsQueries := make(map[string]bool)
+	missingQueryViewsQueries := make(map[string]bool)
+	err = dbMetadata.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		tx.Model(&models.QueryView{}).Where("1=1").Unscoped().Delete(&models.QueryView{})
+		tx.Model(&models.QueryParameter{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
+		tx.Model(&models.Query{}).Where("1=1").Unscoped().Delete(&models.QueryParameter{})
+		for _, obj := range p.queryViewsQueries {
+			obj.QueryViews = nil
+			err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}}, // key column
+				DoNothing: true,
+			}).Create(&obj).Error
+			if err != nil {
+				return err
+			}
+			for _, param := range obj.Parameters {
+				err = tx.Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "key"}, {Name: "query_id"}}, // key columns
+					DoNothing: true,
+				}).Create(&param).Error
+				if err != nil {
+					return fmt.Errorf("failure in query parameter insert: %v", err)
+				}
+			}
+			loadedQueryViewsQueries[obj.ID] = true
+		}
+		for _, obj := range p.queryViews {
+			if obj.QueryID != nil && !loadedQueryViewsQueries[*obj.QueryID] {
+				missingQueryViewsQueries[*obj.QueryID] = true
+				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
+				continue
+			}
+			err := tx.Create(&obj).Error
+			if err != nil {
+				logger.Error("error while inserting query view", zap.Error(err))
+				return err
+			}
+			for _, tag := range obj.Tags {
+				err = tx.Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "key"}, {Name: "query_view_id"}}, // key columns
+					DoNothing: true,
+				}).Create(&tag).Error
+				if err != nil {
+					return fmt.Errorf("failure in control tag insert: %v", err)
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert query views", zap.Error(err))
+		return err
+	}
+
+	err = dbMetadata.Orm.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, obj := range p.queryViews {
+			if obj.QueryID != nil && !loadedQueryViewsQueries[*obj.QueryID] {
+				missingQueryViewsQueries[*obj.QueryID] = true
+				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
+				continue
+			}
+			err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}},
+				DoNothing: true,
+			}).Create(&obj).Error
+			if err != nil {
+				logger.Error("error while inserting query view", zap.Error(err))
+				return err
+			}
+			for _, tag := range obj.Tags {
+				err = tx.Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "key"}, {Name: "query_view_id"}}, // key columns
+					DoNothing: true,
+				}).Create(&tag).Error
+				if err != nil {
+					return fmt.Errorf("failure in control tag insert: %v", err)
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert query views", zap.Error(err))
 		return err
 	}
 
