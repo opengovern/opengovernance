@@ -165,20 +165,7 @@ const columns: IColumn<
         sortable: true,
         resizable: false,
     },
-    {
-        field: 'connectors',
-        headerName: 'Connector',
-        type: 'string',
-        sortable: true,
-        resizable: false,
-        // cellRenderer: (params: any) => (
-        //      params.value.map(
-        //                     (item: string, index: number) => {
-        //                         return `${item} `
-        //                     }
-        //                 )
-        // ),
-    },
+    
     // {
     //     field: 'connectors',
     //     headerName: 'Service',

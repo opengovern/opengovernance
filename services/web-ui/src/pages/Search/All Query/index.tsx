@@ -161,20 +161,7 @@ const columns: IColumn<
         sortable: true,
         resizable: false,
     },
-    {
-        field: 'connectors',
-        headerName: 'Connector',
-        type: 'string',
-        sortable: true,
-        resizable: false,
-        // cellRenderer: (params: any) => (
-        //      params.value.map(
-        //                     (item: string, index: number) => {
-        //                         return `${item} `
-        //                     }
-        //                 )
-        // ),
-    },
+    
     // {
     //     field: 'connectors',
     //     headerName: 'Service',
@@ -539,6 +526,14 @@ export default function AllQueries({ setTab }: Props) {
                                 isRowHeader: true,
                                 maxWidth: 150,
                             },
+                            {
+                                id: 'description',
+                                header: 'Description',
+                                cell: (item) => item.description,
+                                // sortingField: 'id',
+                                isRowHeader: true,
+                                maxWidth: 150,
+                            },
                         ]}
                         columnDisplay={[
                             {
@@ -550,7 +545,7 @@ export default function AllQueries({ setTab }: Props) {
                                 visible: true,
                             },
 
-                            // { id: 'query', visible: true },
+                            { id: 'description', visible: true },
                             // {
                             //     id: 'severity',
                             //     visible: true,
