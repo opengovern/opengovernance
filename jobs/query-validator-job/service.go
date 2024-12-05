@@ -222,7 +222,7 @@ func (w *Worker) Stop() error {
 func (w *Worker) Initialize(ctx context.Context, j Job) error {
 	providerAccountID := "all"
 
-	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, providerAccountID)
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID, providerAccountID)
 	if err != nil {
 		w.logger.Error("failed to set account id", zap.Error(err))
 		return err

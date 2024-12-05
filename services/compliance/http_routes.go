@@ -33,6 +33,7 @@ import (
 	"github.com/opengovern/opencomply/services/compliance/api"
 	"github.com/opengovern/opencomply/services/compliance/db"
 	"github.com/opengovern/opencomply/services/compliance/es"
+	schedulerapi "github.com/opengovern/opencomply/services/describe/api"
 	model3 "github.com/opengovern/opencomply/services/describe/db/model"
 	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
@@ -7634,4 +7635,43 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 	startTime := endTime.Add(-duration)
 
 	return &startTime, &endTime, nil
+}
+
+// GetAuditJobSummary godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/compliance/api/v3/audit/job/{job_id}/summary [get]
+func (h HttpHandler) GetAuditJobSummary(c echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
+
+	jobId := c.Param("job_id")
+
+	auditJob, err := h.schedulerClient.GetAuditJob(clientCtx, jobId)
+	if err != nil {
+		h.logger.Error("failed to get audit job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
+	}
+	if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+	} else if auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+	}
+
+	auditSummary, err := es.GetAuditSummaryByJobID(c.Request().Context(), h.client, jobId)
+	if err != nil {
+		h.logger.Error("failed to get audit job summary", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+	}
+
+	return c.JSON(http.StatusOK, api.AuditSummary{
+		Controls:     auditSummary.Controls,
+		AuditSummary: auditSummary.AuditSummary,
+		JobSummary:   auditSummary.JobSummary,
+	})
 }

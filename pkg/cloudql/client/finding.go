@@ -108,7 +108,7 @@ func ListFindings(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDat
 	k := Client{ES: ke}
 
 	paginator, err := k.NewFindingPaginator(es.BuildFilterWithDefaultFieldName(ctx, d.QueryContext, listFindingFilters,
-		"", nil, nil, nil, true), d.QueryContext.Limit)
+		nil, nil, nil, true), d.QueryContext.Limit)
 	if err != nil {
 		plugin.Logger(ctx).Error("ListFindings NewFindingPaginator", "error", err)
 		return nil, err

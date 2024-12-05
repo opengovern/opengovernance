@@ -62,7 +62,7 @@ func (w *Worker) Initialize(ctx context.Context, j Job) error {
 		providerAccountID = *j.ExecutionPlan.ProviderID
 	}
 
-	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID, providerAccountID)
+	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID, providerAccountID)
 	if err != nil {
 		w.logger.Error("failed to set account id", zap.Error(err))
 		return err
@@ -87,7 +87,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	if err := w.Initialize(ctx, j); err != nil {
 		return 0, err
 	}
-	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyAccountID)
+	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType)
 	defer w.steampipeConn.UnsetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyResourceCollectionFilters)
 

@@ -1,39 +1,31 @@
-package runner
+package audit_job
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"os"
 	"time"
 
-	"github.com/opengovern/og-util/pkg/api"
-
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/config"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
-	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
-	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
 	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
-	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
 	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	ElasticSearch         config.ElasticSearch
-	NATS                  config.NATS
-	Compliance            config.OpenGovernanceService
-	Onboard               config.OpenGovernanceService
-	Inventory             config.OpenGovernanceService
-	Metadata              config.OpenGovernanceService
-	EsSink                config.OpenGovernanceService
-	Steampipe             config.Postgres
-	PrometheusPushAddress string
+	ElasticSearch config.ElasticSearch
+	NATS          config.NATS
+	Compliance    config.OpenGovernanceService
+	EsSink        config.OpenGovernanceService
+	Steampipe     config.Postgres
 }
 
 type Worker struct {
@@ -43,11 +35,8 @@ type Worker struct {
 	esClient         opengovernance.Client
 	jq               *jq.JobQueue
 	complianceClient complianceClient.ComplianceServiceClient
-	inventoryClient  inventoryClient.InventoryServiceClient
 	metadataClient   metadataClient.MetadataServiceClient
 	sinkClient       esSinkClient.EsSinkServiceClient
-
-	benchmarkCache map[string]complianceApi.Benchmark
 }
 
 var (
@@ -57,7 +46,6 @@ var (
 func NewWorker(
 	config Config,
 	logger *zap.Logger,
-	prometheusPushAddress string,
 	ctx context.Context,
 ) (*Worker, error) {
 	for _, integrationType := range integration_type.IntegrationTypes {
@@ -105,29 +93,15 @@ func NewWorker(
 		return nil, err
 	}
 
-	w := &Worker{
+	return &Worker{
 		config:           config,
 		logger:           logger,
 		steampipeConn:    steampipeConn,
 		esClient:         esClient,
 		jq:               jq,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
-		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
-		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
 		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
-		benchmarkCache:   make(map[string]complianceApi.Benchmark),
-	}
-	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}
-	benchmarks, err := w.complianceClient.ListAllBenchmarks(ctx2, true)
-	if err != nil {
-		logger.Error("failed to get benchmarks", zap.Error(err))
-		return nil, err
-	}
-	for _, benchmark := range benchmarks {
-		w.benchmarkCache[benchmark.ID] = benchmark
-	}
-
-	return w, nil
+	}, nil
 }
 
 // Run is a blocking function so you may decide to call it in another goroutine.
@@ -167,7 +141,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				}
 			}()
 
-			_, _, err := w.ProcessMessage(ctx, msg)
+			err := w.ProcessMessage(ctx, msg)
 			if err != nil {
 				w.logger.Error("failed to process message", zap.Error(err))
 			}
@@ -176,19 +150,6 @@ func (w *Worker) Run(ctx context.Context) error {
 			if err := msg.Ack(); err != nil {
 				w.logger.Error("failed to send the ack message", zap.Error(err), zap.Any("msg", msg))
 			}
-
-			//if requeue {
-			//	if err := msg.Nak(); err != nil {
-			//		w.logger.Error("failed to send a not ack message", zap.Error(err))
-			//	}
-			//}
-			//
-			//if commit {
-			//	w.logger.Info("committing")
-			//	if err := msg.Ack(); err != nil {
-			//		w.logger.Error("failed to send an ack message", zap.Error(err))
-			//	}
-			//}
 
 			w.logger.Info("processing a job completed")
 		})
@@ -205,27 +166,25 @@ func (w *Worker) Run(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit bool, requeue bool, err error) {
-	var job Job
+func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err error) {
+	var job AuditJob
 
 	if err := json.Unmarshal(msg.Data(), &job); err != nil {
-		return true, false, err
+		return err
 	}
 
 	result := JobResult{
-		Job:                        job,
-		StartedAt:                  time.Now(),
-		Status:                     ComplianceRunnerInProgress,
-		Error:                      "",
-		TotalComplianceResultCount: nil,
+		JobID:          job.JobID,
+		Status:         model.AuditJobStatusInProgress,
+		FailureMessage: "",
 	}
 
 	defer func() {
 		if err != nil {
-			result.Error = err.Error()
-			result.Status = ComplianceRunnerFailed
+			result.FailureMessage = err.Error()
+			result.Status = model.AuditJobStatusFailed
 		} else {
-			result.Status = ComplianceRunnerSucceeded
+			result.Status = model.AuditJobStatusSucceeded
 		}
 
 		resultJson, err := json.Marshal(result)
@@ -234,7 +193,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 			return
 		}
 
-		if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("compliance-runner-result-%d-%d", job.ID, job.RetryCount)); err != nil {
+		if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("audit-job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
@@ -242,22 +201,21 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (commit 
 	resultJson, err := json.Marshal(result)
 	if err != nil {
 		w.logger.Error("failed to create job in progress json", zap.Error(err))
-		return true, false, err
+		return err
 	}
 
-	if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("compliance-runner-inprogress-%d-%d", job.ID, job.RetryCount)); err != nil {
+	if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("audit-job-inprogress-%d", job.JobID)); err != nil {
 		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
 	}
 
 	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
 
-	totalComplianceResultCount, err := w.RunJob(ctx, job)
+	err = w.RunJob(ctx, &job)
 	if err != nil {
-		return true, false, err
+		return err
 	}
 
-	result.TotalComplianceResultCount = &totalComplianceResultCount
-	return true, false, nil
+	return nil
 }
 
 func (w *Worker) Stop() error {

@@ -33,6 +33,7 @@ type SchedulerServiceClient interface {
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
 	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeIntegrationJob, error)
+	GetAuditJob(ctx *httpclient.Context, jobID string) (*api.AuditJob, error)
 }
 
 type schedulerClient struct {
@@ -231,6 +232,19 @@ func (s *schedulerClient) GetIntegrationLastDiscoveryJob(ctx *httpclient.Context
 	}
 	var job model.DescribeIntegrationJob
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), payload, &job); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &job, nil
+}
+
+func (s *schedulerClient) GetAuditJob(ctx *httpclient.Context, jobID string) (*api.AuditJob, error) {
+	url := fmt.Sprintf("%s/api/v3/audit/job/%s", s.baseURL, jobID)
+
+	var job api.AuditJob
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
