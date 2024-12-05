@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/opencomply/pkg/types"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
 
@@ -22,7 +23,7 @@ type AuditSummaryResponse struct {
 	}
 }
 
-func GetAuditSummaryByJobID(ctx context.Context, client opengovernance.Client, jobID string) (*types.AuditSummary, error) {
+func GetAuditSummaryByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string) (*types.AuditSummary, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -38,6 +39,8 @@ func GetAuditSummaryByJobID(ctx context.Context, client opengovernance.Client, j
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Info("ES Query", zap.String("index", types.AuditSummaryIndex), zap.String("query", string(b)))
 
 	var response AuditSummaryResponse
 	err = client.Search(ctx, types.AuditSummaryIndex, string(b), &response)
