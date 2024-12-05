@@ -1,0 +1,293 @@
+{
+  "integration_type_id": "google_workspace",
+  "integration_name": "Google Workspace",
+  "help_text_md": "Google Workspace integration allows secure connections to your organization's Google Workspace account. [Documentation](https://support.google.com/a/answer/60757).",
+  "platform_documentation": "https://support.google.com/a/answer/60757",
+  "provider_documentation": "https://workspace.google.com",
+  "icon": "google-workspace.svg",
+  "discover": {
+    "credentials": [
+      {
+        "type": "service_account",
+        "label": "Google Workspace Service Account",
+        "priority": 1,
+        "fields": [
+          {
+            "name": "admin_email",
+            "label": "Admin Email",
+            "inputType": "email",
+            "required": true,
+            "order": 1,
+            "validation": {
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "errorMessage": "Please enter a valid email address."
+            },
+            "info": "Email address of the Google Workspace admin account."
+          },
+          {
+            "name": "customer_id",
+            "label": "Customer ID",
+            "inputType": "text",
+            "required": true,
+            "order": 2,
+            "validation": {
+              "pattern": "^[a-zA-Z0-9-]+$",
+              "errorMessage": "Customer ID should only contain alphanumeric characters and hyphens."
+            },
+            "info": "Unique identifier for your Google Workspace account."
+          },
+          {
+            "name": "json_key_file",
+            "label": "JSON Key File",
+            "inputType": "file",
+            "required": true,
+            "order": 3,
+            "info": "Upload the service account JSON key file for authentication.",
+            "fileValidation": {
+              "allowedExtensions": [".json"],
+              "errorMessage": "The uploaded file must be a valid JSON file."
+            }
+          }
+        ]
+      }
+    ],
+    "integrations": [
+      {
+        "label": "Google Workspace Integration",
+        "type": "google_workspace_integration",
+        "fields": [
+          {
+            "name": "uuid",
+            "label": "Integration UUID",
+            "fieldType": "text",
+            "required": true,
+            "order": 1,
+            "info": "Unique identifier (UUID) for the integration."
+          },
+          {
+            "name": "admin_email",
+            "label": "Admin Email",
+            "fieldType": "email",
+            "required": true,
+            "order": 2,
+            "info": "Email address of the admin account used for this integration."
+          },
+          {
+            "name": "customer_id",
+            "label": "Customer ID",
+            "fieldType": "text",
+            "required": true,
+            "order": 3,
+            "info": "Google Workspace Customer ID for the integration."
+          },
+          {
+            "name": "state",
+            "label": "State",
+            "fieldType": "status",
+            "required": true,
+            "order": 4,
+            "info": "Current state of the Google Workspace integration.",
+            "statusOptions": [
+              {
+                "value": "ACTIVE",
+                "label": "Active",
+                "color": "green"
+              },
+              {
+                "value": "INACTIVE",
+                "label": "Inactive",
+                "color": "red"
+              },
+              {
+                "value": "ARCHIVED",
+                "label": "Archived",
+                "color": "blue"
+              }
+            ]
+          },
+          {
+            "name": "created_at",
+            "label": "Created At",
+            "fieldType": "date",
+            "required": true,
+            "order": 5,
+            "info": "Timestamp when the integration was created."
+          },
+          {
+            "name": "last_updated",
+            "label": "Last Updated",
+            "fieldType": "date",
+            "required": true,
+            "order": 6,
+            "info": "Timestamp when the integration was last updated."
+          }
+        ]
+      }
+    ]
+  },
+  "render": {
+    "credentials": {
+      "defaultPageSize": 10,
+      "fields": [
+        {
+          "name": "admin_email",
+          "label": "Admin Email",
+          "fieldType": "text",
+          "order": 1,
+          "sortable": true,
+          "filterable": true,
+          "info": "Admin email address.",
+          "detail": false,
+          "detail_order": 1
+        },
+        {
+          "name": "customer_id",
+          "label": "Customer ID",
+          "fieldType": "text",
+          "order": 2,
+          "sortable": true,
+          "filterable": true,
+          "info": "Google Workspace Customer ID.",
+          "detail": false,
+          "detail_order": 2
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "fieldType": "date",
+          "order": 3,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the credential was created.",
+          "detail": false,
+          "detail_order": 3
+        },
+        {
+          "name": "updated_at",
+          "label": "Updated At",
+          "fieldType": "date",
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the credential was last updated.",
+          "detail": false,
+          "detail_order": 4
+        }
+      ]
+    },
+    "integrations": {
+      "defaultPageSize": 15,
+      "fields": [
+        {
+          "name": "name",
+          "label": "Name",
+          "fieldType": "text",
+          "order": 1,
+          "sortable": true,
+          "filterable": true,
+          "info": "Name of the integration.",
+          "detail": true,
+          "detail_order": 1
+        },
+        {
+          "name": "state",
+          "label": "State",
+          "fieldType": "status",
+          "order": 2,
+          "sortable": true,
+          "filterable": true,
+          "info": "Current state of the Google Workspace integration.",
+          "detail": true,
+          "detail_order": 2,
+          "statusOptions": [
+            {
+              "value": "ACTIVE",
+              "label": "Active",
+              "color": "green"
+            },
+            {
+              "value": "INACTIVE",
+              "label": "Inactive",
+              "color": "red"
+            },
+            {
+              "value": "ARCHIVED",
+              "label": "Archived",
+              "color": "blue"
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "label": "Created At",
+          "fieldType": "date",
+          "order": 3,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the integration was created.",
+          "detail": true,
+          "detail_order": 3
+        },
+        {
+          "name": "last_updated",
+          "label": "Last Updated",
+          "fieldType": "date",
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the integration was last updated.",
+          "detail": true,
+          "detail_order": 4
+        }
+      ]
+    }
+  },
+  "actions": {
+    "credentials": [
+      {
+        "type": "view",
+        "label": "View"
+      },
+      {
+        "type": "update",
+        "label": "Update",
+        "editableFields": [
+          "admin_email",
+          "customer_id",
+          "json_key_file"
+        ]
+      },
+      {
+        "type": "delete",
+        "label": "Delete",
+        "confirm": {
+          "message": "Are you sure you want to delete this credential? This action cannot be undone.",
+          "condition": {
+            "field": "integration_count",
+            "operator": "==",
+            "value": 0,
+            "errorMessage": "Credential cannot be deleted because it is used by active integrations."
+          }
+        }
+      }
+    ],
+    "integrations": [
+      {
+        "type": "view",
+        "label": "View"
+      },
+      {
+        "type": "delete",
+        "label": "Delete",
+        "confirm": {
+          "message": "Are you sure you want to delete this integration? This action cannot be undone."
+        }
+      },
+      {
+        "type": "health_check",
+        "label": "Health Check",
+        "tooltip": "Run a health check on the integration to verify connectivity and configuration."
+      }
+    ]
+  }
+}

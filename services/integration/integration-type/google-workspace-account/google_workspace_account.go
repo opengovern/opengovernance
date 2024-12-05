@@ -20,9 +20,9 @@ func (i *GoogleWorkspaceAccountIntegration) GetConfiguration() interfaces.Integr
 		NatsConsumerGroup:        googleWorkspaceDescriberLocal.ConsumerGroup,
 		NatsConsumerGroupManuals: googleWorkspaceDescriberLocal.ConsumerGroupManuals,
 
-		SteampipePluginName: "github",
+		SteampipePluginName: "googleworkspace",
 
-		UISpecFileName: "github-account.json",
+		UISpecFileName: "google-workspace-account.json",
 
 		DescriberDeploymentName: googleWorkspaceDescriberLocal.DescriberDeploymentName,
 		DescriberRunCommand:     googleWorkspaceDescriberLocal.DescriberRunCommand,
