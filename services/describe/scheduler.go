@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
 	"net"
 	"net/http"
 	"strconv"
@@ -318,6 +319,11 @@ func (s *Scheduler) SetupNats(ctx context.Context) error {
 	}
 
 	if err := s.jq.Stream(ctx, DescribeStreamName, "describe job queue", []string{DescribeResultsQueueName}, 1000000); err != nil {
+		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
+		return err
+	}
+
+	if err := s.jq.Stream(ctx, auditjob.StreamName, "describe job queue", []string{auditjob.JobQueueTopic, auditjob.JobQueueTopicManuals, auditjob.ResultQueueTopic}, 1000000); err != nil {
 		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
 		return err
 	}

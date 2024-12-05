@@ -7662,6 +7662,7 @@ func (h HttpHandler) GetAuditJobSummary(c echo.Context) error {
 	} else if auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
 		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
 	}
+	h.logger
 
 	auditSummary, err := es.GetAuditSummaryByJobID(c.Request().Context(), h.client, jobId)
 	if err != nil {
