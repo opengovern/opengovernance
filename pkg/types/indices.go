@@ -6,4 +6,5 @@ const (
 	ResourceFindingsIndex       = "resource_findings"
 	BenchmarkSummaryIndex       = "benchmark_summary"
 	QueryRunIndex               = "query_run"
+	AuditSummaryIndex           = "audit_summary"
 )

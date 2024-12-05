@@ -1,40 +1,47 @@
-package query_validator
+package audit_job
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
+	"github.com/opengovern/opencomply/services/describe/db/model"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
-	"strconv"
+	"os"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/config"
+	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	ElasticSearch         config.ElasticSearch
-	NATS                  config.NATS
-	Compliance            config.OpenGovernanceService
-	Onboard               config.OpenGovernanceService
-	Inventory             config.OpenGovernanceService
-	Metadata              config.OpenGovernanceService
-	EsSink                config.OpenGovernanceService
-	Steampipe             config.Postgres
-	PrometheusPushAddress string
+	ElasticSearch config.ElasticSearch
+	NATS          config.NATS
+	Compliance    config.OpenGovernanceService
+	EsSink        config.OpenGovernanceService
+	Steampipe     config.Postgres
 }
 
 type Worker struct {
-	config        Config
-	logger        *zap.Logger
-	steampipeConn *steampipe.Database
-	esClient      opengovernance.Client
-	jq            *jq.JobQueue
+	config           Config
+	logger           *zap.Logger
+	steampipeConn    *steampipe.Database
+	esClient         opengovernance.Client
+	jq               *jq.JobQueue
+	complianceClient complianceClient.ComplianceServiceClient
+	metadataClient   metadataClient.MetadataServiceClient
+	sinkClient       esSinkClient.EsSinkServiceClient
 }
+
+var (
+	ManualTrigger = os.Getenv("MANUAL_TRIGGER")
+)
 
 func NewWorker(
 	config Config,
@@ -48,7 +55,6 @@ func NewWorker(
 			return nil, err
 		}
 	}
-
 	if err := steampipe.PopulateOpenGovernancePluginSteampipeConfig(config.ElasticSearch, config.Steampipe); err != nil {
 		return nil, err
 	}
@@ -78,19 +84,24 @@ func NewWorker(
 		return nil, err
 	}
 
-	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{JobQueueTopic, JobResultQueueTopic}, 1000); err != nil {
+	queueTopic := JobQueueTopic
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+	}
+
+	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{queueTopic, ResultQueueTopic}, 1000000); err != nil {
 		return nil, err
 	}
 
-	w := &Worker{
-		config:        config,
-		logger:        logger,
-		steampipeConn: steampipeConn,
-		esClient:      esClient,
-		jq:            jq,
-	}
-
-	return w, nil
+	return &Worker{
+		config:           config,
+		logger:           logger,
+		steampipeConn:    steampipeConn,
+		esClient:         esClient,
+		jq:               jq,
+		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
+		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
+	}, nil
 }
 
 // Run is a blocking function so you may decide to call it in another goroutine.
@@ -100,6 +111,10 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	queueTopic := JobQueueTopic
 	consumer := ConsumerGroup
+	if ManualTrigger == "true" {
+		queueTopic = JobQueueTopicManuals
+		consumer = ConsumerGroupManuals
+	}
 
 	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, consumer, StreamName, []string{queueTopic},
 		jetstream.ConsumerConfig{
@@ -152,32 +167,25 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err error) {
-	var job Job
+	var job AuditJob
 
-	if err = json.Unmarshal(msg.Data(), &job); err != nil {
+	if err := json.Unmarshal(msg.Data(), &job); err != nil {
 		return err
 	}
 
-	w.logger.Info("job message delivered", zap.String("jobID", strconv.Itoa(int(job.ID))))
-
 	result := JobResult{
-		ID:             job.ID,
-		QueryType:      job.QueryType,
-		QueryId:        job.QueryId,
-		ControlId:      job.ControlId,
-		Status:         QueryValidatorInProgress,
+		JobID:          job.JobID,
+		Status:         model.AuditJobStatusInProgress,
 		FailureMessage: "",
 	}
 
 	defer func() {
 		if err != nil {
 			result.FailureMessage = err.Error()
-			result.Status = QueryValidatorFailed
+			result.Status = model.AuditJobStatusFailed
 		} else {
-			result.Status = QueryValidatorSucceeded
+			result.Status = model.AuditJobStatusSucceeded
 		}
-
-		w.logger.Info("job is finished with status", zap.String("ID", strconv.Itoa(int(job.ID))), zap.String("status", string(result.Status)))
 
 		resultJson, err := json.Marshal(result)
 		if err != nil {
@@ -185,7 +193,7 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err err
 			return
 		}
 
-		if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-runner-result-%d", job.ID)); err != nil {
+		if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("audit-job-result-%d", job.JobID)); err != nil {
 			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
 		}
 	}()
@@ -196,13 +204,13 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err err
 		return err
 	}
 
-	if _, err := w.jq.Produce(ctx, JobResultQueueTopic, resultJson, fmt.Sprintf("query-validator-inprogress-%d", job.ID)); err != nil {
+	if _, err := w.jq.Produce(ctx, ResultQueueTopic, resultJson, fmt.Sprintf("audit-job-inprogress-%d", job.JobID)); err != nil {
 		w.logger.Error("failed to publish job in progress", zap.String("jobInProgress", string(resultJson)), zap.Error(err))
 	}
 
-	w.logger.Info("running job", zap.ByteString("job", msg.Data()), zap.Any("job object", job))
+	w.logger.Info("running job", zap.ByteString("job", msg.Data()))
 
-	err = w.RunJob(ctx, job)
+	err = w.RunJob(ctx, &job)
 	if err != nil {
 		return err
 	}
@@ -212,26 +220,6 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err err
 
 func (w *Worker) Stop() error {
 	w.steampipeConn.Conn().Close()
-	err := steampipe.StopSteampipeService(w.logger)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (w *Worker) Initialize(ctx context.Context, j Job) error {
-	providerAccountID := "all"
-
-	err := w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyIntegrationID, providerAccountID)
-	if err != nil {
-		w.logger.Error("failed to set account id", zap.Error(err))
-		return err
-	}
-	err = w.steampipeConn.SetConfigTableValue(ctx, steampipe.OpenGovernanceConfigKeyClientType, "compliance")
-	if err != nil {
-		w.logger.Error("failed to set client type", zap.Error(err))
-		return err
-	}
-
+	steampipe.StopSteampipeService(w.logger)
 	return nil
 }
