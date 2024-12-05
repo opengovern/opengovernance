@@ -8,6 +8,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-cloudflare:0.0.1 as cloudflare
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-openai:0.0.1 as openai
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-linode:0.0.1 as linode
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-cohereai:0.0.1 as cohereai
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-googleworkspace:0.0.1 as googleworkspace
 
 FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
 
@@ -28,6 +29,7 @@ COPY --from=cloudflare /steampipe-plugin-cloudflare.plugin /home/steampipe/.stea
 COPY --from=openai /steampipe-plugin-openai.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/openai@latest/steampipe-plugin-openai.plugin
 COPY --from=linode /steampipe-plugin-linode.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/linode@latest/steampipe-plugin-linode.plugin
 COPY --from=cohereai /steampipe-plugin-cohereai.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/cohereai@latest/steampipe-plugin-cohereai.plugin
+COPY --from=googleworkspace /steampipe-plugin-googleworkspace.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/googleworkspace@latest/steampipe-plugin-googleworkspace.plugin
 
 COPY --from=opengovernance /cloudql.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
 
