@@ -410,4 +410,5 @@ type AuditJob struct {
 type CreateAuditJobRequest struct {
 	FrameworkID    string   `json:"framework_id"`
 	IntegrationIDs []string `json:"integration_ids"`
+	IncludeResults []string `json:"include_results"`
 }

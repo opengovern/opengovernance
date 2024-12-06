@@ -17,6 +17,7 @@ type AuditJob struct {
 	JobID          uint
 	FrameworkID    string
 	IntegrationIDs []string
+	IncludeResult  []string
 
 	AuditResult          *types.AuditSummary
 	AuditResourcesResult *types.AuditResourcesSummary
@@ -99,6 +100,15 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 }
 
 func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integrationId string) error {
+	include := make(map[string]bool)
+	if len(job.IncludeResult) > 0 {
+		for _, result := range job.IncludeResult {
+			include[result] = true
+		}
+	} else {
+		include["alarm"] = true
+	}
+
 	job.AuditResourcesResult.Integrations[integrationId] = types.AuditIntegrationResult{
 		ResourceTypes: make(map[string]types.AuditResourceTypesResult),
 	}
@@ -140,6 +150,13 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			continue
 		}
 		for _, qr := range queryResults {
+			if _, ok := include[string(qr.ComplianceStatus)]; !ok {
+				continue
+			}
+			if _, ok := job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus]; !ok {
+				job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus] = 0
+			}
+			job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus] += 1
 			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType]; !ok {
 				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType] = types.AuditResourceTypesResult{
 					Resources: make(map[string]types.AuditResourceResult),

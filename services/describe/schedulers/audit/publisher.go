@@ -38,6 +38,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 			JobID:          job.ID,
 			FrameworkID:    job.FrameworkID,
 			IntegrationIDs: job.IntegrationIDs,
+			IncludeResult:  job.IncludeResults,
 		}
 
 		jobJson, err := json.Marshal(auditJobMsg)
