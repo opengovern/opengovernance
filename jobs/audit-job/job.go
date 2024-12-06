@@ -62,6 +62,8 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	var doc []es.Doc
 	doc = append(doc, *job.AuditResult)
 
+	w.logger.Info("Job Finished Successfully", zap.Any("result", *job.AuditResult))
+
 	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, doc); err != nil {
 		w.logger.Error("Failed to sink Query Run Result", zap.String("ID", strconv.Itoa(int(job.JobID))),
 			zap.String("FrameworkID", job.FrameworkID), zap.Error(err))
@@ -104,7 +106,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		}
 		queryResults, err := w.RunQuery(ctx, queryJob)
 		if err != nil {
-			return err
+			w.logger.Error("failed to run query", zap.String("jobID", strconv.Itoa(int(job.JobID))),
+				zap.String("frameworkID", job.FrameworkID), zap.String("integrationID", integrationId),
+				zap.String("controlID", control.ID), zap.Error(err))
+			continue
 		}
 		if _, ok := job.AuditResult.Controls[control.ID]; !ok {
 			job.AuditResult.Controls[control.ID] = types.AuditControlResult{
