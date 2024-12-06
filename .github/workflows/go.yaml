@@ -75,7 +75,7 @@ jobs:
       compliance-report-job: ${{ steps.build_services.outputs.compliance-report-job }}
       compliance-service: ${{ steps.build_services.outputs.compliance-service }}
       compliance-summarizer-job: ${{ steps.build_services.outputs.compliance-summarizer-job }}
-      describe-scheduler-service: ${{ steps.build_services.outputs.describe-scheduler-service }}
+      scheduler-service: ${{ steps.build_services.outputs.scheduler-service }}
       inventory-service: ${{ steps.build_services.outputs.inventory-service }}
       metadata-service: ${{ steps.build_services.outputs.metadata-service }}
       post-install-job: ${{ steps.build_services.outputs.post-install-job }}
@@ -373,7 +373,7 @@ jobs:
           file: docker/ComplianceServiceDockerfile
           context: .
 
-  deploy-describe-scheduler-service:
+  deploy-scheduler-service:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -382,7 +382,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.describe-scheduler-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.scheduler-service == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -405,8 +405,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/describe-scheduler-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/DescribeSchedulerServiceDockerfile
+            ghcr.io/${{ github.repository_owner }}/scheduler-service:${{ needs.tag.outputs.latest_tag }}
+          file: docker/SchedulerServiceDockerfile
           context: .
 
   deploy-integration-service:
