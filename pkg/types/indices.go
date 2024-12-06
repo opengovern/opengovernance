@@ -7,4 +7,5 @@ const (
 	BenchmarkSummaryIndex       = "benchmark_summary"
 	QueryRunIndex               = "query_run"
 	AuditSummaryIndex           = "audit_summary"
+	AuditResourcesSummaryIndex  = "audit_resources_summary"
 )

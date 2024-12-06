@@ -18,7 +18,8 @@ type AuditJob struct {
 	FrameworkID    string
 	IntegrationIDs []string
 
-	AuditResult *types.AuditSummary
+	AuditResult          *types.AuditSummary
+	AuditResourcesResult *types.AuditResourcesSummary
 }
 
 type JobResult struct {
@@ -30,6 +31,15 @@ type JobResult struct {
 func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	job.AuditResult = &types.AuditSummary{
 		Controls:     make(map[string]types.AuditControlResult),
+		AuditSummary: make(map[types.ComplianceStatus]uint64),
+		JobSummary: types.JobSummary{
+			JobID:          job.JobID,
+			JobStartedAt:   time.Now(),
+			IntegrationIDs: job.IntegrationIDs,
+		},
+	}
+	job.AuditResourcesResult = &types.AuditResourcesSummary{
+		Integrations: make(map[string]types.AuditIntegrationResult),
 		AuditSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
@@ -65,7 +75,22 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	w.logger.Info("Job Finished Successfully", zap.Any("result", *job.AuditResult))
 
 	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, doc); err != nil {
-		w.logger.Error("Failed to sink Query Run Result", zap.String("ID", strconv.Itoa(int(job.JobID))),
+		w.logger.Error("Failed to sink Audit Summary", zap.String("ID", strconv.Itoa(int(job.JobID))),
+			zap.String("FrameworkID", job.FrameworkID), zap.Error(err))
+		return err
+	}
+
+	keys, idx = job.AuditResourcesResult.KeysAndIndex()
+	job.AuditResourcesResult.EsID = es.HashOf(keys...)
+	job.AuditResourcesResult.EsIndex = idx
+
+	var doc2 []es.Doc
+	doc2 = append(doc2, *job.AuditResourcesResult)
+
+	w.logger.Info("Audit Resources Summary", zap.Any("result", *job.AuditResourcesResult))
+
+	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, doc2); err != nil {
+		w.logger.Error("Failed to sink Audit Resources Summary", zap.String("ID", strconv.Itoa(int(job.JobID))),
 			zap.String("FrameworkID", job.FrameworkID), zap.Error(err))
 		return err
 	}
@@ -74,6 +99,9 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 }
 
 func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integrationId string) error {
+	job.AuditResourcesResult.Integrations[integrationId] = types.AuditIntegrationResult{
+		ResourceTypes: make(map[string]types.AuditResourceTypesResult),
+	}
 	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
 
 	err := w.Initialize(ctx, integrationId)
@@ -112,6 +140,31 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			continue
 		}
 		for _, qr := range queryResults {
+			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType]; !ok {
+				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType] = types.AuditResourceTypesResult{
+					Resources: make(map[string]types.AuditResourceResult),
+				}
+			}
+			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID]; !ok {
+				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID] = types.AuditResourceResult{
+					ResourceName: qr.ResourceName,
+				}
+			}
+			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].ResourceSummary[qr.ComplianceStatus]; !ok {
+				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].ResourceSummary[qr.ComplianceStatus] = 0
+			}
+			job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].ResourceSummary[qr.ComplianceStatus] += 1
+			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].Results[qr.ComplianceStatus]; !ok {
+				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].Results[qr.ComplianceStatus] = make([]types.AuditControlFinding, 0)
+			}
+			job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].Results[qr.ComplianceStatus] = append(
+				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID].Results[qr.ComplianceStatus], types.AuditControlFinding{
+					Severity:  control.Severity,
+					ControlID: control.ID,
+					Reason:    qr.Reason,
+				})
+
+			// Audit Summary
 			if _, ok := job.AuditResult.Controls[control.ID]; !ok {
 				job.AuditResult.Controls[control.ID] = types.AuditControlResult{
 					Severity:       control.Severity,
