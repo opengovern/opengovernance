@@ -1,4 +1,4 @@
-package query_runner
+package audit
 
 import (
 	"context"

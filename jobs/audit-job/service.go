@@ -89,7 +89,7 @@ func NewWorker(
 		queueTopic = JobQueueTopicManuals
 	}
 
-	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{queueTopic, ResultQueueTopic}, 1000000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{queueTopic, ResultQueueTopic}, 1000); err != nil {
 		return nil, err
 	}
 
