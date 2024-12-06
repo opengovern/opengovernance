@@ -61,7 +61,7 @@ const (
 	JobTimeoutCheckInterval = 1 * time.Minute
 	MaxJobInQueue           = 10000
 
-	schedulerConsumerGroup = "describe-scheduler"
+	schedulerConsumerGroup = "scheduler"
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
