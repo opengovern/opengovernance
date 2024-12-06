@@ -243,27 +243,6 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			}
 			loadedQueryViewsQueries[obj.ID] = true
 		}
-		for _, obj := range p.queryViews {
-			if obj.QueryID != nil && !loadedQueryViewsQueries[*obj.QueryID] {
-				missingQueryViewsQueries[*obj.QueryID] = true
-				logger.Info("query not found", zap.String("query_id", *obj.QueryID))
-				continue
-			}
-			err := tx.Create(&obj).Error
-			if err != nil {
-				logger.Error("error while inserting query view", zap.Error(err))
-				return err
-			}
-			for _, tag := range obj.Tags {
-				err = tx.Clauses(clause.OnConflict{
-					Columns:   []clause.Column{{Name: "key"}, {Name: "query_view_id"}}, // key columns
-					DoNothing: true,
-				}).Create(&tag).Error
-				if err != nil {
-					return fmt.Errorf("failure in control tag insert: %v", err)
-				}
-			}
-		}
 
 		return nil
 	})
