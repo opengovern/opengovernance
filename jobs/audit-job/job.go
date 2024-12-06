@@ -147,8 +147,8 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			}
 			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID]; !ok {
 				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType].Resources[qr.ResourceID] = types.AuditResourceResult{
-					ResourceSummary: make(map[ComplianceStatus]uint64),
-					Results:         make(map[ComplianceStatus][]AuditControlFinding),
+					ResourceSummary: make(map[types.ComplianceStatus]uint64),
+					Results:         make(map[types.ComplianceStatus][]types.AuditControlFinding),
 					ResourceName:    qr.ResourceName,
 				}
 			}
