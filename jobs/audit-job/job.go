@@ -111,12 +111,14 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 				zap.String("controlID", control.ID), zap.Error(err))
 			continue
 		}
-		if _, ok := job.AuditResult.Controls[control.ID]; !ok {
-			job.AuditResult.Controls[control.ID] = types.AuditControlResult{
-				Severity: control.Severity,
-			}
-		}
 		for _, qr := range queryResults {
+			if _, ok := job.AuditResult.Controls[control.ID]; !ok {
+				job.AuditResult.Controls[control.ID] = types.AuditControlResult{
+					Severity:       control.Severity,
+					ControlSummary: make(map[types.ComplianceStatus]uint64),
+					Results:        make(map[types.ComplianceStatus][]types.AuditResourceFinding),
+				}
+			}
 			if _, ok := job.AuditResult.AuditSummary[qr.ComplianceStatus]; !ok {
 				job.AuditResult.AuditSummary[qr.ComplianceStatus] = 0
 			}
