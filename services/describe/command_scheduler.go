@@ -10,9 +10,6 @@ import (
 )
 
 const (
-	CheckupJobsQueueName    = "checkup-jobs-queue"
-	CheckupResultsQueueName = "checkup-results-queue"
-
 	DescribeResultsQueueName = "opengovernance-describe-results-queue"
 	DescribeStreamName       = "describe"
 )
@@ -35,7 +32,6 @@ var (
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
-	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
 	IntegrationBaseURL         = os.Getenv("INTEGRATION_BASE_URL")
 	InventoryBaseURL           = os.Getenv("INVENTORY_BASE_URL")
 	EsSinkBaseURL              = os.Getenv("ESSINK_BASEURL")

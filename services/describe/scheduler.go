@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
+	"github.com/opengovern/opencomply/services/describe/schedulers/audit"
 	"net"
 	"net/http"
 	"strconv"
@@ -123,6 +124,7 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
+	auditScheduler          *audit.JobScheduler
 	complianceScheduler     *compliance.JobScheduler
 	discoveryScheduler      *discovery.Scheduler
 	queryRunnerScheduler    *queryrunnerscheduler.JobScheduler
@@ -323,7 +325,7 @@ func (s *Scheduler) SetupNats(ctx context.Context) error {
 		return err
 	}
 
-	if err := s.jq.Stream(ctx, auditjob.StreamName, "describe job queue", []string{auditjob.JobQueueTopic, auditjob.JobQueueTopicManuals, auditjob.ResultQueueTopic}, 1000000); err != nil {
+	if err := s.jq.Stream(ctx, auditjob.StreamName, "describe job queue", []string{auditjob.JobQueueTopic, auditjob.ResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
 		return err
 	}
@@ -446,6 +448,21 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		s.metadataClient,
 	)
 	s.queryRunnerScheduler.Run(ctx)
+
+	s.auditScheduler = audit.New(
+		func(ctx context.Context) error {
+			return s.SetupNats(ctx)
+		},
+		s.conf,
+		s.logger,
+		s.db,
+		s.jq,
+		s.es,
+		s.inventoryClient,
+		s.complianceClient,
+		s.metadataClient,
+	)
+	s.auditScheduler.Run(ctx)
 
 	if s.conf.QueryValidatorEnabled == "true" {
 		// Query Validator
