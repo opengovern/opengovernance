@@ -6,7 +6,6 @@ import (
 	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
 
 	"github.com/nats-io/nats.go/jetstream"
-	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
 	"go.uber.org/zap"
 )
 
@@ -16,20 +15,20 @@ func (s *JobScheduler) RunAuditJobResultsConsumer(ctx context.Context) error {
 			s.logger.Error("Failed committing message", zap.Error(err))
 		}
 
-		var result queryrunner.JobResult
+		var result auditjob.JobResult
 		if err := json.Unmarshal(msg.Data(), &result); err != nil {
 			s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
 			return
 		}
 
 		s.logger.Info("Processing ReportJobResult for Job",
-			zap.Uint("jobId", result.ID),
+			zap.Uint("jobId", result.JobID),
 			zap.String("status", string(result.Status)),
 		)
-		err := s.db.UpdateQueryRunnerJobStatus(result.ID, result.Status, result.FailureMessage)
+		err := s.db.UpdateAuditJobStatus(result.JobID, result.Status, result.FailureMessage)
 		if err != nil {
 			s.logger.Error("Failed to update the status of QueryRunnerReportJob",
-				zap.Uint("jobId", result.ID),
+				zap.Uint("jobId", result.JobID),
 				zap.Error(err))
 			return
 		}
