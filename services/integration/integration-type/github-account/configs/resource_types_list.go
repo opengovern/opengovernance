@@ -39,6 +39,12 @@ var TablesToResourceTypes = map[string]string{
 	"github_user":                            "GithubUser",
 	"github_workflow":                        "GithubWorkflow",
 	"github_code_owner":                      "Github/CodeOwner",
+	"github_container_package":               "Github/Package/Container",
+	"github_maven_package":                   "Github/Package/Maven",
+	"github_npm_package":                     "Github/Package/NPM",
+	"github_rubygems_package":                "Github/Package/RubyGems",
+	"github_nuget_package":                   "Github/Package/Nuget",
+	"github_package_version":                 "Github/Package/Version",
 }
 
 var ResourceTypesList = []string{
@@ -80,4 +86,10 @@ var ResourceTypesList = []string{
 	"GithubUser",
 	"GithubWorkflow",
 	"Github/CodeOwner",
+	"Github/Package/Container",
+	"Github/Package/Maven",
+	"Github/Package/NPM",
+	"Github/Package/RubyGems",
+	"Github/Package/Nuget",
+	"Github/Package/Version",
 }
