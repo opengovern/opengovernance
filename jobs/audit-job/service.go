@@ -24,6 +24,7 @@ type Config struct {
 	ElasticSearch config.ElasticSearch
 	NATS          config.NATS
 	Compliance    config.OpenGovernanceService
+	Metadata      config.OpenGovernanceService
 	EsSink        config.OpenGovernanceService
 	Steampipe     config.Postgres
 }
@@ -84,12 +85,8 @@ func NewWorker(
 		return nil, err
 	}
 
-	queueTopic := JobQueueTopic
-	if ManualTrigger == "true" {
-		queueTopic = JobQueueTopicManuals
-	}
-
-	if err := jq.Stream(ctx, StreamName, "compliance runner job queue", []string{queueTopic, ResultQueueTopic}, 1000); err != nil {
+	if err := jq.Stream(ctx, StreamName, "audit job queue", []string{JobQueueTopic, ResultQueueTopic}, 1000); err != nil {
+		logger.Error("failed to create stream", zap.Error(err))
 		return nil, err
 	}
 
@@ -100,6 +97,7 @@ func NewWorker(
 		esClient:         esClient,
 		jq:               jq,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
+		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),
 		sinkClient:       esSinkClient.NewEsSinkServiceClient(logger, config.EsSink.BaseURL),
 	}, nil
 }
@@ -109,14 +107,7 @@ func NewWorker(
 func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("starting to consume")
 
-	queueTopic := JobQueueTopic
-	consumer := ConsumerGroup
-	if ManualTrigger == "true" {
-		queueTopic = JobQueueTopicManuals
-		consumer = ConsumerGroupManuals
-	}
-
-	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, consumer, StreamName, []string{queueTopic},
+	consumeCtx, err := w.jq.ConsumeWithConfig(ctx, ConsumerGroup, StreamName, []string{JobQueueTopic},
 		jetstream.ConsumerConfig{
 			DeliverPolicy:     jetstream.DeliverAllPolicy,
 			AckPolicy:         jetstream.AckExplicitPolicy,

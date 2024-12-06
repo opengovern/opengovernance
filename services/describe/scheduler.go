@@ -325,7 +325,7 @@ func (s *Scheduler) SetupNats(ctx context.Context) error {
 		return err
 	}
 
-	if err := s.jq.Stream(ctx, auditjob.StreamName, "describe job queue", []string{auditjob.JobQueueTopic, auditjob.ResultQueueTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, auditjob.StreamName, "audit job queue", []string{auditjob.JobQueueTopic, auditjob.ResultQueueTopic}, 1000); err != nil {
 		s.logger.Error("Failed to stream to describe queue", zap.Error(err))
 		return err
 	}
