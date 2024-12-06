@@ -23,6 +23,7 @@ type AuditJob struct {
 	gorm.Model
 	FrameworkID    string
 	IntegrationIDs pq.StringArray `gorm:"type:text[]"`
+	IncludeResults pq.StringArray `gorm:"type:text[]"`
 	Status         AuditJobStatus
 	FailureMessage string
 	CreatedBy      string

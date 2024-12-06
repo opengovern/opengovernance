@@ -3668,6 +3668,7 @@ func (h HttpServer) CreateAuditJob(c echo.Context) error {
 	jobId, err := h.DB.CreateAuditJob(&model2.AuditJob{
 		FrameworkID:    request.FrameworkID,
 		IntegrationIDs: request.IntegrationIDs,
+		IncludeResults: request.IncludeResults,
 		Status:         model2.AuditJobStatusCreated,
 		CreatedBy:      userID,
 	})
