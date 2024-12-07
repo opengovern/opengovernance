@@ -1,11 +1,9 @@
 package compliance_quick_run_job
 
 const (
-	JobQueueTopic        = "audit-job-queue"
-	JobQueueTopicManuals = "audit-job-queue-manuals"
-	ResultQueueTopic     = "audit-job-result"
-	ConsumerGroup        = "audit"
-	ConsumerGroupManuals = "audit-manuals"
+	JobQueueTopic    = "compliance-quick-run-queue"
+	ResultQueueTopic = "compliance-quick-run-result"
+	ConsumerGroup    = "compliance-quick-run"
 
-	StreamName = "audit"
+	StreamName = "compliance-quick-run"
 )

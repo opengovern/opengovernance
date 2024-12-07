@@ -25,7 +25,7 @@ func (s *JobScheduler) RunAuditJobResultsConsumer(ctx context.Context) error {
 			zap.Uint("jobId", result.JobID),
 			zap.String("status", string(result.Status)),
 		)
-		err := s.db.UpdateAuditJobStatus(result.JobID, result.Status, result.FailureMessage)
+		err := s.db.UpdateComplianceQuickRunStatus(result.JobID, result.Status, result.FailureMessage)
 		if err != nil {
 			s.logger.Error("Failed to update the status of QueryRunnerReportJob",
 				zap.Uint("jobId", result.JobID),

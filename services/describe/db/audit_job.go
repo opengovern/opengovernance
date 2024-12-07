@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db Database) CreateAuditJob(job *model.AuditJob) (uint, error) {
-	tx := db.ORM.Model(&model.AuditJob{}).
+func (db Database) CreateComplianceQuickRun(job *model.ComplianceQuickRun) (uint, error) {
+	tx := db.ORM.Model(&model.ComplianceQuickRun{}).
 		Create(job)
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -16,8 +16,8 @@ func (db Database) CreateAuditJob(job *model.AuditJob) (uint, error) {
 	return job.ID, nil
 }
 
-func (db Database) GetAuditJobByID(ID uint) (*model.AuditJob, error) {
-	var job model.AuditJob
+func (db Database) GetComplianceQuickRunByID(ID uint) (*model.ComplianceQuickRun, error) {
+	var job model.ComplianceQuickRun
 	tx := db.ORM.Where("id = ?", ID).Find(&job)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -26,9 +26,9 @@ func (db Database) GetAuditJobByID(ID uint) (*model.AuditJob, error) {
 	return &job, nil
 }
 
-func (db Database) ListAuditJobs() ([]model.AuditJob, error) {
-	var job []model.AuditJob
-	tx := db.ORM.Model(&model.AuditJob{}).First(&job)
+func (db Database) ListComplianceQuickRuns() ([]model.ComplianceQuickRun, error) {
+	var job []model.ComplianceQuickRun
+	tx := db.ORM.Model(&model.ComplianceQuickRun{}).First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -38,20 +38,20 @@ func (db Database) ListAuditJobs() ([]model.AuditJob, error) {
 	return job, nil
 }
 
-func (db Database) CleanupAllAuditJobs() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.AuditJob{})
+func (db Database) CleanupAllComplianceQuickRuns() error {
+	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceQuickRun{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) UpdateTimedOutInProgressAuditJobs() error {
+func (db Database) UpdateTimedOutInProgressComplianceQuickRuns() error {
 	tx := db.ORM.
-		Model(&model.AuditJob{}).
-		Where("status = ?", model.AuditJobStatusInProgress).
+		Model(&model.ComplianceQuickRun{}).
+		Where("status = ?", model.ComplianceQuickRunStatusInProgress).
 		Where("updated_at < NOW() - INTERVAL '10 MINUTES'").
-		Updates(model.AuditJob{Status: model.AuditJobStatusTimeOut, FailureMessage: "Job timed out"})
+		Updates(model.ComplianceQuickRun{Status: model.ComplianceQuickRunStatusTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -59,12 +59,12 @@ func (db Database) UpdateTimedOutInProgressAuditJobs() error {
 	return nil
 }
 
-func (db Database) UpdateTimedOutQueuedAuditJobs() error {
+func (db Database) UpdateTimedOutQueuedComplianceQuickRuns() error {
 	tx := db.ORM.
-		Model(&model.AuditJob{}).
-		Where("status = ?", model.AuditJobStatusQueued).
+		Model(&model.ComplianceQuickRun{}).
+		Where("status = ?", model.ComplianceQuickRunStatusQueued).
 		Where("updated_at < NOW() - INTERVAL '12 HOURS'").
-		Updates(model.AuditJob{Status: model.AuditJobStatusTimeOut, FailureMessage: "Job timed out"})
+		Updates(model.ComplianceQuickRun{Status: model.ComplianceQuickRunStatusTimeOut, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -72,30 +72,30 @@ func (db Database) UpdateTimedOutQueuedAuditJobs() error {
 	return nil
 }
 
-func (db Database) FetchCreatedAuditJobs() ([]model.AuditJob, error) {
-	var jobs []model.AuditJob
-	tx := db.ORM.Model(&model.AuditJob{}).Where("status = ?", model.AuditJobStatusCreated).Find(&jobs)
+func (db Database) FetchCreatedComplianceQuickRuns() ([]model.ComplianceQuickRun, error) {
+	var jobs []model.ComplianceQuickRun
+	tx := db.ORM.Model(&model.ComplianceQuickRun{}).Where("status = ?", model.ComplianceQuickRunStatusCreated).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return jobs, nil
 }
 
-func (db Database) UpdateAuditJobStatus(jobId uint, status model.AuditJobStatus, failureReason string) error {
-	tx := db.ORM.Model(&model.AuditJob{}).Where("id = ?", jobId).
-		Updates(model.AuditJob{Status: status, FailureMessage: failureReason})
+func (db Database) UpdateComplianceQuickRunStatus(jobId uint, status model.ComplianceQuickRunStatus, failureReason string) error {
+	tx := db.ORM.Model(&model.ComplianceQuickRun{}).Where("id = ?", jobId).
+		Updates(model.ComplianceQuickRun{Status: status, FailureMessage: failureReason})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) UpdateAuditJobNatsSeqNum(
+func (db Database) UpdateComplianceQuickRunNatsSeqNum(
 	id uint, seqNum uint64) error {
 	tx := db.ORM.
-		Model(&model.AuditJob{}).
+		Model(&model.ComplianceQuickRun{}).
 		Where("id = ?", id).
-		Updates(model.AuditJob{
+		Updates(model.ComplianceQuickRun{
 			NatsSequenceNumber: seqNum,
 		})
 	if tx.Error != nil {

@@ -3665,11 +3665,11 @@ func (h HttpServer) CreateComplianceQuickRun(c echo.Context) error {
 		userID = "system"
 	}
 
-	jobId, err := h.DB.CreateAuditJob(&model2.AuditJob{
+	jobId, err := h.DB.CreateComplianceQuickRun(&model2.ComplianceQuickRun{
 		FrameworkID:    request.FrameworkID,
 		IntegrationIDs: request.IntegrationIDs,
 		IncludeResults: request.IncludeResults,
-		Status:         model2.AuditJobStatusCreated,
+		Status:         model2.ComplianceQuickRunStatusCreated,
 		CreatedBy:      userID,
 	})
 	if err != nil {
@@ -3702,7 +3702,7 @@ func (h HttpServer) GetComplianceQuickRun(c echo.Context) error {
 		}
 	}
 
-	auditJob, err := h.DB.GetAuditJobByID(uint(jobId))
+	auditJob, err := h.DB.GetComplianceQuickRunByID(uint(jobId))
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get audit job", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")

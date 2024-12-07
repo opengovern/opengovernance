@@ -25,7 +25,7 @@ type AuditJob struct {
 
 type JobResult struct {
 	JobID          uint
-	Status         model.AuditJobStatus
+	Status         model.ComplianceQuickRunStatus
 	FailureMessage string
 }
 

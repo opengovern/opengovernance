@@ -6,16 +6,16 @@ import (
 	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
 )
 
-type AuditJobStatus string
+type ComplianceQuickRunStatus string
 
 const (
-	AuditJobStatusCreated    AuditJobStatus = "CREATED"
-	AuditJobStatusQueued     AuditJobStatus = "QUEUED"
-	AuditJobStatusInProgress AuditJobStatus = "IN_PROGRESS"
-	AuditJobStatusFailed     AuditJobStatus = "FAILED"
-	AuditJobStatusSucceeded  AuditJobStatus = "SUCCEEDED"
-	AuditJobStatusTimeOut    AuditJobStatus = "TIMEOUT"
-	AuditJobStatusCanceled   AuditJobStatus = "CANCELED"
+	AuditJobStatusCreated    ComplianceQuickRunStatus = "CREATED"
+	AuditJobStatusQueued     ComplianceQuickRunStatus = "QUEUED"
+	AuditJobStatusInProgress ComplianceQuickRunStatus = "IN_PROGRESS"
+	AuditJobStatusFailed     ComplianceQuickRunStatus = "FAILED"
+	AuditJobStatusSucceeded  ComplianceQuickRunStatus = "SUCCEEDED"
+	AuditJobStatusTimeOut    ComplianceQuickRunStatus = "TIMEOUT"
+	AuditJobStatusCanceled   ComplianceQuickRunStatus = "CANCELED"
 )
 
 type JobType string
@@ -398,13 +398,13 @@ type GetIntegrationDiscoveryProgressResponse struct {
 	TriggerIdProgressBreakdown *DiscoveryProgressStatusBreakdown    `json:"trigger_id_progress_breakdown"`
 }
 
-type AuditJob struct {
-	ID             string         `json:"id"`
-	FrameworkID    string         `json:"framework_id"`
-	IntegrationIDs []string       `json:"integration_ids"`
-	Status         AuditJobStatus `json:"status"`
-	FailureMessage string         `json:"failure_message"`
-	CreatedBy      string         `json:"created_by"`
+type ComplianceQuickRun struct {
+	ID             string                   `json:"id"`
+	FrameworkID    string                   `json:"framework_id"`
+	IntegrationIDs []string                 `json:"integration_ids"`
+	Status         ComplianceQuickRunStatus `json:"status"`
+	FailureMessage string                   `json:"failure_message"`
+	CreatedBy      string                   `json:"created_by"`
 }
 
 type CreateAuditJobRequest struct {
