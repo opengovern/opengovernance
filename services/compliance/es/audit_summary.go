@@ -12,18 +12,18 @@ type AuditSummaryResponse struct {
 	Hits struct {
 		Total opengovernance.SearchTotal `json:"total"`
 		Hits  []struct {
-			ID      string             `json:"_id"`
-			Score   float64            `json:"_score"`
-			Index   string             `json:"_index"`
-			Type    string             `json:"_type"`
-			Version int64              `json:"_version,omitempty"`
-			Source  types.AuditSummary `json:"_source"`
-			Sort    []any              `json:"sort"`
+			ID      string                               `json:"_id"`
+			Score   float64                              `json:"_score"`
+			Index   string                               `json:"_index"`
+			Type    string                               `json:"_type"`
+			Version int64                                `json:"_version,omitempty"`
+			Source  types.ComplianceQuickScanControlView `json:"_source"`
+			Sort    []any                                `json:"sort"`
 		}
 	}
 }
 
-func GetAuditSummaryByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string) (*types.AuditSummary, error) {
+func GetAuditSummaryByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string) (*types.ComplianceQuickScanControlView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -40,10 +40,10 @@ func GetAuditSummaryByJobID(ctx context.Context, logger *zap.Logger, client open
 		return nil, err
 	}
 
-	logger.Info("ES Query", zap.String("index", types.AuditSummaryIndex), zap.String("query", string(b)))
+	logger.Info("ES Query", zap.String("index", types.ComplianceQuickScanControlViewIndex), zap.String("query", string(b)))
 
 	var response AuditSummaryResponse
-	err = client.Search(ctx, types.AuditSummaryIndex, string(b), &response)
+	err = client.Search(ctx, types.ComplianceQuickScanControlViewIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}

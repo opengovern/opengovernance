@@ -1,4 +1,4 @@
-package audit_job
+package compliance_quick_run_job
 
 const (
 	JobQueueTopic        = "audit-job-queue"

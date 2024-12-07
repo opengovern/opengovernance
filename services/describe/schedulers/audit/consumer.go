@@ -3,7 +3,7 @@ package audit
 import (
 	"context"
 	"encoding/json"
-	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
+	auditjob "github.com/opengovern/opencomply/jobs/compliance-quick-run-job"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"go.uber.org/zap"

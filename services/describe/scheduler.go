@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
+	auditjob "github.com/opengovern/opencomply/jobs/compliance-quick-run-job"
 	"github.com/opengovern/opencomply/services/describe/schedulers/audit"
 	"net"
 	"net/http"
