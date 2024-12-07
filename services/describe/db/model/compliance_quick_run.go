@@ -27,6 +27,7 @@ type ComplianceQuickRun struct {
 	Status         ComplianceQuickRunStatus
 	FailureMessage string
 	CreatedBy      string
+	ParentJobId    *uint
 
 	NatsSequenceNumber uint64
 }

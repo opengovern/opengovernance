@@ -1,4 +1,4 @@
-package audit
+package compliance_quick_run
 
 import (
 	"context"

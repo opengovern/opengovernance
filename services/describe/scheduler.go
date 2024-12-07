@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	auditjob "github.com/opengovern/opencomply/jobs/compliance-quick-run-job"
-	"github.com/opengovern/opencomply/services/describe/schedulers/audit"
+	"github.com/opengovern/opencomply/services/describe/schedulers/compliance-quick-run"
 	"net"
 	"net/http"
 	"strconv"
@@ -124,7 +124,7 @@ type Scheduler struct {
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
 
-	auditScheduler          *audit.JobScheduler
+	auditScheduler          *compliance_quick_run.JobScheduler
 	complianceScheduler     *compliance.JobScheduler
 	discoveryScheduler      *discovery.Scheduler
 	queryRunnerScheduler    *queryrunnerscheduler.JobScheduler
@@ -449,7 +449,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	)
 	s.queryRunnerScheduler.Run(ctx)
 
-	s.auditScheduler = audit.New(
+	s.auditScheduler = compliance_quick_run.New(
 		func(ctx context.Context) error {
 			return s.SetupNats(ctx)
 		},
@@ -498,7 +498,11 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	)
 	s.complianceScheduler.Run(ctx)
 	utils.EnsureRunGoroutine(func() {
-		s.RunJobSequencer(ctx) // Deprecated
+		s.RunJobSequencer(ctx)
+	})
+
+	utils.EnsureRunGoroutine(func() {
+		s.ScheduleQuickScanSequence(ctx)
 	})
 
 	utils.EnsureRunGoroutine(func() {

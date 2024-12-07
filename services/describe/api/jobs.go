@@ -18,6 +18,15 @@ const (
 	AuditJobStatusCanceled   ComplianceQuickRunStatus = "CANCELED"
 )
 
+type QuickScanSequenceStatus string
+
+const (
+	QuickScanSequenceFetchingDependencies QuickScanSequenceStatus = "FETCH_DEPENDENCIES"
+	QuickScanSequenceComplianceRunning    QuickScanSequenceStatus = "RUNNING_COMPLIANCE_QUICK_SCAN"
+	QuickScanSequenceFailed               QuickScanSequenceStatus = "FAILED"
+	QuickScanSequenceFinished             QuickScanSequenceStatus = "FINISHED"
+)
+
 type JobType string
 
 const (
@@ -405,6 +414,15 @@ type ComplianceQuickRun struct {
 	Status         ComplianceQuickRunStatus `json:"status"`
 	FailureMessage string                   `json:"failure_message"`
 	CreatedBy      string                   `json:"created_by"`
+}
+
+type QuickScanSequence struct {
+	ID             string                  `json:"id"`
+	FrameworkID    string                  `json:"framework_id"`
+	IntegrationIDs []string                `json:"integration_ids"`
+	Status         QuickScanSequenceStatus `json:"status"`
+	FailureMessage string                  `json:"failure_message"`
+	CreatedBy      string                  `json:"created_by"`
 }
 
 type CreateAuditJobRequest struct {

@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Deprecated
 func (s *Scheduler) RunJobSequencer(ctx context.Context) {
 	s.logger.Info("Scheduling job sequencer")
 
@@ -33,7 +32,6 @@ func (s *Scheduler) RunJobSequencer(ctx context.Context) {
 	}
 }
 
-// Deprecated
 func (s *Scheduler) checkJobSequences(ctx context.Context) error {
 	jobs, err := s.db.ListWaitingJobSequencers()
 	if err != nil {
