@@ -105,9 +105,9 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v3.GET("/integration/discovery/last-job", httpserver.AuthorizeHandler(h.GetIntegrationLastDiscoveryJob, apiAuth.ViewerRole))
 
 	v3.POST("/compliance/quick", httpserver.AuthorizeHandler(h.CreateComplianceQuickRun, apiAuth.EditorRole))
-	v3.POST("/compliance/quick/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickRun, apiAuth.ViewerRole))
+	v3.GET("/compliance/quick/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickRun, apiAuth.ViewerRole))
 	v3.POST("/compliance/quick/sequence", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
-	v3.POST("/compliance/quick/sequence/:run_id", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
+	v3.GET("/compliance/quick/sequence/:run_id", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
 }
 
 // ListJobs godoc
