@@ -6,15 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db Database) CreateQuickScanSequence(job *model.QuickScanSequence) error {
+func (db Database) CreateQuickScanSequence(job *model.QuickScanSequence) (uint, error) {
 	tx := db.ORM.
 		Model(&model.QuickScanSequence{}).
 		Create(job)
 	if tx.Error != nil {
-		return tx.Error
+		return 0, tx.Error
 	}
 
-	return nil
+	return job.ID, nil
 }
 
 func (db Database) FetchCreatedQuickScanSequences() ([]model.QuickScanSequence, error) {

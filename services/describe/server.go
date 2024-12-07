@@ -106,6 +106,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v3.POST("/compliance/quick", httpserver.AuthorizeHandler(h.CreateComplianceQuickRun, apiAuth.EditorRole))
 	v3.POST("/compliance/quick/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickRun, apiAuth.ViewerRole))
+	v3.POST("/compliance/quick/sequence", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
+	v3.POST("/compliance/quick/sequence/:run_id", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
 }
 
 // ListJobs godoc
@@ -3673,8 +3675,8 @@ func (h HttpServer) CreateComplianceQuickRun(c echo.Context) error {
 		CreatedBy:      userID,
 	})
 	if err != nil {
-		h.Scheduler.logger.Error("failed to create audit job", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create audit job")
+		h.Scheduler.logger.Error("failed to create compliance quick run", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create compliance quick run")
 	}
 
 	return c.String(http.StatusOK, strconv.Itoa(int(jobId)))
@@ -3704,9 +3706,77 @@ func (h HttpServer) GetComplianceQuickRun(c echo.Context) error {
 
 	auditJob, err := h.DB.GetComplianceQuickRunByID(uint(jobId))
 	if err != nil {
-		h.Scheduler.logger.Error("failed to get audit job", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
+		h.Scheduler.logger.Error("failed to get compliance quick run", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance quick run")
 	}
 
 	return c.JSON(http.StatusOK, auditJob.ToAPI())
+}
+
+// CreateComplianceQuickSequence godoc
+//
+//	@Summary		Create Compliance Quick Sequence
+//	@Description	Create Compliance Quick Sequence
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v3/compliance/quick/sequence [post]
+func (h HttpServer) CreateComplianceQuickSequence(c echo.Context) error {
+	var request api.CreateAuditJobRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	userID := httpserver.GetUserID(c)
+	if userID == "" {
+		userID = "system"
+	}
+
+	jobId, err := h.DB.CreateQuickScanSequence(&model2.QuickScanSequence{
+		FrameworkID:    request.FrameworkID,
+		IntegrationIDs: request.IntegrationIDs,
+		IncludeResults: request.IncludeResults,
+		Status:         model2.QuickScanSequenceCreated,
+		CreatedBy:      userID,
+	})
+	if err != nil {
+		h.Scheduler.logger.Error("failed to create quick scan sequence", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create quick scan sequence")
+	}
+
+	return c.String(http.StatusOK, strconv.Itoa(int(jobId)))
+}
+
+// GetComplianceQuickSequence godoc
+//
+//	@Summary		Get Compliance Quick Sequence by run id
+//	@Description	Get Compliance Quick Sequence by run id
+//	@Security		BearerToken
+//	@Tags			audit
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v3/compliance/quick/sequence/{run_id} [get]
+func (h HttpServer) GetComplianceQuickSequence(c echo.Context) error {
+	jobIdStr := c.Param("run_id")
+
+	var jobId int64
+	var err error
+	if jobIdStr != "" {
+		jobId, err = strconv.ParseInt(jobIdStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	job, err := h.DB.GetQuickScanSequenceByID(uint(jobId))
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get compliance quick run", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance quick run")
+	}
+
+	return c.JSON(http.StatusOK, job.ToAPI())
 }
