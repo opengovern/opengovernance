@@ -31,8 +31,8 @@ type JobResult struct {
 
 func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	job.AuditResult = &types.ComplianceQuickScanControlView{
-		Controls:     make(map[string]types.AuditControlResult),
-		AuditSummary: make(map[types.ComplianceStatus]uint64),
+		Controls:          make(map[string]types.AuditControlResult),
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
 			JobStartedAt:   time.Now(),
@@ -191,10 +191,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 					Results:        make(map[types.ComplianceStatus][]types.AuditResourceFinding),
 				}
 			}
-			if _, ok := job.AuditResult.AuditSummary[qr.ComplianceStatus]; !ok {
-				job.AuditResult.AuditSummary[qr.ComplianceStatus] = 0
+			if _, ok := job.AuditResult.ComplianceSummary[qr.ComplianceStatus]; !ok {
+				job.AuditResult.ComplianceSummary[qr.ComplianceStatus] = 0
 			}
-			job.AuditResult.AuditSummary[qr.ComplianceStatus] += 1
+			job.AuditResult.ComplianceSummary[qr.ComplianceStatus] += 1
 
 			if _, ok := job.AuditResult.Controls[control.ID].ControlSummary[qr.ComplianceStatus]; !ok {
 				job.AuditResult.Controls[control.ID].ControlSummary[qr.ComplianceStatus] = 0
