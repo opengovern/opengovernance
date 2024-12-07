@@ -1,4 +1,4 @@
-package audit_job
+package compliance_quick_run_job
 
 import (
 	"context"
@@ -19,29 +19,29 @@ type AuditJob struct {
 	IntegrationIDs []string
 	IncludeResult  []string
 
-	AuditResult          *types.AuditSummary
-	AuditResourcesResult *types.AuditResourcesSummary
+	AuditResult          *types.ComplianceQuickScanControlView
+	AuditResourcesResult *types.ComplianceQuickScanResourceView
 }
 
 type JobResult struct {
 	JobID          uint
-	Status         model.AuditJobStatus
+	Status         model.ComplianceQuickRunStatus
 	FailureMessage string
 }
 
 func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
-	job.AuditResult = &types.AuditSummary{
-		Controls:     make(map[string]types.AuditControlResult),
-		AuditSummary: make(map[types.ComplianceStatus]uint64),
+	job.AuditResult = &types.ComplianceQuickScanControlView{
+		Controls:          make(map[string]types.AuditControlResult),
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
 			JobStartedAt:   time.Now(),
 			IntegrationIDs: job.IntegrationIDs,
 		},
 	}
-	job.AuditResourcesResult = &types.AuditResourcesSummary{
-		Integrations: make(map[string]types.AuditIntegrationResult),
-		AuditSummary: make(map[types.ComplianceStatus]uint64),
+	job.AuditResourcesResult = &types.ComplianceQuickScanResourceView{
+		Integrations:      make(map[string]types.AuditIntegrationResult),
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
 			JobStartedAt:   time.Now(),
@@ -153,10 +153,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			if _, ok := include[string(qr.ComplianceStatus)]; !ok {
 				continue
 			}
-			if _, ok := job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus]; !ok {
-				job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus] = 0
+			if _, ok := job.AuditResourcesResult.ComplianceSummary[qr.ComplianceStatus]; !ok {
+				job.AuditResourcesResult.ComplianceSummary[qr.ComplianceStatus] = 0
 			}
-			job.AuditResourcesResult.AuditSummary[qr.ComplianceStatus] += 1
+			job.AuditResourcesResult.ComplianceSummary[qr.ComplianceStatus] += 1
 			if _, ok := job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType]; !ok {
 				job.AuditResourcesResult.Integrations[integrationId].ResourceTypes[qr.ResourceType] = types.AuditResourceTypesResult{
 					Resources: make(map[string]types.AuditResourceResult),
@@ -191,10 +191,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 					Results:        make(map[types.ComplianceStatus][]types.AuditResourceFinding),
 				}
 			}
-			if _, ok := job.AuditResult.AuditSummary[qr.ComplianceStatus]; !ok {
-				job.AuditResult.AuditSummary[qr.ComplianceStatus] = 0
+			if _, ok := job.AuditResult.ComplianceSummary[qr.ComplianceStatus]; !ok {
+				job.AuditResult.ComplianceSummary[qr.ComplianceStatus] = 0
 			}
-			job.AuditResult.AuditSummary[qr.ComplianceStatus] += 1
+			job.AuditResult.ComplianceSummary[qr.ComplianceStatus] += 1
 
 			if _, ok := job.AuditResult.Controls[control.ID].ControlSummary[qr.ComplianceStatus]; !ok {
 				job.AuditResult.Controls[control.ID].ControlSummary[qr.ComplianceStatus] = 0

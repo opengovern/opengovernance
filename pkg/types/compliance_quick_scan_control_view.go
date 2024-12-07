@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-type AuditSummary struct {
+type ComplianceQuickScanControlView struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	Controls     map[string]AuditControlResult `json:"controls"`
-	AuditSummary map[ComplianceStatus]uint64   `json:"audit_summary"`
-	JobSummary   JobSummary                    `json:"job_summary"`
+	Controls          map[string]AuditControlResult `json:"controls"`
+	ComplianceSummary map[ComplianceStatus]uint64   `json:"compliance_summary"`
+	JobSummary        JobSummary                    `json:"job_summary"`
 }
 
-func (r AuditSummary) KeysAndIndex() ([]string, string) {
+func (r ComplianceQuickScanControlView) KeysAndIndex() ([]string, string) {
 	return []string{
 		strconv.Itoa(int(r.JobSummary.JobID)),
-	}, AuditSummaryIndex
+	}, ComplianceQuickScanControlViewIndex
 }
 
 type AuditResourceFinding struct {

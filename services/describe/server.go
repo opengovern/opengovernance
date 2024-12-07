@@ -104,8 +104,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v3.GET("/integration/discovery/last-job", httpserver.AuthorizeHandler(h.GetIntegrationLastDiscoveryJob, apiAuth.ViewerRole))
 
-	v3.POST("/audit/job", httpserver.AuthorizeHandler(h.CreateAuditJob, apiAuth.EditorRole))
-	v3.POST("/audit/job/:job_id", httpserver.AuthorizeHandler(h.GetAuditJob, apiAuth.ViewerRole))
+	v3.POST("/compliance/quick", httpserver.AuthorizeHandler(h.CreateComplianceQuickRun, apiAuth.EditorRole))
+	v3.POST("/compliance/quick/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickRun, apiAuth.ViewerRole))
 }
 
 // ListJobs godoc
@@ -3643,7 +3643,7 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 	return &startTime, &endTime, nil
 }
 
-// CreateAuditJob godoc
+// CreateComplianceQuickRun godoc
 //
 //	@Summary		List all workspaces with owner id
 //	@Description	Returns all workspaces with owner id
@@ -3652,8 +3652,8 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/schedule/api/v3/audit/job [post]
-func (h HttpServer) CreateAuditJob(c echo.Context) error {
+//	@Router			/schedule/api/v3/compliance/quick [post]
+func (h HttpServer) CreateComplianceQuickRun(c echo.Context) error {
 	var request api.CreateAuditJobRequest
 	if err := c.Bind(&request); err != nil {
 		c.Logger().Errorf("bind the request: %v", err)
@@ -3665,11 +3665,11 @@ func (h HttpServer) CreateAuditJob(c echo.Context) error {
 		userID = "system"
 	}
 
-	jobId, err := h.DB.CreateAuditJob(&model2.AuditJob{
+	jobId, err := h.DB.CreateComplianceQuickRun(&model2.ComplianceQuickRun{
 		FrameworkID:    request.FrameworkID,
 		IntegrationIDs: request.IntegrationIDs,
 		IncludeResults: request.IncludeResults,
-		Status:         model2.AuditJobStatusCreated,
+		Status:         model2.ComplianceQuickRunStatusCreated,
 		CreatedBy:      userID,
 	})
 	if err != nil {
@@ -3680,7 +3680,7 @@ func (h HttpServer) CreateAuditJob(c echo.Context) error {
 	return c.String(http.StatusOK, strconv.Itoa(int(jobId)))
 }
 
-// GetAuditJob godoc
+// GetComplianceQuickRun godoc
 //
 //	@Summary		Get audit job by job id
 //	@Description	Get audit job by job id
@@ -3689,9 +3689,9 @@ func (h HttpServer) CreateAuditJob(c echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
-//	@Router			/schedule/api/v3/audit/job/{job_id} [get]
-func (h HttpServer) GetAuditJob(c echo.Context) error {
-	jobIdStr := c.Param("job_id")
+//	@Router			/schedule/api/v3/compliance/quick/{run_id} [get]
+func (h HttpServer) GetComplianceQuickRun(c echo.Context) error {
+	jobIdStr := c.Param("run_id")
 
 	var jobId int64
 	var err error
@@ -3702,7 +3702,7 @@ func (h HttpServer) GetAuditJob(c echo.Context) error {
 		}
 	}
 
-	auditJob, err := h.DB.GetAuditJobByID(uint(jobId))
+	auditJob, err := h.DB.GetComplianceQuickRunByID(uint(jobId))
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get audit job", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")

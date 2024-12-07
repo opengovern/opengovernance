@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
-	auditjob "github.com/opengovern/opencomply/jobs/audit-job"
+	auditjob "github.com/opengovern/opencomply/jobs/compliance-quick-run-job"
 	"github.com/opengovern/opencomply/services/describe/db/model"
 	"go.uber.org/zap"
 )
@@ -17,17 +17,17 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 
 	s.logger.Info("Query Runner publisher started")
 
-	err := s.db.UpdateTimedOutQueuedAuditJobs()
+	err := s.db.UpdateTimedOutQueuedComplianceQuickRuns()
 	if err != nil {
 		s.logger.Error("failed to update timed out query runners", zap.Error(err))
 	}
 
-	err = s.db.UpdateTimedOutInProgressAuditJobs()
+	err = s.db.UpdateTimedOutInProgressComplianceQuickRuns()
 	if err != nil {
 		s.logger.Error("failed to update timed out query runners", zap.Error(err))
 	}
 
-	jobs, err := s.db.FetchCreatedAuditJobs()
+	jobs, err := s.db.FetchCreatedComplianceQuickRuns()
 	if err != nil {
 		s.logger.Error("Fetch Created Query Runner Jobs Error", zap.Error(err))
 		return err
@@ -43,7 +43,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 
 		jobJson, err := json.Marshal(auditJobMsg)
 		if err != nil {
-			_ = s.db.UpdateAuditJobStatus(job.ID, model.AuditJobStatusFailed, "failed to marshal job")
+			_ = s.db.UpdateComplianceQuickRunStatus(job.ID, model.ComplianceQuickRunStatusFailed, "failed to marshal job")
 			s.logger.Error("failed to marshal Query Runner Job", zap.Error(err), zap.Uint("runnerId", job.ID))
 			continue
 		}
@@ -60,21 +60,21 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 				}
 				seqNum, err = s.jq.Produce(ctx, topic, jobJson, fmt.Sprintf("job-%d", job.ID))
 				if err != nil {
-					_ = s.db.UpdateAuditJobStatus(job.ID, model.AuditJobStatusFailed, err.Error())
+					_ = s.db.UpdateComplianceQuickRunStatus(job.ID, model.ComplianceQuickRunStatusFailed, err.Error())
 					s.logger.Error("failed to send job", zap.Error(err), zap.Uint("runnerId", job.ID))
 					continue
 				}
 			} else {
-				_ = s.db.UpdateAuditJobStatus(job.ID, model.AuditJobStatusFailed, err.Error())
+				_ = s.db.UpdateComplianceQuickRunStatus(job.ID, model.ComplianceQuickRunStatusFailed, err.Error())
 				s.logger.Error("failed to send audit job", zap.Error(err), zap.Uint("runnerId", job.ID), zap.String("error message", err.Error()))
 				continue
 			}
 		}
 
 		if seqNum != nil {
-			_ = s.db.UpdateAuditJobNatsSeqNum(job.ID, *seqNum)
+			_ = s.db.UpdateComplianceQuickRunNatsSeqNum(job.ID, *seqNum)
 		}
-		_ = s.db.UpdateAuditJobStatus(job.ID, model.AuditJobStatusQueued, "")
+		_ = s.db.UpdateComplianceQuickRunStatus(job.ID, model.ComplianceQuickRunStatusQueued, "")
 	}
 	return nil
 }

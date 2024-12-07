@@ -33,7 +33,7 @@ type SchedulerServiceClient interface {
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
 	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeIntegrationJob, error)
-	GetAuditJob(ctx *httpclient.Context, jobID string) (*api.AuditJob, error)
+	GetAuditJob(ctx *httpclient.Context, jobID string) (*api.ComplianceQuickRun, error)
 }
 
 type schedulerClient struct {
@@ -240,10 +240,10 @@ func (s *schedulerClient) GetIntegrationLastDiscoveryJob(ctx *httpclient.Context
 	return &job, nil
 }
 
-func (s *schedulerClient) GetAuditJob(ctx *httpclient.Context, jobID string) (*api.AuditJob, error) {
+func (s *schedulerClient) GetAuditJob(ctx *httpclient.Context, jobID string) (*api.ComplianceQuickRun, error) {
 	url := fmt.Sprintf("%s/api/v3/audit/job/%s", s.baseURL, jobID)
 
-	var job api.AuditJob
+	var job api.ComplianceQuickRun
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

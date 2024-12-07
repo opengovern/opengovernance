@@ -7671,7 +7671,7 @@ func (h HttpHandler) GetAuditJobSummary(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, api.AuditSummary{
 		Controls:     auditSummary.Controls,
-		AuditSummary: auditSummary.AuditSummary,
+		AuditSummary: auditSummary.ComplianceSummary,
 		JobSummary:   auditSummary.JobSummary,
 	})
 }

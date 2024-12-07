@@ -4,19 +4,19 @@ import (
 	"strconv"
 )
 
-type AuditResourcesSummary struct {
+type ComplianceQuickScanResourceView struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
-	Integrations map[string]AuditIntegrationResult `json:"integrations"`
-	AuditSummary map[ComplianceStatus]uint64       `json:"audit_summary"`
-	JobSummary   JobSummary                        `json:"job_summary"`
+	Integrations      map[string]AuditIntegrationResult `json:"integrations"`
+	ComplianceSummary map[ComplianceStatus]uint64       `json:"compliance_summary"`
+	JobSummary        JobSummary                        `json:"job_summary"`
 }
 
-func (r AuditResourcesSummary) KeysAndIndex() ([]string, string) {
+func (r ComplianceQuickScanResourceView) KeysAndIndex() ([]string, string) {
 	return []string{
 		strconv.Itoa(int(r.JobSummary.JobID)),
-	}, AuditResourcesSummaryIndex
+	}, ComplianceQuickScanResourceViewIndex
 }
 
 type AuditControlFinding struct {
