@@ -196,15 +196,32 @@ func (s *Scheduler) getFrameworkDependencies(frameworkID string) ([]string, erro
 		return nil, err
 	}
 
+	tables := make(map[string]bool)
+	integrationTypesMap := make(map[string]bool)
 	var resourceTypes []string
 	for _, control := range controls {
-		for _, table := range control.Query.ListOfTables {
-			resourceType, err := s.findTableResourceTypeInIntegrations(control.IntegrationType, table)
-			if err != nil {
-				return nil, err
-			}
-			resourceTypes = append(resourceTypes, resourceType)
+		for _, i := range control.IntegrationType {
+			integrationTypesMap[i] = true
 		}
+		for _, i := range control.Query.IntegrationType {
+			integrationTypesMap[i.String()] = true
+		}
+		for _, table := range control.Query.ListOfTables {
+			tables[table] = true
+		}
+	}
+
+	var integrationTypes []string
+	for i, _ := range integrationTypesMap {
+		integrationTypes = append(integrationTypes, i)
+	}
+
+	for table, _ := range tables {
+		resourceType, err := s.findTableResourceTypeInIntegrations(integrationTypes, table)
+		if err != nil {
+			return nil, err
+		}
+		resourceTypes = append(resourceTypes, resourceType)
 	}
 
 	return resourceTypes, nil
@@ -221,6 +238,16 @@ func (s *Scheduler) findTableResourceTypeInIntegrations(integrations []string, t
 			return "", fmt.Errorf("integration type not found, integration-type: %s", value)
 		}
 	}
-	return "", fmt.Errorf("resource type not found in integrations, table: %s, integrations: %v",
+	for _, integrationType := range integration_type.AllIntegrationTypes {
+		if value, ok := integration_type.IntegrationTypes[integrationType]; ok {
+			resourceType := value.GetResourceTypeFromTableName(table)
+			if resourceType != "" {
+				return resourceType, nil
+			}
+		} else {
+			return "", fmt.Errorf("integration type not found, integration-type: %s", value)
+		}
+	}
+	return "", fmt.Errorf("resource type not found in integrations, table: %s, integration-types: %v",
 		table, integrations)
 }
