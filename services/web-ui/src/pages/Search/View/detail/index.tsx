@@ -247,7 +247,7 @@ export default function ViewDetail({
                     icon={PlayCircleIcon}
                     onClick={() => {
                         // @ts-ignore
-                        setQuery(query?.query?.queryToExecute)
+                        setQuery(query?.query?.query_to_execute)
                         setTab('3')
                         // debugger
                     }}
@@ -265,7 +265,7 @@ export default function ViewDetail({
                     onValueChange={(text) => {}}
                     highlight={(text) => highlight(text, languages.sql, 'sql')}
                     // @ts-ignore
-                    value={query?.query?.queryToExecute || ''}
+                    value={query?.query?.query_to_execute || '' }
                     className="w-full bg-white dark:bg-gray-900 dark:text-gray-50 font-mono text-sm"
                     style={{
                         minHeight: '200px',

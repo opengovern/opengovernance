@@ -58,6 +58,7 @@ export default function IntegrationList({
         update: false,
         delete: false,
         health_check: false,
+        discovery: false,
     })
 
     const [error, setError] = useState<string>('')
@@ -254,6 +255,78 @@ export default function IntegrationList({
             })
     }
 
+    const RunDiscovery = (flag: boolean) => {
+        setActionLoading({ ...actionLoading, discovery: true })
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+        let body ={}
+        if(flag){
+            body = {
+                force_full: true,
+                integration_info:row?.map((item)=>{
+                    return {
+                        integration_type: integration_type,
+                        provider_id: item.provider_id,
+                        integration_id: item.integration_id,
+                        name: item.name,
+                    }
+                }) ,
+            }
+        }
+        else{
+            body = {
+                force_full: true,
+                integration_info: [
+                    {
+                        integration_type: integration_type,
+                        provider_id: selectedItem?.provider_id,
+                        integration_id: selectedItem?.integration_id,
+                        name: selectedItem?.name,
+                    },
+                ],
+            }
+        }
+        
+
+        axios
+            .post(`${url}/main/schedule/api/v3/discovery/run`, body, config)
+            .then((res) => {
+                GetIntegrations()
+                setActionLoading({
+                    ...actionLoading,
+                    discovery: false,
+                })
+                setNotification({
+                    text: `Discovery started`,
+                    type: 'success',
+                })
+
+            })
+            .catch((err) => {
+                console.log(err)
+                setActionLoading({
+                    ...actionLoading,
+                    discovery: false,
+                })
+                setNotification({
+                    text: `Error: ${err.response.data.message}`,
+                    type: 'error',
+                })
+            })
+    }
+
     
     useEffect(() => {
         GetIntegrations()
@@ -334,6 +407,14 @@ export default function IntegrationList({
                                                 }
                                             }
                                         )}
+                                        <Button
+                                            loading={actionLoading['discovery']}
+                                            onClick={() => {
+                                                RunDiscovery(false)
+                                            }}
+                                        >
+                                            Run discovery
+                                        </Button>
                                     </>
                                 </Flex>
                             </SplitPanel>
@@ -442,8 +523,8 @@ export default function IntegrationList({
                                                         setOpen(true)
                                                     }
                                                 >
-                                                    Add New {`${name}`}{' '}
-                                                    Integration
+                                                    Add New Integration
+                                                    {/* {`${name}`} */}
                                                 </Button>
                                                 {/* <Button
                                             // icon={PencilIcon}
@@ -466,6 +547,19 @@ export default function IntegrationList({
                                                     }}
                                                 >
                                                     Disable Integration
+                                                </Button>
+                                                <Button
+                                                    loading={
+                                                        actionLoading[
+                                                            'discovery'
+                                                        ]
+                                                    }
+                                                    onClick={() => {
+                                                        RunDiscovery(true)
+                                                    }}
+                                                >
+                                                    Run discovery for all
+                                                    integrations
                                                 </Button>
                                             </Flex>
                                         }

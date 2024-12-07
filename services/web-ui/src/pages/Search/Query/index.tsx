@@ -429,6 +429,9 @@ export default function Query() {
                             onChange={({ detail }) => {
                                 setSavedQuery('')
                                 setCode(detail.value)
+                                if(tab !== "3"){
+                                    setTab("3")
+                                }
                             }}
                             preferences={preferences}
                             onPreferencesChange={(e) =>
