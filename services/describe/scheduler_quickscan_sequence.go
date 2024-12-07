@@ -155,7 +155,14 @@ func (s *DescribeDependencies) Do(ctx context.Context) error {
 	}
 
 	for _, integration := range resp.Integrations {
+		validResourceTypes, err := getIntegrationTypesValidResourceTypes(integration)
+		if err != nil {
+			return err
+		}
 		for _, resourceType := range resourceTypes {
+			if _, ok := validResourceTypes[resourceType]; !ok {
+				continue
+			}
 			_, err = s.s.describe(integration, resourceType, false, false, false, &s.job.ID, "QuickScanSequencer")
 			if err != nil {
 				return err
@@ -252,4 +259,19 @@ func (s *Scheduler) findTableResourceTypeInIntegrations(integrations []string, t
 	}
 	return "", fmt.Errorf("resource type not found in integrations, table: %s, integration-types: %v",
 		table, integrations)
+}
+
+func getIntegrationTypesValidResourceTypes(integration models.Integration) (map[string]bool, error) {
+	if integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]; ok {
+		resourceTypesMap := make(map[string]bool)
+		resourceTypes, err := integrationType.GetResourceTypesByLabels(integration.Labels)
+		if err != nil {
+			return nil, err
+		}
+		for _, resourceType := range resourceTypes {
+			resourceTypesMap[resourceType] = true
+		}
+		return resourceTypesMap, nil
+	}
+	return nil, fmt.Errorf("integration type for integration %s not found", integration.IntegrationID)
 }
