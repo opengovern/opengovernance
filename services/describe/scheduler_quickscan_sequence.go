@@ -18,7 +18,7 @@ import (
 func (s *Scheduler) ScheduleQuickScanSequence(ctx context.Context) {
 	s.logger.Info("Scheduling quick scan sequencer")
 
-	t := ticker.NewTicker(JobSequencerInterval, time.Second*10)
+	t := ticker.NewTicker(time.Second*10, time.Second*10)
 	defer t.Stop()
 
 	for ; ; <-t.C {
@@ -218,8 +218,9 @@ func (s *Scheduler) findTableResourceTypeInIntegrations(integrations []string, t
 				return resourceType, nil
 			}
 		} else {
-			return "", fmt.Errorf("integration type not found")
+			return "", fmt.Errorf("integration type not found, integration-type: %s", value)
 		}
 	}
-	return "", fmt.Errorf("resource type not found in integrations")
+	return "", fmt.Errorf("resource type not found in integrations, table: %s, integrations: %v",
+		table, integrations)
 }
