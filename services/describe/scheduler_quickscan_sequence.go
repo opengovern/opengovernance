@@ -219,7 +219,9 @@ func (s *Scheduler) getFrameworkDependencies(frameworkID string) ([]string, erro
 	for table, _ := range tables {
 		resourceType, err := s.findTableResourceTypeInIntegrations(integrationTypes, table)
 		if err != nil {
-			return nil, err
+			s.logger.Error("failed to find table resource type",
+				zap.Strings("integration_types", integrationTypes),
+				zap.String("table", table), zap.Error(err))
 		}
 		resourceTypes = append(resourceTypes, resourceType)
 	}
