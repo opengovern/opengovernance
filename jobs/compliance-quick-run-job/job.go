@@ -35,6 +35,8 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
+			FrameworkID:    job.FrameworkID,
+			Auditable:      false,
 			JobStartedAt:   time.Now(),
 			IntegrationIDs: job.IntegrationIDs,
 		},
@@ -44,6 +46,8 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
+			FrameworkID:    job.FrameworkID,
+			Auditable:      false,
 			JobStartedAt:   time.Now(),
 			IntegrationIDs: job.IntegrationIDs,
 		},
