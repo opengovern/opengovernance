@@ -856,12 +856,17 @@ func (db Database) GetDiscoveryJobsByParentID(parentId uint) ([]model.DescribeIn
 	return jobs, nil
 }
 
-func (db Database) CheckJobsDoneByParentID(parentId uint) ([]model.DescribeIntegrationJob, error) {
+func (db Database) CheckJobsDoneByParentIDAndCreatedBy(createdBy string, parentId uint) ([]model.DescribeIntegrationJob, error) {
 	var jobs []model.DescribeIntegrationJob
 	tx := db.ORM.
 		Model(&model.DescribeIntegrationJob{}).
 		Where("parent_id = ?", parentId).
-		Where("status IN ?", []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, api.DescribeResourceJobOldResourceDeletion}).
+		Where("created_by = ?", createdBy).
+		Where("status IN ?", []api.DescribeResourceJobStatus{
+			api.DescribeResourceJobCreated,
+			api.DescribeResourceJobQueued,
+			api.DescribeResourceJobInProgress,
+			api.DescribeResourceJobOldResourceDeletion}).
 		Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error

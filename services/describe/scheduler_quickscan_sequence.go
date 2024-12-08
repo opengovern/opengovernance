@@ -180,7 +180,7 @@ func (s *DescribeDependencies) Do(ctx context.Context) error {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		jobsNotDone, err := s.s.db.CheckJobsDoneByParentID(s.job.ID)
+		jobsNotDone, err := s.s.db.CheckJobsDoneByParentIDAndCreatedBy("QuickScanSequencer", s.job.ID)
 		if err != nil {
 			return err
 		}
