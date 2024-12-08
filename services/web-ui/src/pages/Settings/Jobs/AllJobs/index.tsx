@@ -135,10 +135,7 @@ export default function SettingsALLJobs() {
         unit: 'hour',
         type: 'relative',
     })
-    const [filter, setFilter] = useState({
-        label: 'Recent Incidents',
-        value: '1',
-    })
+    const [filter, setFilter] = useState()
     useEffect(() => {
         // @ts-ignore
         if (filter) {
