@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/opengovern/og-util/pkg/api"
 	es2 "github.com/opengovern/og-util/pkg/es"
@@ -64,6 +66,27 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ResourcesFindingsIsDone: make(map[string]bool),
 	}
 
+	controlViewSummary := &types.ComplianceQuickScanControlView{
+		Controls:          make(map[string]types.AuditControlResult),
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
+		JobSummary: types.JobSummary{
+			JobID:        j.ID,
+			FrameworkID:  j.BenchmarkID,
+			Auditable:    true,
+			JobStartedAt: time.Now(),
+		},
+	}
+	resourceViewSummary := &types.ComplianceQuickScanResourceView{
+		Integrations:      make(map[string]types.AuditIntegrationResult),
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
+		JobSummary: types.JobSummary{
+			JobID:        j.ID,
+			FrameworkID:  j.BenchmarkID,
+			Auditable:    true,
+			JobStartedAt: time.Now(),
+		},
+	}
+
 	for page := 1; paginator.HasNext(); page++ {
 		w.logger.Info("Next page", zap.Int("page", page))
 		page, err := paginator.NextPage(ctx)
@@ -95,6 +118,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
+			addJobSummary(controlViewSummary, resourceViewSummary, f)
 		}
 
 		var docs []es2.Doc
@@ -185,6 +209,35 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.String("benchmark_id", j.BenchmarkID),
 		zap.Int("resource_count", len(jd.ResourcesFindings)),
 	)
+
+	keys, idx = controlViewSummary.KeysAndIndex()
+	controlViewSummary.EsID = es2.HashOf(keys...)
+	controlViewSummary.EsIndex = idx
+
+	var doc []es2.Doc
+	doc = append(doc, *controlViewSummary)
+
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, doc); err != nil {
+		w.logger.Error("Failed to sink Audit Summary", zap.String("ID", strconv.Itoa(int(j.ID))),
+			zap.String("FrameworkID", j.BenchmarkID), zap.Error(err))
+		return err
+	}
+
+	keys, idx = resourceViewSummary.KeysAndIndex()
+	resourceViewSummary.EsID = es2.HashOf(keys...)
+	resourceViewSummary.EsIndex = idx
+
+	var doc2 []es2.Doc
+	doc2 = append(doc2, *resourceViewSummary)
+
+	w.logger.Info("Audit Resources Summary", zap.Any("result", *resourceViewSummary))
+
+	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, doc2); err != nil {
+		w.logger.Error("Failed to sink Audit Resources Summary", zap.String("ID", strconv.Itoa(int(j.ID))),
+			zap.String("FrameworkID", j.BenchmarkID), zap.Error(err))
+		return err
+	}
+
 	return nil
 }
 
@@ -299,4 +352,68 @@ func (w *Worker) deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations
 	}
 
 	return nil
+}
+
+func addJobSummary(controlSummary *types.ComplianceQuickScanControlView, resourceSummary *types.ComplianceQuickScanResourceView,
+	cr types.ComplianceResult) {
+	if cr.ComplianceStatus != types.ComplianceStatusALARM {
+		return
+	}
+	if _, ok := resourceSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
+		resourceSummary.ComplianceSummary[cr.ComplianceStatus] = 0
+	}
+	resourceSummary.ComplianceSummary[cr.ComplianceStatus] += 1
+	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType]; !ok {
+		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType] = types.AuditResourceTypesResult{
+			Resources: make(map[string]types.AuditResourceResult),
+		}
+	}
+	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID]; !ok {
+		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID] = types.AuditResourceResult{
+			ResourceSummary: make(map[types.ComplianceStatus]uint64),
+			Results:         make(map[types.ComplianceStatus][]types.AuditControlFinding),
+			ResourceName:    cr.ResourceName,
+		}
+	}
+	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus]; !ok {
+		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] = 0
+	}
+	resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] += 1
+	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus]; !ok {
+		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = make([]types.AuditControlFinding, 0)
+	}
+	resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = append(
+		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus], types.AuditControlFinding{
+			Severity:  cr.Severity,
+			ControlID: cr.ControlID,
+			Reason:    cr.Reason,
+		})
+
+	// Audit Summary
+	if _, ok := controlSummary.Controls[cr.ControlID]; !ok {
+		controlSummary.Controls[cr.ControlID] = types.AuditControlResult{
+			Severity:       cr.Severity,
+			ControlSummary: make(map[types.ComplianceStatus]uint64),
+			Results:        make(map[types.ComplianceStatus][]types.AuditResourceFinding),
+		}
+	}
+	if _, ok := controlSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
+		controlSummary.ComplianceSummary[cr.ComplianceStatus] = 0
+	}
+	controlSummary.ComplianceSummary[cr.ComplianceStatus] += 1
+
+	if _, ok := controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus]; !ok {
+		controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] = 0
+	}
+	if _, ok := controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus]; !ok {
+		controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus] = make([]types.AuditResourceFinding, 0)
+	}
+	controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] += 1
+	controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus] = append(controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus],
+		types.AuditResourceFinding{
+			ResourceID:   cr.ResourceID,
+			ResourceType: cr.ResourceType,
+			Reason:       cr.Reason,
+		})
+	return
 }

@@ -7679,7 +7679,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId)
+		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7690,7 +7690,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId)
+		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7749,7 +7749,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID)
+		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7763,7 +7763,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID)
+		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")

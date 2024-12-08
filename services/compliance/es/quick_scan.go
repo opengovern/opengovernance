@@ -23,14 +23,21 @@ type ControlViewResponse struct {
 	}
 }
 
-func GetQuickScanControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string) (*types.ComplianceQuickScanControlView, error) {
+func GetQuickScanControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceQuickScanControlView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": map[string]any{
-				"term": map[string]any{
-					"job_summary.job_id": jobID,
+			"must": []map[string]any{
+				{
+					"term": map[string]any{
+						"job_summary.job_id": jobID,
+					},
+				},
+				{
+					"term": map[string]any{
+						"job_summary.auditable": auditable,
+					},
 				},
 			},
 		},
@@ -70,14 +77,21 @@ type ResourceViewResponse struct {
 	}
 }
 
-func GetQuickScanResourceViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string) (*types.ComplianceQuickScanResourceView, error) {
+func GetQuickScanResourceViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceQuickScanResourceView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": map[string]any{
-				"term": map[string]any{
-					"job_summary.job_id": jobID,
+			"must": []map[string]any{
+				{
+					"term": map[string]any{
+						"job_summary.job_id": jobID,
+					},
+				},
+				{
+					"term": map[string]any{
+						"job_summary.auditable": auditable,
+					},
 				},
 			},
 		},

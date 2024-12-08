@@ -1425,7 +1425,7 @@ func (h API) UpgradeIntegrationType(c echo.Context) error {
 		Name:      cnf.DescriberDeploymentName,
 	}, &describerDeployment)
 	if err != nil {
-		h.logger.Error("failed to get manual deployment", zap.Error(err))
+		h.logger.Error("failed to get deployment", zap.Error(err))
 	} else {
 		err = h.kubeClient.Delete(ctx, &describerDeployment)
 		if err != nil {
