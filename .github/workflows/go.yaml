@@ -257,7 +257,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/tasks-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/TasksServiceDockerfile
+          file: docker/TaskServiceDockerfile
           context: .
 
 
