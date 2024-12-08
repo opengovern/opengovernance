@@ -72,9 +72,6 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	
-
-
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
@@ -85,6 +82,9 @@ func start(ctx context.Context) error {
 	}()
 
 	return <-errors
+
+
+	
 }
 
 
