@@ -67,7 +67,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-digitalocean",
     "schema_ids": ["digitalocean"],
     "PackageURL": "ghcr.io/opengovern/og-describer-digitalocean",
-    "PackageTag": "local-v0.0.4"
+    "PackageTag": "local-v0.0.7"
   },
   {
     "id": 6,
