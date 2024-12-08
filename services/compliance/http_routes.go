@@ -7741,14 +7741,21 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
 	}
 
+	if sequence.ComplianceQuickRunID == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
+	}
+
 	var result api.AuditSummary
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId)
+		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if summary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
 		}
 		result = api.AuditSummary{
 			Controls:     summary.Controls,
@@ -7756,10 +7763,13 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId)
+		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if summary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
 		}
 		result = api.AuditSummary{
 			Integrations: summary.Integrations,
