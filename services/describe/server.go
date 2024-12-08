@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"net/http"
 	"regexp"
 	"sort"
@@ -3778,5 +3779,17 @@ func (h HttpServer) GetComplianceQuickSequence(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance quick run")
 	}
 
-	return c.JSON(http.StatusOK, job.ToAPI())
+	jobApi := job.ToAPI()
+
+	if jobApi.Status == api.QuickScanSequenceFinished || jobApi.Status == api.QuickScanSequenceComplianceRunning ||
+		jobApi.Status == api.QuickScanSequenceFailed {
+		quickScan, err := h.DB.GetComplianceQuickRunByCreatedByAndParentID("QuickScanSequencer", job.ID)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to get compliance quick run", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance quick run")
+		}
+		jobApi.ComplianceQuickRunID = aws.String(strconv.Itoa(int(quickScan.ID)))
+	}
+
+	return c.JSON(http.StatusOK, jobApi)
 }

@@ -5,7 +5,8 @@ import (
 )
 
 type AuditSummary struct {
-	Controls     map[string]types.AuditControlResult `json:"controls"`
-	AuditSummary map[types.ComplianceStatus]uint64   `json:"audit_summary"`
-	JobSummary   types.JobSummary                    `json:"job_summary"`
+	Controls     map[string]types.AuditControlResult     `json:"controls"`
+	Integrations map[string]types.AuditIntegrationResult `json:"integrations"`
+	AuditSummary map[types.ComplianceStatus]uint64       `json:"audit_summary"`
+	JobSummary   types.JobSummary                        `json:"job_summary"`
 }
