@@ -351,12 +351,12 @@ export default function SettingsALLJobs() {
         { title: 'Type', value: clickedJob?.type },
         { title: 'Created At', value: clickedJob?.createdAt },
         { title: 'Updated At', value: clickedJob?.updatedAt },
-        {
-            title: 'OpenGovernance Connection ID',
-            value: clickedJob?.connectionID,
-        },
-        { title: 'Account ID', value: clickedJob?.connectionProviderID },
-        { title: 'Account Name', value: clickedJob?.connectionProviderName },
+        // {
+        //     title: 'OpenGovernance Connection ID',
+        //     value: clickedJob?.connectionID,
+        // },
+        // { title: 'Account ID', value: clickedJob?.connectionProviderID },
+        // { title: 'Account Name', value: clickedJob?.connectionProviderName },
         { title: 'Status', value: clickedJob?.status },
         { title: 'Failure Reason', value: clickedJob?.failureReason },
     ]
