@@ -6,8 +6,8 @@ import (
 
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opencomply/services/tasks/db"
-	"github.com/opengovern/opencomply/services/tasks/api"
+	"github.com/opengovern/opencomply/services/task/db"
+	"github.com/opengovern/opencomply/services/task/api"
 
 
 	"github.com/labstack/echo/v4"

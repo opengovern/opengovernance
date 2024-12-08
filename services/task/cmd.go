@@ -8,7 +8,7 @@ import (
 	config2 "github.com/opengovern/og-util/pkg/config"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
-	"github.com/opengovern/opencomply/services/tasks/db"
+	"github.com/opengovern/opencomply/services/task/db"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
