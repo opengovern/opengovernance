@@ -104,3 +104,17 @@ func (db Database) UpdateComplianceQuickRunNatsSeqNum(
 
 	return nil
 }
+
+func (db Database) GetComplianceQuickRunByCreatedByAndParentID(createdBy string, parentId uint) (*model.ComplianceQuickRun, error) {
+	var jobs model.ComplianceQuickRun
+	tx := db.ORM.
+		Model(&model.ComplianceQuickRun{}).
+		Where("parent_job_id = ?", parentId).
+		Where("created_by = ?", createdBy).
+		First(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &jobs, nil
+}

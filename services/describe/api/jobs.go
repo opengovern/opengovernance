@@ -21,6 +21,8 @@ const (
 type QuickScanSequenceStatus string
 
 const (
+	QuickScanSequenceCreated              QuickScanSequenceStatus = "CREATED"
+	QuickScanSequenceStarted              QuickScanSequenceStatus = "STARTED"
 	QuickScanSequenceFetchingDependencies QuickScanSequenceStatus = "FETCH_DEPENDENCIES"
 	QuickScanSequenceComplianceRunning    QuickScanSequenceStatus = "RUNNING_COMPLIANCE_QUICK_SCAN"
 	QuickScanSequenceFailed               QuickScanSequenceStatus = "FAILED"
@@ -417,12 +419,13 @@ type ComplianceQuickRun struct {
 }
 
 type QuickScanSequence struct {
-	ID             string                  `json:"id"`
-	FrameworkID    string                  `json:"framework_id"`
-	IntegrationIDs []string                `json:"integration_ids"`
-	Status         QuickScanSequenceStatus `json:"status"`
-	FailureMessage string                  `json:"failure_message"`
-	CreatedBy      string                  `json:"created_by"`
+	ID                   string                  `json:"id"`
+	FrameworkID          string                  `json:"framework_id"`
+	IntegrationIDs       []string                `json:"integration_ids"`
+	Status               QuickScanSequenceStatus `json:"status"`
+	FailureMessage       string                  `json:"failure_message"`
+	CreatedBy            string                  `json:"created_by"`
+	ComplianceQuickRunID *string                 `json:"compliance_quick_run_id"`
 }
 
 type CreateAuditJobRequest struct {
