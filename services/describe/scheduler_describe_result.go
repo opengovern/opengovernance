@@ -255,6 +255,7 @@ func (s *Scheduler) cleanupOldResources(ctx context.Context, res DescribeJobResu
 }
 
 func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Context, integrationIDs []string) {
+	s.logger.Info("starting cleaning up resources")
 	var searchAfter []any
 	totalDeletedCount := 0
 	deletedIntegrationIDs := make(map[string]bool)
@@ -266,6 +267,7 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 		}
 		totalDeletedCount += len(esResp.Hits.Hits)
 		if len(esResp.Hits.Hits) == 0 {
+			s.logger.Info("no old resource found")
 			break
 		}
 		deletedCount := 0
