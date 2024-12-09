@@ -1,10 +1,12 @@
 package summarizer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	"time"
 
 	"github.com/opengovern/og-util/pkg/api"
@@ -214,25 +216,14 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	controlViewSummary.EsID = es2.HashOf(keys...)
 	controlViewSummary.EsIndex = idx
 
-	var doc []es2.Doc
-	doc = append(doc, *controlViewSummary)
-
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, doc); err != nil {
-		w.logger.Error("Failed to sink Audit Summary", zap.String("ID", strconv.Itoa(int(j.ID))),
-			zap.String("FrameworkID", j.BenchmarkID), zap.Error(err))
-		return err
-	}
+	err = sendDataToOpensearch(w.esClient.ES(), controlViewSummary)
 
 	keys, idx = resourceViewSummary.KeysAndIndex()
 	resourceViewSummary.EsID = es2.HashOf(keys...)
 	resourceViewSummary.EsIndex = idx
 
-	var doc2 []es2.Doc
-	doc2 = append(doc2, *resourceViewSummary)
-
-	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, doc2); err != nil {
-		w.logger.Error("Failed to sink Audit Resources Summary", zap.String("ID", strconv.Itoa(int(j.ID))),
-			zap.String("FrameworkID", j.BenchmarkID), zap.Error(err))
+	err = sendDataToOpensearch(w.esClient.ES(), resourceViewSummary)
+	if err != nil {
 		return err
 	}
 
@@ -421,4 +412,32 @@ func addJobSummary(controlSummary *types.ComplianceQuickScanControlView, resourc
 			Reason:       cr.Reason,
 		})
 	return
+}
+
+func sendDataToOpensearch(client *opensearch.Client, doc es2.Doc) error {
+	docJSON, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	keys, index := doc.KeysAndIndex()
+
+	// Use the opensearchapi.IndexRequest to index the document
+	req := opensearchapi.IndexRequest{
+		Index:      index,
+		DocumentID: es2.HashOf(keys...),
+		Body:       bytes.NewReader(docJSON),
+		Refresh:    "true", // Makes the document immediately available for search
+	}
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Check the response
+	if res.IsError() {
+		return fmt.Errorf("error indexing document: %s", res.String())
+	}
+	return nil
 }
