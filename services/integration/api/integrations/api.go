@@ -46,8 +46,8 @@ const (
 	UiSpecsPath                     string = "/ui-specs"
 	TemplateDeploymentPath          string = "/integrations/deployment-template.yaml"
 	TemplateManualsDeploymentPath   string = "/integrations/deployment-template-manuals.yaml"
-	TemplateScaledObjectPath        string = "/integrations/deployment-template-manuals.yaml"
-	TemplateManualsScaledObjectPath string = "/integrations/deployment-template-manuals.yaml"
+	TemplateScaledObjectPath        string = "/integrations/scaled-object-template.yaml"
+	TemplateManualsScaledObjectPath string = "/integrations/scaled-object-template-manuals.yaml"
 )
 
 func New(
