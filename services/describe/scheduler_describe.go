@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opengovern/opencomply/services/integration/api/models"
 	"math/rand"
 	"time"
 
@@ -203,6 +204,9 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	}
 
 	for _, integration := range integrations.Integrations {
+		if integration.State == models.IntegrationStateSample {
+			continue
+		}
 		s.logger.Info("running describe job scheduler for integration", zap.String("IntegrationID", integration.IntegrationID))
 		if _, ok := integration_type.IntegrationTypes[integration.IntegrationType]; !ok {
 			s.logger.Error("integration type not found", zap.String("integrationType", string(integration.IntegrationType)))
