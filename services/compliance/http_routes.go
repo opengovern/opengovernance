@@ -7648,7 +7648,8 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
-//	@Param			view		query		string	false	"Result View options: [control,resource] (default resource)"
+//	@Param			view		query		string	false	"Result View options: [control,resource,both] (default resource)"
+//	@Param			auditable	query		bool	false	"Whether the job was auditable or not"
 //	@Param			run_id		path		string	true	"Benchmark ID"
 //	@Success		200
 //	@Router			/compliance/api/v3/quick/scan/{run_id} [get]
@@ -7657,48 +7658,80 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	view := c.QueryParam("view")
+	auditableStr := c.QueryParam("auditable")
 
 	if view == "" {
-		view = "resource"
+		view = "control"
 	}
 
-	auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
-	if err != nil {
-		h.logger.Error("failed to get audit job", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
-	}
-	if auditJob.Status == schedulerapi.AuditJobStatusFailed {
-		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-	} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
-		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-	} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
-		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+	auditable := false
+	if auditableStr == "true" {
+		auditable = true
+	} else {
+		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get audit job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
+		}
+		if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+		}
 	}
 
 	var result api.AuditSummary
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if summary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
+		}
+		result = api.AuditSummary{
+			Integrations: summary.Integrations,
+			AuditSummary: summary.ComplianceSummary,
+			JobSummary:   summary.JobSummary,
+		}
+	case "control", "controls":
+		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		if err != nil {
+			h.logger.Error("failed to get audit job summary", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if summary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
 		}
 		result = api.AuditSummary{
 			Controls:     summary.Controls,
 			AuditSummary: summary.ComplianceSummary,
 			JobSummary:   summary.JobSummary,
 		}
-	case "control", "controls":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+	case "both":
+		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
+		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		if err != nil {
+			h.logger.Error("failed to get audit job summary", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if resourceSummary == nil || controlSummary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
+		}
 		result = api.AuditSummary{
-			Integrations: summary.Integrations,
-			AuditSummary: summary.ComplianceSummary,
-			JobSummary:   summary.JobSummary,
+			Integrations: resourceSummary.Integrations,
+			Controls:     controlSummary.Controls,
+			AuditSummary: resourceSummary.ComplianceSummary,
+			JobSummary:   resourceSummary.JobSummary,
 		}
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "view is not valid")
@@ -7749,7 +7782,21 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID, false)
+		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		if err != nil {
+			h.logger.Error("failed to get audit job summary", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
+		}
+		if summary == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
+		}
+		result = api.AuditSummary{
+			Integrations: summary.Integrations,
+			AuditSummary: summary.ComplianceSummary,
+			JobSummary:   summary.JobSummary,
+		}
+	case "control", "controls":
+		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7762,19 +7809,22 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			AuditSummary: summary.ComplianceSummary,
 			JobSummary:   summary.JobSummary,
 		}
-	case "control", "controls":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, *sequence.ComplianceQuickRunID, false)
+	case "both":
+		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		if summary == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "summary not found")
+		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		if err != nil {
+			h.logger.Error("failed to get audit job summary", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
 		result = api.AuditSummary{
-			Integrations: summary.Integrations,
-			AuditSummary: summary.ComplianceSummary,
-			JobSummary:   summary.JobSummary,
+			Integrations: resourceSummary.Integrations,
+			Controls:     controlSummary.Controls,
+			AuditSummary: resourceSummary.ComplianceSummary,
+			JobSummary:   resourceSummary.JobSummary,
 		}
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "view is not valid")
