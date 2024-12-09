@@ -10,21 +10,22 @@ import {
 } from "react";
 
 interface CardProps {
-  title: string;
-  logo: string;
-  logo1: string;
-  tag?: string;
-  onClick?: () => void;
-  option?: string
+    title: string
+    logos?: string[]
+    tag?: string
+    onClick?: () => void
+    option?: string
+    description?: string
 }
 
 const UseCaseCard: FunctionComponent<CardProps> = ({
   title,
-  logo,
-  logo1,
+  
   tag,
   onClick,
   option
+  ,description,
+  logos
 }) => {
   const truncate = (text: string | undefined, number: number) => {
     if (text) {
@@ -42,15 +43,21 @@ const UseCaseCard: FunctionComponent<CardProps> = ({
           >
               <div className="flex flex-row justify-between rounded-xl  items-center px-4 py-2">
                   <div className="flex flex-row gap-2">
-                      <div className=" bg-gray-300 dark:bg-slate-400 rounded p-2">
-                          <img src={logo} className=" h-5 w-5" />
-                      </div>
-                      <div className="bg-gray-300 dark:bg-slate-400 rounded p-2">
-                          <img src={logo1} className=" h-5 w-5" />
-                      </div>
-                      <div className="bg-gray-300 dark:bg-slate-400 rounded p-2">
-                          <img src={logo1} className=" h-5 w-5" />
-                      </div>
+                     {logos?.map((logo) => {
+                        return (
+                            <div className=" bg-gray-300 dark:bg-slate-400 rounded p-2">
+                                <img
+                                    src={logo}
+                                    className=" h-5 w-5"
+                                    onError={(e) => {
+                                        e.currentTarget.onerror = null
+                                        e.currentTarget.src =
+                                            'https://raw.githubusercontent.com/opengovern/website/main/connectors/icons/default.svg'
+                                    }}
+                                />
+                            </div>
+                        )
+                     })}
                   </div>
                   <div>
                       {/* <span className="rounded-3xl text-black dark:text-white bg-gray-300 dark:bg-slate-400 px-3 py-1 text-center">
@@ -58,8 +65,11 @@ const UseCaseCard: FunctionComponent<CardProps> = ({
             </span> */}
                   </div>
               </div>
-              <div className=" text-start text-black text-wrap px-4 py-2 ">
-                  {title}
+              <div className=" text-start flex flex-col gap-1 text-black text-wrap px-4  ">
+                  <span className=" text-xl font-bold">{title}</span>
+                  <span className="text-sm text-gray-500">
+                    {description}
+                  </span>
               </div>
 
               <div className="flex flex-row justify-center w-full bg-openg-950 dark:bg-blue-900 rounded-b-lg px-4 py-2 items-center">
