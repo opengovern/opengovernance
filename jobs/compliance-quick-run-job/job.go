@@ -1,13 +1,18 @@
 package compliance_quick_run_job
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/opencomply/pkg/types"
 	"github.com/opengovern/opencomply/services/describe/db/model"
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
@@ -74,14 +79,10 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	job.AuditResult.EsID = es.HashOf(keys...)
 	job.AuditResult.EsIndex = idx
 
-	var doc []es.Doc
-	doc = append(doc, *job.AuditResult)
-
 	w.logger.Info("Job Finished Successfully", zap.Any("result", *job.AuditResult))
 
-	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, doc); err != nil {
-		w.logger.Error("Failed to sink Audit Summary", zap.String("ID", strconv.Itoa(int(job.JobID))),
-			zap.String("FrameworkID", job.FrameworkID), zap.Error(err))
+	err := sendDataToOpensearch(w.esClient.ES(), *job.AuditResult)
+	if err != nil {
 		return err
 	}
 
@@ -89,14 +90,10 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	job.AuditResourcesResult.EsID = es.HashOf(keys...)
 	job.AuditResourcesResult.EsIndex = idx
 
-	var doc2 []es.Doc
-	doc2 = append(doc2, *job.AuditResourcesResult)
-
 	w.logger.Info("Audit Resources Summary", zap.Any("result", *job.AuditResourcesResult))
 
-	if _, err := w.sinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}, doc2); err != nil {
-		w.logger.Error("Failed to sink Audit Resources Summary", zap.String("ID", strconv.Itoa(int(job.JobID))),
-			zap.String("FrameworkID", job.FrameworkID), zap.Error(err))
+	err = sendDataToOpensearch(w.esClient.ES(), *job.AuditResourcesResult)
+	if err != nil {
 		return err
 	}
 
@@ -230,5 +227,33 @@ func (w *Worker) Initialize(ctx context.Context, integrationId string) error {
 		return err
 	}
 
+	return nil
+}
+
+func sendDataToOpensearch(client *opensearch.Client, doc es.Doc) error {
+	docJSON, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	keys, index := doc.KeysAndIndex()
+
+	// Use the opensearchapi.IndexRequest to index the document
+	req := opensearchapi.IndexRequest{
+		Index:      index,
+		DocumentID: es.HashOf(keys...),
+		Body:       bytes.NewReader(docJSON),
+		Refresh:    "true", // Makes the document immediately available for search
+	}
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Check the response
+	if res.IsError() {
+		return fmt.Errorf("error indexing document: %s", res.String())
+	}
 	return nil
 }
