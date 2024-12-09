@@ -137,6 +137,34 @@ export default function NewBenchmarkSummary() {
                     }),
                     type: 'line',
                 },
+                {
+                    name: 'High',
+                    data: chart?.map((item) => {
+                        return item.High
+                    }),
+                    type: 'line',
+                },
+                {
+                    name: 'Medium',
+                    data: chart?.map((item) => {
+                        return item.Medium
+                    }),
+                    type: 'line',
+                },
+                {
+                    name: 'Low',
+                    data: chart?.map((item) => {
+                        return item.Low
+                    }),
+                    type: 'line',
+                },
+                {
+                    name: 'Critical',
+                    data: chart?.map((item) => {
+                        return item.Critical
+                    }),
+                    type: 'line',
+                }
             ],
         }
         return opt
@@ -330,7 +358,10 @@ export default function NewBenchmarkSummary() {
             .then((res) => {
                 const temp = res.data
                 const temp_chart = temp?.datapoints?.map((item) => {
-                    if (item.findings_summary) {
+                    if (
+                        item.compliance_results_summary &&
+                        item.incidents_severity_breakdown
+                    ) {
                         const temp_data = {
                             date: new Date(item.timestamp)
                                 .toLocaleDateString('en-US', {
@@ -345,9 +376,15 @@ export default function NewBenchmarkSummary() {
                             // Total:
                             //     item?.findings_summary?.incidents +
                             //     item?.findings_summary?.non_incidents,
-                            Incidents: item.findings_summary?.incidents,
+                            Incidents:
+                                item.compliance_results_summary?.incidents,
                             'Non Compliant':
-                                item.findings_summary?.non_incidents,
+                                item.compliance_results_summary?.non_incidents,
+                            High: item.incidents_severity_breakdown.highCount,
+                            Medium:
+                                item.incidents_severity_breakdown.mediumCount,
+                            Low: item.incidents_severity_breakdown.lowCount,
+                            Critical: item.incidents_severity_breakdown.criticalCount,
                         }
                         return temp_data
                     }
