@@ -1283,7 +1283,7 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to read template manuals scaledobject file")
 		}
 
-		err = yaml.Unmarshal(data, &describerScaledObject)
+		err = yaml.Unmarshal(data, &describerScaledObjectManuals)
 		if err != nil {
 			h.logger.Error("failed to unmarshal template deployment file", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal template deployment file")
