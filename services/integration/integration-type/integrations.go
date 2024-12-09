@@ -18,28 +18,26 @@ import (
 	entraidConfigs "github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/configs"
 	githubaccount "github.com/opengovern/opencomply/services/integration/integration-type/github-account"
 	githubConfigs "github.com/opengovern/opencomply/services/integration/integration-type/github-account/configs"
+	google_workspace_account "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account"
+	googleConfig "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	linodeaccount "github.com/opengovern/opencomply/services/integration/integration-type/linode-account"
 	linodeConfigs "github.com/opengovern/opencomply/services/integration/integration-type/linode-account/configs"
-	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-project"
-	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-project/configs"
-	google_workspace_account "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account"
-	googleConfig "github.com/opengovern/opencomply/services/integration/integration-type/google-workspace-account/configs"
-
+	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-integration"
+	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-integration/configs"
 )
 
 const (
-	IntegrationTypeAWSAccount        = awsConfigs.IntegrationTypeAwsCloudAccount
-	IntegrationTypeAzureSubscription = azureConfigs.IntegrationTypeAzureSubscription
-	IntegrationTypeEntraIdDirectory  = entraidConfigs.IntegrationTypeEntraidDirectory
-	IntegrationTypeGithubAccount     = githubConfigs.IntegrationTypeGithubAccount
-	IntegrationTypeDigitalOceanTeam  = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
-	IntegrationTypeCloudflareAccount = cloudflareConfigs.IntegrationNameCloudflareAccount
-	IntegrationTypeOpenAIProject     = openaiConfigs.IntegrationTypeOpenaiProject
-	IntegrationTypeLinodeProject     = linodeConfigs.IntegrationTypeLinodeProject
-	IntegrationTypeCohereAIProject   = cohereaiConfigs.IntegrationTypeCohereaiProject
-	IntegrationTypeGoogleWorkspaceAccount   = googleConfig.IntegrationTypeGoogleWorkspaceAccount
-
+	IntegrationTypeAWSAccount             = awsConfigs.IntegrationTypeAwsCloudAccount
+	IntegrationTypeAzureSubscription      = azureConfigs.IntegrationTypeAzureSubscription
+	IntegrationTypeEntraIdDirectory       = entraidConfigs.IntegrationTypeEntraidDirectory
+	IntegrationTypeGithubAccount          = githubConfigs.IntegrationTypeGithubAccount
+	IntegrationTypeDigitalOceanTeam       = digitalOceanConfigs.IntegrationTypeDigitalOceanTeam
+	IntegrationTypeCloudflareAccount      = cloudflareConfigs.IntegrationNameCloudflareAccount
+	IntegrationTypeOpenAIIntegration      = openaiConfigs.IntegrationTypeOpenaiIntegration
+	IntegrationTypeLinodeProject          = linodeConfigs.IntegrationTypeLinodeProject
+	IntegrationTypeCohereAIProject        = cohereaiConfigs.IntegrationTypeCohereaiProject
+	IntegrationTypeGoogleWorkspaceAccount = googleConfig.IntegrationTypeGoogleWorkspaceAccount
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -49,23 +47,23 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeGithubAccount,
 	IntegrationTypeDigitalOceanTeam,
 	IntegrationTypeCloudflareAccount,
-	IntegrationTypeOpenAIProject,
+	IntegrationTypeOpenAIIntegration,
 	IntegrationTypeLinodeProject,
 	IntegrationTypeCohereAIProject,
 	IntegrationTypeGoogleWorkspaceAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
-	IntegrationTypeAWSAccount:        &aws_account.AwsCloudAccountIntegration{},
-	IntegrationTypeAzureSubscription: &azure_subscription.AzureSubscriptionIntegration{},
-	IntegrationTypeEntraIdDirectory:  &entra_id_directory.EntraIdDirectoryIntegration{},
-	IntegrationTypeGithubAccount:     &githubaccount.GithubAccountIntegration{},
-	IntegrationTypeDigitalOceanTeam:  &digitalocean_team.DigitaloceanTeamIntegration{},
-	IntegrationTypeCloudflareAccount: &cloudflareaccount.CloudFlareAccountIntegration{},
-	IntegrationTypeOpenAIProject:     &openaiproject.OpenAIProjectIntegration{},
-	IntegrationTypeLinodeProject:     &linodeaccount.LinodeAccountIntegration{},
-	IntegrationTypeCohereAIProject:   &cohereaiproject.CohereAIProjectIntegration{},
-	IntegrationTypeGoogleWorkspaceAccount:   &google_workspace_account.GoogleWorkspaceAccountIntegration{},
+	IntegrationTypeAWSAccount:             &aws_account.AwsCloudAccountIntegration{},
+	IntegrationTypeAzureSubscription:      &azure_subscription.AzureSubscriptionIntegration{},
+	IntegrationTypeEntraIdDirectory:       &entra_id_directory.EntraIdDirectoryIntegration{},
+	IntegrationTypeGithubAccount:          &githubaccount.GithubAccountIntegration{},
+	IntegrationTypeDigitalOceanTeam:       &digitalocean_team.DigitaloceanTeamIntegration{},
+	IntegrationTypeCloudflareAccount:      &cloudflareaccount.CloudFlareAccountIntegration{},
+	IntegrationTypeOpenAIIntegration:      &openaiproject.OpenAIIntegration{},
+	IntegrationTypeLinodeProject:          &linodeaccount.LinodeAccountIntegration{},
+	IntegrationTypeCohereAIProject:        &cohereaiproject.CohereAIProjectIntegration{},
+	IntegrationTypeGoogleWorkspaceAccount: &google_workspace_account.GoogleWorkspaceAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
