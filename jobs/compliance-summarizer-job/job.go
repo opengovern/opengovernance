@@ -230,8 +230,6 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	var doc2 []es2.Doc
 	doc2 = append(doc2, *resourceViewSummary)
 
-	w.logger.Info("Audit Resources Summary", zap.Any("result", *resourceViewSummary))
-
 	if _, err := w.esSinkClient.Ingest(&httpclient.Context{Ctx: ctx, UserRole: api.AdminRole}, doc2); err != nil {
 		w.logger.Error("Failed to sink Audit Resources Summary", zap.String("ID", strconv.Itoa(int(j.ID))),
 			zap.String("FrameworkID", j.BenchmarkID), zap.Error(err))

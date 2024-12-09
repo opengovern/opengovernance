@@ -35,6 +35,7 @@ type SchedulerServiceClient interface {
 	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeIntegrationJob, error)
 	GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceQuickRun, error)
 	GetComplianceQuickSequence(ctx *httpclient.Context, jobID string) (*api.QuickScanSequence, error)
+	GetComplianceJobStatus(ctx *httpclient.Context, jobId string) (*api.GetComplianceJobStatusResponse, error)
 }
 
 type schedulerClient struct {
@@ -258,6 +259,19 @@ func (s *schedulerClient) GetComplianceQuickSequence(ctx *httpclient.Context, jo
 	url := fmt.Sprintf("%s/api/v3/compliance/quick/sequence/%s", s.baseURL, jobID)
 
 	var job api.QuickScanSequence
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &job, nil
+}
+
+func (s *schedulerClient) GetComplianceJobStatus(ctx *httpclient.Context, jobId string) (*api.GetComplianceJobStatusResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/job/compliance/%s", s.baseURL, jobId)
+
+	var job api.GetComplianceJobStatusResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

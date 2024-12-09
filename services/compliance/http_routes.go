@@ -7667,6 +7667,15 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 	auditable := false
 	if auditableStr == "true" {
 		auditable = true
+		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get compliance job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+		}
+		if complianceJob.SummaryJobId == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
+		}
+		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
 	} else {
 		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
 		if err != nil {
