@@ -227,7 +227,7 @@ export default function Bookmarks({ setTab }: Props) {
     const [page, setPage] = useState(1)
     const [totalCount, setTotalCount] = useState(0)
     const [totalPage, setTotalPage] = useState(0)
-    const [rows, setRows] = useState<any[]>()
+    const [rows, setRows] = useState<any[]>([])
     const [filterQuery, setFilterQuery] = useState({
         tokens: [],
         operation: 'and',
@@ -236,6 +236,7 @@ export default function Bookmarks({ setTab }: Props) {
     const [options, setOptions] = useState<any[]>([])
     const [selectedOptions, setSelectedOptions] = useState([])
     const [isLoading, setLoading] = useState(false)
+    const [integrations, setIntegrations] = useState<any[]>([])
     const [error, setError] = useState()
     const getRows = () => {
         setLoading(true)
@@ -323,14 +324,55 @@ export default function Bookmarks({ setTab }: Props) {
                 setLoading(false)
             })
     }
+    const getIntegrations = () => {
+setLoading(true)
+axios
+    .get(
+        'https://raw.githubusercontent.com/opengovern/opengovernance/refs/heads/main/assets/integrations/integrations.json'
+    )
+    .then((res) => {
+        if (res.data) {
+            const arr = res.data
+            // arr.sort(() => Math.random() - 0.5);
+            setIntegrations(arr)
+           
+        }
+        setLoading(false)
+    })
+    .catch((err) => {
+        setError(err)
+        setLoading(false)
+    })
+
+    }
+    const FindLogos = (types : string []) => {
+        const temp: string[] =[]
+        types.map((type) => {
+            const integration = integrations.find(
+                (i) => i.integration_type === type
+            )
+            if(integration){
+                temp.push(
+                    `https://raw.githubusercontent.com/opengovern/website/main/connectors/icons/${integration?.Icon}`
+                )
+            }
+        })
+        return temp
+
+
+
+    }
 
     useEffect(() => {
         getRows()
         getCategories()
+        getIntegrations()
     }, [])
     useEffect(() => {
         getRows()
     }, [selectedOptions])
+
+
 
     return (
         <>
@@ -412,6 +454,9 @@ export default function Bookmarks({ setTab }: Props) {
                         /> */}
                     </Flex>
                     <Grid className="gap-4" numItems={3}>
+                        {rows?.length === 0 && (<>
+                            <Spinner className='mt-2' />
+                        </>)}
                         {rows
                             ?.sort((a, b) => {
                                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -431,11 +476,13 @@ export default function Bookmarks({ setTab }: Props) {
                                     <UseCaseCard
                                         // @ts-ignore
                                         title={q?.title}
-                                        logo="https://raw.githubusercontent.com/opengovern/website/refs/heads/main/connectors/icons/github.svg"
-                                        logo1="https://raw.githubusercontent.com/opengovern/website/refs/heads/main/connectors/icons/openai.svg"
+                                        description={q?.description}
+                                        logos={FindLogos(q?.integration_types)}
                                         onClick={() => {
                                             // @ts-ignore
-                                            setSavedQuery(q?.query)
+                                            setSavedQuery(
+                                                q?.query?.queryToExecute
+                                            )
                                             setTab('3')
                                         }}
                                         tag="tag1"
