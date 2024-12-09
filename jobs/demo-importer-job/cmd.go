@@ -105,10 +105,10 @@ func Command() *cobra.Command {
 			}
 
 			logger.Info("Successfully unzipped", zap.String("file", filePath))
-			err = worker.ImportSQLFiles(cnf, types.PostgresqlBackupPath)
-			if err != nil {
-				return fmt.Errorf("failure while importing sql files to postgres: %w", err)
-			}
+			//err = worker.ImportSQLFiles(cnf, types.PostgresqlBackupPath)
+			//if err != nil {
+			//	return fmt.Errorf("failure while importing sql files to postgres: %w", err)
+			//}
 			psqlMigratorCfg := postgres.Config{
 				Host:    cnf.PostgreSQL.Host,
 				Port:    cnf.PostgreSQL.Port,
