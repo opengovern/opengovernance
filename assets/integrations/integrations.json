@@ -86,7 +86,7 @@
 
   {
     "id": 7,
-    "integration_type": "openai_project",
+    "integration_type": "openai_integration",
     "name": "OpenAI",
     "tier": "Community",
     "tags": { "usage": ["AI Services"] },
