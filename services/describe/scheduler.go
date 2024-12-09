@@ -553,7 +553,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDeletedIntegrationsResourcesCleanup(ctx context.Context) {
-	ticker := ticker.NewTicker(time.Minute*10, time.Second*10)
+	ticker := ticker.NewTicker(time.Minute*2, time.Second*10)
 	defer ticker.Stop()
 
 	for range ticker.C {

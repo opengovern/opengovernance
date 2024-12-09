@@ -125,7 +125,8 @@ func Command() *cobra.Command {
 
 			for name, _ := range integration_type.IntegrationTypes {
 				enabled := false
-				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount {
+				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
+					name == integration_type.IntegrationTypeOpenAIIntegration {
 					enabled = true
 				}
 				err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{

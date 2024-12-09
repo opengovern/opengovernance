@@ -64,12 +64,18 @@ func GetResourceIDsForAccountResourceTypeFromES(ctx context.Context, client open
 
 func GetResourceIDsNotInIntegrationsFromES(ctx context.Context, client opengovernance.Client, integrationIDs []string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
-	root["query"] = map[string]any{
-		"bool": map[string]any{
-			"must_not": []map[string]any{
-				{"terms": map[string]any{"integration_id": integrationIDs}},
+	if len(integrationIDs) > 0 {
+		root["query"] = map[string]any{
+			"bool": map[string]any{
+				"must_not": []map[string]any{
+					{"terms": map[string]any{"integration_id": integrationIDs}},
+				},
 			},
-		},
+		}
+	} else {
+		root["query"] = map[string]any{
+			"match_all": map[string]any{},
+		}
 	}
 	if searchAfter != nil {
 		root["search_after"] = searchAfter
