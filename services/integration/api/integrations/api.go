@@ -3,6 +3,8 @@ package integrations
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/goccy/go-yaml"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
@@ -21,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"
@@ -40,7 +43,11 @@ type API struct {
 }
 
 const (
-	UiSpecsPath string = "/ui-specs"
+	UiSpecsPath                     string = "/ui-specs"
+	TemplateDeploymentPath          string = "/integrations/deployment-template.yaml"
+	TemplateManualsDeploymentPath   string = "/integrations/deployment-template-manuals.yaml"
+	TemplateScaledObjectPath        string = "/integrations/scaled-object-template.yaml"
+	TemplateManualsScaledObjectPath string = "/integrations/scaled-object-template-manuals.yaml"
 )
 
 func New(
@@ -1086,15 +1093,30 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 		h.logger.Error("failed to get integration type", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get integration type")
 	}
+	kedaEnabled, ok := os.LookupEnv("KEDA_ENABLED")
+	if !ok {
+		kedaEnabled = "false"
+	}
 
 	// Scheduled deployment
 	var describerDeployment appsv1.Deployment
-	err = h.kubeClient.Get(ctx, client.ObjectKey{
-		Namespace: currentNamespace,
-		Name:      "og-describer-aws",
-	}, &describerDeployment)
+	templateDeploymentFile, err := os.Open(TemplateDeploymentPath)
 	if err != nil {
-		return err
+		h.logger.Error("failed to open template deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open template deployment file")
+	}
+	defer templateDeploymentFile.Close()
+
+	data, err := ioutil.ReadAll(templateDeploymentFile)
+	if err != nil {
+		h.logger.Error("failed to read template deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read template deployment file")
+	}
+
+	err = yaml.Unmarshal(data, &describerDeployment)
+	if err != nil {
+		h.logger.Error("failed to unmarshal template deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal template deployment file")
 	}
 
 	integrationType, ok := integration_type.IntegrationTypes[integration.Type(integrationTypeName)]
@@ -1104,6 +1126,12 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	cnf := integrationType.GetConfiguration()
 
 	describerDeployment.ObjectMeta.Name = cnf.DescriberDeploymentName
+	describerDeployment.ObjectMeta.Namespace = currentNamespace
+	if kedaEnabled == "true" {
+		describerDeployment.Spec.Replicas = aws.Int32(0)
+	} else {
+		describerDeployment.Spec.Replicas = aws.Int32(5)
+	}
 	describerDeployment.Spec.Selector.MatchLabels["app"] = cnf.DescriberDeploymentName
 	describerDeployment.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName
 	describerDeployment.Spec.Template.Spec.ServiceAccountName = "og-describer"
@@ -1112,6 +1140,13 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	container.Name = cnf.DescriberDeploymentName
 	container.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	container.Command = []string{cnf.DescriberRunCommand}
+	natsUrl, ok := os.LookupEnv("NATS_URL")
+	if ok {
+		container.Env = append(container.Env, v1.EnvVar{
+			Name:  "NATS_URL",
+			Value: natsUrl,
+		})
+	}
 	describerDeployment.Spec.Template.Spec.Containers[0] = container
 
 	newDeployment := appsv1.Deployment{
@@ -1132,15 +1167,32 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 
 	// Manual deployment
 	var describerDeploymentManuals appsv1.Deployment
-	err = h.kubeClient.Get(ctx, client.ObjectKey{
-		Namespace: currentNamespace,
-		Name:      "og-describer-aws-manuals",
-	}, &describerDeploymentManuals)
+	templateManualsDeploymentFile, err := os.Open(TemplateManualsDeploymentPath)
 	if err != nil {
-		return err
+		h.logger.Error("failed to open template manuals deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open template manuals deployment file")
+	}
+	defer templateManualsDeploymentFile.Close()
+
+	data, err = ioutil.ReadAll(templateManualsDeploymentFile)
+	if err != nil {
+		h.logger.Error("failed to read template manuals deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read template manuals deployment file")
+	}
+
+	err = yaml.Unmarshal(data, &describerDeploymentManuals)
+	if err != nil {
+		h.logger.Error("failed to unmarshal template manuals deployment file", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal template manuals deployment file")
 	}
 
 	describerDeploymentManuals.ObjectMeta.Name = cnf.DescriberDeploymentName + "-manuals"
+	describerDeploymentManuals.ObjectMeta.Namespace = currentNamespace
+	if kedaEnabled == "true" {
+		describerDeploymentManuals.Spec.Replicas = aws.Int32(0)
+	} else {
+		describerDeploymentManuals.Spec.Replicas = aws.Int32(2)
+	}
 	describerDeploymentManuals.Spec.Selector.MatchLabels["app"] = cnf.DescriberDeploymentName + "-manuals"
 	describerDeploymentManuals.Spec.Template.ObjectMeta.Labels["app"] = cnf.DescriberDeploymentName + "-manuals"
 	describerDeploymentManuals.Spec.Template.Spec.ServiceAccountName = "og-describer"
@@ -1149,6 +1201,13 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 	containerManuals.Name = cnf.DescriberDeploymentName
 	containerManuals.Image = fmt.Sprintf("%s:%s", integrationTypeInfo.PackageURL, integrationTypeInfo.PackageTag)
 	containerManuals.Command = []string{cnf.DescriberRunCommand}
+	natsUrl, ok = os.LookupEnv("NATS_URL")
+	if ok {
+		containerManuals.Env = append(containerManuals.Env, v1.EnvVar{
+			Name:  "NATS_URL",
+			Value: natsUrl,
+		})
+	}
 	describerDeploymentManuals.Spec.Template.Spec.Containers[0] = containerManuals
 
 	newDeploymentManuals := appsv1.Deployment{
@@ -1167,19 +1226,26 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 		return err
 	}
 
-	kedaEnabled, ok := os.LookupEnv("KEDA_ENABLED")
-	if !ok {
-		kedaEnabled = "false"
-	}
 	if strings.ToLower(kedaEnabled) == "true" {
 		// Scheduled ScaledObject
 		var describerScaledObject kedav1alpha1.ScaledObject
-		err = h.kubeClient.Get(ctx, client.ObjectKey{
-			Namespace: currentNamespace,
-			Name:      "og-describer-aws-scaled-object",
-		}, &describerScaledObject)
+		templateScaledObjectFile, err := os.Open(TemplateScaledObjectPath)
 		if err != nil {
-			return err
+			h.logger.Error("failed to open template scaledobject file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to open template scaledobject file")
+		}
+		defer templateScaledObjectFile.Close()
+
+		data, err = ioutil.ReadAll(templateScaledObjectFile)
+		if err != nil {
+			h.logger.Error("failed to read template manuals deployment file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to read template scaledobject file")
+		}
+
+		err = yaml.Unmarshal(data, &describerScaledObject)
+		if err != nil {
+			h.logger.Error("failed to unmarshal template deployment file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal template deployment file")
 		}
 
 		describerScaledObject.Spec.ScaleTargetRef.Name = cnf.DescriberDeploymentName
@@ -1204,12 +1270,23 @@ func (h API) EnableIntegrationType(c echo.Context) error {
 
 		// Manual ScaledObject
 		var describerScaledObjectManuals kedav1alpha1.ScaledObject
-		err = h.kubeClient.Get(ctx, client.ObjectKey{
-			Namespace: currentNamespace,
-			Name:      "og-describer-aws-manuals-scaled-object",
-		}, &describerScaledObjectManuals)
+		templateManualsScaledObjectFile, err := os.Open(TemplateManualsScaledObjectPath)
 		if err != nil {
-			return err
+			h.logger.Error("failed to open template manuals scaledobject file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to open template manuals scaledobject file")
+		}
+		defer templateManualsScaledObjectFile.Close()
+
+		data, err = ioutil.ReadAll(templateManualsScaledObjectFile)
+		if err != nil {
+			h.logger.Error("failed to read template manuals deployment file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to read template manuals scaledobject file")
+		}
+
+		err = yaml.Unmarshal(data, &describerScaledObject)
+		if err != nil {
+			h.logger.Error("failed to unmarshal template deployment file", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal template deployment file")
 		}
 
 		describerScaledObjectManuals.Spec.ScaleTargetRef.Name = cnf.DescriberDeploymentName + "-manuals"
