@@ -1606,6 +1606,16 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	var summaryJobId *uint
+	summaryJobs, err := h.DB.ListSummaryJobs([]string{jobIdString})
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get summary job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get summary job")
+	}
+	if len(summaryJobs) > 0 {
+		summaryJobId = &summaryJobs[0].ID
+	}
+
 	var connectionInfo api.IntegrationInfo
 	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 	if err != nil {
@@ -1620,6 +1630,7 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 
 	jobsResult := api.GetComplianceJobStatusResponse{
 		JobId:           j.ID,
+		SummaryJobId:    summaryJobId,
 		IntegrationInfo: connectionInfo,
 		BenchmarkId:     j.BenchmarkID,
 		JobStatus:       string(j.Status),
