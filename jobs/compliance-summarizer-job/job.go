@@ -359,6 +359,13 @@ func addJobSummary(controlSummary *types.ComplianceQuickScanControlView, resourc
 	if cr.ComplianceStatus != types.ComplianceStatusALARM {
 		return
 	}
+
+	if _, ok := resourceSummary.Integrations[cr.IntegrationID]; !ok {
+		resourceSummary.Integrations[cr.IntegrationID] = types.AuditIntegrationResult{
+			ResourceTypes: make(map[string]types.AuditResourceTypesResult),
+		}
+	}
+
 	if _, ok := resourceSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
 		resourceSummary.ComplianceSummary[cr.ComplianceStatus] = 0
 	}
