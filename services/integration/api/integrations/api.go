@@ -305,24 +305,33 @@ func (h API) AddIntegrations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal json data")
 	}
 
-	integration := integration_type.IntegrationTypes[req.IntegrationType]
-	if integration == nil {
+	integrationType := integration_type.IntegrationTypes[req.IntegrationType]
+	if integrationType == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to marshal json data")
 	}
 
-	integrations, err := integration.DiscoverIntegrations(jsonData)
+	integrations, err := integrationType.DiscoverIntegrations(jsonData)
 	if err != nil {
 		h.logger.Error("failed to create credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
 	}
 
+	integrationTypeIntegrations, err := h.database.ListIntegration([]integration.Type{req.IntegrationType})
+
 	providerIDs := make(map[string]bool)
 	for _, i := range req.ProviderIDs {
 		providerIDs[i] = true
 	}
+	integrationTypeIntegrationsMap := make(map[string]bool)
+	for _, i := range integrationTypeIntegrations {
+		integrationTypeIntegrationsMap[i.ProviderID] = true
+	}
 
 	for _, i := range integrations {
 		if _, ok := providerIDs[i.ProviderID]; !ok {
+			continue
+		}
+		if _, ok := integrationTypeIntegrationsMap[i.ProviderID]; ok {
 			continue
 		}
 		i.IntegrationType = req.IntegrationType
@@ -353,7 +362,7 @@ func (h API) AddIntegrations(c echo.Context) error {
 			h.logger.Error("failed to create integration api", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration api")
 		}
-		healthy, err := integration.HealthCheck(jsonData, i.ProviderID, iApi.Labels, iApi.Annotations)
+		healthy, err := integrationType.HealthCheck(jsonData, i.ProviderID, iApi.Labels, iApi.Annotations)
 		if err != nil || !healthy {
 			h.logger.Info("integration is not healthy", zap.String("integration_id", i.IntegrationID.String()), zap.Error(err))
 			i.State = models2.IntegrationStateInactive
