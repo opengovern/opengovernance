@@ -29,7 +29,7 @@ import {
 import Spinner from '../../../components/Spinner'
 import { numericDisplay } from '../../../utilities/numericDisplay'
 import { useAuthApiV1UserDetail } from '../../../api/auth.gen'
-import { dateDisplay } from '../../../utilities/dateDisplay'
+import { dateDisplay, dateTimeDisplay } from '../../../utilities/dateDisplay'
 import { GithubComKaytuIoKaytuEnginePkgWorkspaceApiTier } from '../../../api/api'
 import {  isDemoAtom, previewAtom, sampleAtom } from '../../../store'
 import {
@@ -155,6 +155,7 @@ export default function SettingsEntitlement() {
     )
     const hostsPercentage = Math.ceil((noOfHosts / maxHosts) * 100.0)
     const [preview, setPreview] = useAtom(previewAtom)
+    const [migrations_status, setMigrationsStatus] = useState()
  const {
      response: customizationEnabled,
      isLoading: loadingCustomizationEnabled,
@@ -270,6 +271,7 @@ export default function SettingsEntitlement() {
          .get(`${url}/main/metadata/api/v3/migration/status `, config)
          .then((res) => {
              setStatus(res.data.status)
+             setMigrationsStatus(res.data)
              setPercentage(res.data.Summary?.progress_percentage)
              if (intervalId) {
                  if (
@@ -538,7 +540,11 @@ export default function SettingsEntitlement() {
                                 value={percentage}
                                 className="w-full"
                                 // additionalInfo="Additional information"
-                                description={status}
+                                // @ts-ignore
+                                description={`${status}, Last Updated: ${dateTimeDisplay(
+                                    // @ts-ignore
+                                    migrations_status?.updated_at
+                                )}`}
                                 resultText="Configuration done"
                                 label="Platform Configuration"
                             />
@@ -620,29 +626,25 @@ export default function SettingsEntitlement() {
                             </Button>
                         )}
 
-                        {loaded == 'True' &&
-                            sample ==
-                                'true' && (
-                                    <>
-                                        <Button
-                                            variant="secondary"
-                                            className=""
-                                            loading={
-                                                isLoadingPurge && isExecPurge
-                                            }
-                                            onClick={() => {
-                                                PurgeData()
-                                                setSample(false)
-                                                localStorage.setItem('sample', 'false')
-                                                // @ts-ignore
-                                                setLoaded('False')
-                                                // window.location.reload()
-                                            }}
-                                        >
-                                            Purge Sample Data
-                                        </Button>
-                                    </>
-                                )}
+                        {loaded == 'True' && sample == 'true' && (
+                            <>
+                                <Button
+                                    variant="secondary"
+                                    className=""
+                                    loading={isLoadingPurge && isExecPurge}
+                                    onClick={() => {
+                                        PurgeData()
+                                        setSample(false)
+                                        localStorage.setItem('sample', 'false')
+                                        // @ts-ignore
+                                        setLoaded('False')
+                                        // window.location.reload()
+                                    }}
+                                >
+                                    Purge Sample Data
+                                </Button>
+                            </>
+                        )}
                     </Flex>
                 </Flex>
                 {((error && error !== '') ||
