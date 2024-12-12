@@ -7,6 +7,7 @@ import (
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	"github.com/jackc/pgtype"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
+	"github.com/opengovern/opencomply/services/integration/api/integrations"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"github.com/opengovern/opencomply/services/integration/models"
 	"gorm.io/gorm"
@@ -124,17 +125,21 @@ func Command() *cobra.Command {
 			}
 
 			for name, _ := range integration_type.IntegrationTypes {
-				enabled := false
-				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
-					name == integration_type.IntegrationTypeOpenAIIntegration {
-					enabled = true
-				}
-				err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
+				existed, err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
 					IntegrationType: name,
-					Enabled:         enabled,
+					Enabled:         false,
 				})
 				if err != nil {
 					return err
+				}
+				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
+					name == integration_type.IntegrationTypeOpenAIIntegration {
+					if !existed {
+						err = integrations.EnableIntegrationType(ctx, logger, kubeClient, db, name.String())
+						if err != nil {
+							return err
+						}
+					}
 				}
 			}
 
