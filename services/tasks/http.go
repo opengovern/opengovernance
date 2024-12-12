@@ -6,18 +6,12 @@ import (
 
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/opencomply/services/task/db"
-	"github.com/opengovern/opencomply/services/task/api"
-
+	"github.com/opengovern/opencomply/services/tasks/api"
+	"github.com/opengovern/opencomply/services/tasks/db"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
-
-// var (
-// 	//go:embed email/invite.html
-// 	inviteEmailTemplate string
-// )
 
 type httpRoutes struct {
 	logger *zap.Logger
@@ -29,13 +23,11 @@ type httpRoutes struct {
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	// Get all tasks
-	v1.GET("/tasks", httpserver.AuthorizeHandler(r.getTasks,api2.EditorRole))
+	v1.GET("/tasks", httpserver.AuthorizeHandler(r.getTasks, api2.EditorRole))
 	// Create a new task
 	v1.POST("/tasks", httpserver.AuthorizeHandler(r.createTask, api2.EditorRole))
 	// Get Task Result
 	v1.GET("/tasks/:id/result", httpserver.AuthorizeHandler(r.getTaskResult, api2.EditorRole))
-
-	
 
 }
 
@@ -50,7 +42,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 	return nil
 }
-
 
 func (r *httpRoutes) getTasks(ctx echo.Context) error {
 	tasks, err := r.db.GetTaskList()
@@ -70,11 +61,11 @@ func (r *httpRoutes) createTask(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "failed to bind task")
 	}
 	newTask := db.Task{
-		Name: task.Name,
+		Name:        task.Name,
 		Description: task.Description,
-		ImageUrl: task.ImageUrl,
-		Interval: task.Interval,
-		AutoRun: task.AutoRun,
+		ImageUrl:    task.ImageUrl,
+		Interval:    task.Interval,
+		AutoRun:     task.AutoRun,
 	}
 
 	if err := r.db.CreateTask(&newTask); err != nil {
@@ -94,6 +85,5 @@ func (r *httpRoutes) getTaskResult(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, taskResults)
-
 
 }
