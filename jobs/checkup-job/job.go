@@ -80,7 +80,7 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 						counter++
 						if counter < 10 {
 							logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
-							time.Sleep(10 * time.Minute)
+							time.Sleep(4 * time.Minute)
 							continue
 						}
 
