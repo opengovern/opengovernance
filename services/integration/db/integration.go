@@ -40,7 +40,7 @@ func (db Database) DeleteIntegration(IntegrationID uuid.UUID) error {
 // DeleteSampleIntegrations deletes a integration
 func (db Database) DeleteSampleIntegrations() error {
 	tx := db.Orm.
-		Where("integration_type = ?", models.IntegrationStateSample).
+		Where("state = ?", models.IntegrationStateSample).
 		Unscoped().
 		Delete(&models.Integration{})
 	if tx.Error != nil {
