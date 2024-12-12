@@ -71,7 +71,7 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 	
 
 	if err != nil {
-		time.Sleep(10 * time.Second)
+		time.Sleep(3 * time.Minute)
 				integrations, err = integrationClient.ListIntegrations(&httpclient.Context{
 				UserRole: authAPI.EditorRole,
 			}, nil)
@@ -80,7 +80,7 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 						counter++
 						if counter < 10 {
 							logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
-							time.Sleep(10 * time.Second)
+							time.Sleep(10 * time.Minute)
 							continue
 						}
 
