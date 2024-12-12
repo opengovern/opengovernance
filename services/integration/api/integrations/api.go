@@ -1531,6 +1531,7 @@ func EnableIntegrationType(ctx context.Context, logger *zap.Logger, kubeClient c
 
 		trigger := describerScaledObject.Spec.Triggers[0]
 		trigger.Metadata["stream"] = cnf.NatsStreamName
+		trigger.Metadata["natsServerMonitoringEndpoint"] = natsUrl
 		trigger.Metadata["consumer"] = cnf.NatsConsumerGroup + "-service"
 		describerScaledObject.Spec.Triggers[0] = trigger
 
@@ -1572,6 +1573,7 @@ func EnableIntegrationType(ctx context.Context, logger *zap.Logger, kubeClient c
 
 		triggerManuals := describerScaledObjectManuals.Spec.Triggers[0]
 		triggerManuals.Metadata["stream"] = cnf.NatsStreamName
+		triggerManuals.Metadata["natsServerMonitoringEndpoint"] = natsUrl
 		triggerManuals.Metadata["consumer"] = cnf.NatsConsumerGroupManuals + "-service"
 		describerScaledObjectManuals.Spec.Triggers[0] = triggerManuals
 

@@ -6,7 +6,7 @@ metadata:
     app: og-describer-template-manuals
 spec:
   minReadySeconds: 10
-  replicas: 2
+  replicas: 0
   selector:
     matchLabels:
       app: og-describer-template-manuals
