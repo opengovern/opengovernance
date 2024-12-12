@@ -269,6 +269,8 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 		if len(esResp.Hits.Hits) == 0 {
 			s.logger.Info("no old resource found")
 			break
+		} else {
+			s.logger.Info("deleting resources", zap.Int("number of resources", len(esResp.Hits.Hits)))
 		}
 		deletedCount := 0
 		for _, hit := range esResp.Hits.Hits {

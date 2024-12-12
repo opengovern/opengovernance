@@ -53,7 +53,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-github",
     "schema_ids": ["github"],
     "PackageURL": "ghcr.io/opengovern/og-describer-github",
-    "PackageTag": "local-v0.3.2"
+    "PackageTag": "local-v0.3.9"
   },
   {
     "id": 5,

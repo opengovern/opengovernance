@@ -62,12 +62,34 @@ func (j Job) Do(integrationClient client.IntegrationServiceClient, authClient au
 
 	// Healthcheck
 	logger.Info("starting healthcheck")
+	
+	counter := 0
 	integrations, err := integrationClient.ListIntegrations(&httpclient.Context{
 		UserRole: authAPI.EditorRole,
 	}, nil)
+
+	
+
 	if err != nil {
-		logger.Error("failed to get connections list from onboard service", zap.Error(err))
-		fail(fmt.Errorf("failed to get connections list from onboard service: %w", err))
+		time.Sleep(3 * time.Minute)
+				integrations, err = integrationClient.ListIntegrations(&httpclient.Context{
+				UserRole: authAPI.EditorRole,
+			}, nil)
+			for {
+					if err != nil {
+						counter++
+						if counter < 10 {
+							logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
+							time.Sleep(4 * time.Minute)
+							continue
+						}
+
+						logger.Error("failed to check integration healthcheck", zap.Error(err))
+						fail(fmt.Errorf("failed to check integration healthcheck: %w", err))
+					}
+				break
+			}	
+		
 	} else {
 		for _, integrationObj := range integrations.Integrations {
 			if integrationObj.LastCheck != nil && integrationObj.LastCheck.Add(8*time.Hour).After(time.Now()) {
