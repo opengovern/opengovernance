@@ -8,6 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.2.0
+	github.com/Azure/go-workflow v0.1.6
 	github.com/Luzifer/go-openssl/v4 v4.2.2
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/aws/aws-sdk-go-v2 v1.32.4
@@ -17,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.37.4
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.27.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.3
+	github.com/aws/smithy-go v1.22.0
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc
 	github.com/cloudflare/cloudflare-go v0.27.0
 	github.com/coreos/go-oidc/v3 v3.10.0
@@ -55,10 +57,11 @@ require (
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.29.0
+	golang.org/x/crypto v0.31.0
 	golang.org/x/net v0.31.0
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/time v0.8.0
+	google.golang.org/api v0.204.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241021214115-324edc3d5d38
 	google.golang.org/grpc v1.67.1
 	gorm.io/datatypes v1.1.0
@@ -82,7 +85,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.1.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/Azure/go-workflow v0.1.6 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.3 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -105,7 +107,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.3 // indirect
-	github.com/aws/smithy-go v1.22.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
@@ -294,14 +295,13 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/api v0.204.0 // indirect
 	google.golang.org/genproto v0.0.0-20241021214115-324edc3d5d38 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
