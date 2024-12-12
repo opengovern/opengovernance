@@ -129,7 +129,7 @@ func Command() *cobra.Command {
 				if setup != nil {
 					continue
 				}
-				existed, err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
+				err = db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
 					IntegrationType: name,
 					Enabled:         false,
 				})
@@ -138,11 +138,9 @@ func Command() *cobra.Command {
 				}
 				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
 					name == integration_type.IntegrationTypeOpenAIIntegration {
-					if !existed {
-						err = integrations.EnableIntegrationType(ctx, logger, kubeClient, db, name.String())
-						if err != nil {
-							return err
-						}
+					err = integrations.EnableIntegrationType(ctx, logger, kubeClient, db, name.String())
+					if err != nil {
+						return err
 					}
 				}
 			}
