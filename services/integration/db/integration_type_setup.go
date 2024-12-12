@@ -41,15 +41,11 @@ func (db Database) UpdateIntegrationTypeSetup(integrationTypeSetup *models.Integ
 	return nil
 }
 
-func (db Database) CreateIntegrationTypeSetup(integrationTypeSetup *models.IntegrationTypeSetup) (bool, error) {
+func (db Database) CreateIntegrationTypeSetup(integrationTypeSetup *models.IntegrationTypeSetup) error {
 	tx := db.Orm.
 		FirstOrCreate(integrationTypeSetup)
-	existed := false
-	if tx.RowsAffected != 0 {
-		existed = true
-	}
 	if tx.Error != nil {
-		return existed, tx.Error
+		return tx.Error
 	}
-	return existed, nil
+	return nil
 }
