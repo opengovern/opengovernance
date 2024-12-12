@@ -45,7 +45,7 @@ const UseCaseCard: FunctionComponent<CardProps> = ({
                   <div className="flex flex-row gap-2">
                      {logos?.map((logo) => {
                         return (
-                            <div className=" bg-gray-300 dark:bg-slate-400 rounded p-2">
+                            <div className=" bg-gray-300 dark:bg-slate-400 rounded p-2 flex items-center justify-center">
                                 <img
                                     src={logo}
                                     className=" h-5 w-5"

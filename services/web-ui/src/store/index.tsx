@@ -26,7 +26,7 @@ export const sideBarCollapsedAtom = atom(
 export const complianceOpenAtom = atom(false)
 export const automationOpenAtom = atom(false)
 export const queryAtom = atom('')
-export const sampleAtom = atom(true)
+export const sampleAtom = atom(localStorage.getItem('sample') || false)
 export const ForbiddenAtom = atom(false)
 export const RoleAccess = atom(false)
 
