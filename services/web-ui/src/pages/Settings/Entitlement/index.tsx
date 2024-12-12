@@ -140,7 +140,7 @@ export default function SettingsEntitlement() {
     const currentUsers = response?.currentUsers || 0
     const currentConnections = response?.currentConnections || 0
     const currentResources = response?.currentResources || 0
-    const setSample = useSetAtom(sampleAtom)
+    const [sample, setSample] = useAtom(sampleAtom)
     const maxUsers = response?.maxUsers || 1
     const maxConnections = response?.maxConnections || 1
     const maxResources = response?.maxResources || 1
@@ -324,7 +324,63 @@ export default function SettingsEntitlement() {
      axios
          .put(`${url}/main/metadata/api/v3/sample/loaded `, {}, config)
          .then((res) => {
-             setLoaded(res.data)
+            if(res.data === 'True'){
+                // @ts-ignore
+                setLoaded('True')
+                localStorage.setItem('sample', 'true')
+                setSample('true')
+                
+            }
+            else{
+                GetSampleStatus()
+            }
+             //  const temp = []
+             //  if (!res.data.items) {
+             //      setLoading(false)
+             //  }
+             //  setBenchmarks(res.data.items)
+             //  setTotalPage(Math.ceil(res.data.total_count / 6))
+             //  setTotalCount(res.data.total_count)
+         })
+         .catch((err) => {
+             //  setLoading(false)
+             //  setBenchmarks([])
+
+             console.log(err)
+         })
+ }
+ const GetSampleStatus = () => {
+     let url = ''
+     //  setLoading(true)
+     if (window.location.origin === 'http://localhost:3000') {
+         url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+     } else {
+         url = window.location.origin
+     }
+     // @ts-ignore
+     const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+     const config = {
+         headers: {
+             Authorization: `Bearer ${token}`,
+         },
+     }
+
+     axios
+         .get(`${url}/main/metadata/api/v3/sample/sync/status `, config)
+         .then((res) => {
+             if(res?.data?.progress !==1){
+                // @ts-ignore
+                 setLoaded('True')
+                 localStorage.setItem('sample', 'true')
+                 setSample('true')
+             }
+                else{
+                    // @ts-ignore
+                    setLoaded('False')
+                    localStorage.setItem('sample', 'false')
+                    setSample('false')
+                }
              //  const temp = []
              //  if (!res.data.items) {
              //      setLoading(false)
@@ -469,11 +525,13 @@ export default function SettingsEntitlement() {
                             {status !== 'SUCCEEDED' && status !== 'FAILED' && (
                                 <Spinner className=" w-4 h-4" />
                             )}
-                            {(status === 'SUCCEEDED' ||  status === 'FAILED') ? 'Re-Sync' : status}
+                            {status === 'SUCCEEDED' || status === 'FAILED'
+                                ? 'Re-Sync'
+                                : status}
                         </Flex>
                     </Button>
                 </Flex>
-                {(status !== 'SUCCEEDED' ||  status !== 'FAILED') && (
+                {(status !== 'SUCCEEDED' || status !== 'FAILED') && (
                     <>
                         <Flex className="w-full">
                             <ProgressBar
@@ -544,14 +602,15 @@ export default function SettingsEntitlement() {
                         justifyContent="end"
                         alignItems="center"
                     >
-                        {loaded != 'True' && (
+                        {loaded != 'True' && sample != 'true' && (
                             <Button
                                 variant="secondary"
                                 className="ml-2"
                                 loading={isLoadingLoad && isExecuted}
                                 onClick={() => {
                                     loadData()
-                                    setSample(true)
+                                    setSample('true')
+                                    localStorage.setItem('sample', 'true')
                                     // @ts-ignore
                                     setLoaded('True')
                                     // window.location.reload()
@@ -561,24 +620,29 @@ export default function SettingsEntitlement() {
                             </Button>
                         )}
 
-                        {loaded == 'True' && (
-                            <>
-                                <Button
-                                    variant="secondary"
-                                    className=""
-                                    loading={isLoadingPurge && isExecPurge}
-                                    onClick={() => {
-                                        PurgeData()
-                                        setSample(false)
-                                        // @ts-ignore
-                                        setLoaded('False')
-                                        // window.location.reload()
-                                    }}
-                                >
-                                    Purge Sample Data
-                                </Button>
-                            </>
-                        )}
+                        {loaded == 'True' &&
+                            sample ==
+                                'true' && (
+                                    <>
+                                        <Button
+                                            variant="secondary"
+                                            className=""
+                                            loading={
+                                                isLoadingPurge && isExecPurge
+                                            }
+                                            onClick={() => {
+                                                PurgeData()
+                                                setSample(false)
+                                                localStorage.setItem('sample', 'false')
+                                                // @ts-ignore
+                                                setLoaded('False')
+                                                // window.location.reload()
+                                            }}
+                                        >
+                                            Purge Sample Data
+                                        </Button>
+                                    </>
+                                )}
                     </Flex>
                 </Flex>
                 {((error && error !== '') ||
