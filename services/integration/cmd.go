@@ -125,6 +125,10 @@ func Command() *cobra.Command {
 			}
 
 			for name, _ := range integration_type.IntegrationTypes {
+				setup, _ := db.GetIntegrationTypeSetup(name.String())
+				if setup != nil {
+					continue
+				}
 				existed, err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
 					IntegrationType: name,
 					Enabled:         false,
@@ -203,8 +207,6 @@ func IntegrationTypesMigration(logger *zap.Logger, dbm db.Database, onboardFileP
 	if err != nil {
 		return err
 	}
-
-	logger.Info("integration types json:", zap.String("json", string(content)))
 
 	var integrationTypes []IntegrationType
 	err = json.Unmarshal(content, &integrationTypes)
