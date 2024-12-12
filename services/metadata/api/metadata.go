@@ -40,6 +40,9 @@ type GetMigrationStatusResponse struct {
 		CompletedJobs      int     `json:"completed_jobs"`
 		ProgressPercentage float64 `json:"progress_percentage"`
 	}
+	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+	
 }
 
 type GetSampleSyncStatusResponse struct {

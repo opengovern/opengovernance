@@ -606,6 +606,8 @@ func (h HttpHandler) GetMigrationStatus(echoCtx echo.Context) error {
 			CompletedJobs:      completedJobs,
 			ProgressPercentage: jobProgress * 100,
 		},
+		UpdatedAt: mig.UpdatedAt,
+		CreatedAt: mig.CreatedAt,
 	})
 }
 
