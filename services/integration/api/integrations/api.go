@@ -1574,7 +1574,7 @@ func EnableIntegrationType(ctx context.Context, logger *zap.Logger, kubeClient c
 
 		triggerManuals := describerScaledObjectManuals.Spec.Triggers[0]
 		triggerManuals.Metadata["stream"] = cnf.NatsStreamName
-		trigger.Metadata["natsServerMonitoringEndpoint"] = soNatsUrl
+		triggerManuals.Metadata["natsServerMonitoringEndpoint"] = soNatsUrl
 		triggerManuals.Metadata["consumer"] = cnf.NatsConsumerGroupManuals + "-service"
 		describerScaledObjectManuals.Spec.Triggers[0] = triggerManuals
 
