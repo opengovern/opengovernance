@@ -3816,7 +3816,7 @@ func (h HttpServer) PurgeSampleData(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance runners")
 	}
 
-	go es.CleanupSummariesForJobs(c.Request().Context(), h.Scheduler.logger, h.Scheduler.es, summaryJobsIds)
+	go es.CleanupSummariesForJobs(h.Scheduler.logger, h.Scheduler.es, summaryJobsIds)
 
 	return c.NoContent(http.StatusOK)
 }

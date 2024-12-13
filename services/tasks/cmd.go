@@ -27,6 +27,10 @@ var (
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 )
 
+const (
+	TasksPath string = ""
+)
+
 func Command() *cobra.Command {
 	return &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,13 +91,17 @@ func start(ctx context.Context) error {
 		return err
 	}
 
+	err = setupTasks(db, kubeClient)
+	if err != nil {
+		return err
+	}
+
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
 			logger:        logger,
 			db:            db,
 			mainScheduler: mainScheduler,
-			kubeClient:    kubeClient,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()
@@ -122,4 +130,8 @@ func NewKubeClient() (client.Client, error) {
 		return nil, err
 	}
 	return kubeClient, nil
+}
+
+func setupTasks(db db.Database, kubeClient client.Client) error {
+	return nil
 }

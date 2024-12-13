@@ -26,7 +26,8 @@ type BenchmarkSummaryResponse struct {
 	} `json:"hits"`
 }
 
-func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengovernance.Client, jobIds []uint) {
+func CleanupSummariesForJobs(logger *zap.Logger, es opengovernance.Client, jobIds []uint) {
+	ctx := context.Background()
 	root := make(map[string]any)
 	root["query"] = map[string]any{
 		"bool": map[string]any{
@@ -47,7 +48,7 @@ func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengov
 	}
 
 	var res BenchmarkSummaryResponse
-	logger.Info("Query to delete summaries", zap.ByteString("query", query))
+	logger.Info("Query to Delete Summaries", zap.ByteString("query", query))
 	err = es.Search(ctx, types.BenchmarkSummaryIndex, string(query), &res)
 	if err != nil {
 		logger.Error("Delete Summaries Error searching", zap.Error(err))

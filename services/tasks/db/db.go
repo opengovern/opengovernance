@@ -22,7 +22,7 @@ func (db Database) Initialize() error {
 }
 
 func (db Database) CreateTask(task *models.Task) error {
-	tx := db.Orm.Create(task)
+	tx := db.Orm.FirstOrCreate(task)
 	if tx.Error != nil {
 		return tx.Error
 	}
