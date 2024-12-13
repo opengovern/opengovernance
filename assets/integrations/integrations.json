@@ -537,6 +537,6 @@
     "SourceCode": "https://github.com/opengovern/og-describer-oci",
     "schema_ids": ["oci"],
     "PackageURL": "ghcr.io/opengovern/og-describer-oci",
-    "PackageTag": "local-v0.1.0"
+    "PackageTag": "local-v0.5.0"
   }
 ]
