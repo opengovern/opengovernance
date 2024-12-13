@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
+	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/opencomply/services/tasks/config"
+	"github.com/opengovern/opencomply/services/tasks/scheduler"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,11 +74,26 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
+	jq, err := jq.New(cfg.NATS.URL, logger)
+	if err != nil {
+		logger.Error("Failed to create job queue", zap.Error(err))
+		return err
+	}
+
+	mainScheduler := scheduler.NewMainScheduler(logger, db, jq)
+
+	kubeClient, err := NewKubeClient()
+	if err != nil {
+		return err
+	}
+
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
-			logger: logger,
-			db:     db,
+			logger:        logger,
+			db:            db,
+			mainScheduler: mainScheduler,
+			kubeClient:    kubeClient,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
 	}()

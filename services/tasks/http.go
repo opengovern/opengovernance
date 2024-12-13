@@ -2,7 +2,10 @@ package tasks
 
 import (
 	"crypto/rsa"
+	"github.com/opengovern/opencomply/services/tasks/db/models"
+	"github.com/opengovern/opencomply/services/tasks/scheduler"
 	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
@@ -18,6 +21,8 @@ type httpRoutes struct {
 
 	platformPrivateKey *rsa.PrivateKey
 	db                 db.Database
+	mainScheduler      *scheduler.MainScheduler
+	kubeClient         client.Client
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
@@ -60,12 +65,11 @@ func (r *httpRoutes) createTask(ctx echo.Context) error {
 		r.logger.Error("failed to bind task", zap.Error(err))
 		return ctx.JSON(http.StatusBadRequest, "failed to bind task")
 	}
-	newTask := db.Task{
+	newTask := models.Task{
 		Name:        task.Name,
 		Description: task.Description,
 		ImageUrl:    task.ImageUrl,
 		Interval:    task.Interval,
-		AutoRun:     task.AutoRun,
 	}
 
 	if err := r.db.CreateTask(&newTask); err != nil {
