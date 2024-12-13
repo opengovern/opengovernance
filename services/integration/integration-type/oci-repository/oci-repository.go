@@ -3,6 +3,7 @@ package oci_repository
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	"github.com/opengovern/opencomply/services/integration/integration-type/oci-repository/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/oci-repository/healthcheck"
@@ -39,7 +40,56 @@ func (i *Integration) HealthCheck(jsonData []byte, _ string, _ map[string]string
 }
 
 func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
-	return []models.Integration{}, nil
+	var credentials configs.IntegrationCredentials
+	err := json.Unmarshal(jsonData, &credentials)
+	if err != nil {
+		return nil, err
+	}
+
+	switch credentials.RegistryType {
+	case configs.RegistryTypeDockerhub:
+		if credentials.DockerhubCredentials == nil {
+			return nil, fmt.Errorf("dockerhub credentials are required with registry type: %s", credentials.RegistryType)
+		}
+		return []models.Integration{
+			{
+				ProviderID: fmt.Sprintf("dockerhub/%s", credentials.DockerhubCredentials.Owner),
+				Name:       fmt.Sprintf("Dockerhub - %s", credentials.DockerhubCredentials.Owner),
+			},
+		}, nil
+	case configs.RegistryTypeGHCR:
+		if credentials.GhcrCredentials == nil {
+			return nil, fmt.Errorf("ghcr credentials are required with registry type: %s", credentials.RegistryType)
+		}
+		return []models.Integration{
+			{
+				ProviderID: fmt.Sprintf("ghcr/%s", credentials.GhcrCredentials.Owner),
+				Name:       fmt.Sprintf("GitHub Container Registry - %s", credentials.GhcrCredentials.Owner),
+			},
+		}, nil
+	case configs.RegistryTypeECR:
+		if credentials.EcrCredentials == nil {
+			return nil, fmt.Errorf("ecr credentials are required with registry type: %s", credentials.RegistryType)
+		}
+		return []models.Integration{
+			{
+				ProviderID: fmt.Sprintf("ecr/%s/%s", credentials.EcrCredentials.AccountID, credentials.EcrCredentials.Region),
+				Name:       fmt.Sprintf("AWS ECR (%s) - %s", credentials.EcrCredentials.Region, credentials.EcrCredentials.AccountID),
+			},
+		}, nil
+	case configs.RegistryTypeACR:
+		if credentials.AcrCredentials == nil {
+			return nil, fmt.Errorf("acr credentials are required with registry type: %s", credentials.RegistryType)
+		}
+		return []models.Integration{
+			{
+				ProviderID: fmt.Sprintf("acr/%s/%s", credentials.AcrCredentials.TenantID, credentials.AcrCredentials.LoginServer),
+				Name:       fmt.Sprintf("Azure Container Registry - %s", credentials.AcrCredentials.LoginServer),
+			},
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unknown registry type: %s", credentials.RegistryType)
 }
 
 func (i *Integration) GetResourceTypesByLabels(_ map[string]string) ([]string, error) {

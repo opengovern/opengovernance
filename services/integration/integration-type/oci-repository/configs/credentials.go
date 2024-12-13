@@ -10,11 +10,15 @@ const (
 )
 
 type DockerhubCredentials struct {
+	Owner string `json:"owner"`
+
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 type GhcrCredentials struct {
+	Owner string `json:"owner"`
+
 	Username string `json:"username"`
 	Token    string `json:"token"`
 }
