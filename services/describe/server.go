@@ -3818,7 +3818,7 @@ func (h HttpServer) PurgeSampleData(c echo.Context) error {
 
 	err = es.CleanupSummariesForJobs(h.Scheduler.es, summaryJobsIds)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete summary jobs")
+		return echo.NewHTTPError(http.StatusInternalServerError, "FFailed to delete summary jobsailed to delete summary jobs")
 	}
 
 	return c.NoContent(http.StatusOK)

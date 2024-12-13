@@ -270,7 +270,7 @@ func (s *schedulerClient) GetComplianceJobStatus(ctx *httpclient.Context, jobId 
 }
 
 func (s *schedulerClient) PurgeSampleData(ctx *httpclient.Context, integrations []string) error {
-	url := fmt.Sprintf("%s/sample/purge", s.baseURL)
+	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
 	firstParamAttached := false
 	if len(integrations) > 0 {
 		for _, connection := range integrations {
