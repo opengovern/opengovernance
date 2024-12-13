@@ -55,7 +55,7 @@ func (db Database) ListSampleIntegrations() ([]models.Integration, error) {
 	var integrations []models.Integration
 
 	tx := db.Orm.
-		Where("integration_type = ?", models.IntegrationStateSample).
+		Where("state = ?", models.IntegrationStateSample).
 		Find(&integrations)
 	if tx.Error != nil {
 		return integrations, tx.Error
