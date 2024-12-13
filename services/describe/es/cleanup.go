@@ -46,11 +46,14 @@ func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengov
 	}
 
 	for _, h := range res {
+		logger.Info("Delete Summaries started", zap.Uint("jobId", h.Source.JobID))
 		keys, index := h.Source.KeysAndIndex()
 		key := es2.HashOf(keys...)
 		err = es.Delete(key, index)
 		if err != nil {
 			logger.Error("Delete Summaries Error deleting key", zap.String("key", key), zap.Error(err))
+		} else {
+			logger.Info("Delete Summaries Success", zap.String("key", key))
 		}
 	}
 }
