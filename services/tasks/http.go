@@ -27,7 +27,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	// Get all tasks
 	v1.GET("/tasks", httpserver.AuthorizeHandler(r.getTasks, api2.EditorRole))
 	// Create a new task
-	v1.POST("/tasks", httpserver.AuthorizeHandler(r.createTask, api2.EditorRole))
+	v1.POST("/tasks/run", httpserver.AuthorizeHandler(r.runTask, api2.EditorRole))
 	// Get Task Result
 	v1.GET("/tasks/:id/result", httpserver.AuthorizeHandler(r.getTaskResult, api2.EditorRole))
 
@@ -56,25 +56,27 @@ func (r *httpRoutes) getTasks(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tasks)
 }
 
-func (r *httpRoutes) createTask(ctx echo.Context) error {
+func (r *httpRoutes) runTask(ctx echo.Context) error {
 	var task api.TaskCreateRequest
 	if err := bindValidate(ctx, &task); err != nil {
 		r.logger.Error("failed to bind task", zap.Error(err))
 		return ctx.JSON(http.StatusBadRequest, "failed to bind task")
 	}
-	newTask := models.Task{
-		Name:        task.Name,
-		Description: task.Description,
-		ImageUrl:    task.ImageUrl,
-		Interval:    task.Interval,
+	run := models.TaskRun{
+		TaskName: task.Name,
+		Status:   models.TaskRunStatusCreated,
+	}
+	err := run.Params.Set("{}")
+	if err != nil {
+		r.logger.Error("failed to set label", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set label")
+	}
+	if err := r.db.CreateTaskRun(&run); err != nil {
+		r.logger.Error("failed to create task run", zap.Error(err))
+		return ctx.JSON(http.StatusInternalServerError, "failed to create task run")
 	}
 
-	if err := r.db.CreateTask(&newTask); err != nil {
-		r.logger.Error("failed to create task", zap.Error(err))
-		return ctx.JSON(http.StatusInternalServerError, "failed to create task")
-	}
-
-	return ctx.JSON(http.StatusCreated, task)
+	return ctx.JSON(http.StatusCreated, run)
 }
 
 func (r *httpRoutes) getTaskResult(ctx echo.Context) error {

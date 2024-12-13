@@ -93,14 +93,18 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	mainScheduler := scheduler.NewMainScheduler(logger, db, jq)
-
 	kubeClient, err := NewKubeClient()
 	if err != nil {
 		return err
 	}
 
-	err = setupTasks(db, kubeClient)
+	err = setupTasks(ctx, db, kubeClient)
+	if err != nil {
+		return err
+	}
+
+	mainScheduler := scheduler.NewMainScheduler(logger, db, jq)
+	err = mainScheduler.Start(ctx)
 	if err != nil {
 		return err
 	}
@@ -141,7 +145,7 @@ func NewKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func setupTasks(db db.Database, kubeClient client.Client) error {
+func setupTasks(ctx context.Context, db db.Database, kubeClient client.Client) error {
 	err := filepath.WalkDir(TasksPath, func(path string, d fs.DirEntry, err error) error {
 		if !(strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			return nil
@@ -188,6 +192,15 @@ func setupTasks(db db.Database, kubeClient client.Client) error {
 			NatsConfig:  natsJsonb,
 			ScaleConfig: scaleJsonb,
 		})
+		if err != nil {
+			return err
+		}
+
+		currentNamespace, ok := os.LookupEnv("CURRENT_NAMESPACE")
+		if !ok {
+			return fmt.Errorf("current namespace lookup failed")
+		}
+		err = tasks.CreateWorker(ctx, kubeClient, task, currentNamespace)
 		if err != nil {
 			return err
 		}
