@@ -31,7 +31,7 @@ type EcrCredentials struct {
 }
 
 type AcrCredentials struct {
-	LoginServer string
+	LoginServer string 	`json:"login_server"`
 
 	TenantID     string `json:"tenant_id"`
 	ClientID     string `json:"client_id"`

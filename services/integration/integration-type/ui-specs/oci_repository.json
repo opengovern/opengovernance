@@ -8,7 +8,7 @@
   "discover": {
     "credentials": [
       {
-        "type": "github_registery",
+        "type": "ghcr",
         "label": "GitHub Container Registry",
         "priority": 1,
         "fields": [
@@ -81,6 +81,46 @@
             
              }
           ]
+        },
+        {
+            "type": "acr",
+            "label": "Azure Container Registry",
+            "priority": 2,
+            "fields": [
+                {
+                    "name": "login_server",
+                    "label": "Repository URL",
+                    "inputType": "text",
+                    "required": true,
+                    "order": 1,
+                    "info": "Please provide your Repository URL."
+
+                },
+                {
+                    "name": "tenant_id",
+                    "label": "Tenant ID",
+                    "inputType": "text",
+                    "required": true,
+                    "order": 2,
+                    "info": "Please provide your Tenant ID."
+
+                },
+                {
+                    "name": "clinet_id",
+                    "label": "Client ID",
+                    "inputType": "text",
+                    "required": true,
+                    "order": 3
+                }
+                ,{
+                    "name": "client_secret",
+                    "label": "Client Secret",
+                    "inputType": "password",
+                    "required": true,
+                    "order": 4
+                }
+            
+            ]
         }
     ],
     "integrations": [
