@@ -526,7 +526,7 @@
     "schema_ids": []
   },
   {
-    "id": 42,
+    "id": 43,
     "integration_type": "oci_repository",
     "name": "OCI Repository",
     "tier": "Community",
