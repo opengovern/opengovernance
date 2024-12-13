@@ -6,15 +6,14 @@ WorkloadType: "job"
 EnvVars: {}
 Interval: 0
 NatsConfig:
-  Stream: ""
-  Topic: ""
-  Consumer: ""
-  ResultTopic: ""
-  ResultConsumer: ""
+  Stream: og_task_grype
+  Topic: og_task_grype
+  Consumer: og_task_grype
+  ResultTopic: og_task_grype_result
+  ResultConsumer: og_task_grype_result
 ScaleConfig:
-  Stream: ""
-  Consumer: ""
-  NatsServerMonitoringEndpoint: ""
-  LagThreshold: ""
+  Stream: og_task_grype
+  Consumer: og_task_grype
+  LagThreshold: "1"
   MinReplica: 0
   MaxReplica: 5

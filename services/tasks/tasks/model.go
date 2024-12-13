@@ -16,12 +16,11 @@ type NatsConfig struct {
 }
 
 type ScaleConfig struct {
-	Stream                       string
-	Consumer                     string
-	NatsServerMonitoringEndpoint string
-	LagThreshold                 string
-	MinReplica                   int32
-	MaxReplica                   int32
+	Stream       string
+	Consumer     string
+	LagThreshold string
+	MinReplica   int32
+	MaxReplica   int32
 }
 
 type Task struct {

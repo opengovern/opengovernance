@@ -77,6 +77,15 @@ func (db Database) FetchCreatedTaskRuns() ([]models.TaskRun, error) {
 	return tasks, nil
 }
 
+func (db Database) CreateTaskRun(taskRun *models.TaskRun) error {
+	tx := db.Orm.Create(taskRun)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 // UpdateTaskRun creates a task result
 func (db Database) UpdateTaskRun(runID uint, status models.TaskRunStatus, result string) error {
 	tx := db.Orm.Where("id = ?", runID).Updates(&models.TaskRun{
