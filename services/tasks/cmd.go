@@ -2,7 +2,9 @@ package tasks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgtype"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/koanf"
@@ -156,12 +158,40 @@ func setupTasks(db db.Database, kubeClient client.Client) error {
 			return err
 		}
 
-		db.CreateTask(&models.Task{
+		natsJsonData, err := json.Marshal(task.NatsConfig)
+		if err != nil {
+			return err
+		}
+
+		var natsJsonb pgtype.JSONB
+		err = natsJsonb.Set(natsJsonData)
+		if err != nil {
+			return err
+		}
+
+		scaleJsonData, err := json.Marshal(task.NatsConfig)
+		if err != nil {
+			return err
+		}
+
+		var scaleJsonb pgtype.JSONB
+		err = scaleJsonb.Set(scaleJsonData)
+		if err != nil {
+			return err
+		}
+
+		err = db.CreateTask(&models.Task{
 			Name:        task.Name,
 			Description: task.Description,
 			ImageUrl:    task.ImageURL,
 			Interval:    task.Interval,
+			NatsConfig:  natsJsonb,
+			ScaleConfig: scaleJsonb,
 		})
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
