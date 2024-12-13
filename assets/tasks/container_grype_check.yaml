@@ -1,0 +1,20 @@
+Name: "container_grype_check"
+Description: "Check if all container artifacts are free of vulnerabilities"
+ImageURL: ""
+Command: ""
+WorkloadType: "job"
+EnvVars: {}
+Interval: 0
+NatsConfig:
+  Stream: ""
+  Topic: ""
+  Consumer: ""
+  ResultTopic: ""
+  ResultConsumer: ""
+ScaleConfig:
+  Stream: ""
+  Consumer: ""
+  NatsServerMonitoringEndpoint: ""
+  LagThreshold: ""
+  MinReplica: 0
+  MaxReplica: 5

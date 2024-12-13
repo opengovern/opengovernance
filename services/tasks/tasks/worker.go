@@ -12,36 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type WorkloadType string
-
-const (
-	WorkloadTypeJob        WorkloadType = "job"
-	WorkloadTypeDeployment WorkloadType = "deployment"
-)
-
-type ScaleConfig struct {
-	Stream                       string
-	Consumer                     string
-	NatsServerMonitoringEndpoint string
-	LagThreshold                 string
-	MinReplica                   int32
-	MaxReplica                   int32
-}
-
-type WorkerConfig struct {
-	Name         string
-	Image        string            `json:"image"`
-	Command      string            `json:"command"`
-	WorkloadType WorkloadType      `json:"workload_type"`
-	EnvVars      map[string]string `json:"env_vars"`
-	ScaleConfig  ScaleConfig       `json:"scale_config"`
-}
-
-type NatsConfig struct {
-	Stream string
-}
-
-func CreateWorker(ctx context.Context, k8client client.Client, config WorkerConfig, namespace string) error {
+func CreateWorker(ctx context.Context, k8client client.Client, config Task, namespace string) error {
 	var env []corev1.EnvVar
 	for k, v := range config.EnvVars {
 		env = append(env, corev1.EnvVar{
@@ -79,7 +50,7 @@ func CreateWorker(ctx context.Context, k8client client.Client, config WorkerConf
 						Containers: []corev1.Container{
 							{
 								Name:  config.Name,
-								Image: config.Image,
+								Image: config.ImageURL,
 								Command: []string{
 									config.Command,
 								},
@@ -120,7 +91,7 @@ func CreateWorker(ctx context.Context, k8client client.Client, config WorkerConf
 							Containers: []corev1.Container{
 								{
 									Name:  config.Name,
-									Image: config.Image,
+									Image: config.ImageURL,
 									Command: []string{
 										config.Command,
 									},
@@ -180,7 +151,7 @@ func CreateWorker(ctx context.Context, k8client client.Client, config WorkerConf
 						Containers: []corev1.Container{
 							{
 								Name:  config.Name,
-								Image: config.Image,
+								Image: config.ImageURL,
 								Command: []string{
 									config.Command,
 								},
