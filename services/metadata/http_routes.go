@@ -21,6 +21,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	model2 "github.com/opengovern/opencomply/jobs/demo-importer-job/db/model"
 	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	schedulerClient "github.com/opengovern/opencomply/services/describe/client"
 	integrationApi "github.com/opengovern/opencomply/services/integration/api/models"
 	integrationClient "github.com/opengovern/opencomply/services/integration/client"
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
@@ -321,7 +322,15 @@ func (h HttpHandler) PurgeSampleData(c echo.Context) error {
 	integrationURL := strings.ReplaceAll(h.cfg.Integration.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	integrationClient := integrationClient.NewIntegrationServiceClient(integrationURL)
 
-	err = integrationClient.PurgeSampleData(ctx)
+	schedulerURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	schedulerClient := schedulerClient.NewSchedulerServiceClient(schedulerURL)
+
+	integrations, err := integrationClient.PurgeSampleData(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = schedulerClient.PurgeSampleData(ctx, integrations)
 	if err != nil {
 		return err
 	}

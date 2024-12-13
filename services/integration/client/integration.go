@@ -19,7 +19,7 @@ type IntegrationServiceClient interface {
 	ListCredentials(ctx *httpclient.Context) (*models.ListCredentialsResponse, error)
 	GetIntegrationGroup(ctx *httpclient.Context, integrationGroupName string) (*models.IntegrationGroup, error)
 	ListIntegrationGroups(ctx *httpclient.Context) ([]models.IntegrationGroup, error)
-	PurgeSampleData(ctx *httpclient.Context) error
+	PurgeSampleData(ctx *httpclient.Context) ([]string, error)
 }
 
 type integrationClient struct {
@@ -151,15 +151,19 @@ func (c *integrationClient) ListIntegrationGroups(ctx *httpclient.Context) ([]mo
 	return integrationGroup, nil
 }
 
-func (c *integrationClient) PurgeSampleData(ctx *httpclient.Context) error {
+func (c *integrationClient) PurgeSampleData(ctx *httpclient.Context) ([]string, error) {
 	url := fmt.Sprintf("%s/api/v1/integrations/sample/purge", c.baseURL)
 
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
-		}
-		return err
+	var resp struct {
+		Integrations []string `json:"integrations"`
 	}
 
-	return nil
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return resp.Integrations, nil
 }

@@ -95,10 +95,19 @@ func (db Database) ListFailedSummarizersWithParentID(id uint) ([]model.Complianc
 	return jobs, nil
 }
 
-func (db Database) CleanupAllComplianceSummarizerJobs() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceSummarizer{})
+func (db Database) CleanupAllComplianceSummarizerJobsByComplianceJobs(complianceJobs []uint) error {
+	tx := db.ORM.Where("parent_job_id IN ?", complianceJobs).Unscoped().Delete(&model.ComplianceSummarizer{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
+}
+
+func (db Database) ListAllComplianceSummarizerJobsByComplianceJobs(complianceJobs []uint) ([]model.ComplianceSummarizer, error) {
+	var jobs []model.ComplianceSummarizer
+	tx := db.ORM.Where("parent_job_id IN ?", complianceJobs).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
 }

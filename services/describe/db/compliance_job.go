@@ -398,8 +398,8 @@ func (db Database) GetComplianceJobsIntegrations() ([]string, error) {
 	return uniqueIntegrationIDs, nil
 }
 
-func (db Database) CleanupAllComplianceJobs() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceJob{})
+func (db Database) CleanupAllComplianceJobsForIntegrations(integrations []string) error {
+	tx := db.ORM.Where("integration_id IN ?", integrations).Unscoped().Delete(&model.ComplianceJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
