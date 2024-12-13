@@ -20,6 +20,12 @@ type BenchmarkSummaryHit struct {
 	Sort    []any                   `json:"sort"`
 }
 
+type BenchmarkSummaryResponse struct {
+	Hits struct {
+		Hits []BenchmarkSummaryHit `json:"hits"`
+	} `json:"hits"`
+}
+
 func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengovernance.Client, jobIds []uint) {
 	root := make(map[string]any)
 	root["query"] = map[string]any{
@@ -38,19 +44,22 @@ func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengov
 		logger.Error("Delete Summaries Error marshal query", zap.Error(err))
 	}
 
-	var res []BenchmarkSummaryHit
+	var res BenchmarkSummaryResponse
 	logger.Info("Query to delete summaries", zap.ByteString("query", query))
 	err = es.Search(ctx, types.BenchmarkSummaryIndex, string(query), &res)
 	if err != nil {
 		logger.Error("Delete Summaries Error searching", zap.Error(err))
 	}
 
-	for _, h := range res {
+	for _, h := range res.Hits.Hits {
+		logger.Info("Delete Summaries started", zap.Uint("jobId", h.Source.JobID))
 		keys, index := h.Source.KeysAndIndex()
 		key := es2.HashOf(keys...)
 		err = es.Delete(key, index)
 		if err != nil {
 			logger.Error("Delete Summaries Error deleting key", zap.String("key", key), zap.Error(err))
+		} else {
+			logger.Info("Delete Summaries Success", zap.String("key", key))
 		}
 	}
 }
