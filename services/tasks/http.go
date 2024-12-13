@@ -2,15 +2,13 @@ package tasks
 
 import (
 	"crypto/rsa"
-	"github.com/opengovern/opencomply/services/tasks/db/models"
-	"github.com/opengovern/opencomply/services/tasks/scheduler"
-	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/opencomply/services/tasks/api"
 	"github.com/opengovern/opencomply/services/tasks/db"
+	"github.com/opengovern/opencomply/services/tasks/db/models"
+	"github.com/opengovern/opencomply/services/tasks/scheduler"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -22,7 +20,6 @@ type httpRoutes struct {
 	platformPrivateKey *rsa.PrivateKey
 	db                 db.Database
 	mainScheduler      *scheduler.MainScheduler
-	kubeClient         client.Client
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
