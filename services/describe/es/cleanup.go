@@ -39,6 +39,8 @@ func CleanupSummariesForJobs(ctx context.Context, logger *zap.Logger, es opengov
 			},
 		},
 	}
+	root["size"] = 10000
+
 	query, err := json.Marshal(root)
 	if err != nil {
 		logger.Error("Delete Summaries Error marshal query", zap.Error(err))
