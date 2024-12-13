@@ -7,14 +7,21 @@ import (
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/opencomply/services/tasks/config"
+	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"github.com/opengovern/opencomply/services/tasks/scheduler"
+	"github.com/opengovern/opencomply/services/tasks/tasks"
+	"gopkg.in/yaml.v3"
+	"io/fs"
+	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"os"
+	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/og-util/pkg/postgres"
@@ -28,7 +35,7 @@ var (
 )
 
 const (
-	TasksPath string = ""
+	TasksPath string = "/tasks"
 )
 
 func Command() *cobra.Command {
@@ -133,5 +140,32 @@ func NewKubeClient() (client.Client, error) {
 }
 
 func setupTasks(db db.Database, kubeClient client.Client) error {
+	err := filepath.WalkDir(TasksPath, func(path string, d fs.DirEntry, err error) error {
+		if !(strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
+			return nil
+		}
+
+		file, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		var task tasks.Task
+		err = yaml.Unmarshal(file, &task)
+		if err != nil {
+			return err
+		}
+
+		db.CreateTask(&models.Task{
+			Name:        task.Name,
+			Description: task.Description,
+			ImageUrl:    task.ImageURL,
+			Interval:    task.Interval,
+		})
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }

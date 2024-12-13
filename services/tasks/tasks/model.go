@@ -31,7 +31,7 @@ type Task struct {
 	Command      string            `yaml:"Command"`
 	WorkloadType WorkloadType      `yaml:"WorkloadType"`
 	EnvVars      map[string]string `yaml:"EnvVars"`
-	Interval     int64             `yaml:"Interval"`
+	Interval     uint64            `yaml:"Interval"`
 	NatsConfig   NatsConfig        `yaml:"NatsConfig"`
 	ScaleConfig  ScaleConfig       `yaml:"ScaleConfig"`
 }
