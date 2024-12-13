@@ -91,6 +91,11 @@ func start(ctx context.Context) error {
 		return err
 	}
 
+	err = setupTasks(db, kubeClient)
+	if err != nil {
+		return err
+	}
+
 	errors := make(chan error, 1)
 	go func() {
 		routes := httpRoutes{
@@ -128,5 +133,5 @@ func NewKubeClient() (client.Client, error) {
 }
 
 func setupTasks(db db.Database, kubeClient client.Client) error {
-	db.CreateTask()
+	return nil
 }
