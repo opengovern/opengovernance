@@ -22,7 +22,7 @@ func (i *Integration) GetConfiguration() interfaces.IntegrationConfiguration {
 
 		SteampipePluginName: "oci",
 
-		UISpecFileName: "oci-integration.json",
+		UISpecFileName: "oci_repository.json",
 
 		DescriberDeploymentName: configs.DescriberDeploymentName,
 		DescriberRunCommand:     configs.DescriberRunCommand,
