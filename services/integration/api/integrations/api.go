@@ -1456,13 +1456,29 @@ func (h API) DisableIntegrationType(c echo.Context) error {
 //	@Success		200
 //	@Router			/integration/api/v1/integrations/sample/purge [put]
 func (h API) PurgeSampleData(c echo.Context) error {
-	err := h.database.DeleteSampleIntegrations()
+	integrations, err := h.database.ListSampleIntegrations()
+	if err != nil {
+		h.logger.Error("failed to list sample integrations", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list sample integrations")
+	}
+
+	var integrationIDs []string
+	for _, i := range integrations {
+		integrationIDs = append(integrationIDs, i.IntegrationID.String())
+	}
+
+	err = h.database.DeleteSampleIntegrations()
 	if err != nil {
 		h.logger.Error("failed to delete sample integrations", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete sample integrations")
 	}
+	resp := struct {
+		Integrations []string `json:"integrations"`
+	}{
+		Integrations: integrationIDs,
+	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, resp)
 }
 
 // UpgradeIntegrationType godoc

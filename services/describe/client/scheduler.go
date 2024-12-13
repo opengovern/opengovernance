@@ -28,7 +28,7 @@ type SchedulerServiceClient interface {
 	CountJobsByDate(ctx *httpclient.Context, includeCost *bool, jobType api.JobType, startDate, endDate time.Time) (int64, error)
 	GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error)
 	RunQuery(ctx *httpclient.Context, queryID string) (*model.QueryRunnerJob, error)
-	PurgeSampleData(ctx *httpclient.Context) error
+	PurgeSampleData(ctx *httpclient.Context, integrations []string) error
 	RunDiscovery(ctx *httpclient.Context, userId string, request api.RunDiscoveryRequest) (*api.RunDiscoveryResponse, error)
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
@@ -104,18 +104,6 @@ func (s *schedulerClient) GetDescribeAllJobsStatus(ctx *httpclient.Context) (*ap
 		return nil, err
 	}
 	return &status, nil
-}
-
-func (s *schedulerClient) PurgeSampleData(ctx *httpclient.Context) error {
-	url := fmt.Sprintf("%s/api/v3/sample/purge", s.baseURL)
-
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return echo.NewHTTPError(statusCode, err.Error())
-		}
-		return err
-	}
-	return nil
 }
 
 func (s *schedulerClient) GetAsyncQueryRunJobStatus(ctx *httpclient.Context, jobID string) (*api.GetAsyncQueryRunJobStatusResponse, error) {
@@ -279,4 +267,28 @@ func (s *schedulerClient) GetComplianceJobStatus(ctx *httpclient.Context, jobId 
 		return nil, err
 	}
 	return &job, nil
+}
+
+func (s *schedulerClient) PurgeSampleData(ctx *httpclient.Context, integrations []string) error {
+	url := fmt.Sprintf("%s/sample/purge", s.baseURL)
+	firstParamAttached := false
+	if len(integrations) > 0 {
+		for _, connection := range integrations {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("integrations=%s", connection)
+		}
+	}
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
 }

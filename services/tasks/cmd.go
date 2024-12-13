@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"fmt"
-	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/opencomply/services/tasks/config"
@@ -88,9 +87,6 @@ func start(ctx context.Context) error {
 
 func NewKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
-	if err := helmv2.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
 	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
