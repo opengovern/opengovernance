@@ -21,11 +21,5 @@ type TaskResponse struct {
 }
 
 type TaskCreateRequest struct {
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	IsCompleted   bool   `json:"is_completed"`
-	CompletedDate string `json:"completed_date"`
-	LastRunDate   string `json:"last_run_date"`
-	ImageUrl      string `json:"image_url"`
-	Interval      uint64 `json:"interval"`
+	TaskID string `json:"task_id"`
 }

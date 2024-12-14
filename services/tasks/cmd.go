@@ -32,10 +32,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	httpServerAddress = os.Getenv("HTTP_ADDRESS")
-)
-
 const (
 	TasksPath string = "/tasks"
 )
@@ -116,7 +112,7 @@ func start(ctx context.Context) error {
 			db:            db,
 			mainScheduler: mainScheduler,
 		}
-		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, httpServerAddress, &routes))
+		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, cfg.Http.Address, &routes))
 	}()
 
 	return <-errors
