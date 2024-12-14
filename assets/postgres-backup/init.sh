@@ -170,9 +170,9 @@ CREATE EXTENSION IF NOT EXISTS citext;
 
 SELECT 'CREATE DATABASE $taskDatabaseName'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$taskDatabaseName')\gexec
-SELECT 'ALTER ROLE $taskUserName WITH PASSWORD ''$POSTGRES_INTEGRATION_DB_PASSWORD'''
+SELECT 'ALTER ROLE $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
 WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
-SELECT 'CREATE USER $taskUserName WITH PASSWORD ''$POSTGRES_INTEGRATION_DB_PASSWORD'''
+SELECT 'CREATE USER $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
 WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$taskDatabaseName" to $taskUserName;
 
