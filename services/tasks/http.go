@@ -57,13 +57,20 @@ func (r *httpRoutes) getTasks(ctx echo.Context) error {
 }
 
 func (r *httpRoutes) runTask(ctx echo.Context) error {
-	var task api.TaskCreateRequest
-	if err := bindValidate(ctx, &task); err != nil {
+	var req api.RunTaskRequest
+	if err := bindValidate(ctx, &req); err != nil {
 		r.logger.Error("failed to bind task", zap.Error(err))
 		return ctx.JSON(http.StatusBadRequest, "failed to bind task")
 	}
+
+	task, _ := r.db.GetTask(req.TaskID)
+	if task == nil {
+		r.logger.Error("failed to find task", zap.String("task", req.TaskID))
+		return ctx.JSON(http.StatusInternalServerError, "failed to find task")
+	}
+
 	run := models.TaskRun{
-		TaskID: task.TaskID,
+		TaskID: req.TaskID,
 		Status: models.TaskRunStatusCreated,
 	}
 	err := run.Params.Set("{}")
@@ -88,5 +95,4 @@ func (r *httpRoutes) getTaskRunResult(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, taskResults)
-
 }
