@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
+	"github.com/opengovern/opencomply/services/tasks/config"
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/batch/v1"
@@ -13,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateWorker(ctx context.Context, kubeClient client.Client, config Task, namespace string) error {
+func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, config Task, namespace string) error {
 	soNatsUrl, _ := os.LookupEnv("SCALED_OBJECT_NATS_URL")
 
 	var env []corev1.EnvVar
@@ -23,6 +24,10 @@ func CreateWorker(ctx context.Context, kubeClient client.Client, config Task, na
 			Value: v,
 		})
 	}
+	env = append(env, corev1.EnvVar{
+		Name: "NATS_URL",
+		Value: cfg.NATS.URL,
+	})
 	switch config.WorkloadType {
 	case WorkloadTypeJob:
 		if config.ScaleConfig.Stream == "" {

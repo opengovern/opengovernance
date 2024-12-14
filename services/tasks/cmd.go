@@ -98,7 +98,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	err = setupTasks(ctx, db, kubeClient)
+	err = setupTasks(ctx, cfg, db, kubeClient)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func NewKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func setupTasks(ctx context.Context, db db.Database, kubeClient client.Client) error {
+func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClient client.Client) error {
 	err := filepath.WalkDir(TasksPath, func(path string, d fs.DirEntry, err error) error {
 		if !(strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			return nil
@@ -200,7 +200,7 @@ func setupTasks(ctx context.Context, db db.Database, kubeClient client.Client) e
 		if !ok {
 			return fmt.Errorf("current namespace lookup failed")
 		}
-		err = tasks.CreateWorker(ctx, kubeClient, task, currentNamespace)
+		err = tasks.CreateWorker(ctx, cfg, kubeClient, task, currentNamespace)
 		if err != nil {
 			return err
 		}
