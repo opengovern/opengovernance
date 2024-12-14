@@ -9,9 +9,10 @@ import (
 )
 
 type TaskResponse struct {
-	RunID  uint                 `json:"run_id"`
-	Status models.TaskRunStatus `json:"status"`
-	Result []byte               `json:"result"`
+	RunID          uint                 `json:"run_id"`
+	Status         models.TaskRunStatus `json:"status"`
+	FailureMessage string               `json:"failure_message"`
+	Result         []byte               `json:"result"`
 }
 
 func (s *TaskScheduler) RunTaskResponseConsumer(ctx context.Context) error {
@@ -28,7 +29,8 @@ func (s *TaskScheduler) RunTaskResponseConsumer(ctx context.Context) error {
 			}
 
 			taskRunUpdate := models.TaskRun{
-				Status: response.Status,
+				Status:         response.Status,
+				FailureMessage: response.FailureMessage,
 			}
 
 			if response.Status == models.TaskRunStatusFinished {
