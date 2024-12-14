@@ -22,7 +22,7 @@
               "pattern": "^[A-Z0-9]{120}$",
               "errorMessage": "API Key must be a 120-character alphanumeric string."
             },
-            "info": "Please provide your Cohere AI API Key.",
+            "info": "Please provide your Render API Key.",
             "external_help_url": "https://docs.aws.amazon.com/access-key-id"
           }
          

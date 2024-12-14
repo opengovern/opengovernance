@@ -9,9 +9,9 @@ import (
 	"github.com/opengovern/opencomply/services/integration/models"
 )
 
-type GoogleWorkspaceAccountIntegration struct{}
+type RenderAccountIntegration struct{}
 
-func (i *GoogleWorkspaceAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
+func (i *RenderAccountIntegration) GetConfiguration() interfaces.IntegrationConfiguration {
 	return interfaces.IntegrationConfiguration{
 		NatsScheduledJobsTopic:   renderDescriberLocal.JobQueueTopic,
 		NatsManualJobsTopic:      renderDescriberLocal.JobQueueTopicManuals,
@@ -28,7 +28,7 @@ func (i *GoogleWorkspaceAccountIntegration) GetConfiguration() interfaces.Integr
 	}
 }
 
-func (i *GoogleWorkspaceAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
+func (i *RenderAccountIntegration) HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error) {
 	var credentials renderDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -41,7 +41,7 @@ func (i *GoogleWorkspaceAccountIntegration) HealthCheck(jsonData []byte, provide
 	return isHealthy, err
 }
 
-func (i *GoogleWorkspaceAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
+func (i *RenderAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Integration, error) {
 	var credentials renderDescriberLocal.IntegrationCredentials
 	err := json.Unmarshal(jsonData, &credentials)
 	if err != nil {
@@ -58,11 +58,11 @@ func (i *GoogleWorkspaceAccountIntegration) DiscoverIntegrations(jsonData []byte
 	return integrations, nil
 }
 
-func (i *GoogleWorkspaceAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
+func (i *RenderAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
 	return renderDescriberLocal.ResourceTypesList, nil
 }
 
-func (i *GoogleWorkspaceAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
+func (i *RenderAccountIntegration) GetResourceTypeFromTableName(tableName string) string {
 	if v, ok := renderDescriberLocal.TablesToResourceTypes[tableName]; ok {
 		return v
 	}

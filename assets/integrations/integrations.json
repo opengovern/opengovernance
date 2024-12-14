@@ -162,6 +162,9 @@
     "tags": { "usage": ["DevOps"] },
     "Description": " Manage Render resources and deployments.",
     "schema_ids": ["render"],
+    "Icon": "render.svg",
+    "Availability": "GA",
+    "SourceCode": "https://github.com/opengovern/og-describer-render",
     "PackageURL": "ghcr.io/opengovern/og-describer-render",
     "PackageTag": "local-v0.0.1"
   },

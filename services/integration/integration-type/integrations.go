@@ -27,6 +27,8 @@ import (
 	ociConfigs "github.com/opengovern/opencomply/services/integration/integration-type/oci-repository/configs"
 	openaiproject "github.com/opengovern/opencomply/services/integration/integration-type/openai-integration"
 	openaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/openai-integration/configs"
+	render "github.com/opengovern/opencomply/services/integration/integration-type/render-account"
+	renderConfigs "github.com/opengovern/opencomply/services/integration/integration-type/render-account/configs"
 )
 
 const (
@@ -41,6 +43,7 @@ const (
 	IntegrationTypeCohereAIProject        = cohereaiConfigs.IntegrationTypeCohereaiProject
 	IntegrationTypeGoogleWorkspaceAccount = googleConfig.IntegrationTypeGoogleWorkspaceAccount
 	IntegrationTypeOCIRepository          = ociConfigs.IntegrationTypeOciRepository
+	IntegrationTypeRenderAccount          = renderConfigs.IntegrationTypeRenderAccount
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -55,6 +58,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeCohereAIProject,
 	IntegrationTypeGoogleWorkspaceAccount,
 	IntegrationTypeOCIRepository,
+	IntegrationTypeRenderAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -69,6 +73,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeCohereAIProject:        &cohereaiproject.CohereAIProjectIntegration{},
 	IntegrationTypeGoogleWorkspaceAccount: &google_workspace_account.GoogleWorkspaceAccountIntegration{},
 	IntegrationTypeOCIRepository:          &oci.Integration{},
+	IntegrationTypeRenderAccount:          &render.RenderAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
