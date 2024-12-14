@@ -30,8 +30,6 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 	})
 	switch config.WorkloadType {
 	case WorkloadTypeJob:
-		if config.ScaleConfig.Stream == "" {
-		}
 		// job
 		var job v1.Job
 		err := kubeClient.Get(ctx, client.ObjectKey{
