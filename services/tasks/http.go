@@ -63,8 +63,8 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "failed to bind task")
 	}
 	run := models.TaskRun{
-		TaskName: task.Name,
-		Status:   models.TaskRunStatusCreated,
+		TaskID: task.Name,
+		Status: models.TaskRunStatusCreated,
 	}
 	err := run.Params.Set("{}")
 	if err != nil {

@@ -17,8 +17,8 @@ const (
 
 type TaskRun struct {
 	gorm.Model
-	TaskName string
-	Params   pgtype.JSONB
-	Status   TaskRunStatus
-	Result   string
+	TaskID string
+	Params pgtype.JSONB
+	Status TaskRunStatus
+	Result string
 }
