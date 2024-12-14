@@ -20,6 +20,6 @@ type TaskResponse struct {
 	Autorun       bool   `json:"autorun"`
 }
 
-type TaskCreateRequest struct {
+type RunTaskRequest struct {
 	TaskID string `json:"task_id"`
 }

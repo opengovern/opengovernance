@@ -24,7 +24,7 @@ type TaskScheduler struct {
 	db                  db.Database
 	logger              *zap.Logger
 
-	TaskName   string
+	TaskID     string
 	NatsConfig NatsConfig
 	Interval   uint64
 	Timeout    uint
@@ -36,21 +36,21 @@ func NewTaskScheduler(
 	db db.Database,
 	jq *jq.JobQueue,
 
-	taskName string, natsConfig NatsConfig, interval uint64) *TaskScheduler {
+	taskID string, natsConfig NatsConfig, interval uint64) *TaskScheduler {
 	return &TaskScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
 		logger:              logger,
 		db:                  db,
 		jq:                  jq,
 
-		TaskName:   taskName,
+		TaskID:     taskID,
 		NatsConfig: natsConfig,
 		Interval:   interval,
 	}
 }
 
 func (s *TaskScheduler) Run(ctx context.Context) {
-	s.logger.Info("Run task scheduler started", zap.String("task", s.TaskName),
+	s.logger.Info("Run task scheduler started", zap.String("task", s.TaskID),
 		zap.Any("nats config", s.NatsConfig), zap.Uint64("interval", s.Interval))
 	utils.EnsureRunGoroutine(func() {
 		s.RunPublisher(ctx)

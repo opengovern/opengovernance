@@ -22,7 +22,7 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 
 	s.logger.Info("Query Runner publisher started")
 
-	runs, err := s.db.FetchCreatedTaskRuns()
+	runs, err := s.db.FetchCreatedTaskRunsByTaskID(s.TaskID)
 	if err != nil {
 		s.logger.Error("failed to get task runs", zap.Error(err))
 		return err
