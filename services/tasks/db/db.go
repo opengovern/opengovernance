@@ -90,9 +90,9 @@ func (db Database) CreateTaskRun(taskRun *models.TaskRun) error {
 }
 
 // UpdateTaskRun creates a task result
-func (db Database) UpdateTaskRun(runID uint, status models.TaskRunStatus, result string) error {
+func (db Database) UpdateTaskRun(runID uint, status models.TaskRunStatus, result string, failureMessage string) error {
 	tx := db.Orm.Where("id = ?", runID).Updates(&models.TaskRun{
-		Status: status, Result: result,
+		Status: status, Result: result, FailureMessage: failureMessage,
 	})
 	if tx.Error != nil {
 		return tx.Error

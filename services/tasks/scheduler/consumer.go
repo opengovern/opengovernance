@@ -31,18 +31,9 @@ func (s *TaskScheduler) RunTaskResponseConsumer(ctx context.Context) error {
 			taskRunUpdate := models.TaskRun{
 				Status:         response.Status,
 				FailureMessage: response.FailureMessage,
+				Result:         string(response.Result),
 			}
-
-			if response.Status == models.TaskRunStatusFinished {
-				s.logger.Info("Processing RunTaskResponse for Task",
-					zap.String("Task", s.TaskID),
-					zap.Uint("RunID", response.RunID),
-					zap.String("Result", string(response.Result)),
-				)
-
-				taskRunUpdate.Result = string(response.Result)
-			}
-			err := s.db.UpdateTaskRun(response.RunID, taskRunUpdate.Status, taskRunUpdate.Result)
+			err := s.db.UpdateTaskRun(response.RunID, taskRunUpdate.Status, taskRunUpdate.Result, taskRunUpdate.FailureMessage)
 			if err != nil {
 				s.logger.Error("Failed to update the status of RunTaskResponse",
 					zap.String("Task", s.TaskID),
