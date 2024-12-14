@@ -16,11 +16,11 @@ type NatsConfig struct {
 }
 
 type ScaleConfig struct {
-	Stream       string
-	Consumer     string
-	LagThreshold string
-	MinReplica   int32
-	MaxReplica   int32
+	Stream       string `yaml:"Stream"`
+	Consumer     string `yaml:"Consumer"`
+	LagThreshold string `yaml:"LagThreshold"`
+	MinReplica   int32  `yaml:"MinReplica"`
+	MaxReplica   int32  `yaml:"MaxReplica"`
 }
 
 type Task struct {
