@@ -1,7 +1,7 @@
 Name: "container_grype_check"
 Description: "Check if all container artifacts are free of vulnerabilities"
-ImageURL: ""
-Command: ""
+ImageURL: "ghcr.io/opengovern/og-task-grype:local-v0.0.3"
+Command: "/og-task-grype"
 WorkloadType: "job"
 EnvVars: {}
 Interval: 0
