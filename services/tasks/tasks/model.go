@@ -24,6 +24,7 @@ type ScaleConfig struct {
 }
 
 type Task struct {
+	ID           string            `yaml:"ID"`
 	Name         string            `yaml:"Name"`
 	Description  string            `yaml:"Description"`
 	ImageURL     string            `yaml:"ImageURL"`

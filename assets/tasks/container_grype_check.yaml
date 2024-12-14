@@ -1,10 +1,11 @@
-Name: "container-grype-check"
+ID: "container-grype-check"
+Name: "Container Grype Check"
 Description: "Check if all container artifacts are free of vulnerabilities"
-ImageURL: "ghcr.io/opengovern/og-task-grype:local-v0.0.3"
+ImageURL: "ghcr.io/opengovern/og-task-grype:local-v0.0.4"
 Command: "/og-task-grype"
 WorkloadType: "job"
 EnvVars:
-  NATS_CONSUMER: "og_task_grype"
+  NATS_CONSUMER: "og-task-grype"
   NATS_STREAM_NAME: "og_task_grype"
   NATS_TOPIC_NAME: "og_task_grype"
   NATS_RESULT_TOPIC_NAME: "og_task_grype_result"
@@ -12,12 +13,12 @@ Interval: 0
 NatsConfig:
   Stream: og_task_grype
   Topic: og_task_grype
-  Consumer: og_task_grype
+  Consumer: og-task-grype
   ResultTopic: og_task_grype_result
-  ResultConsumer: og_task_grype_result
+  ResultConsumer: og-task-grype-result
 ScaleConfig:
   Stream: og_task_grype
-  Consumer: og_task_grype
+  Consumer: og-task-grype
   LagThreshold: "1"
   MinReplica: 0
   MaxReplica: 5
