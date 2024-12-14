@@ -29,7 +29,7 @@ import {
 import Spinner from '../../../components/Spinner'
 import { numericDisplay } from '../../../utilities/numericDisplay'
 import { useAuthApiV1UserDetail } from '../../../api/auth.gen'
-import { dateDisplay } from '../../../utilities/dateDisplay'
+import { dateDisplay, dateTimeDisplay } from '../../../utilities/dateDisplay'
 import { GithubComKaytuIoKaytuEnginePkgWorkspaceApiTier } from '../../../api/api'
 import {  isDemoAtom, previewAtom, sampleAtom } from '../../../store'
 import {
@@ -140,7 +140,7 @@ export default function SettingsEntitlement() {
     const currentUsers = response?.currentUsers || 0
     const currentConnections = response?.currentConnections || 0
     const currentResources = response?.currentResources || 0
-    const setSample = useSetAtom(sampleAtom)
+    const [sample, setSample] = useAtom(sampleAtom)
     const maxUsers = response?.maxUsers || 1
     const maxConnections = response?.maxConnections || 1
     const maxResources = response?.maxResources || 1
@@ -155,6 +155,7 @@ export default function SettingsEntitlement() {
     )
     const hostsPercentage = Math.ceil((noOfHosts / maxHosts) * 100.0)
     const [preview, setPreview] = useAtom(previewAtom)
+    const [migrations_status, setMigrationsStatus] = useState()
  const {
      response: customizationEnabled,
      isLoading: loadingCustomizationEnabled,
@@ -270,6 +271,7 @@ export default function SettingsEntitlement() {
          .get(`${url}/main/metadata/api/v3/migration/status `, config)
          .then((res) => {
              setStatus(res.data.status)
+             setMigrationsStatus(res.data)
              setPercentage(res.data.Summary?.progress_percentage)
              if (intervalId) {
                  if (
@@ -324,7 +326,63 @@ export default function SettingsEntitlement() {
      axios
          .put(`${url}/main/metadata/api/v3/sample/loaded `, {}, config)
          .then((res) => {
-             setLoaded(res.data)
+            if(res.data === 'True'){
+                // @ts-ignore
+                setLoaded('True')
+                localStorage.setItem('sample', 'true')
+                setSample('true')
+                
+            }
+            else{
+                GetSampleStatus()
+            }
+             //  const temp = []
+             //  if (!res.data.items) {
+             //      setLoading(false)
+             //  }
+             //  setBenchmarks(res.data.items)
+             //  setTotalPage(Math.ceil(res.data.total_count / 6))
+             //  setTotalCount(res.data.total_count)
+         })
+         .catch((err) => {
+             //  setLoading(false)
+             //  setBenchmarks([])
+
+             console.log(err)
+         })
+ }
+ const GetSampleStatus = () => {
+     let url = ''
+     //  setLoading(true)
+     if (window.location.origin === 'http://localhost:3000') {
+         url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+     } else {
+         url = window.location.origin
+     }
+     // @ts-ignore
+     const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+     const config = {
+         headers: {
+             Authorization: `Bearer ${token}`,
+         },
+     }
+
+     axios
+         .get(`${url}/main/metadata/api/v3/sample/sync/status `, config)
+         .then((res) => {
+             if(res?.data?.progress !==1){
+                // @ts-ignore
+                 setLoaded('True')
+                 localStorage.setItem('sample', 'true')
+                 setSample('true')
+             }
+                else{
+                    // @ts-ignore
+                    setLoaded('False')
+                    localStorage.setItem('sample', 'false')
+                    setSample('false')
+                }
              //  const temp = []
              //  if (!res.data.items) {
              //      setLoading(false)
@@ -469,18 +527,24 @@ export default function SettingsEntitlement() {
                             {status !== 'SUCCEEDED' && status !== 'FAILED' && (
                                 <Spinner className=" w-4 h-4" />
                             )}
-                            {(status === 'SUCCEEDED' ||  status === 'FAILED') ? 'Re-Sync' : status}
+                            {status === 'SUCCEEDED' || status === 'FAILED'
+                                ? 'Re-Sync'
+                                : status}
                         </Flex>
                     </Button>
                 </Flex>
-                {(status !== 'SUCCEEDED' ||  status !== 'FAILED') && (
+                {(status !== 'SUCCEEDED' || status !== 'FAILED') && (
                     <>
                         <Flex className="w-full">
                             <ProgressBar
                                 value={percentage}
                                 className="w-full"
                                 // additionalInfo="Additional information"
-                                description={status}
+                                // @ts-ignore
+                                description={`${status}, Last Updated: ${dateTimeDisplay(
+                                    // @ts-ignore
+                                    migrations_status?.updated_at
+                                )}`}
                                 resultText="Configuration done"
                                 label="Platform Configuration"
                             />
@@ -544,14 +608,15 @@ export default function SettingsEntitlement() {
                         justifyContent="end"
                         alignItems="center"
                     >
-                        {loaded != 'True' && (
+                        {loaded != 'True' && sample != 'true' && (
                             <Button
                                 variant="secondary"
                                 className="ml-2"
                                 loading={isLoadingLoad && isExecuted}
                                 onClick={() => {
                                     loadData()
-                                    setSample(true)
+                                    setSample('true')
+                                    localStorage.setItem('sample', 'true')
                                     // @ts-ignore
                                     setLoaded('True')
                                     // window.location.reload()
@@ -561,7 +626,7 @@ export default function SettingsEntitlement() {
                             </Button>
                         )}
 
-                        {loaded == 'True' && (
+                        {loaded == 'True' && sample == 'true' && (
                             <>
                                 <Button
                                     variant="secondary"
@@ -570,6 +635,7 @@ export default function SettingsEntitlement() {
                                     onClick={() => {
                                         PurgeData()
                                         setSample(false)
+                                        localStorage.setItem('sample', 'false')
                                         // @ts-ignore
                                         setLoaded('False')
                                         // window.location.reload()

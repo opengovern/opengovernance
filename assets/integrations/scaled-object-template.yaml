@@ -20,7 +20,6 @@ spec:
   triggers:
     - type: nats-jetstream
       metadata:
-        natsServerMonitoringEndpoint: "{{ .Release.Namespace }}-nats-headless.{{ .Release.Namespace }}.svc.cluster.local:8222"
         account: "$G"
         stream: "og_describer_template"
         consumer: "describer-template-service"

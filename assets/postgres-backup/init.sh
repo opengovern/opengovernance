@@ -7,9 +7,6 @@ echo "$dt - Running init script the 1st time Primary PostgreSql container is cre
 authDatabaseName="auth"
 authUserName="auth_service"
 
-subscriptionDatabaseName="subscription"
-subscriptionUserName="subscription_service"
-
 informationDatabaseName="information"
 informationUserName="information_service"
 
@@ -27,9 +24,6 @@ describeUserName="describe_scheduler"
 
 assistantDatabaseName="assistant"
 assistantUserName="assistant_service"
-
-onboardDatabaseName="onboard"
-onboardUserName="onboard_service"
 
 policyDatabaseName="policy"
 policyUserName="policy_service"
@@ -52,143 +46,152 @@ alertingUserName="alerting_service"
 integrationDatabaseName="integration"
 integrationUserName="integration_service"
 
+taskDatabaseName="task"
+taskUserName="task_service"
+
 echo "$dt - Running: psql -v ON_ERROR_STOP=1 --username postgres --dbname postgres ...";
 
 PGPASSWORD="postgres" psql -v ON_ERROR_STOP=1 --username "postgres" --dbname "postgres" <<-EOSQL
 
-
-
-CREATE DATABASE $subscriptionDatabaseName;
-CREATE USER $subscriptionUserName WITH PASSWORD '$POSTGRES_SUBSCRIPTION_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$subscriptionDatabaseName" to $subscriptionUserName;
-
-\c "$subscriptionDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-GRANT ALL ON SCHEMA public TO $subscriptionUserName;
-
-
-CREATE DATABASE $informationDatabaseName;
-CREATE USER $informationUserName WITH PASSWORD '$POSTGRES_INFORMATION_DB_PASSWORD';
+SELECT 'CREATE DATABASE $informationDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$informationDatabaseName')\gexec
+SELECT 'ALTER ROLE $informationUserName WITH PASSWORD ''$POSTGRES_INFORMATION_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$informationUserName')\gexec
+SELECT 'CREATE USER $informationUserName WITH PASSWORD ''$POSTGRES_INFORMATION_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$informationUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$informationDatabaseName" to $informationUserName;
 
 \c "$informationDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
 GRANT ALL ON SCHEMA public TO $informationUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
-CREATE DATABASE $dexDatabaseName;
-CREATE USER $dexUserName WITH PASSWORD '$DEX_DB_PASSWORD';
+SELECT 'CREATE DATABASE $dexDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$dexDatabaseName')\gexec
+SELECT 'ALTER ROLE $dexUserName WITH PASSWORD ''$DEX_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$dexUserName')\gexec
+SELECT 'CREATE USER $dexUserName WITH PASSWORD ''$DEX_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$dexUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$dexDatabaseName" to $dexUserName;
 
 \c "$dexDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
 GRANT ALL ON SCHEMA public TO $dexUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
-CREATE DATABASE $describeDatabaseName;
-CREATE USER $describeUserName WITH PASSWORD '$POSTGRES_DESCRIBE_DB_PASSWORD';
+SELECT 'CREATE DATABASE $describeDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$describeDatabaseName')\gexec
+SELECT 'ALTER ROLE $describeUserName WITH PASSWORD ''$POSTGRES_DESCRIBE_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$describeUserName')\gexec
+SELECT 'CREATE USER $describeUserName WITH PASSWORD ''$POSTGRES_DESCRIBE_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$describeUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$describeDatabaseName" to $describeUserName;
 
 \c $describeDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $describeUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $onboardDatabaseName;
-CREATE USER $onboardUserName WITH PASSWORD '$POSTGRES_ONBOARD_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$onboardDatabaseName" to $onboardUserName;
-
-\c $onboardDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
-GRANT ALL ON SCHEMA public TO $onboardUserName;
-
-CREATE DATABASE $policyDatabaseName;
-CREATE USER $policyUserName WITH PASSWORD '$POSTGRES_POLICY_DB_PASSWORD';
+SELECT 'CREATE DATABASE $policyDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$policyDatabaseName')\gexec
+SELECT 'ALTER ROLE $policyUserName WITH PASSWORD ''$POSTGRES_POLICY_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$policyUserName')\gexec
+SELECT 'CREATE USER $policyUserName WITH PASSWORD ''$POSTGRES_POLICY_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$policyUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$policyDatabaseName" to $policyUserName;
 
 \c $policyDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $policyUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $inventoryDatabaseName ;
-CREATE USER $inventoryUserName WITH PASSWORD '$POSTGRES_INVENTORY_DB_PASSWORD';
+SELECT 'CREATE DATABASE $inventoryDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$inventoryDatabaseName')\gexec
+SELECT 'ALTER ROLE $inventoryUserName WITH PASSWORD ''$POSTGRES_INVENTORY_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$inventoryUserName')\gexec
+SELECT 'CREATE USER $inventoryUserName WITH PASSWORD ''$POSTGRES_INVENTORY_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$inventoryUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$inventoryDatabaseName" to $inventoryUserName;
 
 \c $inventoryDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $inventoryUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $assistantDatabaseName ;
-CREATE USER $assistantUserName WITH PASSWORD '$POSTGRES_ASSISTANT_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$assistantDatabaseName" to $assistantUserName;
-
-\c $assistantDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
-GRANT ALL ON SCHEMA public TO $assistantUserName;
-
-CREATE DATABASE $complianceDatabaseName ;
-CREATE USER $complianceUserName WITH PASSWORD '$POSTGRES_COMPLIANCE_DB_PASSWORD';
+SELECT 'CREATE DATABASE $complianceDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$complianceDatabaseName')\gexec
+SELECT 'ALTER ROLE $complianceUserName WITH PASSWORD ''$POSTGRES_COMPLIANCE_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$complianceUserName')\gexec
+SELECT 'CREATE USER $complianceUserName WITH PASSWORD ''$POSTGRES_COMPLIANCE_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$complianceUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$complianceDatabaseName" to $complianceUserName;
 
 \c $complianceDatabaseName
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $complianceUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $authDatabaseName;
-CREATE USER $authUserName WITH PASSWORD '$POSTGRES_AUTH_DB_PASSWORD';
+SELECT 'CREATE DATABASE $authDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$authDatabaseName')\gexec
+SELECT 'ALTER ROLE $authUserName WITH PASSWORD ''$POSTGRES_AUTH_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$authUserName')\gexec
+SELECT 'CREATE USER $authUserName WITH PASSWORD ''$POSTGRES_AUTH_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$authUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$authDatabaseName" to $authUserName;
 
 \c "$authDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $authUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $metadataDatabaseName;
-CREATE USER $metadataUserName WITH PASSWORD '$POSTGRES_METADATA_DB_PASSWORD';
+SELECT 'CREATE DATABASE $metadataDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$metadataDatabaseName')\gexec
+SELECT 'ALTER ROLE $metadataUserName WITH PASSWORD ''$POSTGRES_METADATA_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$metadataUserName')\gexec
+SELECT 'CREATE USER $metadataUserName WITH PASSWORD ''$POSTGRES_METADATA_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$metadataUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$metadataDatabaseName" to $metadataUserName;
 
 \c "$metadataDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
 GRANT ALL ON SCHEMA public TO $metadataUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $reporterDatabaseName;
-CREATE USER $reporterUserName WITH PASSWORD '$POSTGRES_REPORTER_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$reporterDatabaseName" to $reporterUserName;
-
-\c "$reporterDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
-GRANT ALL ON SCHEMA public TO $reporterUserName;
-
-CREATE DATABASE $alertingDatabaseName;
-CREATE USER $alertingUserName WITH PASSWORD '$POSTGRES_ALERTING_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE "$alertingDatabaseName" to $alertingUserName;
-
-\c "$alertingDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
-GRANT ALL ON SCHEMA public TO $alertingUserName;
-
-CREATE DATABASE $integrationDatabaseName;
-CREATE USER $integrationUserName WITH PASSWORD '$POSTGRES_INTEGRATION_DB_PASSWORD';
+SELECT 'CREATE DATABASE $integrationDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$integrationDatabaseName')\gexec
+SELECT 'ALTER ROLE $integrationUserName WITH PASSWORD ''$POSTGRES_INTEGRATION_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$integrationUserName')\gexec
+SELECT 'CREATE USER $integrationUserName WITH PASSWORD ''$POSTGRES_INTEGRATION_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$integrationUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$integrationDatabaseName" to $integrationUserName;
 
-\c "$integrationDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
+\c $integrationDatabaseName
 GRANT ALL ON SCHEMA public TO $integrationUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DATABASE $migratorDatabaseName;
-CREATE USER $migratorUserName WITH PASSWORD '$POSTGRES_MIGRATOR_DB_PASSWORD';
+SELECT 'CREATE DATABASE $taskDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$taskDatabaseName')\gexec
+SELECT 'ALTER ROLE $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
+SELECT 'CREATE USER $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
+GRANT ALL PRIVILEGES ON DATABASE "$taskDatabaseName" to $taskUserName;
+
+\c $taskDatabaseName
+GRANT ALL ON SCHEMA public TO $taskUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
+
+SELECT 'CREATE DATABASE $migratorDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$migratorDatabaseName')\gexec
+SELECT 'ALTER ROLE $migratorUserName WITH PASSWORD ''$POSTGRES_MIGRATOR_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$migratorUserName')\gexec
+SELECT 'CREATE USER $migratorUserName WITH PASSWORD ''$POSTGRES_MIGRATOR_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$migratorUserName')\gexec
 GRANT ALL PRIVILEGES ON DATABASE "$migratorDatabaseName" to $migratorUserName;
 
 \c "$migratorDatabaseName"
-CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION citext;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
 GRANT ALL ON SCHEMA public TO $migratorUserName;
 GRANT pg_read_all_data TO $metadataUserName;
 GRANT pg_write_all_data TO $metadataUserName;
@@ -197,7 +200,10 @@ GRANT pg_read_all_data TO $complianceUserName;
 GRANT pg_write_all_data TO $complianceUserName;
 GRANT ALL ON SCHEMA public TO $complianceUserName;
 
-CREATE USER $steampipeUserName WITH PASSWORD '$POSTGRES_STEAMPIPE_USER_PASSWORD';
+SELECT 'ALTER ROLE $steampipeUserName WITH PASSWORD ''$POSTGRES_STEAMPIPE_USER_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$steampipeUserName')\gexec
+SELECT 'CREATE USER $steampipeUserName WITH PASSWORD ''$POSTGRES_STEAMPIPE_USER_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$steampipeUserName')\gexec
 
 \connect "$complianceDatabaseName";
 GRANT pg_read_all_data TO $migratorUserName;
@@ -229,8 +235,11 @@ GRANT pg_read_all_data TO $steampipeUserName;
 
 
 \connect "postgres";
-CREATE EXTENSION pg_stat_statements;
-CREATE USER $exporterUserName WITH PASSWORD '$POSTGRES_EXPORTER_PASSWORD';
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+SELECT 'ALTER ROLE $exporterUserName WITH PASSWORD ''$POSTGRES_EXPORTER_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$exporterUserName')\gexec
+SELECT 'CREATE USER $exporterUserName WITH PASSWORD ''$POSTGRES_EXPORTER_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$exporterUserName')\gexec
 GRANT pg_monitor TO $exporterUserName;
 
 ALTER USER $migratorUserName WITH SUPERUSER;

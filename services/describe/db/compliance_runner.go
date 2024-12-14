@@ -171,8 +171,8 @@ func (db Database) ListComplianceJobRunnersWithID(id uint) ([]model.ComplianceRu
 	return jobs, nil
 }
 
-func (db Database) CleanupAllComplianceRunners() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.ComplianceRunner{})
+func (db Database) CleanupAllComplianceRunnersByComplianceJobs(complianceJobs []uint) error {
+	tx := db.ORM.Where("parent_job_id IN ?", complianceJobs).Unscoped().Delete(&model.ComplianceRunner{})
 	if tx.Error != nil {
 		return tx.Error
 	}

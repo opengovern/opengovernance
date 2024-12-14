@@ -124,18 +124,24 @@ func Command() *cobra.Command {
 			}
 
 			for name, _ := range integration_type.IntegrationTypes {
-				enabled := false
-				if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
-					name == integration_type.IntegrationTypeOpenAIIntegration {
-					enabled = true
+				setup, _ := db.GetIntegrationTypeSetup(name.String())
+				if setup != nil {
+					continue
 				}
-				err := db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
+				err = db.CreateIntegrationTypeSetup(&models.IntegrationTypeSetup{
 					IntegrationType: name,
-					Enabled:         enabled,
+					Enabled:         false,
 				})
 				if err != nil {
 					return err
 				}
+				//if name == integration_type.IntegrationTypeAWSAccount || name == integration_type.IntegrationTypeGithubAccount ||
+				//	name == integration_type.IntegrationTypeOpenAIIntegration {
+				//	err = integrations.EnableIntegrationType(ctx, logger, kubeClient, db, name.String())
+				//	if err != nil {
+				//		return err
+				//	}
+				//}
 			}
 
 			return httpserver.RegisterAndStart(
@@ -198,8 +204,6 @@ func IntegrationTypesMigration(logger *zap.Logger, dbm db.Database, onboardFileP
 	if err != nil {
 		return err
 	}
-
-	logger.Info("integration types json:", zap.String("json", string(content)))
 
 	var integrationTypes []IntegrationType
 	err = json.Unmarshal(content, &integrationTypes)

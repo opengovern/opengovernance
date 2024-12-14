@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/opengovern/opencomply/services/tasks"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/opengovern/opencomply/services/task"
 )
 
 func main() {

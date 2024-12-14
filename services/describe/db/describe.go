@@ -807,8 +807,8 @@ func (db Database) CountJobsAndResources() (*int64, *int64, error) {
 	return count, sum, nil
 }
 
-func (db Database) CleanupAllDescribeIntegrationJobs() error {
-	tx := db.ORM.Where("1 = 1").Unscoped().Delete(&model.DescribeIntegrationJob{})
+func (db Database) CleanupAllDescribeIntegrationJobsForIntegrations(integrations []string) error {
+	tx := db.ORM.Where("integration_id IN ?", integrations).Unscoped().Delete(&model.DescribeIntegrationJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}

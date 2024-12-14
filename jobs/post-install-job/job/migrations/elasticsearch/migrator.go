@@ -53,7 +53,7 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 			counter++
 			if counter < 10 {
 				logger.Warn("Waiting for status to be GREEN or YELLOW. Sleeping for 10 seconds...")
-				time.Sleep(5 * time.Second)
+				time.Sleep(30 * time.Second)
 				continue
 			}
 

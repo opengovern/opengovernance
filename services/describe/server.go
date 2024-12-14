@@ -3285,45 +3285,6 @@ func (h HttpServer) RunQuery(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// PurgeSampleData godoc
-//
-//	@Summary		List all workspaces with owner id
-//	@Description	Returns all workspaces with owner id
-//	@Security		BearerToken
-//	@Tags			workspace
-//	@Accept			json
-//	@Produce		json
-//	@Success		200
-//	@Router			/schedule/api/v3/sample/purge [put]
-func (h HttpServer) PurgeSampleData(c echo.Context) error {
-	err := h.DB.CleanupAllDescribeIntegrationJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete describe connection jobs")
-	}
-	err = h.DB.CleanupAllQueryRunnerJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete query runner jobs")
-	}
-	err = h.DB.CleanupAllComplianceJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance jobs")
-	}
-	err = h.DB.CleanupAllComplianceSummarizerJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance summarizer jobs")
-	}
-	err = h.DB.CleanupAllComplianceRunners()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance runners")
-	}
-	err = h.DB.CleanupAllCheckupJobs()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete checkup jobs")
-	}
-
-	return c.NoContent(http.StatusOK)
-}
-
 // GetIntegrationDiscoveryProgress godoc
 //
 //	@Summary	Get Integration discovery progress (number of jobs in different states)
@@ -3803,4 +3764,69 @@ func (h HttpServer) GetComplianceQuickSequence(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, jobApi)
+}
+
+// PurgeSampleData godoc
+//
+//	@Summary		Delete integrations with SAMPLE_INTEGRATION state
+//	@Description	Delete integrations with SAMPLE_INTEGRATION state
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Param			integrations	query	[]string	false	"Sample Integrations"
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v3/sample/purge [put]
+func (h HttpServer) PurgeSampleData(c echo.Context) error {
+	integrations := httpserver.QueryArrayParam(c, "integrations")
+
+	err := h.DB.CleanupAllDescribeIntegrationJobsForIntegrations(integrations)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete describe connection jobs")
+	}
+
+	complianceJobs, err := h.DB.ListComplianceJobsByFilters(integrations, nil, nil, nil, nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get compliance jobs")
+	}
+
+	var complianceJobsIds []uint
+	for _, job := range complianceJobs {
+		complianceJobsIds = append(complianceJobsIds, job.ID)
+	}
+
+	summaryJobs, err := h.DB.ListAllComplianceSummarizerJobsByComplianceJobs(complianceJobsIds)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get summary jobs")
+	}
+	var summaryJobsIds []uint
+	for _, job := range summaryJobs {
+		summaryJobsIds = append(summaryJobsIds, job.ID)
+	}
+
+	err = h.DB.CleanupAllComplianceJobsForIntegrations(integrations)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance jobs")
+	}
+	err = h.DB.CleanupAllComplianceSummarizerJobsByComplianceJobs(complianceJobsIds)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance summarizer jobs")
+	}
+	err = h.DB.CleanupAllComplianceRunnersByComplianceJobs(complianceJobsIds)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete compliance runners")
+	}
+
+	maxID := uint(0)
+	for _, i := range summaryJobsIds {
+		maxID = max(i, maxID)
+	}
+
+	var ids []uint
+	for i := uint(1); i <= maxID; i++ {
+		ids = append(ids, i)
+	}
+
+	go es.CleanupSummariesForJobs(h.Scheduler.logger, h.Scheduler.es, ids)
+
+	return c.NoContent(http.StatusOK)
 }
