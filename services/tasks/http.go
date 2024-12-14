@@ -29,7 +29,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	// Create a new task
 	v1.POST("/tasks/run", httpserver.AuthorizeHandler(r.runTask, api2.EditorRole))
 	// Get Task Result
-	v1.GET("/tasks/:id/result", httpserver.AuthorizeHandler(r.getTaskResult, api2.EditorRole))
+	v1.GET("/tasks/run/:id/result", httpserver.AuthorizeHandler(r.getTaskRunResult, api2.EditorRole))
 
 }
 
@@ -79,9 +79,9 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, run)
 }
 
-func (r *httpRoutes) getTaskResult(ctx echo.Context) error {
+func (r *httpRoutes) getTaskRunResult(ctx echo.Context) error {
 	id := ctx.Param("id")
-	taskResults, err := r.db.GetTaskResult(id)
+	taskResults, err := r.db.GetTaskRunResult(id)
 	if err != nil {
 		r.logger.Error("failed to get task result", zap.Error(err))
 		return ctx.JSON(http.StatusInternalServerError, "failed to get task result")
