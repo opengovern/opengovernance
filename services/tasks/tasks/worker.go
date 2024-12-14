@@ -75,16 +75,16 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 			}
 		}
 
-		// scaled-object
+		// scaled-job
 		var scaledObject kedav1alpha1.ScaledJob
 		err = kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.ID,
+			Name:      config.ID + "-scaled-job",
 		}, &scaledObject)
 		if err != nil {
 			scaledObject = kedav1alpha1.ScaledJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.ID + "-scaled-object",
+					Name:      config.ID + "-scaled-job",
 					Namespace: namespace,
 				},
 				Spec: kedav1alpha1.ScaledJobSpec{

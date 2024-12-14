@@ -30,10 +30,10 @@ func (db Database) CreateTask(task *models.Task) error {
 	return nil
 }
 
-func (db Database) UpdateTask(name string, task *models.Task) error {
+func (db Database) UpdateTask(id string, task *models.Task) error {
 	tx := db.Orm.
 		Model(&models.Task{}).
-		Where("name = ?", name).
+		Where("id = ?", id).
 		Updates(task)
 	if tx.Error != nil {
 		return tx.Error
@@ -42,9 +42,9 @@ func (db Database) UpdateTask(name string, task *models.Task) error {
 }
 
 // GetTask retrieves a task by Task name
-func (db Database) GetTask(name string) (*models.Task, error) {
+func (db Database) GetTask(id string) (*models.Task, error) {
 	var task models.Task
-	tx := db.Orm.Where("name = ?", name).
+	tx := db.Orm.Where("id = ?", id).
 		First(&task)
 	if tx.Error != nil {
 		return nil, tx.Error
