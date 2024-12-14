@@ -140,8 +140,8 @@
     "PackageURL": "ghcr.io/opengovern/og-describer-googleworkspace",
     "PackageTag": "local-v0.4.1"
   },
-   {
-    "id": 43,
+  {
+    "id": 11,
     "integration_type": "oci_repository",
     "name": "OCI Repository",
     "tier": "Community",
@@ -155,7 +155,7 @@
     "PackageTag": "local-v0.5.0"
   },
   {
-    "id": 44,
+    "id": 12,
     "integration_type": "render_account",
     "name": "Render",
     "tier": "Community",
@@ -169,7 +169,19 @@
     "PackageTag": "local-v0.0.1"
   },
   {
-    "id": 11,
+    "id": 13,
+    "integration_type": "doppler_account",
+    "name": "Doppler",
+    "tier": "Premium",
+    "tags": { "usage": ["Secrets Management"] },
+    "Description": "Manage and sync env variables and secrets.",
+    "Icon": "doppler.svg",
+    "Availability": "Planned for Dec 2024",
+    "SourceCode": "",
+    "schema_ids": []
+  },
+  {
+    "id": 14,
     "integration_type": "slack_account",
     "name": "Slack",
     "tier": "Premium",
@@ -182,19 +194,7 @@
   },
 
   {
-    "id": 12,
-    "integration_type": "doppler_account",
-    "name": "Doppler",
-    "tier": "Premium",
-    "tags": { "usage": ["Secrets Management"] },
-    "Description": "Manage and sync env variables and secrets.",
-    "Icon": "doppler.svg",
-    "Availability": "Planned for Dec 2024",
-    "SourceCode": "",
-    "schema_ids": []
-  },
-  {
-    "id": 13,
+    "id": 15,
     "integration_type": "jira_cloud",
     "name": "Atlassian JIRA Cloud",
     "tier": "Premium",
@@ -206,7 +206,7 @@
     "schema_ids": []
   },
   {
-    "id": 14,
+    "id": 16,
     "integration_type": "checkguard_dev_account",
     "name": "Checkguard.dev",
     "tier": "Premium",
@@ -218,7 +218,7 @@
     "schema_ids": []
   },
   {
-    "id": 15,
+    "id": 17,
     "integration_type": "godaddy_account",
     "name": "GoDaddy",
     "tier": "Premium",
@@ -230,7 +230,7 @@
     "schema_ids": []
   },
   {
-    "id": 16,
+    "id": 18,
     "integration_type": "servicenow_account",
     "name": "ServiceNow",
     "tier": "Premium",
@@ -242,7 +242,7 @@
     "schema_ids": []
   },
   {
-    "id": 17,
+    "id": 19,
     "integration_type": "okta_account",
     "name": "Okta",
     "tier": "Premium",
@@ -254,7 +254,7 @@
     "schema_ids": []
   },
   {
-    "id": 18,
+    "id": 20,
     "integration_type": "aws_costs",
     "name": "Amazon Web Services (AWS) Costs",
     "tier": "Premium",
@@ -266,7 +266,7 @@
     "schema_ids": []
   },
   {
-    "id": 19,
+    "id": 21,
     "integration_type": "azure_costs",
     "name": "Microsoft Azure Costs",
     "tier": "Premium",
@@ -278,7 +278,7 @@
     "schema_ids": []
   },
   {
-    "id": 20,
+    "id": 22,
     "integration_type": "semgrep_account",
     "name": "Semgrep",
     "tier": "Premium",
@@ -290,7 +290,7 @@
     "schema_ids": []
   },
   {
-    "id": 21,
+    "id": 23,
     "integration_type": "huggingface_account",
     "name": "HuggingFace",
     "tier": "Premium",
@@ -302,7 +302,7 @@
     "schema_ids": []
   },
   {
-    "id": 22,
+    "id": 24,
     "integration_type": "kubernetes",
     "name": "Kubernetes",
     "tier": "Community",
@@ -314,7 +314,7 @@
     "schema_ids": []
   },
   {
-    "id": 23,
+    "id": 25,
     "integration_type": "jamf_account",
     "name": "Jamf",
     "tier": "Premium",
@@ -326,7 +326,7 @@
     "schema_ids": []
   },
   {
-    "id": 24,
+    "id": 26,
     "integration_type": "jumpcloud_account",
     "name": "JumpCloud",
     "tier": "Premium",
@@ -350,7 +350,7 @@
     "schema_ids": []
   },
   {
-    "id": 26,
+    "id": 27,
     "integration_type": "oracle_cloud_account",
     "name": "Oracle Cloud",
     "tier": "Premium",
@@ -362,7 +362,7 @@
     "schema_ids": []
   },
   {
-    "id": 27,
+    "id": 28,
     "integration_type": "teleport_account",
     "name": "Teleport",
     "tier": "Premium",
@@ -374,7 +374,7 @@
     "schema_ids": []
   },
   {
-    "id": 28,
+    "id": 29,
     "integration_type": "monday_com_account",
     "name": "Monday.com",
     "tier": "Premium",
@@ -386,7 +386,7 @@
     "schema_ids": []
   },
   {
-    "id": 29,
+    "id": 30,
     "integration_type": "rubrik_account",
     "name": "Rubrik",
     "tier": "Premium",
@@ -398,7 +398,7 @@
     "schema_ids": []
   },
   {
-    "id": 30,
+    "id": 31,
     "integration_type": "commvault_account",
     "name": "CommVault",
     "tier": "Premium",
@@ -410,7 +410,7 @@
     "schema_ids": []
   },
   {
-    "id": 31,
+    "id": 32,
     "integration_type": "bitbucket_cloud",
     "name": "Bitbucket Cloud",
     "tier": "Premium",
@@ -422,7 +422,7 @@
     "schema_ids": []
   },
   {
-    "id": 32,
+    "id": 33,
     "integration_type": "veracode_account",
     "name": "Veracode",
     "tier": "Premium",
@@ -434,7 +434,7 @@
     "schema_ids": []
   },
   {
-    "id": 33,
+    "id": 34,
     "integration_type": "splunk_enterprise_security",
     "name": "Splunk Enterprise Security",
     "tier": "Premium",
@@ -446,7 +446,7 @@
     "schema_ids": []
   },
   {
-    "id": 34,
+    "id": 35,
     "integration_type": "microsoft_sentinel",
     "name": "Microsoft Sentinel",
     "tier": "Premium",
@@ -458,7 +458,7 @@
     "schema_ids": []
   },
   {
-    "id": 35,
+    "id": 36,
     "integration_type": "rapid7_insightidr",
     "name": "Rapid7 InsightIDR",
     "tier": "Premium",
@@ -470,7 +470,7 @@
     "schema_ids": []
   },
   {
-    "id": 36,
+    "id": 37,
     "integration_type": "datadog_cloud_siem",
     "name": "Datadog Cloud SIEM",
     "tier": "Premium",
@@ -482,7 +482,7 @@
     "schema_ids": []
   },
   {
-    "id": 37,
+    "id": 38,
     "integration_type": "intruder_io",
     "name": "IntruderIO",
     "tier": "Premium",
@@ -494,7 +494,7 @@
     "schema_ids": []
   },
   {
-    "id": 38,
+    "id": 39,
     "integration_type": "cobalt_io",
     "name": "CobaltIO",
     "tier": "Premium",
@@ -506,7 +506,7 @@
     "schema_ids": []
   },
   {
-    "id": 39,
+    "id": 40,
     "integration_type": "appdynamics_saas",
     "name": "Cisco AppDynamics (SaaS)",
     "tier": "Premium",
@@ -518,7 +518,7 @@
     "schema_ids": []
   },
   {
-    "id": 40,
+    "id": 41,
     "integration_type": "cisco_duo",
     "name": "Cisco Duo",
     "tier": "Premium",
@@ -530,7 +530,7 @@
     "schema_ids": []
   },
   {
-    "id": 41,
+    "id": 42,
     "integration_type": "cisco_meraki",
     "name": "Cisco Meraki",
     "tier": "Premium",
@@ -542,7 +542,7 @@
     "schema_ids": []
   },
   {
-    "id": 42,
+    "id": 43,
     "integration_type": "fly_io_account",
     "name": "Fly.io",
     "tier": "Premium",
@@ -553,5 +553,4 @@
     "SourceCode": "",
     "schema_ids": []
   }
- 
 ]
