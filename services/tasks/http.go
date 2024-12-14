@@ -3,7 +3,6 @@ package tasks
 import (
 	"crypto/rsa"
 	"encoding/json"
-	"github.com/jackc/pgtype"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/opencomply/services/tasks/api"
@@ -83,14 +82,6 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 	if err != nil {
 		r.logger.Error("failed to set params", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set params")
-	}
-
-	if run.Params.Status != pgtype.Present {
-		err = run.Params.Set("{}")
-		if err != nil {
-			r.logger.Error("failed to set params", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set params")
-		}
 	}
 
 	if err := r.db.CreateTaskRun(&run); err != nil {
