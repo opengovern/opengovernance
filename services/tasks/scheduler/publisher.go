@@ -66,6 +66,8 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 				s.logger.Error("failed to send run", zap.Error(err), zap.Uint("runId", run.ID), zap.String("error message", err.Error()))
 				continue
 			}
+		} else {
+			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusQueued, "")
 		}
 	}
 
