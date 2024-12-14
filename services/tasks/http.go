@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"crypto/rsa"
+	"encoding/json"
+	"github.com/jackc/pgtype"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
 	"github.com/opengovern/opencomply/services/tasks/api"
@@ -73,11 +75,24 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 		TaskID: req.TaskID,
 		Status: models.TaskRunStatusCreated,
 	}
-	err := run.Params.Set("{}")
+	paramsJson, err := json.Marshal(req.Params)
 	if err != nil {
-		r.logger.Error("failed to set label", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set label")
+		return err
 	}
+	err = run.Params.Set(paramsJson)
+	if err != nil {
+		r.logger.Error("failed to set params", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set params")
+	}
+
+	if run.Params.Status != pgtype.Present {
+		err = run.Params.Set("{}")
+		if err != nil {
+			r.logger.Error("failed to set params", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set params")
+		}
+	}
+
 	if err := r.db.CreateTaskRun(&run); err != nil {
 		r.logger.Error("failed to create task run", zap.Error(err))
 		return ctx.JSON(http.StatusInternalServerError, "failed to create task run")
