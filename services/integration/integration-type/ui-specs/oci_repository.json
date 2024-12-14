@@ -37,91 +37,55 @@
               "errorMessage": "Token must be a 120-character alphanumeric string."
             }
           },
-        {
 
-        }        ]
+          {
+            "name": "repo_url",
+            "label": "Repository URL",
+            "inputType": "text",
+            "required": true,
+            "order": 2,
+            "info": "Please provide your Repo URL."
+          }
+        ]
       },
-        {
-          "type": "github_registery",
-          "label": "GitHub Container Registry",
-          "priority": 1,
-          "fields": [
-            {
-              "name": "username",
-              "label": "Username",
-              "inputType": "text",
-              "required": true,
-              "order": 1,
-              "validation": {
-                "pattern": "^[A-Z0-9]{120}$",
-                "errorMessage": "UserName must be a 120-character alphanumeric string."
-              },
-              "info": "Please provide your Github Username.",
-              "external_help_url": "https://docs.aws.amazon.com/access-key-id"
-            },
-            {
-              "name": "token",
-              "label": "Personal Access Token",
-              "inputType": "password",
-              "required": true,
-              "order": 2,
-              "info": "Please provide your Cohere AI Profile Name.",
-              "validation": {
-                "pattern": "^[A-Z0-9]{120}$",
-                "errorMessage": "Token must be a 120-character alphanumeric string."
-              }
-            },
-             {
-               "name": "repo_url",
-               "label": "Repository URL",
-               "inputType": "text",
-               "required": true,
-               "order": 2,
-               "info": "Please provide your Repo URL."
-            
-             }
-          ]
-        },
-        {
-            "type": "acr",
-            "label": "Azure Container Registry",
-            "priority": 2,
-            "fields": [
-                {
-                    "name": "login_server",
-                    "label": "Repository URL",
-                    "inputType": "text",
-                    "required": true,
-                    "order": 1,
-                    "info": "Please provide your Repository URL."
 
-                },
-                {
-                    "name": "tenant_id",
-                    "label": "Tenant ID",
-                    "inputType": "text",
-                    "required": true,
-                    "order": 2,
-                    "info": "Please provide your Tenant ID."
-
-                },
-                {
-                    "name": "clinet_id",
-                    "label": "Client ID",
-                    "inputType": "text",
-                    "required": true,
-                    "order": 3
-                }
-                ,{
-                    "name": "client_secret",
-                    "label": "Client Secret",
-                    "inputType": "password",
-                    "required": true,
-                    "order": 4
-                }
-            
-            ]
-        }
+      {
+        "type": "acr",
+        "label": "Azure Container Registry",
+        "priority": 2,
+        "fields": [
+          {
+            "name": "login_server",
+            "label": "Repository URL",
+            "inputType": "text",
+            "required": true,
+            "order": 1,
+            "info": "Please provide your Repository URL."
+          },
+          {
+            "name": "tenant_id",
+            "label": "Tenant ID",
+            "inputType": "text",
+            "required": true,
+            "order": 2,
+            "info": "Please provide your Tenant ID."
+          },
+          {
+            "name": "clinet_id",
+            "label": "Client ID",
+            "inputType": "text",
+            "required": true,
+            "order": 3
+          },
+          {
+            "name": "client_secret",
+            "label": "Client Secret",
+            "inputType": "password",
+            "required": true,
+            "order": 4
+          }
+        ]
+      }
     ],
     "integrations": [
       {
