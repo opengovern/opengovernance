@@ -25,7 +25,7 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		})
 	}
 	env = append(env, corev1.EnvVar{
-		Name: "NATS_URL",
+		Name:  "NATS_URL",
 		Value: cfg.NATS.URL,
 	})
 	switch config.WorkloadType {
@@ -48,11 +48,6 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 					},
 				},
 				Spec: v1.JobSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": config.Name,
-						},
-					},
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
@@ -164,11 +159,6 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 				},
 				Spec: appsv1.DeploymentSpec{
 					Replicas: aws.Int32(0),
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": config.Name,
-						},
-					},
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
