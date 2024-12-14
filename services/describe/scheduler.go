@@ -333,7 +333,7 @@ func (s *Scheduler) SetupNats(ctx context.Context) error {
 	if s.conf.ServerlessProvider == config.ServerlessProviderTypeLocal.String() {
 		for itName, integrationType := range integration_type.IntegrationTypes {
 			describerConfig := integrationType.GetConfiguration()
-			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 200000); err != nil {
+			if err := s.jq.Stream(ctx, describerConfig.NatsStreamName, fmt.Sprintf("%s describe job runner queue", itName), []string{describerConfig.NatsScheduledJobsTopic, describerConfig.NatsManualJobsTopic}, 100); err != nil {
 				s.logger.Error("Failed to stream to local integration type queue", zap.String("integration_type", string(itName)), zap.Error(err))
 				return err
 			}
