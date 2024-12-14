@@ -38,7 +38,7 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 	}
 
 	for _, task := range tasks {
-		if _, ok := RunningTasks[task.Name]; ok {
+		if _, ok := RunningTasks[task.ID]; ok {
 			continue
 		}
 		var natsConfig NatsConfig
@@ -49,7 +49,7 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to unmarshal JSONB: %w", err)
 		}
 
-		err = s.SetupNats(ctx, task.Name, natsConfig)
+		err = s.SetupNats(ctx, task.ID, natsConfig)
 		if err != nil {
 			s.logger.Error("Failed to setup nats streams", zap.Error(err))
 			return err
@@ -57,22 +57,22 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 
 		taskScheduler := NewTaskScheduler(
 			func(ctx context.Context) error {
-				return s.SetupNats(ctx, task.Name, natsConfig)
+				return s.SetupNats(ctx, task.ID, natsConfig)
 			},
 			s.logger,
 			s.db,
 			s.jq,
-			task.Name,
+			task.ID,
 			natsConfig,
 			task.Interval)
 		taskScheduler.Run(ctx)
-		RunningTasks[task.Name] = true
+		RunningTasks[task.ID] = true
 	}
 	return nil
 }
 
 func (s *MainScheduler) SetupNats(ctx context.Context, taskName string, natsConfig NatsConfig) error {
-	if err := s.jq.Stream(ctx, natsConfig.Stream, "Query Runner job queues", []string{natsConfig.Topic, natsConfig.ResultTopic}, 1000); err != nil {
+	if err := s.jq.Stream(ctx, natsConfig.Stream, "Query Runner job queues", []string{natsConfig.Topic, natsConfig.ResultTopic}, 100); err != nil {
 		s.logger.Error("Failed to stream to task queue", zap.String("task", taskName), zap.Error(err))
 		return err
 	}

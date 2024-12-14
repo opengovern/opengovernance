@@ -34,29 +34,29 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var job v1.Job
 		err := kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.Name,
+			Name:      config.ID,
 		}, &job)
 		if err != nil {
 			job = v1.Job{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.Name,
+					Name:      config.ID,
 					Namespace: namespace,
 					Labels: map[string]string{
-						"app": config.Name,
+						"app": config.ID,
 					},
 				},
 				Spec: v1.JobSpec{
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app": config.Name,
+								"app": config.ID,
 							},
 						},
 						Spec: corev1.PodSpec{
 							RestartPolicy: corev1.RestartPolicyNever,
 							Containers: []corev1.Container{
 								{
-									Name:  config.Name,
+									Name:  config.ID,
 									Image: config.ImageURL,
 									Command: []string{
 										config.Command,
@@ -79,32 +79,32 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var scaledObject kedav1alpha1.ScaledJob
 		err = kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.Name,
+			Name:      config.ID,
 		}, &scaledObject)
 		if err != nil {
 			scaledObject = kedav1alpha1.ScaledJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.Name + "-scaled-object",
+					Name:      config.ID + "-scaled-object",
 					Namespace: namespace,
 				},
 				Spec: kedav1alpha1.ScaledJobSpec{
 					JobTargetRef: &v1.JobSpec{
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"app": config.Name,
+								"app": config.ID,
 							},
 						},
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app": config.Name,
+									"app": config.ID,
 								},
 							},
 							Spec: corev1.PodSpec{
 								RestartPolicy: corev1.RestartPolicyNever,
 								Containers: []corev1.Container{
 									{
-										Name:  config.Name,
+										Name:  config.ID,
 										Image: config.ImageURL,
 										Command: []string{
 											config.Command,
@@ -144,15 +144,15 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var deployment appsv1.Deployment
 		err := kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.Name,
+			Name:      config.ID,
 		}, &deployment)
 		if err != nil {
 			deployment = appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.Name,
+					Name:      config.ID,
 					Namespace: namespace,
 					Labels: map[string]string{
-						"app": config.Name,
+						"app": config.ID,
 					},
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -160,13 +160,13 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app": config.Name,
+								"app": config.ID,
 							},
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
-									Name:  config.Name,
+									Name:  config.ID,
 									Image: config.ImageURL,
 									Command: []string{
 										config.Command,
@@ -189,17 +189,17 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var scaledObject kedav1alpha1.ScaledObject
 		err = kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.Name + "-scaled-object",
+			Name:      config.ID + "-scaled-object",
 		}, &scaledObject)
 		if err != nil {
 			scaledObject = kedav1alpha1.ScaledObject{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.Name + "-scaled-object",
+					Name:      config.ID + "-scaled-object",
 					Namespace: namespace,
 				},
 				Spec: kedav1alpha1.ScaledObjectSpec{
 					ScaleTargetRef: &kedav1alpha1.ScaleTarget{
-						Name:       config.Name,
+						Name:       config.ID,
 						Kind:       "Deployment",
 						APIVersion: appsv1.SchemeGroupVersion.Version,
 					},
