@@ -46,6 +46,9 @@ alertingUserName="alerting_service"
 integrationDatabaseName="integration"
 integrationUserName="integration_service"
 
+taskDatabaseName="task"
+taskUserName="task_service"
+
 echo "$dt - Running: psql -v ON_ERROR_STOP=1 --username postgres --dbname postgres ...";
 
 PGPASSWORD="postgres" psql -v ON_ERROR_STOP=1 --username "postgres" --dbname "postgres" <<-EOSQL
@@ -162,6 +165,19 @@ GRANT ALL PRIVILEGES ON DATABASE "$integrationDatabaseName" to $integrationUserN
 
 \c $integrationDatabaseName
 GRANT ALL ON SCHEMA public TO $integrationUserName;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS citext;
+
+SELECT 'CREATE DATABASE $taskDatabaseName'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$taskDatabaseName')\gexec
+SELECT 'ALTER ROLE $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
+WHERE EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
+SELECT 'CREATE USER $taskUserName WITH PASSWORD ''$POSTGRES_TASK_DB_PASSWORD'''
+WHERE NOT EXISTS (select from pg_catalog.pg_roles where rolname = '$taskUserName')\gexec
+GRANT ALL PRIVILEGES ON DATABASE "$taskDatabaseName" to $taskUserName;
+
+\c $taskDatabaseName
+GRANT ALL ON SCHEMA public TO $taskUserName;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS citext;
 
