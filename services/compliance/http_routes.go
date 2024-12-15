@@ -150,6 +150,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v3.GET("/quick/scan/:run_id", httpserver2.AuthorizeHandler(h.GetQuickScanSummary, authApi.ViewerRole))
 	v3.GET("/quick/sequence/:run_id", httpserver2.AuthorizeHandler(h.GetQuickSequenceSummary, authApi.ViewerRole))
+
+	v3.GET("/compliance/report/:run_id", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -7700,7 +7702,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7714,7 +7716,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7728,12 +7730,12 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7796,7 +7798,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7810,7 +7812,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7824,12 +7826,12 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7845,4 +7847,35 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, result)
+}
+
+// GetComplianceJobReport godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			controls	query		[]string	false	"List of controls to get results"
+//	@Param			run_id		path		string		true	"Benchmark ID"
+//	@Success		200
+//	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
+func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
+	jobId := c.Param("run_id")
+	controls := httpserver2.QueryArrayParam(c, "controls")
+	auditableStr := c.QueryParam("auditable")
+	auditable := false
+	if auditableStr == "true" {
+		auditable = true
+	}
+
+	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
+		jobId, auditable, controls)
+	if err != nil {
+		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
+	}
+
+	return c.JSON(http.StatusOK, summary)
 }
