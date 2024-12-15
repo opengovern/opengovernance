@@ -158,6 +158,8 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 			return err
 		}
 
+		fillMissedConfigs(&task)
+
 		natsJsonData, err := json.Marshal(task.NatsConfig)
 		if err != nil {
 			return err
@@ -208,4 +210,29 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 		return err
 	}
 	return nil
+}
+
+func fillMissedConfigs(taskConfig *worker.Task) {
+	if taskConfig.NatsConfig.Stream == "" {
+		taskConfig.NatsConfig.Stream = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.Consumer == "" {
+		taskConfig.NatsConfig.Consumer = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.Topic == "" {
+		taskConfig.NatsConfig.Topic = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.ResultConsumer == "" {
+		taskConfig.NatsConfig.ResultConsumer = taskConfig.ID + "-result"
+	}
+	if taskConfig.NatsConfig.ResultTopic == "" {
+		taskConfig.NatsConfig.ResultTopic = taskConfig.ID + "-result"
+	}
+
+	if taskConfig.ScaleConfig.Stream == "" {
+		taskConfig.ScaleConfig.Stream = taskConfig.ID
+	}
+	if taskConfig.ScaleConfig.Consumer == "" {
+		taskConfig.ScaleConfig.Consumer = taskConfig.ID
+	}
 }
