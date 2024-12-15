@@ -11,7 +11,7 @@ import (
 	"github.com/opengovern/opencomply/services/tasks/config"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"github.com/opengovern/opencomply/services/tasks/scheduler"
-	"github.com/opengovern/opencomply/services/tasks/tasks"
+	"github.com/opengovern/opencomply/services/tasks/worker"
 	"gopkg.in/yaml.v3"
 	"io/fs"
 	"io/ioutil"
@@ -152,7 +152,7 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 			return err
 		}
 
-		var task tasks.Task
+		var task worker.Task
 		err = yaml.Unmarshal(file, &task)
 		if err != nil {
 			return err
@@ -197,7 +197,7 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 		if !ok {
 			return fmt.Errorf("current namespace lookup failed")
 		}
-		err = tasks.CreateWorker(ctx, cfg, kubeClient, task, currentNamespace)
+		err = worker.CreateWorker(ctx, cfg, kubeClient, &task, currentNamespace)
 		if err != nil {
 			return err
 		}
