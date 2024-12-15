@@ -7858,16 +7858,41 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			controls	query		[]string	false	"List of controls to get results"
-//	@Param			run_id		path		string		true	"Benchmark ID"
+//	@Param			run_id		path		string		true	"compliance summary job id"
 //	@Success		200
 //	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
 func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
+
 	jobId := c.Param("run_id")
 	controls := httpserver2.QueryArrayParam(c, "controls")
 	auditableStr := c.QueryParam("auditable")
+
 	auditable := false
 	if auditableStr == "true" {
 		auditable = true
+		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get compliance job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+		}
+		if complianceJob.SummaryJobId == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
+		}
+		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
+	} else {
+		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get audit job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
+		}
+		if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+		}
 	}
 
 	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
