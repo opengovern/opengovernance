@@ -39,10 +39,23 @@ type AcrCredentials struct {
 }
 
 type IntegrationCredentials struct {
-	RegistryType RegistryType `json:"registry_type"`
-
 	DockerhubCredentials *DockerhubCredentials `json:"dockerhub_credentials"`
 	EcrCredentials       *EcrCredentials       `json:"ecr_credentials"`
 	GhcrCredentials      *GhcrCredentials      `json:"gcr_credentials"`
 	AcrCredentials       *AcrCredentials       `json:"acr_credentials"`
+}
+
+func (c IntegrationCredentials) GetRegistryType() RegistryType {
+	switch {
+	case c.DockerhubCredentials != nil:
+		return RegistryTypeDockerhub
+	case c.EcrCredentials != nil:
+		return RegistryTypeECR
+	case c.GhcrCredentials != nil:
+		return RegistryTypeGHCR
+	case c.AcrCredentials != nil:
+		return RegistryTypeACR
+	default:
+		return ""
+	}
 }
