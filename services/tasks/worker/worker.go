@@ -176,6 +176,11 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 				},
 				Spec: appsv1.DeploymentSpec{
 					Replicas: aws.Int32(0),
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": taskConfig.ID,
+						},
+					},
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
