@@ -21,6 +21,9 @@ type ScaleConfig struct {
 	LagThreshold string `yaml:"LagThreshold"`
 	MinReplica   int32  `yaml:"MinReplica"`
 	MaxReplica   int32  `yaml:"MaxReplica"`
+
+	PollingInterval int32 `yaml:"PollingInterval"`
+	CooldownPeriod  int32 `yaml:"CooldownPeriod"`
 }
 
 type Task struct {

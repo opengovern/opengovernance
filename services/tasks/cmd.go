@@ -235,4 +235,11 @@ func fillMissedConfigs(taskConfig *worker.Task) {
 	if taskConfig.ScaleConfig.Consumer == "" {
 		taskConfig.ScaleConfig.Consumer = taskConfig.ID
 	}
+
+	if taskConfig.ScaleConfig.PollingInterval == 0 {
+		taskConfig.ScaleConfig.PollingInterval = 30
+	}
+	if taskConfig.ScaleConfig.CooldownPeriod == 0 {
+		taskConfig.ScaleConfig.CooldownPeriod = 30
+	}
 }

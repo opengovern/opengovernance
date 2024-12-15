@@ -135,7 +135,7 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 							},
 						},
 					},
-					PollingInterval: aws.Int32(30),
+					PollingInterval: aws.Int32(taskConfig.ScaleConfig.PollingInterval),
 					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
 					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
 					Triggers: []kedav1alpha1.ScaleTriggers{
@@ -227,8 +227,8 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 						Kind:       "Deployment",
 						APIVersion: "apps/v1",
 					},
-					PollingInterval: aws.Int32(30),
-					CooldownPeriod:  aws.Int32(300),
+					PollingInterval: aws.Int32(taskConfig.ScaleConfig.PollingInterval),
+					CooldownPeriod:  aws.Int32(taskConfig.ScaleConfig.CooldownPeriod),
 					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
 					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
 					Fallback: &kedav1alpha1.Fallback{
