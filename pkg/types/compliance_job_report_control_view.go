@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type ComplianceQuickScanControlView struct {
+type ComplianceJobReportControlView struct {
 	EsID    string `json:"es_id"`
 	EsIndex string `json:"es_index"`
 
@@ -14,10 +14,10 @@ type ComplianceQuickScanControlView struct {
 	JobSummary        JobSummary                    `json:"job_summary"`
 }
 
-func (r ComplianceQuickScanControlView) KeysAndIndex() ([]string, string) {
+func (r ComplianceJobReportControlView) KeysAndIndex() ([]string, string) {
 	return []string{
 		strconv.Itoa(int(r.JobSummary.JobID)),
-	}, ComplianceQuickScanControlViewIndex
+	}, ComplianceJobReportControlViewIndex
 }
 
 type AuditResourceFinding struct {

@@ -17,13 +17,13 @@ type ControlViewResponse struct {
 			Index   string                               `json:"_index"`
 			Type    string                               `json:"_type"`
 			Version int64                                `json:"_version,omitempty"`
-			Source  types.ComplianceQuickScanControlView `json:"_source"`
+			Source  types.ComplianceJobReportControlView `json:"_source"`
 			Sort    []any                                `json:"sort"`
 		}
 	}
 }
 
-func GetQuickScanControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceQuickScanControlView, error) {
+func GetQuickScanControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceJobReportControlView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -47,10 +47,10 @@ func GetQuickScanControlViewByJobID(ctx context.Context, logger *zap.Logger, cli
 		return nil, err
 	}
 
-	logger.Info("ES Query", zap.String("index", types.ComplianceQuickScanControlViewIndex), zap.String("query", string(b)))
+	logger.Info("ES Query", zap.String("index", types.ComplianceJobReportControlViewIndex), zap.String("query", string(b)))
 
 	var response ControlViewResponse
-	err = client.Search(ctx, types.ComplianceQuickScanControlViewIndex, string(b), &response)
+	err = client.Search(ctx, types.ComplianceJobReportControlViewIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +71,13 @@ type ResourceViewResponse struct {
 			Index   string                                `json:"_index"`
 			Type    string                                `json:"_type"`
 			Version int64                                 `json:"_version,omitempty"`
-			Source  types.ComplianceQuickScanResourceView `json:"_source"`
+			Source  types.ComplianceJobReportResourceView `json:"_source"`
 			Sort    []any                                 `json:"sort"`
 		}
 	}
 }
 
-func GetQuickScanResourceViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceQuickScanResourceView, error) {
+func GetQuickScanResourceViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceJobReportResourceView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -101,10 +101,10 @@ func GetQuickScanResourceViewByJobID(ctx context.Context, logger *zap.Logger, cl
 		return nil, err
 	}
 
-	logger.Info("ES Query", zap.String("index", types.ComplianceQuickScanResourceViewIndex), zap.String("query", string(b)))
+	logger.Info("ES Query", zap.String("index", types.ComplianceJobReportResourceViewIndex), zap.String("query", string(b)))
 
 	var response ResourceViewResponse
-	err = client.Search(ctx, types.ComplianceQuickScanResourceViewIndex, string(b), &response)
+	err = client.Search(ctx, types.ComplianceJobReportResourceViewIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}
