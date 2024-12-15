@@ -1,11 +1,12 @@
 ID: "container-grype-check"
 Name: "Container Grype Check"
 Description: "Check if all container artifacts are free of vulnerabilities"
-ImageURL: "ghcr.io/opengovern/og-task-grype:local-v0.0.39"
+ImageURL: "ghcr.io/opengovern/og-task-grype:local-v0.0.42"
 Command: "/og-task-grype"
 WorkloadType: "deployment"
 EnvVars: {}
-Interval: 0
+Interval: 0 # Minutes
+Timeout: 15 # Minutes
 ScaleConfig:
   LagThreshold: "1"
   MinReplica: 0

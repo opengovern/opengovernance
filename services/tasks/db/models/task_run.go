@@ -14,6 +14,7 @@ const (
 	TaskRunStatusInProgress TaskRunStatus = "IN_PROGRESS"
 	TaskRunStatusFinished   TaskRunStatus = "FINISHED"
 	TaskRunStatusFailed     TaskRunStatus = "FAILED"
+	TaskRunStatusTimeout    TaskRunStatus = "TIMEOUT"
 )
 
 type TaskRun struct {

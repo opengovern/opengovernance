@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"gorm.io/gorm"
 )
@@ -78,6 +79,23 @@ func (db Database) FetchCreatedTaskRunsByTaskID(taskID string) ([]models.TaskRun
 	}
 
 	return tasks, nil
+}
+
+// TimeoutTaskRunsByTaskID Timeout task runs for given task id by given timeout interval
+func (db Database) TimeoutTaskRunsByTaskID(taskID string, timeoutInterval uint64) error {
+	tx := db.Orm.
+		Model(&models.TaskRun{}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d MINUTES'", timeoutInterval)).
+		Where("status IN ?", []string{string(models.TaskRunStatusCreated),
+			string(models.TaskRunStatusQueued),
+			string(models.TaskRunStatusInProgress),
+		}).
+		Where("task_id = ?", taskID).
+		Updates(models.TaskRun{Status: models.TaskRunStatusTimeout})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 func (db Database) CreateTaskRun(taskRun *models.TaskRun) error {

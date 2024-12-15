@@ -12,6 +12,7 @@ type Task struct {
 	Description string
 	ImageUrl    string
 	Interval    uint64
+	Timeout     uint64
 	NatsConfig  pgtype.JSONB
 	ScaleConfig pgtype.JSONB
 }

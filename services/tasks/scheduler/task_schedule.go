@@ -27,7 +27,7 @@ type TaskScheduler struct {
 	TaskID     string
 	NatsConfig NatsConfig
 	Interval   uint64
-	Timeout    uint
+	Timeout    uint64
 }
 
 func NewTaskScheduler(
@@ -36,7 +36,7 @@ func NewTaskScheduler(
 	db db.Database,
 	jq *jq.JobQueue,
 
-	taskID string, natsConfig NatsConfig, interval uint64) *TaskScheduler {
+	taskID string, natsConfig NatsConfig, interval uint64, timeout uint64) *TaskScheduler {
 	return &TaskScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
 		logger:              logger,
@@ -46,6 +46,7 @@ func NewTaskScheduler(
 		TaskID:     taskID,
 		NatsConfig: natsConfig,
 		Interval:   interval,
+		Timeout:    timeout,
 	}
 }
 

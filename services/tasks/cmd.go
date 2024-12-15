@@ -188,6 +188,7 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 			Description: task.Description,
 			ImageUrl:    task.ImageURL,
 			Interval:    task.Interval,
+			Timeout:     task.Timeout,
 			NatsConfig:  natsJsonb,
 			ScaleConfig: scaleJsonb,
 		})
@@ -234,5 +235,12 @@ func fillMissedConfigs(taskConfig *worker.Task) {
 	}
 	if taskConfig.ScaleConfig.Consumer == "" {
 		taskConfig.ScaleConfig.Consumer = taskConfig.ID
+	}
+
+	if taskConfig.ScaleConfig.PollingInterval == 0 {
+		taskConfig.ScaleConfig.PollingInterval = 30
+	}
+	if taskConfig.ScaleConfig.CooldownPeriod == 0 {
+		taskConfig.ScaleConfig.CooldownPeriod = 30
 	}
 }

@@ -21,6 +21,9 @@ type ScaleConfig struct {
 	LagThreshold string `yaml:"LagThreshold"`
 	MinReplica   int32  `yaml:"MinReplica"`
 	MaxReplica   int32  `yaml:"MaxReplica"`
+
+	PollingInterval int32 `yaml:"PollingInterval"`
+	CooldownPeriod  int32 `yaml:"CooldownPeriod"`
 }
 
 type Task struct {
@@ -32,6 +35,7 @@ type Task struct {
 	WorkloadType WorkloadType      `yaml:"WorkloadType"`
 	EnvVars      map[string]string `yaml:"EnvVars"`
 	Interval     uint64            `yaml:"Interval"`
+	Timeout      uint64            `yaml:"Timeout"`
 	NatsConfig   NatsConfig        `yaml:"NatsConfig"`
 	ScaleConfig  ScaleConfig       `yaml:"ScaleConfig"`
 }
