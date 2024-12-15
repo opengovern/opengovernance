@@ -1,25 +1,24 @@
-# Build stage
 FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
-# Install required packages for building
-RUN apk --no-cache add ca-certificates git build-base
+# Install all dependencies required for building the parser from pg_query_go
+# - build-base gives us a C/C++ compiler
+# - cmake, bison, clang, llvm-dev are required by pg_query_go
+RUN apk --no-cache add ca-certificates git build-base cmake bison clang llvm-dev
 
-# Copy Go module manifests and download dependencies
+# Copy go module files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the source code
+# Copy the rest of the code
 COPY . .
 
-# Build the compliance-service binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o compliance-service ./cmd/compliance-service
+# Enable CGO and produce a static binary.
+# pg_query_go's parser is written in C and needs CGO=1.
+RUN CGO_ENABLED=1 GOOS=linux go build -o compliance-service -ldflags '-linkmode external -extldflags "-static"' ./cmd/compliance-service
 
-# Final stage - minimal image
-FROM alpine:3.18
-RUN apk --no-cache add ca-certificates
-WORKDIR /
+# Final minimal image
+FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/compliance-service /compliance-service
-
 CMD ["/compliance-service"]
