@@ -175,7 +175,7 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 					},
 				},
 				Spec: appsv1.DeploymentSpec{
-					Replicas: aws.Int32(0),
+					Replicas: aws.Int32(1),
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"app": taskConfig.ID,
@@ -210,51 +210,51 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		}
 
 		// scaled-object
-		var scaledObject kedav1alpha1.ScaledObject
-		err = kubeClient.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      taskConfig.ID + "-scaled-object",
-		}, &scaledObject)
-		if err != nil {
-			scaledObject = kedav1alpha1.ScaledObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      taskConfig.ID + "-scaled-object",
-					Namespace: namespace,
-				},
-				Spec: kedav1alpha1.ScaledObjectSpec{
-					ScaleTargetRef: &kedav1alpha1.ScaleTarget{
-						Name:       taskConfig.ID,
-						Kind:       "Deployment",
-						APIVersion: "apps/v1",
-					},
-					PollingInterval: aws.Int32(taskConfig.ScaleConfig.PollingInterval),
-					CooldownPeriod:  aws.Int32(taskConfig.ScaleConfig.CooldownPeriod),
-					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
-					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
-					Fallback: &kedav1alpha1.Fallback{
-						FailureThreshold: 1,
-						Replicas:         1,
-					},
-					Triggers: []kedav1alpha1.ScaleTriggers{
-						{
-							Type: "nats-jetstream",
-							Metadata: map[string]string{
-								"account":                      "$G",
-								"natsServerMonitoringEndpoint": soNatsUrl,
-								"stream":                       taskConfig.ScaleConfig.Stream,
-								"consumer":                     taskConfig.ScaleConfig.Consumer + "-service",
-								"lagThreshold":                 taskConfig.ScaleConfig.LagThreshold,
-								"useHttps":                     "false",
-							},
-						},
-					},
-				},
-			}
-			err = kubeClient.Create(ctx, &scaledObject)
-			if err != nil {
-				return err
-			}
-		}
+		//var scaledObject kedav1alpha1.ScaledObject
+		//err = kubeClient.Get(ctx, client.ObjectKey{
+		//	Namespace: namespace,
+		//	Name:      taskConfig.ID + "-scaled-object",
+		//}, &scaledObject)
+		//if err != nil {
+		//	scaledObject = kedav1alpha1.ScaledObject{
+		//		ObjectMeta: metav1.ObjectMeta{
+		//			Name:      taskConfig.ID + "-scaled-object",
+		//			Namespace: namespace,
+		//		},
+		//		Spec: kedav1alpha1.ScaledObjectSpec{
+		//			ScaleTargetRef: &kedav1alpha1.ScaleTarget{
+		//				Name:       taskConfig.ID,
+		//				Kind:       "Deployment",
+		//				APIVersion: "apps/v1",
+		//			},
+		//			PollingInterval: aws.Int32(taskConfig.ScaleConfig.PollingInterval),
+		//			CooldownPeriod:  aws.Int32(taskConfig.ScaleConfig.CooldownPeriod),
+		//			MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
+		//			MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
+		//			Fallback: &kedav1alpha1.Fallback{
+		//				FailureThreshold: 1,
+		//				Replicas:         1,
+		//			},
+		//			Triggers: []kedav1alpha1.ScaleTriggers{
+		//				{
+		//					Type: "nats-jetstream",
+		//					Metadata: map[string]string{
+		//						"account":                      "$G",
+		//						"natsServerMonitoringEndpoint": soNatsUrl,
+		//						"stream":                       taskConfig.ScaleConfig.Stream,
+		//						"consumer":                     taskConfig.ScaleConfig.Consumer + "-service",
+		//						"lagThreshold":                 taskConfig.ScaleConfig.LagThreshold,
+		//						"useHttps":                     "false",
+		//					},
+		//				},
+		//			},
+		//		},
+		//	}
+		//	err = kubeClient.Create(ctx, &scaledObject)
+		//	if err != nil {
+		//		return err
+		//	}
+		//}
 	default:
 		return fmt.Errorf("invalid workload type: %s", taskConfig.WorkloadType)
 	}
