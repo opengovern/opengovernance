@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
-	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/koanf"
 	"github.com/opengovern/opencomply/services/tasks/config"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
@@ -83,12 +82,6 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	jq, err := jq.New(cfg.NATS.URL, logger)
-	if err != nil {
-		logger.Error("Failed to create job queue", zap.Error(err))
-		return err
-	}
-
 	kubeClient, err := NewKubeClient()
 	if err != nil {
 		return err
@@ -99,7 +92,11 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	mainScheduler := scheduler.NewMainScheduler(logger, db, jq)
+	mainScheduler, err := scheduler.NewMainScheduler(cfg, logger, db)
+	if err != nil {
+		return err
+	}
+
 	err = mainScheduler.Start(ctx)
 	if err != nil {
 		return err
@@ -241,6 +238,6 @@ func fillMissedConfigs(taskConfig *worker.Task) {
 		taskConfig.ScaleConfig.PollingInterval = 30
 	}
 	if taskConfig.ScaleConfig.CooldownPeriod == 0 {
-		taskConfig.ScaleConfig.CooldownPeriod = 30
+		taskConfig.ScaleConfig.CooldownPeriod = 300
 	}
 }
