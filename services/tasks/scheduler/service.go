@@ -72,11 +72,16 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *MainScheduler) SetupNats(ctx context.Context, taskName string, natsConfig NatsConfig) error {
-	if err := s.jq.Stream(ctx, natsConfig.Stream, "Query Runner job queues", []string{natsConfig.Topic, natsConfig.ResultTopic}, 100); err != nil {
-		s.logger.Error("Failed to stream to task queue", zap.String("task", taskName), zap.Error(err))
+func (s *MainScheduler) SetupNats(ctx context.Context, taskID string, natsConfig NatsConfig) error {
+	s.logger.Info("Subscribing to stream", zap.String("task", taskID), zap.String("stream", natsConfig.Stream),
+		zap.Strings("topics", []string{natsConfig.Topic, natsConfig.ResultTopic}))
+	if err := s.jq.Stream(ctx, natsConfig.Stream, "task job queue", []string{natsConfig.Topic, natsConfig.ResultTopic}, 100); err != nil {
+		s.logger.Error("Failed to stream to task queue", zap.String("task", taskID), zap.Error(err))
 		return err
 	}
+
+	s.logger.Info("Creating or Updating Consumer", zap.String("task", taskID), zap.String("stream", natsConfig.Stream),
+		zap.Strings("topics", []string{natsConfig.Topic}))
 	if err := s.jq.CreateOrUpdateConsumer(ctx, natsConfig.Consumer, natsConfig.Stream,
 		[]string{natsConfig.Topic}, jetstream.ConsumerConfig{
 			Replicas:          1,
@@ -86,7 +91,7 @@ func (s *MainScheduler) SetupNats(ctx context.Context, taskName string, natsConf
 			AckWait:           time.Minute * 30,
 			InactiveThreshold: time.Hour,
 		}); err != nil {
-		s.logger.Error("Failed to create consumer for task", zap.String("task", taskName), zap.Error(err))
+		s.logger.Error("Failed to create consumer for task", zap.String("task", taskID), zap.Error(err))
 		return err
 	}
 	return nil
