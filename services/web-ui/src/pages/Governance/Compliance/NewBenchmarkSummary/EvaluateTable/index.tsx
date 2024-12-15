@@ -239,7 +239,7 @@ export default function EvaluateTable({
         axios
             .get(
                 // @ts-ignore
-                `${url}/main//compliance/api/v3/compliance/summary/${selected.job_id} `,
+                `${url}/main/compliance/api/v3/compliance/summary/${selected.job_id} `,
                 config
             )
             .then((res) => {
