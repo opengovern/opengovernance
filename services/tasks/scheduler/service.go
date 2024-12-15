@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/og-util/pkg/jq"
+	"github.com/opengovern/opencomply/services/tasks/config"
 	"github.com/opengovern/opencomply/services/tasks/db"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -22,12 +23,18 @@ type MainScheduler struct {
 
 var RunningTasks = make(map[string]bool)
 
-func NewMainScheduler(logger *zap.Logger, db db.Database, jq *jq.JobQueue) *MainScheduler {
+func NewMainScheduler(cfg config.Config, logger *zap.Logger, db db.Database) (*MainScheduler, error) {
+	jq, err := jq.New(cfg.NATS.URL, logger)
+	if err != nil {
+		logger.Error("Failed to create job queue", zap.Error(err))
+		return nil, err
+	}
+
 	return &MainScheduler{
 		jq:     jq,
 		db:     db,
 		logger: logger,
-	}
+	}, nil
 }
 
 func (s *MainScheduler) Start(ctx context.Context) error {
