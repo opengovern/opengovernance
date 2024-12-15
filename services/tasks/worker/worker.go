@@ -225,7 +225,7 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 					ScaleTargetRef: &kedav1alpha1.ScaleTarget{
 						Name:       taskConfig.ID,
 						Kind:       "Deployment",
-						APIVersion: appsv1.SchemeGroupVersion.Version,
+						APIVersion: "apps/v1",
 					},
 					PollingInterval: aws.Int32(30),
 					CooldownPeriod:  aws.Int32(300),
