@@ -188,6 +188,7 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 			Description: task.Description,
 			ImageUrl:    task.ImageURL,
 			Interval:    task.Interval,
+			Timeout:     task.Timeout,
 			NatsConfig:  natsJsonb,
 			ScaleConfig: scaleJsonb,
 		})

@@ -35,6 +35,7 @@ type Task struct {
 	WorkloadType WorkloadType      `yaml:"WorkloadType"`
 	EnvVars      map[string]string `yaml:"EnvVars"`
 	Interval     uint64            `yaml:"Interval"`
+	Timeout      uint64            `yaml:"Timeout"`
 	NatsConfig   NatsConfig        `yaml:"NatsConfig"`
 	ScaleConfig  ScaleConfig       `yaml:"ScaleConfig"`
 }

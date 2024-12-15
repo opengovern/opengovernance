@@ -22,6 +22,13 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 
 	s.logger.Info("Query Runner publisher started")
 
+	err := s.db.TimeoutTaskRunsByTaskID(s.TaskID, s.Timeout)
+	if err != nil {
+		s.logger.Error("failed to timeout task runs", zap.String("task_id", s.TaskID),
+			zap.Uint64("timeout", s.Timeout), zap.Error(err))
+		return err
+	}
+
 	runs, err := s.db.FetchCreatedTaskRunsByTaskID(s.TaskID)
 	if err != nil {
 		s.logger.Error("failed to get task runs", zap.Error(err))
