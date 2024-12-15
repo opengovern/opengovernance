@@ -53,7 +53,7 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 			return err
 		}
 
-		s.logger.Info("publishing audit job", zap.Uint("runId", run.ID))
+		s.logger.Info("publishing audit job", zap.Uint("runId", run.ID), zap.String("topic", s.NatsConfig.Topic))
 		_, err = s.jq.Produce(ctx, s.NatsConfig.Topic, reqJson, fmt.Sprintf("run-%d", run.ID))
 		if err != nil {
 			if err.Error() == "nats: no response from stream" {
