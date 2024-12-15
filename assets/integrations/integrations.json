@@ -172,13 +172,13 @@
     "id": 13,
     "integration_type": "doppler_account",
     "name": "Doppler",
-    "tier": "Premium",
+    "tier": "Community",
     "tags": { "usage": ["Secrets Management"] },
     "Description": "Manage and sync env variables and secrets.",
     "Icon": "doppler.svg",
-    "Availability": "Planned for Dec 2024",
-    "SourceCode": "",
-    "schema_ids": []
+    "Availability": "GA",
+    "SourceCode": "https://github.com/opengovern/og-describer-doppler",
+    "schema_ids": ["doppler"]
   },
   {
     "id": 14,
