@@ -46,10 +46,10 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 		return nil, err
 	}
 
-	switch credentials.RegistryType {
+	switch credentials.GetRegistryType() {
 	case configs.RegistryTypeDockerhub:
 		if credentials.DockerhubCredentials == nil {
-			return nil, fmt.Errorf("dockerhub credentials are required with registry type: %s", credentials.RegistryType)
+			return nil, fmt.Errorf("dockerhub credentials are required with registry type: %s", credentials.GetRegistryType())
 		}
 		return []models.Integration{
 			{
@@ -59,7 +59,7 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 		}, nil
 	case configs.RegistryTypeGHCR:
 		if credentials.GhcrCredentials == nil {
-			return nil, fmt.Errorf("ghcr credentials are required with registry type: %s", credentials.RegistryType)
+			return nil, fmt.Errorf("ghcr credentials are required with registry type: %s", credentials.GetRegistryType())
 		}
 		return []models.Integration{
 			{
@@ -69,7 +69,7 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 		}, nil
 	case configs.RegistryTypeECR:
 		if credentials.EcrCredentials == nil {
-			return nil, fmt.Errorf("ecr credentials are required with registry type: %s", credentials.RegistryType)
+			return nil, fmt.Errorf("ecr credentials are required with registry type: %s", credentials.GetRegistryType())
 		}
 		return []models.Integration{
 			{
@@ -79,7 +79,7 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 		}, nil
 	case configs.RegistryTypeACR:
 		if credentials.AcrCredentials == nil {
-			return nil, fmt.Errorf("acr credentials are required with registry type: %s", credentials.RegistryType)
+			return nil, fmt.Errorf("acr credentials are required with registry type: %s", credentials.GetRegistryType())
 		}
 		return []models.Integration{
 			{
@@ -89,7 +89,7 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 		}, nil
 	}
 
-	return nil, fmt.Errorf("unknown registry type: %s", credentials.RegistryType)
+	return nil, fmt.Errorf("unknown registry type: %s", credentials.GetRegistryType())
 }
 
 func (i *Integration) GetResourceTypesByLabels(_ map[string]string) ([]string, error) {
