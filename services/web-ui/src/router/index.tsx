@@ -46,6 +46,7 @@ import SettingsAccess from '../pages/Settings/Access'
 import SettingsProfile from '../pages/Settings/Profile'
 import SearchLanding from '../pages/Search/landing'
 import TypeDetail from '../pages/Integrations/TypeDetailNew'
+import EvaluateDetail from '../pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/inde'
 
 const authRoutes = [
     // {
@@ -233,14 +234,13 @@ const authRoutes = [
         path: '/request-access',
         element: <RequestAccess />,
     },
- 
+
     {
         key: 'connector detail',
         path: '/integrations/:type',
         element: <TypeDetail />,
     },
 
-  
     {
         key: 'settings page',
         path: '/administration',
@@ -287,7 +287,6 @@ const authRoutes = [
         element: <Compliance />,
     },
 
-  
     {
         key: 'benchmark summary 2',
         path: '/compliance/:benchmarkId',
@@ -317,6 +316,11 @@ const authRoutes = [
         key: 'benchmark single connection',
         path: '/compliance/:benchmarkId/:connectionId',
         element: <SingleComplianceConnection />,
+    },
+    {
+        key: 'benchmark single connection',
+        path: '/compliance/:benchmarkId/report/:id',
+        element: <EvaluateDetail />,
     },
     {
         key: 'Incidents control',

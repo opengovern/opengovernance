@@ -27,6 +27,8 @@ import { GithubComKaytuIoKaytuEngineServicesIntegrationApiEntityTier } from '../
 import { useNavigate } from 'react-router-dom'
 import { get } from 'http'
 import axios from 'axios'
+import { notificationAtom } from '../../store'
+import { useSetAtom } from 'jotai'
 
 export default function Integrations() {
     const [pageNo, setPageNo] = useState<number>(1)
@@ -40,6 +42,8 @@ export default function Integrations() {
     const [selected, setSelected] = useState()
     const [loading, setLoading] = useState(false)
     const connectorList = responseConnectors?.integration_types || []
+    const setNotification = useSetAtom(notificationAtom)
+
 
     // @ts-ignore
 
@@ -74,10 +78,16 @@ export default function Integrations() {
                 getList(9,pageNo)
                  setLoading(false)
                  setOpen(false)
-
+                    setNotification({
+                        text: `Integration enabled`,
+                        type: 'success',
+                    })
              })
              .catch((err) => {
-                
+                setNotification({
+                    text: `Failed to enable integration`,
+                    type: 'errot',
+                })
                  setLoading(false)
              })
     }
