@@ -6704,7 +6704,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	summaryJobs, err := h.schedulerClient.GetSummaryJobs(clientCtx, []string{jobId})
 	if err != nil {
 		h.logger.Error("could not get Summary Job IDs", zap.Error(err))
-		return echoCtx.JSON(http.StatusInternalServerError, "could not get Summary Job IDs")
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get Summary Job IDs")
 	}
 
 	// tracer :
@@ -6714,10 +6714,15 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 	var response api.ComplianceSummaryOfBenchmarkResponse
 
+	if len(summaryJobs) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no summary job found by given compliance job ids")
+	}
+
 	h.logger.Info("Jobs", zap.Any("jobs", summaryJobs))
 	summariesAtTime, err := es.GetComplianceSummaryByJobId(ctx, h.logger, h.client, summaryJobs, true)
 	if err != nil {
-		return err
+		h.logger.Error("failed to get summary by summary job ids", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get summary by summary job ids")
 	}
 	var benchmarkId string
 	for k, _ := range summariesAtTime {
@@ -6741,14 +6746,14 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, nil, opengovernanceTypes.GetPassedComplianceStatuses(), jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch per benchmark resource severity result for passed")
 	}
 
 	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResultByJobId(ctx, h.logger, h.client, []string{benchmarkId},
 		nil, nil, nil, nil, jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch per benchmark resource severity result for all")
 	}
 
 	summaryAtTime := summariesAtTime[benchmarkId]
@@ -6776,7 +6781,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch complianceResults top field")
 		}
 
 		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
@@ -6784,7 +6789,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch complianceResults top field total")
 		}
 		totalCountMap := make(map[string]int)
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
@@ -6831,7 +6836,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resource types for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resource types for benchmark")
 	}
 	for k, v := range topResourceTypesMap {
 		topResourceTypes = append(topResourceTypes, api.TopFiledRecordV2{
@@ -6848,7 +6853,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resources for benchmark")
 	}
 	for k, v := range topResourcesMap {
 		topResources = append(topResources, api.TopFiledRecordV2{
@@ -6865,7 +6870,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resources for benchmark")
 	}
 	for k, v := range topControlsMap {
 		topControls = append(topControls, api.TopFiledRecordV2{
