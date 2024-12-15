@@ -1,10 +1,11 @@
-package tasks
+package worker
 
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	kedav1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	"github.com/opengovern/opencomply/services/tasks/config"
+	"github.com/opengovern/opencomply/services/tasks/worker/consts"
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/batch/v1"
@@ -14,52 +15,70 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, config Task, namespace string) error {
+func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, taskConfig *Task, namespace string) error {
 	soNatsUrl, _ := os.LookupEnv("SCALED_OBJECT_NATS_URL")
-
+	fillMissedConfigs(taskConfig)
 	var env []corev1.EnvVar
-	for k, v := range config.EnvVars {
+	for k, v := range taskConfig.EnvVars {
 		env = append(env, corev1.EnvVar{
 			Name:  k,
 			Value: v,
 		})
 	}
-	env = append(env, corev1.EnvVar{
-		Name:  "NATS_URL",
-		Value: cfg.NATS.URL,
-	})
-	switch config.WorkloadType {
+	env = append(env, []corev1.EnvVar{
+		{
+			Name:  consts.NatsURLEnv,
+			Value: cfg.NATS.URL,
+		},
+		{
+			Name:  consts.NatsConsumerEnv,
+			Value: taskConfig.NatsConfig.Consumer,
+		},
+		{
+			Name:  consts.NatsStreamNameEnv,
+			Value: taskConfig.NatsConfig.Stream,
+		},
+		{
+			Name:  consts.NatsTopicNameEnv,
+			Value: taskConfig.NatsConfig.Topic,
+		},
+		{
+			Name:  consts.NatsResultTopicNameEnv,
+			Value: taskConfig.NatsConfig.ResultTopic,
+		},
+	}...)
+	switch taskConfig.WorkloadType {
 	case WorkloadTypeJob:
 		// job
 		var job v1.Job
 		err := kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.ID,
+			Name:      taskConfig.ID,
 		}, &job)
 		if err != nil {
 			job = v1.Job{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.ID,
+					Name:      taskConfig.ID,
 					Namespace: namespace,
 					Labels: map[string]string{
-						"app": config.ID,
+						"app": taskConfig.ID,
 					},
 				},
 				Spec: v1.JobSpec{
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app": config.ID,
+								"app": taskConfig.ID,
 							},
 						},
 						Spec: corev1.PodSpec{
 							RestartPolicy: corev1.RestartPolicyNever,
 							Containers: []corev1.Container{
 								{
-									Name:  config.ID,
-									Image: config.ImageURL,
+									Name:  taskConfig.ID,
+									Image: taskConfig.ImageURL,
 									Command: []string{
-										config.Command,
+										taskConfig.Command,
 									},
 									ImagePullPolicy: corev1.PullAlways,
 									Env:             env,
@@ -79,35 +98,35 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var scaledObject kedav1alpha1.ScaledJob
 		err = kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.ID + "-scaled-job",
+			Name:      taskConfig.ID + "-scaled-job",
 		}, &scaledObject)
 		if err != nil {
 			scaledObject = kedav1alpha1.ScaledJob{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.ID + "-scaled-job",
+					Name:      taskConfig.ID + "-scaled-job",
 					Namespace: namespace,
 				},
 				Spec: kedav1alpha1.ScaledJobSpec{
 					JobTargetRef: &v1.JobSpec{
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"app": config.ID,
+								"app": taskConfig.ID,
 							},
 						},
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
-									"app": config.ID,
+									"app": taskConfig.ID,
 								},
 							},
 							Spec: corev1.PodSpec{
 								RestartPolicy: corev1.RestartPolicyNever,
 								Containers: []corev1.Container{
 									{
-										Name:  config.ID,
-										Image: config.ImageURL,
+										Name:  taskConfig.ID,
+										Image: taskConfig.ImageURL,
 										Command: []string{
-											config.Command,
+											taskConfig.Command,
 										},
 										ImagePullPolicy: corev1.PullAlways,
 										Env:             env,
@@ -117,17 +136,17 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 						},
 					},
 					PollingInterval: aws.Int32(30),
-					MinReplicaCount: aws.Int32(config.ScaleConfig.MinReplica),
-					MaxReplicaCount: aws.Int32(config.ScaleConfig.MaxReplica),
+					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
+					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
 					Triggers: []kedav1alpha1.ScaleTriggers{
 						{
 							Type: "nats-jetstream",
 							Metadata: map[string]string{
 								"account":                      "$G",
 								"natsServerMonitoringEndpoint": soNatsUrl,
-								"stream":                       config.ScaleConfig.Stream,
-								"consumer":                     config.ScaleConfig.Consumer,
-								"lagThreshold":                 config.ScaleConfig.LagThreshold,
+								"stream":                       taskConfig.ScaleConfig.Stream,
+								"consumer":                     taskConfig.ScaleConfig.Consumer,
+								"lagThreshold":                 taskConfig.ScaleConfig.LagThreshold,
 								"useHttps":                     "false",
 							},
 						},
@@ -144,15 +163,15 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var deployment appsv1.Deployment
 		err := kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.ID,
+			Name:      taskConfig.ID,
 		}, &deployment)
 		if err != nil {
 			deployment = appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.ID,
+					Name:      taskConfig.ID,
 					Namespace: namespace,
 					Labels: map[string]string{
-						"app": config.ID,
+						"app": taskConfig.ID,
 					},
 				},
 				Spec: appsv1.DeploymentSpec{
@@ -160,16 +179,16 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								"app": config.ID,
+								"app": taskConfig.ID,
 							},
 						},
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
-									Name:  config.ID,
-									Image: config.ImageURL,
+									Name:  taskConfig.ID,
+									Image: taskConfig.ImageURL,
 									Command: []string{
-										config.Command,
+										taskConfig.Command,
 									},
 									ImagePullPolicy: corev1.PullAlways,
 									Env:             env,
@@ -189,24 +208,24 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		var scaledObject kedav1alpha1.ScaledObject
 		err = kubeClient.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
-			Name:      config.ID + "-scaled-object",
+			Name:      taskConfig.ID + "-scaled-object",
 		}, &scaledObject)
 		if err != nil {
 			scaledObject = kedav1alpha1.ScaledObject{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      config.ID + "-scaled-object",
+					Name:      taskConfig.ID + "-scaled-object",
 					Namespace: namespace,
 				},
 				Spec: kedav1alpha1.ScaledObjectSpec{
 					ScaleTargetRef: &kedav1alpha1.ScaleTarget{
-						Name:       config.ID,
+						Name:       taskConfig.ID,
 						Kind:       "Deployment",
 						APIVersion: appsv1.SchemeGroupVersion.Version,
 					},
 					PollingInterval: aws.Int32(30),
 					CooldownPeriod:  aws.Int32(300),
-					MinReplicaCount: aws.Int32(config.ScaleConfig.MinReplica),
-					MaxReplicaCount: aws.Int32(config.ScaleConfig.MaxReplica),
+					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
+					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
 					Fallback: &kedav1alpha1.Fallback{
 						FailureThreshold: 1,
 						Replicas:         1,
@@ -217,9 +236,9 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 							Metadata: map[string]string{
 								"account":                      "$G",
 								"natsServerMonitoringEndpoint": soNatsUrl,
-								"stream":                       config.ScaleConfig.Stream,
-								"consumer":                     config.ScaleConfig.Consumer,
-								"lagThreshold":                 config.ScaleConfig.LagThreshold,
+								"stream":                       taskConfig.ScaleConfig.Stream,
+								"consumer":                     taskConfig.ScaleConfig.Consumer,
+								"lagThreshold":                 taskConfig.ScaleConfig.LagThreshold,
 								"useHttps":                     "false",
 							},
 						},
@@ -232,8 +251,33 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 			}
 		}
 	default:
-		return fmt.Errorf("invalid workload type: %s", config.WorkloadType)
+		return fmt.Errorf("invalid workload type: %s", taskConfig.WorkloadType)
 	}
 
 	return nil
+}
+
+func fillMissedConfigs(taskConfig *Task) {
+	if taskConfig.NatsConfig.Stream == "" {
+		taskConfig.NatsConfig.Stream = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.Consumer == "" {
+		taskConfig.NatsConfig.Consumer = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.Topic == "" {
+		taskConfig.NatsConfig.Topic = taskConfig.ID
+	}
+	if taskConfig.NatsConfig.ResultConsumer == "" {
+		taskConfig.NatsConfig.ResultConsumer = taskConfig.ID + "-result"
+	}
+	if taskConfig.NatsConfig.ResultTopic == "" {
+		taskConfig.NatsConfig.ResultTopic = taskConfig.ID + "-result"
+	}
+
+	if taskConfig.ScaleConfig.Stream == "" {
+		taskConfig.ScaleConfig.Stream = taskConfig.ID
+	}
+	if taskConfig.ScaleConfig.Consumer == "" {
+		taskConfig.ScaleConfig.Consumer = taskConfig.ID
+	}
 }

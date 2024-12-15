@@ -1,4 +1,4 @@
-package tasks
+package worker
 
 type WorkloadType string
 
