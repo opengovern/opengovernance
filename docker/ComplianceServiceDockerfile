@@ -1,7 +1,25 @@
-FROM docker.io/golang:alpine as build
-RUN apk --no-cache add ca-certificates
+# Build stage
+FROM golang:1.23-alpine AS builder
+WORKDIR /app
 
-FROM docker.io/golang:alpine
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY ./build/compliance-service /
-CMD [ "/compliance-service" ]
+# Install required packages for building
+RUN apk --no-cache add ca-certificates git build-base
+
+# Copy Go module manifests and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the compliance-service binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o compliance-service ./cmd/compliance-service
+
+# Final stage - minimal image
+FROM alpine:3.18
+RUN apk --no-cache add ca-certificates
+WORKDIR /
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/compliance-service /compliance-service
+
+CMD ["/compliance-service"]
