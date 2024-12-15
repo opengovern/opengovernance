@@ -58,8 +58,6 @@ func start(ctx context.Context) error {
 
 	logger = logger.Named("tasks")
 
-	//m := email.NewSendGridClient(mailApiKey, mailSender, mailSenderName, logger)
-
 	// setup postgres connection
 	postgresCfg := postgres.Config{
 		Host:    cfg.Postgres.Host,
