@@ -168,8 +168,6 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 
 	jd.Summarize(w.logger)
 
-	w.logger.Info("Summarize done", zap.Any("summary", jd))
-
 	keys, idx := jd.BenchmarkSummary.KeysAndIndex()
 	jd.BenchmarkSummary.EsID = es2.HashOf(keys...)
 	jd.BenchmarkSummary.EsIndex = idx

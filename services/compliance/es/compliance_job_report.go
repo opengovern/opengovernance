@@ -24,7 +24,8 @@ type ControlViewResponse struct {
 	}
 }
 
-func GetJobReportControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool) (*types.ComplianceJobReportControlView, error) {
+func GetJobReportControlViewByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool,
+	controls []string) (*types.ComplianceJobReportControlView, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["query"] = map[string]any{
@@ -42,6 +43,18 @@ func GetJobReportControlViewByJobID(ctx context.Context, logger *zap.Logger, cli
 				},
 			},
 		},
+	}
+	if len(controls) > 0 {
+		sourceItems := []string{
+			"es_id",
+			"es_index",
+			"compliance_summary",
+			"job_summary",
+		}
+		for _, control := range controls {
+			sourceItems = append(sourceItems, fmt.Sprintf("controls.%s", control))
+		}
+		request["_source"] = sourceItems
 	}
 	b, err := json.Marshal(request)
 	if err != nil {
@@ -116,10 +129,10 @@ func GetJobReportControlSummaryByJobID(ctx context.Context, logger *zap.Logger, 
 		return nil, err
 	}
 
-	logger.Info("ES Query", zap.String("index", types.ComplianceJobReportControlViewIndex), zap.String("query", string(b)))
+	logger.Info("ES Query to get compliance job report control summary", zap.String("index", types.ComplianceJobReportControlSummaryIndex), zap.String("query", string(b)))
 
 	var response ControlSummaryResponse
-	err = client.Search(ctx, types.ComplianceJobReportControlViewIndex, string(b), &response)
+	err = client.Search(ctx, types.ComplianceJobReportControlSummaryIndex, string(b), &response)
 	if err != nil {
 		return nil, err
 	}
