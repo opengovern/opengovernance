@@ -304,15 +304,15 @@ export default function Evaluate({
                             <Button
                                 variant="secondary"
                                 onClick={() => {
-                                     if (opened) {
-                                    if(!selectedbenchmarks){
-                                        setNotification({
-                                            text: `Please Select Frameworks`,
-                                            type: 'error',
-                                        })
-                                        return
+                                    if (opened) {
+                                        if (!selectedbenchmarks) {
+                                            setNotification({
+                                                text: `Please Select Frameworks`,
+                                                type: 'error',
+                                            })
+                                            return
+                                        }
                                     }
-                                }
                                     setConnections(
                                         // @ts-ignore
                                         accounts?.map((c) => {
@@ -405,7 +405,7 @@ export default function Evaluate({
                                     ?.filter(
                                         // @ts-ignore
 
-                                        (c) => c?.state == 'ACTIVE'
+                                        (c) => c?.state != 'INACTIVE'
                                     )
                                     // @ts-ignore
                                     ?.map((c) => {
