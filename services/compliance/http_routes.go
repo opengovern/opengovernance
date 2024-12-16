@@ -7656,7 +7656,7 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			view		query		string	false	"Result View options: [control,resource,both] (default resource)"
-//	@Param			auditable	query		bool	false	"Whether the job was auditable or not"
+//	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
 //	@Param			run_id		path		string	true	"Benchmark ID"
 //	@Success		200
 //	@Router			/compliance/api/v3/quick/scan/{run_id} [get]
@@ -7665,16 +7665,16 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	view := c.QueryParam("view")
-	auditableStr := c.QueryParam("auditable")
+	withIncidentsStr := c.QueryParam("with_incidents")
 	controls := httpserver2.QueryArrayParam(c, "controls")
 
 	if view == "" {
 		view = "control"
 	}
 
-	auditable := false
-	if auditableStr == "true" {
-		auditable = true
+	withIncidents := false
+	if withIncidentsStr == "true" {
+		withIncidents = true
 		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
 		if err != nil {
 			h.logger.Error("failed to get compliance job", zap.Error(err))
@@ -7703,7 +7703,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7717,7 +7717,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, controls)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7731,12 +7731,12 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, controls)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7859,6 +7859,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			controls	query		[]string	false	"List of controls to get results"
+//	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
 //	@Param			run_id		path		string		true	"compliance summary job id"
 //	@Success		200
 //	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
@@ -7867,11 +7868,11 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	controls := httpserver2.QueryArrayParam(c, "controls")
-	auditableStr := c.QueryParam("auditable")
+	withIncidentsStr := c.QueryParam("with_incidents")
 
-	auditable := false
-	if auditableStr == "true" {
-		auditable = true
+	withIncidents := false
+	if withIncidentsStr == "true" {
+		withIncidents = true
 		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
 		if err != nil {
 			h.logger.Error("failed to get compliance job", zap.Error(err))
@@ -7897,7 +7898,7 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 	}
 
 	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
-		jobId, auditable, controls)
+		jobId, withIncidents, controls)
 	if err != nil {
 		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
