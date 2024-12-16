@@ -128,8 +128,9 @@ export default function Evaluate({
             })
             .catch((err) => {
                 console.log(err)
+                const message = err.response.data.message
                 setNotification({
-                    text: `Failed to Run job `,
+                    text: `${message}`,
                     type: 'error',
                 })
             })
@@ -152,13 +153,26 @@ export default function Evaluate({
                 Authorization: `Bearer ${token}`,
             },
         }
-        let connector = ''
-        benchmarkDetail?.connectors?.map((c) => {
-            connector += `connectors=${c}&`
-        })
+        const integrations :any =[]
+        if (opened== true){
+            // @ts-ignore
+           selectedbenchmarks?.connectors?.map((c)=>{
+            integrations.push(c)
+           })
+        }
+            else{
+                // @ts-ignore
+                benchmarkDetail?.integrationTypes?.map((c) => {
+                    integrations.push(c)
+                })
+            }
+        const body ={
+            integration_type: integrations
+        }
         axios
             .post(
-                `${url}/main/integration/api/v1/integrations/list?${connector}`,{},
+                `${url}/main/integration/api/v1/integrations/list`,
+                body,
                 config
             )
             .then((res) => {
@@ -221,11 +235,15 @@ export default function Evaluate({
         if (opened == true) {
             setOpen(true)
             GetCard()
-            GetEnabled()
         } else if (opened == false) {
             setOpen(false)
         }
     }, [opened])
+     useEffect(() => {
+         if(selectedbenchmarks){
+            GetEnabled()
+         }
+     }, [selectedbenchmarks])
     // useEffect(() => {
     //     if (opened) {
     //         setOpen(true)
@@ -285,6 +303,15 @@ export default function Evaluate({
                             <Button
                                 variant="secondary"
                                 onClick={() => {
+                                     if (opened) {
+                                    if(!selectedbenchmarks){
+                                        setNotification({
+                                            text: `Please Select Frameworks`,
+                                            type: 'error',
+                                        })
+                                        return
+                                    }
+                                }
                                     setConnections(
                                         // @ts-ignore
                                         accounts?.map((c) => {
@@ -295,17 +322,17 @@ export default function Evaluate({
                                             }
                                         })
                                     )
-                                    if (opened) {
-                                        setSelectedBenchmarks(
-                                            benchmarks?.map((c) => {
-                                                return {
-                                                    label: c?.benchmark?.title,
-                                                    value: c?.benchmark?.id,
-                                                    // description: c.id,
-                                                }
-                                            })
-                                        )
-                                    }
+                                    // if (opened) {
+                                    //     setSelectedBenchmarks(
+                                    //         benchmarks?.map((c) => {
+                                    //             return {
+                                    //                 label: c?.benchmark?.title,
+                                    //                 value: c?.benchmark?.id,
+                                    //                 // description: c.id,
+                                    //             }
+                                    //         })
+                                    //     )
+                                    // }
                                 }}
                             >
                                 Select All
@@ -329,7 +356,7 @@ export default function Evaluate({
                 header={
                     opened
                         ? 'Select Compliance Framework for Audit'
-                        : 'Select Account'
+                        : 'Select Integrations'
                 }
             >
                 {opened && (
@@ -342,6 +369,7 @@ export default function Evaluate({
                                     label: c?.benchmark?.title,
                                     value: c?.benchmark?.id,
                                     description: c?.benchmark?.id,
+                                    connectors: c?.benchmark?.connectors,
                                 }
                             })}
                             // @ts-ignore
@@ -356,6 +384,9 @@ export default function Evaluate({
                             onChange={({ detail }) => {
                                 // @ts-ignore
                                 setSelectedBenchmarks(detail.selectedOption)
+                                // @ts-ignore
+                                setAccounts([])
+                                setConnections([])
                             }}
                         />
                     </>
@@ -400,7 +431,7 @@ export default function Evaluate({
                                     ?.map((c) => {
                                         return {
                                             label: c.name,
-                                            value: c.platform_name,
+                                            value: c.integration_id,
                                             description: c.integration_id,
                                             labelTag: 'INACTIVE',
                                         }

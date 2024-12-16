@@ -236,10 +236,7 @@ export default function EvaluateTable({
                 Authorization: `Bearer ${token}`,
             },
         }
-        let connector = ''
-        benchmarkDetail?.connectors?.map((c) => {
-            connector += `connector=${c}&`
-        })
+        
         axios
             .get(
                 // @ts-ignore
@@ -253,8 +250,9 @@ export default function EvaluateTable({
                 // setDetailLoading(false)
             })
             .catch((err) => {
+                const message = err.response.data.message
                 setNotification({
-                    text: `Job is still running. `,
+                    text: `${message}`,
                     type: 'error',
                 })
                 // setDetailLoading(false)
@@ -417,7 +415,7 @@ export default function EvaluateTable({
                         header: 'Integration Id',
                         cell: (item) => (
                             // @ts-ignore
-                            <>{item.integration_info?.integration_id}</>
+                            <>{item.integration_info[0]?.integration_id}</>
                         ),
                     },
 
@@ -426,7 +424,7 @@ export default function EvaluateTable({
                         header: 'Integration Name',
                         cell: (item) => (
                             // @ts-ignore
-                            <>{item.integration_info?.name}</>
+                            <>{item.integration_info[0]?.name}</>
                         ),
                     },
                     {
@@ -434,7 +432,7 @@ export default function EvaluateTable({
                         header: 'Integration Type',
                         cell: (item) => (
                             // @ts-ignore
-                            <>{item.integration_info?.integration_type}</>
+                            <>{item.integration_info[0]?.integration_type}</>
                         ),
                     },
 
@@ -453,7 +451,7 @@ export default function EvaluateTable({
                             // @ts-ignore
                             <KButton
                                 onClick={() => {
-                                     setSelected(item)
+                                    setSelected(item)
                                 }}
                                 variant="inline-link"
                                 ariaLabel={`Open Detail`}
