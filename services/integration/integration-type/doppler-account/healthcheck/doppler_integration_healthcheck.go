@@ -4,66 +4,60 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-
 )
 
-type ConnectorResponse struct {
-	Connectors []Connector `json:"connectors"`
-	TotalCount float64     `json:"total_count"`
+// Config represents the JSON input configuration
+type Config struct {
+	Token string `json:"token"`
 }
 
-
-type Connector struct {
-	ID                string    `json:"id"`
-	
+type Response struct {
+	Success bool `json:"success"`
 }
 
+// IsHealthy checks if the JWT has read access to all required resources
+func IsHealthy(token string) error {
+	var response Response
 
+	url := "https://api.doppler.com/v3/workplace"
 
-func DopplerIntegrationHealthcheck(apiKey string) (bool, error) {
-	if apiKey == "" {
-		return false, errors.New("API key is required")
-	}
+	client := http.DefaultClient
 
-	// Endpoint to test access
-	url := "https://api.cohere.com/v1/connectors"
-
-	// Create HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return false, fmt.Errorf("error creating request: %v", err)
+		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	// Add Authorization header
-	req.Header.Add("Authorization", "Bearer "+apiKey)
-
-	// Execute the request
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("error making request: %v", err)
+		return fmt.Errorf("request execution failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Check for non-200 status codes
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return false, fmt.Errorf("API error: %s, status code: %d", string(body), resp.StatusCode)
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// Parse the response to ensure it contains models data
-	var modelsResponse ConnectorResponse
-	err = json.NewDecoder(resp.Body).Decode(&modelsResponse)
+	if !response.Success {
+		return fmt.Errorf("failed to fetch workplace")
+	}
+
+	return nil
+}
+
+func DopplerIntegrationHealthcheck(cfg Config) (bool, error) {
+	// Check for the token
+	if cfg.Token == "" {
+		return false, errors.New("api key must be configured")
+	}
+
+	err := IsHealthy(cfg.Token)
 	if err != nil {
-		return false, fmt.Errorf("error parsing response: %v", err)
+		return false, err
 	}
 
-	// Validate that the token provides access to at least one model
-	if len(modelsResponse.Connectors) == 0 {
-		return false, nil // Token valid but no accessible models
-	}
-
-	return true, nil // Token valid and has access
+	return true, nil
 }
