@@ -2,8 +2,10 @@ package db
 
 import (
 	"errors"
+	"github.com/lib/pq"
 	"github.com/opengovern/opencomply/services/describe/db/model"
 	"gorm.io/gorm"
+	"time"
 )
 
 func (db Database) CreateComplianceQuickRun(job *model.ComplianceQuickRun) (uint, error) {
@@ -36,6 +38,36 @@ func (db Database) ListComplianceQuickRuns() ([]model.ComplianceQuickRun, error)
 		return nil, tx.Error
 	}
 	return job, nil
+}
+
+func (db Database) ListComplianceQuickRunsByFilters(integrationId []string, benchmarkId []string, status []string,
+	startTime, endTime *time.Time) ([]model.ComplianceQuickRun, error) {
+	var jobs []model.ComplianceQuickRun
+	tx := db.ORM.Model(&model.ComplianceQuickRun{})
+
+	if len(integrationId) > 0 {
+		tx = tx.Where("integration_ids && ?", pq.Array(integrationId))
+	}
+
+	if len(benchmarkId) > 0 {
+		tx = tx.Where("framework_id IN ?", benchmarkId)
+	}
+	if len(status) > 0 {
+		tx = tx.Where("status IN ?", status)
+	}
+	if startTime != nil {
+		tx = tx.Where("updated_at >= ?", *startTime)
+	}
+	if endTime != nil {
+		tx = tx.Where("updated_at <= ?", *endTime)
+	}
+
+	tx = tx.Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
 }
 
 func (db Database) CleanupAllComplianceQuickRuns() error {
