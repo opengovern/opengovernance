@@ -79,7 +79,11 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 	}
 	controlSummary := &types.ComplianceJobReportControlSummary{
-		Controls:          make(map[string]*types.ControlSummary),
+		Controls: make(map[string]*types.ControlSummary),
+		ControlScore: &types.ControlScore{
+			TotalControls:  0,
+			FailedControls: 0,
+		},
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
 			JobID:        j.ID,
@@ -99,6 +103,8 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 	}
 
+	totalControls := make(map[string]bool)
+	failedControls := make(map[string]bool)
 	integrationsMap := make(map[string]bool)
 	for page := 1; paginator.HasNext(); page++ {
 		w.logger.Info("Next page", zap.Int("page", page))
@@ -133,6 +139,10 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			jd.AddComplianceResult(w.logger, j, f, resource)
 			addJobSummary(controlSummary, controlView, resourceView, f)
 			integrationsMap[f.IntegrationID] = true
+			totalControls[f.ControlID] = true
+			if f.ComplianceStatus == types.ComplianceStatusALARM {
+				failedControls[f.ControlID] = true
+			}
 		}
 
 		var docs []es2.Doc
@@ -245,6 +255,8 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	}
 
 	controlSummary.JobSummary.IntegrationIDs = integrations
+	controlSummary.ControlScore.TotalControls = int64(len(totalControls))
+	controlSummary.ControlScore.FailedControls = int64(len(failedControls))
 	keys, idx = controlSummary.KeysAndIndex()
 	controlSummary.EsID = es2.HashOf(keys...)
 	controlSummary.EsIndex = idx
