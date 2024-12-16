@@ -1249,19 +1249,40 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-
 	var jobs []api.RunBenchmarkItem
-	for _, c := range connectionIDs {
-		jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, c, true, userID)
+	if request.WithIncidents {
+		lastJob, err := h.Scheduler.db.GetLastComplianceJob(benchmark.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		for _, c := range connectionIDs {
+			jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID, lastJob, c, true, userID)
+			if err != nil {
+				return fmt.Errorf("error while creating compliance job: %v", err)
+			}
+			jobs = append(jobs, api.RunBenchmarkItem{
+				JobId:           jobId,
+				WithIncident:    request.WithIncidents,
+				BenchmarkId:     benchmark.ID,
+				IntegrationInfo: connectionInfo,
+			})
+		}
+	} else {
+		jobId, err := h.DB.CreateComplianceQuickRun(&model2.ComplianceQuickRun{
+			FrameworkID:    benchmarkID,
+			IntegrationIDs: connectionIDs,
+			IncludeResults: nil,
+			Status:         model2.ComplianceQuickRunStatusCreated,
+			CreatedBy:      userID,
+		})
 		if err != nil {
-			return fmt.Errorf("error while creating compliance job: %v", err)
+			h.Scheduler.logger.Error("failed to create compliance quick run", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create compliance quick run")
 		}
 		jobs = append(jobs, api.RunBenchmarkItem{
 			JobId:           jobId,
+			WithIncident:    request.WithIncidents,
 			BenchmarkId:     benchmark.ID,
 			IntegrationInfo: connectionInfo,
 		})
