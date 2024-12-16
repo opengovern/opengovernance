@@ -400,7 +400,7 @@ export default function NewBenchmarkSummary() {
                 console.log(err)
             })
     }
-    const RunBenchmark = (c: any[]) => {
+    const RunBenchmark = (c: any[],b: boolean) => {
         // /compliance/api/v3/benchmark/{benchmark-id}/assignments
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
@@ -409,6 +409,7 @@ export default function NewBenchmarkSummary() {
             url = window.location.origin
         }
         const body = {
+            with_incidents: b,
             integration_info: c.map((c) => {
                 return {
                     integration_id: c.value,
@@ -777,8 +778,8 @@ export default function NewBenchmarkSummary() {
                                             id={benchmarkDetail?.id}
                                             benchmarkDetail={benchmarkDetail}
                                             assignmentsCount={assignments}
-                                            onEvaluate={(c) => {
-                                                RunBenchmark(c)
+                                            onEvaluate={(c,b) => {
+                                                RunBenchmark(c,b)
                                             }}
                                         />
                                     </Flex>

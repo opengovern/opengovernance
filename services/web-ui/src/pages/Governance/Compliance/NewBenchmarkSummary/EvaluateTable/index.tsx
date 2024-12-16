@@ -221,7 +221,7 @@ export default function EvaluateTable({
 
     const GetDetail = () => {
         // /compliance/api/v3/benchmark/{benchmark-id}/assignments
-        setDetailLoading(true)
+        setLoading(true)
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -260,6 +260,7 @@ export default function EvaluateTable({
                 // setDetailLoading(false)
                 
                 console.log(err)
+                setLoading(false)
             })
     }
     useEffect(() => {
@@ -392,7 +393,6 @@ export default function EvaluateTable({
                 onRowClick={(event) => {
                     const row = event.detail.item
                     // @ts-ignore
-                    console.log(row)
                     setSelected(row)
                 }}
                 columnDefinitions={[

@@ -72,6 +72,10 @@ export default function EvaluateDetail() {
     const [detailLoading,setDetailLoading] = useState(false)
     const [runDetail,setRunDetail] = useState<RunDetail>()
     const [page,setPage] = useState(0)
+    const [resourcePage,setResourcePage] = useState(0)
+    const [open,setOpen]= useState(false)
+    const [selectedControl,setSelectedControl] = useState()
+    const [resources,setResources] = useState()
 
     const GetDetail = () => {
         // /compliance/api/v3/benchmark/{benchmark-id}/assignments
@@ -151,12 +155,62 @@ export default function EvaluateDetail() {
                 console.log(err)
             })
     }
+    const GetResults = () => {
+        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        setDetailLoading(true)
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+
+        axios
+            .get(
+                // @ts-ignore
+                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=true&controls=${selectedControl.title}`,
+                config
+            )
+            .then((res) => {
+                //   setAccounts(res.data.integrations)
+                const temp = []
+                const alarms = res?.data?.controls[selectedControl.title]?.results?.alarm
+                alarms.map((alarm) => {
+                    temp.push({
+                        "resource_id": alarm.resource_id,
+                        "resource_type": alarm.resource_type,
+                        "reason": alarm.reason
+                    })
+                })
+                setResources(temp)
+                setDetailLoading(false)
+                setOpen(true)
+            })
+            .catch((err) => {
+                setDetailLoading(false)
+                console.log(err)
+            })
+    }
+    
     
 
     useEffect(() => {
             GetDetail()
             GetControls()
     }, [])
+    useEffect(() => {
+        if(selectedControl){
+            GetResults()
+        }
+    }, [selectedControl])
     const truncate = (text: string | undefined) => {
         if (text) {
             return text.length > 30 ? text.substring(0, 30) + '...' : text
@@ -259,6 +313,11 @@ export default function EvaluateDetail() {
                         `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
                     }
                     // sortingDescending={sortOrder == 'desc' ? true : false}
+                    onRowClick={(event) => {
+                        const row = event.detail.item
+                        // @ts-ignore
+                        setSelectedControl(row)
+                    }}
                     columnDefinitions={[
                         {
                             id: 'id',
@@ -301,7 +360,7 @@ export default function EvaluateDetail() {
                         },
                         {
                             id: 'passing_resources',
-                            header: 'Alarams ',
+                            header: 'Alarms ',
 
                             cell: (item) => (
                                 // @ts-ignore
@@ -310,22 +369,22 @@ export default function EvaluateDetail() {
                             maxWidth: 100,
                         },
 
-                        // {
-                        //     id: 'action',
-                        //     header: 'Action',
-                        //     cell: (item) => (
-                        //         // @ts-ignore
-                        //         <KButton
-                        //             onClick={() => {
-                        //                 navigateToInsightsDetails(item.id)
-                        //             }}
-                        //             variant="inline-link"
-                        //             ariaLabel={`Open Detail`}
-                        //         >
-                        //             Details
-                        //         </KButton>
-                        //     ),
-                        // },
+                        {
+                            id: 'action',
+                            header: 'Action',
+                            cell: (item) => (
+                                // @ts-ignore
+                                <KButton
+                                    onClick={() => {
+                                        setSelectedControl(item)
+                                    }}
+                                    variant="inline-link"
+                                    ariaLabel={`Open Detail`}
+                                >
+                                    Details
+                                </KButton>
+                            ),
+                        },
                     ]}
                     columnDisplay={[
                         { id: 'id', visible: true },
@@ -375,14 +434,107 @@ export default function EvaluateDetail() {
                     pagination={
                         <Pagination
                             currentPageIndex={page + 1}
-                            pagesCount={Math.ceil(runDetail?.length /10)}
+                            pagesCount={Math.ceil(runDetail?.length / 10)}
                             onChange={({ detail }) =>
-                                setPage(detail.currentPageIndex-1)
+                                setPage(detail.currentPageIndex - 1)
                             }
                         />
                     }
                 />
             </Flex>
+            <Modal
+                visible={open}
+                size="large"
+                onDismiss={() => setOpen(false)}
+                header={`Alarms`}
+            >
+                <KTable
+                    className="p-3   min-h-[550px]"
+                    // resizableColumns
+                    renderAriaLive={({
+                        firstIndex,
+                        lastIndex,
+                        totalItemsCount,
+                    }) =>
+                        `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
+                    }
+                    // sortingDescending={sortOrder == 'desc' ? true : false}
+                    // onRowClick={(event) => {
+                    //     const row = event.detail.item
+                    //     // @ts-ignore
+                    //     setSelectedControl(row)
+                    // }}
+                    columnDefinitions={[
+                        {
+                            id: 'resource_id',
+                            header: 'Resource ID',
+                            cell: (item) => item.resource_id,
+                            sortingField: 'id',
+                            isRowHeader: true,
+                            maxWidth: "70px",
+                        },
+
+                        {
+                            id: 'resource_type',
+                            header: 'Title',
+                            sortingField: 'severity',
+                            cell: (item) => item.resource_type,
+                            maxWidth: "70px",
+                        },
+                        {
+                            id: 'reason',
+                            header: 'Reason',
+                            sortingField: 'severity',
+                            cell: (item) => item.reason,
+                            maxWidth: 150,
+                        },
+                    ]}
+                    columnDisplay={[
+                        { id: 'resource_id', visible: true },
+                        { id: 'resource_type', visible: true },
+                        { id: 'reason', visible: true },
+                    ]}
+                    enableKeyboardNavigation
+                    items={
+                        resources
+                            ? resources.slice(page * 7, (page + 1) * 7)
+                            : []
+                    }
+                    loading={detailLoading}
+                    loadingText="Loading resources"
+                    // stickyColumns={{ first: 0, last: 1 }}
+                    // stripedRows
+                    trackBy="id"
+                    empty={
+                        <Box
+                            margin={{ vertical: 'xs' }}
+                            textAlign="center"
+                            color="inherit"
+                        >
+                            <SpaceBetween size="m">
+                                <b>No resources</b>
+                            </SpaceBetween>
+                        </Box>
+                    }
+                    header={
+                        <Header className="w-full">
+                            Resources{' '}
+                            <span className=" font-medium">
+                                ({runDetail?.length})
+                            </span>
+                        </Header>
+                    }
+                    pagination={
+                        <Pagination
+                            currentPageIndex={resourcePage + 1}
+                            pagesCount={Math.ceil(resources?.length / 7)}
+                            onChange={({ detail }) =>
+                                setResourcePage(detail.currentPageIndex - 1)
+                            }
+                        />
+                    }
+                />
+            </Modal>
         </>
     )
 }

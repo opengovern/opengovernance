@@ -13,7 +13,6 @@ import {
     CloudIcon,
     PlayCircleIcon,
 } from '@heroicons/react/24/outline'
-import { Checkbox, useCheckboxState } from 'pretty-checkbox-react'
 import { useComplianceApiV1AssignmentsBenchmarkDetail } from '../../../../../api/compliance.gen'
 import {
     GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkAssignedConnection,
@@ -25,6 +24,7 @@ import { isDemoAtom, notificationAtom } from '../../../../../store'
 import KFilter from '../../../../../components/Filter'
 import {
     Box,
+    Checkbox,
     Icon,
     Multiselect,
     Select,
@@ -41,60 +41,11 @@ interface IEvaluate {
     benchmarkDetail:
         | GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkEvaluationSummary
         | undefined
-    onEvaluate: (c: string[]) => void
+    onEvaluate: (c: string[],b: boolean) => void
     opened: boolean | undefined
     setOpened: Function
 }
-const columns: (
-    checkbox: {
-        state: string | boolean | any[]
-        setState: React.Dispatch<React.SetStateAction<string | boolean | any[]>>
-        onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-    },
-    isDemo: boolean
-) => IColumn<
-    GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkAssignedConnection,
-    any
->[] = (checkbox, isDemo) => [
-    {
-        type: 'string',
-        width: 50,
-        cellRenderer: (
-            params: ICellRendererParams<GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkAssignedConnection>
-        ) => {
-            return (
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                <Checkbox
-                    value={params.data?.connectionID}
-                    {...checkbox}
-                    className="cursor-pointer w-full h-full"
-                />
-            )
-        },
-    },
-    {
-        type: 'connector',
-        headerName: 'Provider',
-        field: 'connector',
-    },
-    {
-        type: 'string',
-        headerName: 'Account Name',
-        field: 'providerConnectionName',
-        cellRenderer: (param: ValueFormatterParams) => (
-            <span className={isDemo ? 'blur-sm' : ''}>{param.value}</span>
-        ),
-    },
-    {
-        type: 'string',
-        headerName: 'Account ID',
-        field: 'providerConnectionID',
-        cellRenderer: (param: ValueFormatterParams) => (
-            <span className={isDemo ? 'blur-sm' : ''}>{param.value}</span>
-        ),
-    },
-]
+
 export default function Evaluate({
     id,
     benchmarkDetail,
@@ -112,6 +63,7 @@ export default function Evaluate({
     const [benchmarks, setBenchmarks] = useState<any[]>([])
     const [selectedbenchmarks, setSelectedBenchmarks] = useState<any[]>()
     const setNotification = useSetAtom(notificationAtom)
+    const [withIncidents, setWithIncidents] = useState(false)
 
     // useEffect(() => {
     //     checkbox.setState(connections)
@@ -135,6 +87,7 @@ export default function Evaluate({
             url = window.location.origin
         }
         const body = {
+            with_incidents: withIncidents,
             integration_info: connections.map((c) => {
                 return {
                     // @ts-ignore
@@ -142,7 +95,7 @@ export default function Evaluate({
                 }
             }),
             // @ts-ignore
-            benchmark_ids: [selectedbenchmarks?.value],
+           
         }
         // @ts-ignore
         const token = JSON.parse(localStorage.getItem('openg_auth')).token
@@ -154,7 +107,12 @@ export default function Evaluate({
         }
         //    console.log(config)
         axios
-            .post(`${url}/main/schedule/api/v3/compliance/run`, body, config)
+            .post(
+                // @ts-ignore
+                `${url}/main/schedule/api/v3/compliance/benchmark/${selectedbenchmarks?.value}/run`,
+                body,
+                config
+            )
             .then((res) => {
                 let ids = ''
                 // @ts-ignore
@@ -170,10 +128,10 @@ export default function Evaluate({
             })
             .catch((err) => {
                 console.log(err)
-                  setNotification({
-                      text: `Failed to Run job `,
-                      type: 'error',
-                  })
+                setNotification({
+                    text: `Failed to Run job `,
+                    type: 'error',
+                })
             })
     }
 
@@ -359,7 +317,7 @@ export default function Evaluate({
                                         RunBenchmark()
                                         setOpened(false)
                                     } else {
-                                        onEvaluate(connections)
+                                        onEvaluate(connections,withIncidents)
                                     }
                                 }}
                             >
@@ -458,11 +416,17 @@ export default function Evaluate({
                     filteringType="auto"
                     placeholder="Select Account"
                     onChange={({ detail }) => {
-                        console.log(detail.selectedOptions)
                         // @ts-ignore
                         setConnections(detail.selectedOptions)
                     }}
                 />
+                <Checkbox
+                className='mt-2 w-full'
+                    onChange={({ detail }) => setWithIncidents(detail.checked)}
+                    checked={withIncidents}
+                >
+                    Run With Incidents
+                </Checkbox>
             </Modal>
         </>
     )
