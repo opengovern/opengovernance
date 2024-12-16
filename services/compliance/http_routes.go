@@ -7666,6 +7666,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 	jobId := c.Param("run_id")
 	view := c.QueryParam("view")
 	auditableStr := c.QueryParam("auditable")
+	controls := httpserver2.QueryArrayParam(c, "controls")
 
 	if view == "" {
 		view = "control"
@@ -7716,7 +7717,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, nil)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7730,7 +7731,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, nil)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")

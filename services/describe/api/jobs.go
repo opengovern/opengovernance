@@ -150,6 +150,7 @@ type BenchmarkAuditHistoryResponse struct {
 }
 
 type RunBenchmarkByIdRequest struct {
+	WithIncidents   bool `json:"with_incidents"`
 	IntegrationInfo []struct {
 		IntegrationType *string `json:"integration_type"`
 		ProviderID      *string `json:"provider_id"`
@@ -179,6 +180,7 @@ type IntegrationInfoFilter struct {
 
 type RunBenchmarkItem struct {
 	JobId           uint              `json:"job_id"`
+	WithIncident    bool              `json:"with_incident"`
 	BenchmarkId     string            `json:"benchmark_id"`
 	IntegrationInfo []IntegrationInfo `json:"integration_info"`
 }
