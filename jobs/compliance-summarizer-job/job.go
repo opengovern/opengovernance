@@ -99,6 +99,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 	}
 
+	integrationsMap := make(map[string]bool)
 	for page := 1; paginator.HasNext(); page++ {
 		w.logger.Info("Next page", zap.Int("page", page))
 		page, err := paginator.NextPage(ctx)
@@ -131,6 +132,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
 			addJobSummary(controlSummary, controlView, resourceView, f)
+			integrationsMap[f.IntegrationID] = true
 		}
 
 		var docs []es2.Doc
@@ -220,12 +222,19 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.Int("resource_count", len(jd.ResourcesFindings)),
 	)
 
+	var integrations []string
+	for i, _ := range integrationsMap {
+		integrations = append(integrations, i)
+	}
+
+	controlView.JobSummary.IntegrationIDs = integrations
 	keys, idx = controlView.KeysAndIndex()
 	controlView.EsID = es2.HashOf(keys...)
 	controlView.EsIndex = idx
 
 	err = sendDataToOpensearch(w.esClient.ES(), controlView)
 
+	resourceView.JobSummary.IntegrationIDs = integrations
 	keys, idx = resourceView.KeysAndIndex()
 	resourceView.EsID = es2.HashOf(keys...)
 	resourceView.EsIndex = idx
@@ -235,6 +244,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		return err
 	}
 
+	controlSummary.JobSummary.IntegrationIDs = integrations
 	keys, idx = controlSummary.KeysAndIndex()
 	controlSummary.EsID = es2.HashOf(keys...)
 	controlSummary.EsIndex = idx
@@ -433,7 +443,7 @@ func addJobSummary(controlSummary *types.ComplianceJobReportControlSummary,
 	if _, ok := controlSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
 		controlSummary.ComplianceSummary[cr.ComplianceStatus] = 0
 	}
-	controlView.ComplianceSummary[cr.ComplianceStatus] += 1
+	controlSummary.ComplianceSummary[cr.ComplianceStatus] += 1
 	if v, ok := controlSummary.Controls[cr.ControlID]; !ok || v == nil {
 		controlSummary.Controls[cr.ControlID] = &types.ControlSummary{
 			Severity: cr.Severity,

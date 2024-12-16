@@ -127,6 +127,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		include["alarm"] = true
 	}
 
+	job.JobReportControlView.JobSummary.IntegrationIDs = append(job.JobReportControlView.JobSummary.IntegrationIDs, integrationId)
+	job.JobReportResourceView.JobSummary.IntegrationIDs = append(job.JobReportResourceView.JobSummary.IntegrationIDs, integrationId)
+	job.JobReportControlSummary.JobSummary.IntegrationIDs = append(job.JobReportControlSummary.JobSummary.IntegrationIDs, integrationId)
+
 	job.JobReportResourceView.Integrations[integrationId] = types.AuditIntegrationResult{
 		ResourceTypes: make(map[string]types.AuditResourceTypesResult),
 	}
