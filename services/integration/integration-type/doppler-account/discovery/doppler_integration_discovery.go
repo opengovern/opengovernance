@@ -4,85 +4,59 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"time"
-
 )
 
-type ConnectorResponse struct {
-	Connectors []Connector `json:"connectors"`
-	TotalCount float64     `json:"total_count"`
+// Config represents the JSON input configuration
+type Config struct {
+	Token string `json:"token"`
 }
 
-
-
-
-type Connector struct {
-	ID                string    `json:"id"`
-	Name              string    `json:"name"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
-	OrganizationID    string    `json:"organization_id"`
-	Description       string    `json:"description"`
-	URL               string    `json:"url"`
-	Excludes          []string  `json:"excludes"`
-	AuthType          string    `json:"auth_type"`
-	Oauth             Oauth     `json:"oauth"`
-	AuthStatus        string    `json:"auth_status"`
-	Active            bool      `json:"active"`
-	ContinueOnFailure bool      `json:"continue_on_failure"`
+// Workplace defines the information for doppler workplace.
+type Workplace struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	BillingEmail  string `json:"billing_email"`
+	SecurityEmail string `json:"security_email"`
 }
 
-type Oauth struct {
-	AuthorizeURL string `json:"authorize_url"`
-	TokenURL     string `json:"token_url"`
+type Response struct {
+	Workplace Workplace `json:"workplace"`
 }
 
+// Discover retrieves Render customer info
+func Discover(token string) (*Workplace, error) {
+	var response Response
 
+	url := "https://api.doppler.com/v3/workplace"
 
-func DopplerIntegrationDiscovery(apiKey string) ([]Connector, error) {
-	if apiKey == "" {
-		return nil, errors.New("API key is required")
-	}
+	client := http.DefaultClient
 
-	// Endpoint to test access
-	url := "https://api.cohere.com/v1/connectors"
-
-	// Create HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	// Add Authorization header
-	req.Header.Add("Authorization", "Bearer "+apiKey)
-
-	// Execute the request
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error making request: %v", err)
+		return nil, fmt.Errorf("request execution failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Check for non-200 status codes
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error: %s, status code: %d", string(body), resp.StatusCode)
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// Parse the response to ensure it contains models data
-	var modelsResponse ConnectorResponse
-	err = json.NewDecoder(resp.Body).Decode(&modelsResponse)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing response: %v", err)
+	return &response.Workplace, nil
+}
+
+func DopplerIntegrationDiscovery(cfg Config) (*Workplace, error) {
+	// Check for the token
+	if cfg.Token == "" {
+		return nil, errors.New("token must be configured")
 	}
 
-	// Validate that the token provides access to at least one model
-	if len(modelsResponse.Connectors) == 0 {
-		return nil, nil // Token valid but no accessible models
-	}
-
-	return modelsResponse.Connectors, nil // Token valid and has access
+	return Discover(cfg.Token)
 }
