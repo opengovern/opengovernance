@@ -86,7 +86,7 @@ export default function Integrations() {
              .catch((err) => {
                 setNotification({
                     text: `Failed to enable integration`,
-                    type: 'errot',
+                    type: 'error',
                 })
                  setLoading(false)
              })

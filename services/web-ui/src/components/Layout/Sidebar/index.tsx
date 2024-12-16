@@ -129,7 +129,12 @@ export default function Sidebar({  currentPage }: ISidebar) {
         // if(page?.includes(":")){
         //     return currentPage.split("/")[0] === page?.substring(0, page?.indexOf(':')).split("/")[0]
         // }
-        return currentPage === page
+        if (page == '') {
+            return currentPage == ''
+        }
+        // @ts-ignore
+
+        return currentPage.includes(page) && page !==''
     }
     const findPage = (page: string | string[], item: ISidebarItem): string => {
         if (Array.isArray(item.page)) {
