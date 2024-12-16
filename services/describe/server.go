@@ -1198,6 +1198,19 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.AdminRole}, benchmarkID)
+	if err != nil {
+		return fmt.Errorf("error while getting benchmarks: %v", err)
+	}
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	validIntegrationTypes := make(map[string]bool)
+	for _, it := range benchmark.IntegrationTypes {
+		validIntegrationTypes[it] = true
+	}
+
 	var integrations []integrationapi.Integration
 	for _, info := range request.IntegrationInfo {
 		if info.IntegrationID != nil {
@@ -1231,6 +1244,9 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 	var connectionInfo []api.IntegrationInfo
 	var connectionIDs []string
 	for _, c := range integrations {
+		if _, ok := validIntegrationTypes[c.IntegrationType.String()]; !ok {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type for this framework")
+		}
 		connectionInfo = append(connectionInfo, api.IntegrationInfo{
 			IntegrationID:   c.IntegrationID,
 			IntegrationType: string(c.IntegrationType),
@@ -1238,11 +1254,6 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 			ProviderID:      c.ProviderID,
 		})
 		connectionIDs = append(connectionIDs, c.IntegrationID)
-	}
-
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(&httpclient.Context{UserRole: apiAuth.AdminRole}, benchmarkID)
-	if err != nil {
-		return fmt.Errorf("error while getting benchmarks: %v", err)
 	}
 
 	if benchmark == nil {
@@ -2005,9 +2016,11 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		endTime = request.EndTime
 	}
 
+	// With Incidents
 	jobs, err := h.DB.ListComplianceJobsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, startTime, endTime)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		h.Scheduler.logger.Error("failed to get list of compliance jobs", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of compliance jobs")
 	}
 
 	var items []api.BenchmarkAuditHistoryItem
@@ -2020,14 +2033,13 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			UpdatedAt:   j.UpdatedAt,
 		}
 		if info, ok := connectionInfo[j.IntegrationID]; ok {
-			item.IntegrationInfo = info
+			item.IntegrationInfo = []api.IntegrationInfo{info}
 			item.NumberOfIntegrations = 1
 		}
 
 		items = append(items, item)
 	}
 
-	totalCount := len(items)
 	if request.SortBy != nil {
 		switch strings.ToLower(*request.SortBy) {
 		case "id":
@@ -2060,6 +2072,69 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 			return items[i].UpdatedAt.After(items[j].UpdatedAt)
 		})
 	}
+
+	// Without Incidents
+	jobs2, err := h.DB.ListComplianceQuickRunsByFilters(connectionIDs, []string{benchmarkID}, request.JobStatus, startTime, endTime)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get list of compliance jobs", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get list of compliance jobs")
+	}
+
+	var items2 []api.BenchmarkAuditHistoryItem
+	for _, j := range jobs2 {
+		item := api.BenchmarkAuditHistoryItem{
+			JobId:       j.ID,
+			BenchmarkId: j.FrameworkID,
+			JobStatus:   api.ComplianceJobStatus(j.Status),
+			CreatedAt:   j.CreatedAt,
+			UpdatedAt:   j.UpdatedAt,
+		}
+		item.NumberOfIntegrations = len(j.IntegrationIDs)
+		for _, i := range j.IntegrationIDs {
+			if info, ok := connectionInfo[i]; ok {
+				item.IntegrationInfo = append(item.IntegrationInfo, info)
+			}
+		}
+
+		items2 = append(items2, item)
+	}
+
+	if request.SortBy != nil {
+		switch strings.ToLower(*request.SortBy) {
+		case "id":
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].JobId < items2[j].JobId
+			})
+		case "updated_at", "updatedat":
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].UpdatedAt.After(items2[j].UpdatedAt)
+			})
+		case "created_at", "createdat":
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].CreatedAt.After(items2[j].CreatedAt)
+			})
+		case "benchmarkid":
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].BenchmarkId < items2[j].BenchmarkId
+			})
+		case "jobstatus":
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].JobStatus < items2[j].JobStatus
+			})
+		default:
+			sort.Slice(items2, func(i, j int) bool {
+				return items2[i].UpdatedAt.After(items2[j].UpdatedAt)
+			})
+		}
+	} else {
+		sort.Slice(items2, func(i, j int) bool {
+			return items2[i].UpdatedAt.After(items2[j].UpdatedAt)
+		})
+	}
+
+	items = append(items, items2...)
+
+	totalCount := len(items)
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			items = utils.Paginate(1, *request.PerPage, items)
