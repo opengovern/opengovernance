@@ -68,7 +68,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		ResourcesFindingsIsDone: make(map[string]bool),
 	}
 
-	controlViewSummary := &types.ComplianceQuickScanControlView{
+	controlView := &types.ComplianceJobReportControlView{
 		Controls:          make(map[string]types.AuditControlResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
@@ -78,7 +78,21 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			JobStartedAt: time.Now(),
 		},
 	}
-	resourceViewSummary := &types.ComplianceQuickScanResourceView{
+	controlSummary := &types.ComplianceJobReportControlSummary{
+		Controls: make(map[string]*types.ControlSummary),
+		ControlScore: &types.ControlScore{
+			TotalControls:  0,
+			FailedControls: 0,
+		},
+		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
+		JobSummary: types.JobSummary{
+			JobID:        j.ID,
+			FrameworkID:  j.BenchmarkID,
+			Auditable:    true,
+			JobStartedAt: time.Now(),
+		},
+	}
+	resourceView := &types.ComplianceJobReportResourceView{
 		Integrations:      make(map[string]types.AuditIntegrationResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
@@ -89,6 +103,9 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 	}
 
+	totalControls := make(map[string]bool)
+	failedControls := make(map[string]bool)
+	integrationsMap := make(map[string]bool)
 	for page := 1; paginator.HasNext(); page++ {
 		w.logger.Info("Next page", zap.Int("page", page))
 		page, err := paginator.NextPage(ctx)
@@ -120,7 +137,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
-			addJobSummary(controlViewSummary, resourceViewSummary, f)
+			addJobSummary(controlSummary, controlView, resourceView, f)
+			integrationsMap[f.IntegrationID] = true
+			totalControls[f.ControlID] = true
+			if f.ComplianceStatus == types.ComplianceStatusALARM {
+				failedControls[f.ControlID] = true
+			}
 		}
 
 		var docs []es2.Doc
@@ -157,8 +179,6 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 	)
 
 	jd.Summarize(w.logger)
-
-	w.logger.Info("Summarize done", zap.Any("summary", jd))
 
 	keys, idx := jd.BenchmarkSummary.KeysAndIndex()
 	jd.BenchmarkSummary.EsID = es2.HashOf(keys...)
@@ -212,17 +232,36 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		zap.Int("resource_count", len(jd.ResourcesFindings)),
 	)
 
-	keys, idx = controlViewSummary.KeysAndIndex()
-	controlViewSummary.EsID = es2.HashOf(keys...)
-	controlViewSummary.EsIndex = idx
+	var integrations []string
+	for i, _ := range integrationsMap {
+		integrations = append(integrations, i)
+	}
 
-	err = sendDataToOpensearch(w.esClient.ES(), controlViewSummary)
+	controlView.JobSummary.IntegrationIDs = integrations
+	keys, idx = controlView.KeysAndIndex()
+	controlView.EsID = es2.HashOf(keys...)
+	controlView.EsIndex = idx
 
-	keys, idx = resourceViewSummary.KeysAndIndex()
-	resourceViewSummary.EsID = es2.HashOf(keys...)
-	resourceViewSummary.EsIndex = idx
+	err = sendDataToOpensearch(w.esClient.ES(), controlView)
 
-	err = sendDataToOpensearch(w.esClient.ES(), resourceViewSummary)
+	resourceView.JobSummary.IntegrationIDs = integrations
+	keys, idx = resourceView.KeysAndIndex()
+	resourceView.EsID = es2.HashOf(keys...)
+	resourceView.EsIndex = idx
+
+	err = sendDataToOpensearch(w.esClient.ES(), resourceView)
+	if err != nil {
+		return err
+	}
+
+	controlSummary.JobSummary.IntegrationIDs = integrations
+	controlSummary.ControlScore.TotalControls = int64(len(totalControls))
+	controlSummary.ControlScore.FailedControls = int64(len(failedControls))
+	keys, idx = controlSummary.KeysAndIndex()
+	controlSummary.EsID = es2.HashOf(keys...)
+	controlSummary.EsIndex = idx
+
+	err = sendDataToOpensearch(w.esClient.ES(), controlSummary)
 	if err != nil {
 		return err
 	}
@@ -343,74 +382,93 @@ func (w *Worker) deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations
 	return nil
 }
 
-func addJobSummary(controlSummary *types.ComplianceQuickScanControlView, resourceSummary *types.ComplianceQuickScanResourceView,
+func addJobSummary(controlSummary *types.ComplianceJobReportControlSummary,
+	controlView *types.ComplianceJobReportControlView, resourceView *types.ComplianceJobReportResourceView,
 	cr types.ComplianceResult) {
 	if cr.ComplianceStatus != types.ComplianceStatusALARM {
 		return
 	}
 
-	if _, ok := resourceSummary.Integrations[cr.IntegrationID]; !ok {
-		resourceSummary.Integrations[cr.IntegrationID] = types.AuditIntegrationResult{
+	if _, ok := resourceView.Integrations[cr.IntegrationID]; !ok {
+		resourceView.Integrations[cr.IntegrationID] = types.AuditIntegrationResult{
 			ResourceTypes: make(map[string]types.AuditResourceTypesResult),
 		}
 	}
 
-	if _, ok := resourceSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
-		resourceSummary.ComplianceSummary[cr.ComplianceStatus] = 0
+	if _, ok := resourceView.ComplianceSummary[cr.ComplianceStatus]; !ok {
+		resourceView.ComplianceSummary[cr.ComplianceStatus] = 0
 	}
-	resourceSummary.ComplianceSummary[cr.ComplianceStatus] += 1
-	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType]; !ok {
-		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType] = types.AuditResourceTypesResult{
+	resourceView.ComplianceSummary[cr.ComplianceStatus] += 1
+	if _, ok := resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType]; !ok {
+		resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType] = types.AuditResourceTypesResult{
 			Resources: make(map[string]types.AuditResourceResult),
 		}
 	}
-	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID]; !ok {
-		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID] = types.AuditResourceResult{
+	if _, ok := resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID]; !ok {
+		resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID] = types.AuditResourceResult{
 			ResourceSummary: make(map[types.ComplianceStatus]uint64),
 			Results:         make(map[types.ComplianceStatus][]types.AuditControlFinding),
 			ResourceName:    cr.ResourceName,
 		}
 	}
-	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus]; !ok {
-		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] = 0
+	if _, ok := resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus]; !ok {
+		resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] = 0
 	}
-	resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] += 1
-	if _, ok := resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus]; !ok {
-		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = make([]types.AuditControlFinding, 0)
+	resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].ResourceSummary[cr.ComplianceStatus] += 1
+	if _, ok := resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus]; !ok {
+		resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = make([]types.AuditControlFinding, 0)
 	}
-	resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = append(
-		resourceSummary.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus], types.AuditControlFinding{
+	resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus] = append(
+		resourceView.Integrations[cr.IntegrationID].ResourceTypes[cr.ResourceType].Resources[cr.ResourceID].Results[cr.ComplianceStatus], types.AuditControlFinding{
 			Severity:  cr.Severity,
 			ControlID: cr.ControlID,
 			Reason:    cr.Reason,
 		})
 
 	// Audit Summary
-	if _, ok := controlSummary.Controls[cr.ControlID]; !ok {
-		controlSummary.Controls[cr.ControlID] = types.AuditControlResult{
+	if _, ok := controlView.Controls[cr.ControlID]; !ok {
+		controlView.Controls[cr.ControlID] = types.AuditControlResult{
 			Severity:       cr.Severity,
 			ControlSummary: make(map[types.ComplianceStatus]uint64),
 			Results:        make(map[types.ComplianceStatus][]types.AuditResourceFinding),
 		}
 	}
-	if _, ok := controlSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
-		controlSummary.ComplianceSummary[cr.ComplianceStatus] = 0
+	if _, ok := controlView.ComplianceSummary[cr.ComplianceStatus]; !ok {
+		controlView.ComplianceSummary[cr.ComplianceStatus] = 0
 	}
-	controlSummary.ComplianceSummary[cr.ComplianceStatus] += 1
+	controlView.ComplianceSummary[cr.ComplianceStatus] += 1
 
-	if _, ok := controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus]; !ok {
-		controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] = 0
+	if _, ok := controlView.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus]; !ok {
+		controlView.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] = 0
 	}
-	if _, ok := controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus]; !ok {
-		controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus] = make([]types.AuditResourceFinding, 0)
+	if _, ok := controlView.Controls[cr.ControlID].Results[cr.ComplianceStatus]; !ok {
+		controlView.Controls[cr.ControlID].Results[cr.ComplianceStatus] = make([]types.AuditResourceFinding, 0)
 	}
-	controlSummary.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] += 1
-	controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus] = append(controlSummary.Controls[cr.ControlID].Results[cr.ComplianceStatus],
+	controlView.Controls[cr.ControlID].ControlSummary[cr.ComplianceStatus] += 1
+	controlView.Controls[cr.ControlID].Results[cr.ComplianceStatus] = append(controlView.Controls[cr.ControlID].Results[cr.ComplianceStatus],
 		types.AuditResourceFinding{
 			ResourceID:   cr.ResourceID,
 			ResourceType: cr.ResourceType,
 			Reason:       cr.Reason,
 		})
+
+	if _, ok := controlSummary.ComplianceSummary[cr.ComplianceStatus]; !ok {
+		controlSummary.ComplianceSummary[cr.ComplianceStatus] = 0
+	}
+	controlSummary.ComplianceSummary[cr.ComplianceStatus] += 1
+	if v, ok := controlSummary.Controls[cr.ControlID]; !ok || v == nil {
+		controlSummary.Controls[cr.ControlID] = &types.ControlSummary{
+			Severity: cr.Severity,
+			Alarms:   0,
+			Oks:      0,
+		}
+	}
+	switch cr.ComplianceStatus {
+	case types.ComplianceStatusALARM:
+		controlSummary.Controls[cr.ControlID].Alarms += 1
+	case types.ComplianceStatusOK:
+		controlSummary.Controls[cr.ControlID].Oks += 1
+	}
 	return
 }
 

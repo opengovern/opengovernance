@@ -150,6 +150,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v3.GET("/quick/scan/:run_id", httpserver2.AuthorizeHandler(h.GetQuickScanSummary, authApi.ViewerRole))
 	v3.GET("/quick/sequence/:run_id", httpserver2.AuthorizeHandler(h.GetQuickSequenceSummary, authApi.ViewerRole))
+
+	v3.GET("/compliance/report/:run_id", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -6704,7 +6706,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 	summaryJobs, err := h.schedulerClient.GetSummaryJobs(clientCtx, []string{jobId})
 	if err != nil {
 		h.logger.Error("could not get Summary Job IDs", zap.Error(err))
-		return echoCtx.JSON(http.StatusInternalServerError, "could not get Summary Job IDs")
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get Summary Job IDs")
 	}
 
 	// tracer :
@@ -6714,10 +6716,15 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 
 	var response api.ComplianceSummaryOfBenchmarkResponse
 
+	if len(summaryJobs) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no summary job found by given compliance job ids")
+	}
+
 	h.logger.Info("Jobs", zap.Any("jobs", summaryJobs))
 	summariesAtTime, err := es.GetComplianceSummaryByJobId(ctx, h.logger, h.client, summaryJobs, true)
 	if err != nil {
-		return err
+		h.logger.Error("failed to get summary by summary job ids", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get summary by summary job ids")
 	}
 	var benchmarkId string
 	for k, _ := range summariesAtTime {
@@ -6741,14 +6748,14 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, nil, opengovernanceTypes.GetPassedComplianceStatuses(), jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for passed", zap.Error(err))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch per benchmark resource severity result for passed")
 	}
 
 	allResourcesResult, err := es.GetPerBenchmarkResourceSeverityResultByJobId(ctx, h.logger, h.client, []string{benchmarkId},
 		nil, nil, nil, nil, jobId)
 	if err != nil {
 		h.logger.Error("failed to fetch per benchmark resource severity result for all", zap.Error(err))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch per benchmark resource severity result for all")
 	}
 
 	summaryAtTime := summariesAtTime[benchmarkId]
@@ -6776,7 +6783,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 			[]bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field", zap.Error(err))
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch complianceResults top field")
 		}
 
 		topFieldTotalResponse, err := es.ComplianceResultsTopFieldQuery(ctx, h.logger, h.client, "integrationID", nil,
@@ -6784,7 +6791,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 			opengovernanceTypes.GetFailedComplianceStatuses(), []bool{true}, int(showTop), nil, nil)
 		if err != nil {
 			h.logger.Error("failed to fetch complianceResults top field total", zap.Error(err))
-			return err
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch complianceResults top field total")
 		}
 		totalCountMap := make(map[string]int)
 		for _, item := range topFieldTotalResponse.Aggregations.FieldFilter.Buckets {
@@ -6831,7 +6838,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resource types for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resource types for benchmark")
 	}
 	for k, v := range topResourceTypesMap {
 		topResourceTypes = append(topResourceTypes, api.TopFiledRecordV2{
@@ -6848,7 +6855,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resources for benchmark")
 	}
 	for k, v := range topResourcesMap {
 		topResources = append(topResources, api.TopFiledRecordV2{
@@ -6865,7 +6872,7 @@ func (h *HttpHandler) ComplianceSummaryOfJob(echoCtx echo.Context) error {
 		nil, nil, []string{benchmarkId}, nil, int(showTop))
 	if err != nil {
 		h.logger.Error("failed to get top resources for benchmark", zap.Error(err), zap.String("benchmarkID", benchmarkId))
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get top resources for benchmark")
 	}
 	for k, v := range topControlsMap {
 		topControls = append(topControls, api.TopFiledRecordV2{
@@ -7649,7 +7656,7 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			view		query		string	false	"Result View options: [control,resource,both] (default resource)"
-//	@Param			auditable	query		bool	false	"Whether the job was auditable or not"
+//	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
 //	@Param			run_id		path		string	true	"Benchmark ID"
 //	@Success		200
 //	@Router			/compliance/api/v3/quick/scan/{run_id} [get]
@@ -7658,15 +7665,16 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	view := c.QueryParam("view")
-	auditableStr := c.QueryParam("auditable")
+	withIncidentsStr := c.QueryParam("with_incidents")
+	controls := httpserver2.QueryArrayParam(c, "controls")
 
 	if view == "" {
 		view = "control"
 	}
 
-	auditable := false
-	if auditableStr == "true" {
-		auditable = true
+	withIncidents := false
+	if withIncidentsStr == "true" {
+		withIncidents = true
 		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
 		if err != nil {
 			h.logger.Error("failed to get compliance job", zap.Error(err))
@@ -7695,7 +7703,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7709,7 +7717,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7723,12 +7731,12 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7791,7 +7799,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7805,7 +7813,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7819,12 +7827,12 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetQuickScanControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetQuickScanResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7840,4 +7848,61 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, result)
+}
+
+// GetComplianceJobReport godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			controls		query		[]string	false	"List of controls to get results"
+//	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
+//	@Param			run_id			path		string		true	"compliance summary job id"
+//	@Success		200
+//	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
+func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
+
+	jobId := c.Param("run_id")
+	controls := httpserver2.QueryArrayParam(c, "controls")
+	withIncidentsStr := c.QueryParam("with_incidents")
+
+	withIncidents := false
+	if withIncidentsStr == "true" {
+		withIncidents = true
+		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get compliance job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+		}
+		if complianceJob.SummaryJobId == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
+		}
+		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
+	} else {
+		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
+		if err != nil {
+			h.logger.Error("failed to get audit job", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
+		}
+		if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+		} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+		}
+	}
+
+	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
+		jobId, withIncidents, controls)
+	if err != nil {
+		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
+	}
+
+	return c.JSON(http.StatusOK, summary)
 }

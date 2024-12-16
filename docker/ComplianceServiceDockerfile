@@ -1,24 +1,7 @@
-FROM golang:1.23-alpine AS builder
-WORKDIR /app
+FROM docker.io/golang:alpine as build
+RUN apk --no-cache add ca-certificates
 
-# Install all dependencies required for building the parser from pg_query_go
-# - build-base gives us a C/C++ compiler
-# - cmake, bison, clang, llvm-dev are required by pg_query_go
-RUN apk --no-cache add ca-certificates git build-base cmake bison clang llvm-dev
-
-# Copy go module files and download dependencies
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy the rest of the code
-COPY . .
-
-# Enable CGO and produce a static binary.
-# pg_query_go's parser is written in C and needs CGO=1.
-RUN CGO_ENABLED=1 GOOS=linux go build -o compliance-service -ldflags '-linkmode external -extldflags "-static"' ./cmd/compliance-service
-
-# Final minimal image
-FROM scratch
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /app/compliance-service /compliance-service
-CMD ["/compliance-service"]
+FROM docker.io/golang:alpine
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY ./build/compliance-service /
+CMD [ "/compliance-service" ]
