@@ -7,6 +7,7 @@ const (
 	RegistryTypeECR       RegistryType = "ecr"
 	RegistryTypeGHCR      RegistryType = "ghcr"
 	RegistryTypeACR       RegistryType = "acr"
+	RegistryTypeGCR       RegistryType = "gcr"
 )
 
 type DockerhubCredentials struct {
@@ -31,18 +32,24 @@ type EcrCredentials struct {
 }
 
 type AcrCredentials struct {
-	LoginServer string 	`json:"login_server"`
+	LoginServer string `json:"login_server"`
 
 	TenantID     string `json:"tenant_id"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
 
+type GcrCredentials struct {
+	ProjectID string `json:"project_id"`
+	JSONKey   string `json:"json_key"`
+}
+
 type IntegrationCredentials struct {
 	DockerhubCredentials *DockerhubCredentials `json:"dockerhub_credentials"`
 	EcrCredentials       *EcrCredentials       `json:"ecr_credentials"`
-	GhcrCredentials      *GhcrCredentials      `json:"gcr_credentials"`
+	GhcrCredentials      *GhcrCredentials      `json:"ghcr_credentials"`
 	AcrCredentials       *AcrCredentials       `json:"acr_credentials"`
+	GcrCredentials       *GcrCredentials       `json:"gcr_credentials"`
 }
 
 func (c IntegrationCredentials) GetRegistryType() RegistryType {
@@ -55,6 +62,8 @@ func (c IntegrationCredentials) GetRegistryType() RegistryType {
 		return RegistryTypeGHCR
 	case c.AcrCredentials != nil:
 		return RegistryTypeACR
+	case c.GcrCredentials != nil:
+		return RegistryTypeGCR
 	default:
 		return ""
 	}
