@@ -14,6 +14,8 @@ import (
 	cohereaiConfigs "github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team"
 	digitalOceanConfigs "github.com/opengovern/opencomply/services/integration/integration-type/digitalocean-team/configs"
+	doppler "github.com/opengovern/opencomply/services/integration/integration-type/doppler-account"
+	dopplerConfigs "github.com/opengovern/opencomply/services/integration/integration-type/doppler-account/configs"
 	"github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory"
 	entraidConfigs "github.com/opengovern/opencomply/services/integration/integration-type/entra-id-directory/configs"
 	githubaccount "github.com/opengovern/opencomply/services/integration/integration-type/github-account"
@@ -44,6 +46,7 @@ const (
 	IntegrationTypeGoogleWorkspaceAccount = googleConfig.IntegrationTypeGoogleWorkspaceAccount
 	IntegrationTypeOCIRepository          = ociConfigs.IntegrationTypeOciRepository
 	IntegrationTypeRenderAccount          = renderConfigs.IntegrationTypeRenderAccount
+	IntegrationTypeDopplerAccount         = dopplerConfigs.IntegrationTypeDopplerAccount
 )
 
 var AllIntegrationTypes = []integration.Type{
@@ -59,6 +62,7 @@ var AllIntegrationTypes = []integration.Type{
 	IntegrationTypeGoogleWorkspaceAccount,
 	IntegrationTypeOCIRepository,
 	IntegrationTypeRenderAccount,
+	IntegrationTypeDopplerAccount,
 }
 
 var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
@@ -74,6 +78,7 @@ var IntegrationTypes = map[integration.Type]interfaces.IntegrationType{
 	IntegrationTypeGoogleWorkspaceAccount: &google_workspace_account.GoogleWorkspaceAccountIntegration{},
 	IntegrationTypeOCIRepository:          &oci.Integration{},
 	IntegrationTypeRenderAccount:          &render.RenderAccountIntegration{},
+	IntegrationTypeDopplerAccount:         &doppler.DopplerAccountIntegration{},
 }
 
 func ParseType(str string) integration.Type {
