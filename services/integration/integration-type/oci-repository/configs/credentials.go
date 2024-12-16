@@ -41,6 +41,7 @@ type AcrCredentials struct {
 
 type GcrCredentials struct {
 	ProjectID string `json:"project_id"`
+	Location  string `json:"location"`
 	JSONKey   string `json:"json_key"`
 }
 
