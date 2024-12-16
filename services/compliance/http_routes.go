@@ -7716,7 +7716,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7730,7 +7730,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, auditable, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7812,7 +7812,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7826,7 +7826,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, false, nil)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
