@@ -50,6 +50,10 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	job.JobReportControlSummary = &types.ComplianceJobReportControlSummary{
 		Controls:          make(map[string]*types.ControlSummary),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
+		ControlScore: &types.ControlScore{
+			TotalControls:  0,
+			FailedControls: 0,
+		},
 		JobSummary: types.JobSummary{
 			JobID:          job.JobID,
 			FrameworkID:    job.FrameworkID,
@@ -69,9 +73,12 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 			IntegrationIDs: job.IntegrationIDs,
 		},
 	}
+
+	totalControls := make(map[string]bool)
+	failedControls := make(map[string]bool)
 	if len(job.IntegrationIDs) > 0 {
 		for _, integrationID := range job.IntegrationIDs {
-			err := w.RunJobForIntegration(ctx, job, integrationID)
+			err := w.RunJobForIntegration(ctx, job, integrationID, &totalControls, &failedControls)
 			if err != nil {
 				w.logger.Error("failed to run audit job for integration", zap.String("integration_id", integrationID), zap.Error(err))
 				return err
@@ -79,7 +86,7 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 			w.logger.Info("audit job for integration completed", zap.String("integration_id", integrationID))
 		}
 	} else {
-		err := w.RunJobForIntegration(ctx, job, "all")
+		err := w.RunJobForIntegration(ctx, job, "all", &totalControls, &failedControls)
 		if err != nil {
 			w.logger.Error("failed to run audit job for all integrations", zap.Error(err))
 			return err
@@ -105,6 +112,8 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 		return err
 	}
 
+	job.JobReportControlSummary.ControlScore.FailedControls = int64(len(failedControls))
+	job.JobReportControlSummary.ControlScore.TotalControls = int64(len(totalControls))
 	keys, idx = job.JobReportControlSummary.KeysAndIndex()
 	job.JobReportControlSummary.EsID = es.HashOf(keys...)
 	job.JobReportControlSummary.EsIndex = idx
@@ -117,7 +126,7 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	return nil
 }
 
-func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integrationId string) error {
+func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integrationId string, totalControls, failedControls *map[string]bool) error {
 	include := make(map[string]bool)
 	if len(job.IncludeResult) > 0 {
 		for _, result := range job.IncludeResult {
@@ -172,6 +181,10 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			continue
 		}
 		for _, qr := range queryResults {
+			(*totalControls)[control.ID] = true
+			if qr.ComplianceStatus == types.ComplianceStatusALARM {
+				(*failedControls)[control.ID] = true
+			}
 			if _, ok := include[string(qr.ComplianceStatus)]; !ok {
 				continue
 			}

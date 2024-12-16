@@ -7858,9 +7858,9 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
-//	@Param			controls	query		[]string	false	"List of controls to get results"
+//	@Param			controls		query		[]string	false	"List of controls to get results"
 //	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
-//	@Param			run_id		path		string		true	"compliance summary job id"
+//	@Param			run_id			path		string		true	"compliance summary job id"
 //	@Success		200
 //	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
 func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
