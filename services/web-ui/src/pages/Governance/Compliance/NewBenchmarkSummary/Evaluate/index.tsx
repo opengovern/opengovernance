@@ -317,7 +317,7 @@ export default function Evaluate({
                                         RunBenchmark()
                                         setOpened(false)
                                     } else {
-                                        onEvaluate(connections,withIncidents)
+                                        onEvaluate(connections, withIncidents)
                                     }
                                 }}
                             >
@@ -409,23 +409,23 @@ export default function Evaluate({
                     ]}
                     // @ts-ignore
                     selectedOptions={connections}
-                    loadingText="Loading Accounts"
-                    emptyText="No Accounts"
+                    loadingText="Loading Integrations"
+                    emptyText="No Integrations"
                     loading={loading}
                     tokenLimit={1}
                     filteringType="auto"
-                    placeholder="Select Account"
+                    placeholder="Select Integrations"
                     onChange={({ detail }) => {
                         // @ts-ignore
                         setConnections(detail.selectedOptions)
                     }}
                 />
                 <Checkbox
-                className='mt-2 w-full'
+                    className="mt-2 w-full"
                     onChange={({ detail }) => setWithIncidents(detail.checked)}
                     checked={withIncidents}
                 >
-                    Run With Incidents
+                    Create auditable incident
                 </Checkbox>
             </Modal>
         </>

@@ -68,15 +68,63 @@ const JOB_STATUS = {
 
 export default function EvaluateDetail() {
     const { id, benchmarkId } = useParams()
-    const [detail,setDetail] = useState()
-    const [detailLoading,setDetailLoading] = useState(false)
-    const [runDetail,setRunDetail] = useState<RunDetail>()
-    const [page,setPage] = useState(0)
-    const [resourcePage,setResourcePage] = useState(0)
-    const [open,setOpen]= useState(false)
-    const [selectedControl,setSelectedControl] = useState()
-    const [resources,setResources] = useState()
-
+    const [detail, setDetail] = useState()
+    const [detailLoading, setDetailLoading] = useState(false)
+    const [runDetail, setRunDetail] = useState()
+    const [page, setPage] = useState(0)
+    const [resourcePage, setResourcePage] = useState(0)
+    const [open, setOpen] = useState(false)
+    const [selectedControl, setSelectedControl] = useState()
+    const [resources, setResources] = useState()
+    const [fullLoading, setFullLoading] = useState(false)
+    const [sortOrder, setSortOrder] = useState('asc')
+    const [sortField, setSortField] = useState({
+        id: 'severity',
+        header: 'Severity',
+        sortingField: 'severity',
+        cell: (item) => (
+            <Badge
+                // @ts-ignore
+                color={`severity-${item.severity}`}
+            >
+                {item.severity.charAt(0).toUpperCase() + item.severity.slice(1)}
+            </Badge>
+        ),
+        maxWidth: 100,
+        sortingComparator: (a, b) => {
+            if (a?.severity === b?.severity) {
+                return 0
+            }
+            if (a?.severity === 'critical') {
+                return -1
+            }
+            if (b?.severity === 'critical') {
+                return 1
+            }
+            if (a?.severity === 'high') {
+                return -1
+            }
+            if (b?.severity === 'high') {
+                return 1
+            }
+            if (a?.severity === 'medium') {
+                return -1
+            }
+            if (b?.severity === 'medium') {
+                return 1
+            }
+            if (a?.severity === 'low') {
+                return -1
+            }
+            if (b?.severity === 'low') {
+                return 1
+            }
+        },
+    })
+    const [integrations, setIntegrations] = useState()
+    const [integrationOpen,setIntegrationOpen]= useState(false)
+    const [integrationDetail,setIntegrationDetail]= useState()
+    const [integrationDetailLoading,setIntegrationDetailLoading]= useState(false)
     const GetDetail = () => {
         // /compliance/api/v3/benchmark/{benchmark-id}/assignments
         setDetailLoading(true)
@@ -94,7 +142,7 @@ export default function EvaluateDetail() {
                 Authorization: `Bearer ${token}`,
             },
         }
-        
+
         axios
             .get(
                 // @ts-ignore
@@ -111,7 +159,7 @@ export default function EvaluateDetail() {
                 console.log(err)
             })
     }
-    
+
     const GetControls = () => {
         // /compliance/api/v3/benchmark/{benchmark-id}/assignments
         setDetailLoading(true)
@@ -139,15 +187,16 @@ export default function EvaluateDetail() {
             .then((res) => {
                 //   setAccounts(res.data.integrations)
                 const temp = []
-                 Object.entries(res.data?.controls).map(([key, value]) => {
+                Object.entries(res.data?.controls).map(([key, value]) => {
                     temp.push({
-                        "title": key,
-                        "severity": value.severity,
-                        "alarms": value.alarms,
-                        "oks": value.oks
+                        title: key,
+                        severity: value.severity,
+                        alarms: value.alarms,
+                        oks: value.oks,
                     })
-                 })          
-                 setRunDetail(temp)
+                })
+                setIntegrations(res.data?.job_summary?.integration_ids)
+                setRunDetail(temp)
                 setDetailLoading(false)
             })
             .catch((err) => {
@@ -182,12 +231,13 @@ export default function EvaluateDetail() {
             .then((res) => {
                 //   setAccounts(res.data.integrations)
                 const temp = []
-                const alarms = res?.data?.controls[selectedControl.title]?.results?.alarm
+                const alarms =
+                    res?.data?.controls[selectedControl.title]?.results?.alarm
                 alarms.map((alarm) => {
                     temp.push({
-                        "resource_id": alarm.resource_id,
-                        "resource_type": alarm.resource_type,
-                        "reason": alarm.reason
+                        resource_id: alarm.resource_id,
+                        resource_type: alarm.resource_type,
+                        reason: alarm.reason,
                     })
                 })
                 setResources(temp)
@@ -199,15 +249,92 @@ export default function EvaluateDetail() {
                 console.log(err)
             })
     }
-    
-    
+
+    const GetFullResults = () => {
+        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        setFullLoading(true)
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+
+        axios
+            .get(
+                // @ts-ignore
+                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=true`,
+                config
+            )
+            .then((res) => {
+                //   setAccounts(res.data.integrations)
+                const json = JSON.stringify(res.data)
+                var data = new Blob([json], { type: 'application/json' })
+                var csvURL = window.URL.createObjectURL(data)
+                var tempLink = document.createElement('a')
+                tempLink.href = csvURL
+                tempLink.setAttribute('download', 'result.json')
+                tempLink.click()
+                setFullLoading(false)
+            })
+            .catch((err) => {
+                setFullLoading(false)
+                console.log(err)
+            })
+    }
+    const GetIntegrationDetail = () => {
+        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        setIntegrationDetailLoading(true)
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+        const body ={
+            integration_id:integrations
+        }
+         axios
+             .post(
+                 // @ts-ignore
+                 `${url}/main/integration/api/v1/integrations/list`,body,
+                 config
+             )
+             .then((res) => {
+                 //   setAccounts(res.data.integrations)
+                   setIntegrationDetailLoading(false)
+                   setIntegrationDetail(res.data?.integrations)
+               
+             })
+             .catch((err) => {
+                 console.log(err)
+             })
+      
+       
+    }
 
     useEffect(() => {
-            GetDetail()
-            GetControls()
+        GetDetail()
+        GetControls()
     }, [])
     useEffect(() => {
-        if(selectedControl){
+        if (selectedControl) {
             GetResults()
         }
     }, [selectedControl])
@@ -215,6 +342,16 @@ export default function EvaluateDetail() {
         if (text) {
             return text.length > 30 ? text.substring(0, 30) + '...' : text
         }
+    }
+    const getRows = () =>{
+        if(sortOrder == 'asc'){
+            return runDetail?.sort(sortField.sortingComparator).slice(page * 10, (page + 1) * 10)
+        }
+        return runDetail
+            ?.sort(sortField.sortingComparator)
+            .reverse()
+            .slice(page * 10, (page + 1) * 10)
+
     }
     return (
         <>
@@ -266,13 +403,33 @@ export default function EvaluateDetail() {
                             },
                             {
                                 label: 'Control score',
-                                value: (detail?.compliance_score * 100).toFixed(
-                                    2
-                                ),
+                                value:
+                                    detail?.compliance_score.toFixed(2) * 100+ "%",
                             },
                             {
-                                label: 'Total issues',
-                                value: detail?.issues_count,
+                                label: 'Integrations',
+                                value: (
+                                    <>
+                                        <Flex
+                                            className="gap-2 mt-2"
+                                            justifyContent="start"
+                                        >
+                                            {integrations?.length}
+                                            <KButton
+                                                onClick={() => {
+                                                    if (integrations) {
+                                                        GetIntegrationDetail()
+                                                        setIntegrationOpen(true)
+                                                    }
+                                                }}
+                                                variant="inline-link"
+                                                ariaLabel={`Open Detail`}
+                                            >
+                                                See details
+                                            </KButton>
+                                        </Flex>
+                                    </>
+                                ),
                             },
                             {
                                 label: 'Last Evaulated at',
@@ -282,6 +439,31 @@ export default function EvaluateDetail() {
                                             detail?.last_evaluated_at
                                         )}
                                     </>
+                                ),
+                            },
+                            {
+                                label: 'Severity Status',
+                                columnSpan: 2,
+                                value: (
+                                    <>
+                                        <Flex className="w-full ">
+                                            <SeverityBar benchmark={detail} />
+                                        </Flex>
+                                    </>
+                                ),
+                            },
+                            {
+                                label: 'Download Results',
+                                value: (
+                                    <KButton
+                                        iconName="download"
+                                        className="mt-2"
+                                        variant="inline-icon"
+                                        onClick={() => GetFullResults()}
+                                        loading={fullLoading}
+                                    >
+                                        Click here for results in JSON
+                                    </KButton>
                                 ),
                             },
                             // {
@@ -312,7 +494,13 @@ export default function EvaluateDetail() {
                     }) =>
                         `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
                     }
-                    // sortingDescending={sortOrder == 'desc' ? true : false}
+                    sortingDescending={sortOrder == 'desc' ? true : false}
+                    sortingColumn={sortField}
+                    onSortingChange={({ detail }) => {
+                        const desc = detail.isDescending ? 'desc' : 'asc'
+                        setSortOrder(desc)
+                        setSortField(detail.sortingColumn)
+                    }}
                     onRowClick={(event) => {
                         const row = event.detail.item
                         // @ts-ignore
@@ -323,7 +511,7 @@ export default function EvaluateDetail() {
                             id: 'id',
                             header: 'Control ID',
                             cell: (item) => item.title,
-                            sortingField: 'id',
+                            // sortingField: 'id',
                             isRowHeader: true,
                         },
 
@@ -341,12 +529,41 @@ export default function EvaluateDetail() {
                                 </Badge>
                             ),
                             maxWidth: 100,
+                            sortingComparator: (a, b) => {
+                                if (a?.severity === b?.severity) {
+                                    return 0
+                                }
+                                if (a?.severity === 'critical') {
+                                    return -1
+                                }
+                                if (b?.severity === 'critical') {
+                                    return 1
+                                }
+                                if (a?.severity === 'high') {
+                                    return -1
+                                }
+                                if (b?.severity === 'high') {
+                                    return 1
+                                }
+                                if (a?.severity === 'medium') {
+                                    return -1
+                                }
+                                if (b?.severity === 'medium') {
+                                    return 1
+                                }
+                                if (a?.severity === 'low') {
+                                    return -1
+                                }
+                                if (b?.severity === 'low') {
+                                    return 1
+                                }
+                            },
                         },
 
                         {
                             id: 'incidents',
                             header: 'OK',
-                            // sortingField: 'incidents',
+                            sortingField: 'oks',
 
                             cell: (item) => (
                                 // @ts-ignore
@@ -357,21 +574,47 @@ export default function EvaluateDetail() {
                             ),
                             // minWidth: 50,
                             maxWidth: 100,
+                            sortingComparator: (a, b) => {
+                                console.log(a)
+                                console.log(b)
+
+                                if (a?.oks === b?.oks) {
+                                    return 0
+                                }
+                                if (a?.oks > b?.oks) {
+                                    return -1
+                                }
+                                if (a?.oks < b?.oks) {
+                                    return 1
+                                }
+                            },
                         },
                         {
                             id: 'passing_resources',
                             header: 'Alarms ',
+                            sortingField: 'alarms',
 
                             cell: (item) => (
                                 // @ts-ignore
                                 <>{item.alarms}</>
                             ),
                             maxWidth: 100,
+                            sortingComparator: (a, b) => {
+                                if (a?.alarms === b?.alarms) {
+                                    return 0
+                                }
+                                if (a?.alarms > b?.alarms) {
+                                    return -1
+                                }
+                                if (a?.alarms < b?.alarms) {
+                                    return 1
+                                }
+                            },
                         },
 
                         {
                             id: 'action',
-                            header: 'Action',
+                            header: '',
                             cell: (item) => (
                                 // @ts-ignore
                                 <KButton
@@ -381,7 +624,7 @@ export default function EvaluateDetail() {
                                     variant="inline-link"
                                     ariaLabel={`Open Detail`}
                                 >
-                                    Details
+                                    See details
                                 </KButton>
                             ),
                         },
@@ -402,11 +645,7 @@ export default function EvaluateDetail() {
                         { id: 'action', visible: true },
                     ]}
                     enableKeyboardNavigation
-                    items={
-                        runDetail
-                            ? runDetail.slice(page * 10, (page + 1) * 10)
-                            : []
-                    }
+                    items={runDetail ? getRows() : []}
                     loading={detailLoading}
                     loadingText="Loading resources"
                     // stickyColumns={{ first: 0, last: 1 }}
@@ -444,7 +683,7 @@ export default function EvaluateDetail() {
             </Flex>
             <Modal
                 visible={open}
-                size="large"
+                size="max"
                 onDismiss={() => setOpen(false)}
                 header={`Alarms`}
             >
@@ -471,7 +710,7 @@ export default function EvaluateDetail() {
                             cell: (item) => item.resource_id,
                             sortingField: 'id',
                             isRowHeader: true,
-                            maxWidth: "70px",
+                            maxWidth: '70px',
                         },
 
                         {
@@ -479,7 +718,7 @@ export default function EvaluateDetail() {
                             header: 'Title',
                             sortingField: 'severity',
                             cell: (item) => item.resource_type,
-                            maxWidth: "70px",
+                            maxWidth: '70px',
                         },
                         {
                             id: 'reason',
@@ -520,7 +759,7 @@ export default function EvaluateDetail() {
                         <Header className="w-full">
                             Resources{' '}
                             <span className=" font-medium">
-                                ({runDetail?.length})
+                                ({resources?.length})
                             </span>
                         </Header>
                     }
@@ -533,6 +772,127 @@ export default function EvaluateDetail() {
                             }
                         />
                     }
+                />
+            </Modal>
+            <Modal
+                visible={integrationOpen}
+                size="large"
+                onDismiss={() => setIntegrationOpen(false)}
+                header={``}
+            >
+                <KTable
+                    className="p-3   min-h-[550px]"
+                    // resizableColumns
+                    renderAriaLive={({
+                        firstIndex,
+                        lastIndex,
+                        totalItemsCount,
+                    }) =>
+                        `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
+                    }
+                    // sortingDescending={sortOrder == 'desc' ? true : false}
+                    // onRowClick={(event) => {
+                    //     const row = event.detail.item
+                    //     // @ts-ignore
+                    //     setSelectedControl(row)
+                    // }}
+                    columnDefinitions={[
+                        {
+                            id: 'integration_id',
+                            header: 'Integartion id',
+                            cell: (item) => item.integration_id,
+                            sortingField: 'id',
+                            isRowHeader: true,
+                            // maxWidth: '70px',
+                        },
+
+                        {
+                            id: 'provider_id',
+                            header: 'Provider id',
+                            sortingField: 'severity',
+                            cell: (item) => item.provider_id,
+                            // maxWidth: '70px',
+                        },
+                        {
+                            id: 'name',
+                            header: 'Name',
+                            sortingField: 'severity',
+                            cell: (item) => item.name,
+                            // maxWidth: 150,
+                        },
+                        {
+                            id: 'integration_type',
+                            header: 'integration Type',
+                            sortingField: 'severity',
+                            cell: (item) => item.integration_type,
+                            // maxWidth: 100,
+                        },
+                        {
+                            id: 'state',
+                            header: 'State',
+                            sortingField: 'severity',
+                            cell: (item) => (
+                                <>
+                                    <Badge
+                                        // @ts-ignore
+                                        color={
+                                            // @ts-ignore
+                                            item.state === 'active'
+                                                ? 'green'
+                                                : 'red'
+                                        }
+                                        // @ts-ignore
+                                    >
+                                        {/* @ts-ignore */}
+                                        {item.state}
+                                    </Badge>
+                                </>
+                            ),
+                            // maxWidth: 50,
+                        },
+                    ]}
+                    columnDisplay={[
+                        { id: 'integration_id', visible: true },
+                        { id: 'provider_id', visible: true },
+                        { id: 'name', visible: true },
+                        { id: 'integration_type', visible: true },
+                        { id: 'state', visible: true },
+                    ]}
+                    enableKeyboardNavigation
+                    items={integrationDetail ? integrationDetail : []}
+                    loading={integrationDetailLoading}
+                    loadingText="Loading resources"
+                    // stickyColumns={{ first: 0, last: 1 }}
+                    // stripedRows
+                    trackBy="id"
+                    empty={
+                        <Box
+                            margin={{ vertical: 'xs' }}
+                            textAlign="center"
+                            color="inherit"
+                        >
+                            <SpaceBetween size="m">
+                                <b>No resources</b>
+                            </SpaceBetween>
+                        </Box>
+                    }
+                    header={
+                        <Header className="w-full">
+                            Integrations{' '}
+                            <span className=" font-medium">
+                                ({integrationDetail?.length})
+                            </span>
+                        </Header>
+                    }
+                    // pagination={
+                    //     <Pagination
+                    //         currentPageIndex={resourcePage + 1}
+                    //         pagesCount={Math.ceil(resources?.length / 7)}
+                    //         onChange={({ detail }) =>
+                    //             setResourcePage(detail.currentPageIndex - 1)
+                    //         }
+                    //     />
+                    // }
                 />
             </Modal>
         </>

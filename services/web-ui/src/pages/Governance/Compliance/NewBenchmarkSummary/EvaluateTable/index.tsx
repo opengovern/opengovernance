@@ -446,12 +446,28 @@ export default function EvaluateTable({
                             <>{item.job_status}</>
                         ),
                     },
+                    {
+                        id: 'action',
+                        header: '',
+                        cell: (item) => (
+                            // @ts-ignore
+                            <KButton
+                                onClick={() => {
+                                     setSelected(item)
+                                }}
+                                variant="inline-link"
+                                ariaLabel={`Open Detail`}
+                            >
+                                See Details
+                            </KButton>
+                        ),
+                    },
                 ]}
                 columnDisplay={[
                     { id: 'job_id', visible: true },
                     { id: 'updated_at', visible: true },
                     { id: 'job_status', visible: true },
-                    { id: 'integration_id', visible: true },
+                    { id: 'integration_id', visible: false },
                     { id: 'integration_name', visible: true },
                     { id: 'integration_type', visible: true },
 
@@ -459,7 +475,7 @@ export default function EvaluateTable({
                     // { id: 'severity', visible: true },
                     // { id: 'evaluatedAt', visible: true },
 
-                    // { id: 'action', visible: true },
+                    { id: 'action', visible: true },
                 ]}
                 enableKeyboardNavigation
                 // @ts-ignore
