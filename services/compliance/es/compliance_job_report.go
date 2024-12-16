@@ -115,6 +115,7 @@ func GetJobReportControlSummaryByJobID(ctx context.Context, logger *zap.Logger, 
 		sourceItems := []string{
 			"es_id",
 			"es_index",
+			"control_score",
 			"compliance_summary",
 			"job_summary",
 		}
