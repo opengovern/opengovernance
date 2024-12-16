@@ -87,7 +87,9 @@ export default function Evaluate({
             url = window.location.origin
         }
         const body = {
-            with_incidents: withIncidents,
+            // with_incidents: withIncidents,
+            with_incidents: true,
+
             integration_info: connections.map((c) => {
                 return {
                     // @ts-ignore
@@ -95,7 +97,6 @@ export default function Evaluate({
                 }
             }),
             // @ts-ignore
-           
         }
         // @ts-ignore
         const token = JSON.parse(localStorage.getItem('openg_auth')).token
@@ -451,13 +452,13 @@ export default function Evaluate({
                         setConnections(detail.selectedOptions)
                     }}
                 />
-                <Checkbox
+                {/* <Checkbox
                     className="mt-2 w-full"
                     onChange={({ detail }) => setWithIncidents(detail.checked)}
                     checked={withIncidents}
                 >
                     Create auditable incident
-                </Checkbox>
+                </Checkbox> */}
             </Modal>
         </>
     )

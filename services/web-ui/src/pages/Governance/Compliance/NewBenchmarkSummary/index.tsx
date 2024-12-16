@@ -410,7 +410,9 @@ export default function NewBenchmarkSummary() {
         }
         console.log(c)
         const body = {
-            with_incidents: b,
+            with_incidents: true,
+            // with_incidents: b,
+
             integration_info: c.map((c) => {
                 return {
                     integration_id: c.value,
