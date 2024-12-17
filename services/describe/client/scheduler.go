@@ -33,7 +33,6 @@ type SchedulerServiceClient interface {
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
 	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeIntegrationJob, error)
-	GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceJob, error)
 	GetComplianceQuickSequence(ctx *httpclient.Context, jobID string) (*api.QuickScanSequence, error)
 	GetComplianceJobStatus(ctx *httpclient.Context, jobId string) (*api.GetComplianceJobStatusResponse, error)
 }

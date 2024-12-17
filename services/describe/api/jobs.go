@@ -210,6 +210,7 @@ type GetDescribeJobStatusResponse struct {
 
 type GetComplianceJobStatusResponse struct {
 	JobId           uint            `json:"job_id"`
+	WithIncidents   bool            `json:"with_incidents"`
 	SummaryJobId    *uint           `json:"summary_job_id"`
 	IntegrationInfo IntegrationInfo `json:"integration_info"`
 	JobStatus       string          `json:"job_status"`

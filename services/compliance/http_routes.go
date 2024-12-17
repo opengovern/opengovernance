@@ -152,6 +152,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/quick/sequence/:run_id", httpserver2.AuthorizeHandler(h.GetQuickSequenceSummary, authApi.ViewerRole))
 
 	v3.GET("/compliance/report/:run_id", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
+	v3.GET("/job-report/:run_id/summary", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -7665,45 +7666,38 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	view := c.QueryParam("view")
-	withIncidentsStr := c.QueryParam("with_incidents")
 	controls := httpserver2.QueryArrayParam(c, "controls")
 
 	if view == "" {
 		view = "control"
 	}
 
-	withIncidents := false
-	if withIncidentsStr == "true" {
-		withIncidents = true
-		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
-		if err != nil {
-			h.logger.Error("failed to get compliance job", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
-		}
+	complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+	if err != nil {
+		h.logger.Error("failed to get compliance job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+	}
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobSummarizerInProgress) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+	}
+	if complianceJob.WithIncidents {
 		if complianceJob.SummaryJobId == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
 		}
 		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
-	} else {
-		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
-		if err != nil {
-			h.logger.Error("failed to get audit job", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
-		}
-		if auditJob.Status == schedulerapi.ComplianceJobFailed {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.ComplianceJobTimeout {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
-		} else if auditJob.Status == schedulerapi.ComplianceJobRunnersInProgress || auditJob.Status == schedulerapi.ComplianceJobCreated || auditJob.Status == schedulerapi.ComplianceJobSummarizerInProgress {
-			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
-		}
 	}
 
 	var result api.AuditSummary
 
 	switch view {
 	case "resource", "resources":
-		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
+		summary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, complianceJob.WithIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7717,7 +7711,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "control", "controls":
-		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
+		summary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, complianceJob.WithIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7731,12 +7725,12 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			JobSummary:   summary.JobSummary,
 		}
 	case "both":
-		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents, controls)
+		controlSummary, err := es.GetJobReportControlViewByJobID(c.Request().Context(), h.logger, h.client, jobId, complianceJob.WithIncidents, controls)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
 		}
-		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, withIncidents)
+		resourceSummary, err := es.GetJobReportResourceViewByJobID(c.Request().Context(), h.logger, h.client, jobId, complianceJob.WithIncidents)
 		if err != nil {
 			h.logger.Error("failed to get audit job summary", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job summary")
@@ -7868,37 +7862,30 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 
 	jobId := c.Param("run_id")
 	controls := httpserver2.QueryArrayParam(c, "controls")
-	withIncidentsStr := c.QueryParam("with_incidents")
 
-	withIncidents := false
-	if withIncidentsStr == "true" {
-		withIncidents = true
-		complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
-		if err != nil {
-			h.logger.Error("failed to get compliance job", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
-		}
+	complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+	if err != nil {
+		h.logger.Error("failed to get compliance job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+	}
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobSummarizerInProgress) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+	}
+	if complianceJob.WithIncidents {
 		if complianceJob.SummaryJobId == nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
 		}
 		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
-	} else {
-		auditJob, err := h.schedulerClient.GetComplianceQuickRun(clientCtx, jobId)
-		if err != nil {
-			h.logger.Error("failed to get audit job", zap.Error(err))
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
-		}
-		if auditJob.Status == schedulerapi.ComplianceJobFailed {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.ComplianceJobTimeout {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
-		} else if auditJob.Status == schedulerapi.ComplianceJobRunnersInProgress || auditJob.Status == schedulerapi.ComplianceJobCreated || auditJob.Status == schedulerapi.ComplianceJobSummarizerInProgress {
-			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
-		}
 	}
 
 	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
-		jobId, withIncidents, controls)
+		jobId, complianceJob.WithIncidents, controls)
 	if err != nil {
 		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
