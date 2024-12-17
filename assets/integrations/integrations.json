@@ -148,9 +148,11 @@
     "tags": {},
     "Description": "Get visibility into your images.",
     "Icon": "oci.svg",
-    "Availability": "PREVIEW",
+    "Availability": "GA",
     "SourceCode": "",
-    "schema_ids": []
+    "schema_ids": [],
+    "PackageURL": "ghcr.io/opengovern/og-describer-oci",
+    "PackageTag": "local-v0.8.0"
   },
   {
     "id": 12,
