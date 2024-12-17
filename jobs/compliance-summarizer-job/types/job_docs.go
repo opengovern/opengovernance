@@ -30,11 +30,7 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	}
 
 	if job.BenchmarkID == complianceResult.BenchmarkID {
-		if len(jobIntegrations) == 0 {
-			jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
-		} else if _, ok := jobIntegrations[complianceResult.IntegrationID]; ok {
-			jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
-		}
+		jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
 	}
 
 	var platformResourceID, resourceType, resourceName string
