@@ -240,7 +240,7 @@ export default function EvaluateTable({
         axios
             .get(
                 // @ts-ignore
-                `${url}/main/compliance/api/v3/compliance/summary/${selected.job_id} `,
+                `${url}/main/compliance/api/v3/job-report/${selected.job_id}/summary `,
                 config
             )
             .then((res) => {
@@ -256,7 +256,7 @@ export default function EvaluateTable({
                     type: 'error',
                 })
                 // setDetailLoading(false)
-                
+
                 console.log(err)
                 setLoading(false)
             })
