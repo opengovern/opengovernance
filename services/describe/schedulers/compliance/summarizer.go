@@ -245,10 +245,11 @@ func (s *JobScheduler) CreateSummarizer(benchmarkId string, jobId *uint, trigger
 
 func (s *JobScheduler) triggerSummarizer(ctx context.Context, job model.ComplianceSummarizer) error {
 	summarizerJob := types2.Job{
-		ID:          job.ID,
-		RetryCount:  job.RetryCount,
-		BenchmarkID: job.BenchmarkID,
-		CreatedAt:   job.CreatedAt,
+		ID:              job.ID,
+		ComplianceJobID: job.ParentJobID,
+		RetryCount:      job.RetryCount,
+		BenchmarkID:     job.BenchmarkID,
+		CreatedAt:       job.CreatedAt,
 	}
 	jobJson, err := json.Marshal(summarizerJob)
 	if err != nil {
