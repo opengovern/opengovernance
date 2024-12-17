@@ -40,11 +40,11 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 		Controls:          make(map[string]types.AuditControlResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:         job.JobID,
-			FrameworkID:   job.FrameworkID,
-			Auditable:     false,
-			JobStartedAt:  time.Now(),
-			IntegrationID: job.IntegrationID,
+			JobID:          job.JobID,
+			FrameworkID:    job.FrameworkID,
+			Auditable:      false,
+			JobStartedAt:   time.Now(),
+			IntegrationIDs: []string{},
 		},
 	}
 	job.JobReportControlSummary = &types.ComplianceJobReportControlSummary{
@@ -55,22 +55,22 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 			FailedControls: 0,
 		},
 		JobSummary: types.JobSummary{
-			JobID:         job.JobID,
-			FrameworkID:   job.FrameworkID,
-			Auditable:     false,
-			JobStartedAt:  time.Now(),
-			IntegrationID: job.IntegrationID,
+			JobID:          job.JobID,
+			FrameworkID:    job.FrameworkID,
+			Auditable:      false,
+			JobStartedAt:   time.Now(),
+			IntegrationIDs: []string{},
 		},
 	}
 	job.JobReportResourceView = &types.ComplianceJobReportResourceView{
 		Integrations:      make(map[string]types.AuditIntegrationResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:         job.JobID,
-			FrameworkID:   job.FrameworkID,
-			Auditable:     false,
-			JobStartedAt:  time.Now(),
-			IntegrationID: job.IntegrationID,
+			JobID:          job.JobID,
+			FrameworkID:    job.FrameworkID,
+			Auditable:      false,
+			JobStartedAt:   time.Now(),
+			IntegrationIDs: []string{},
 		},
 	}
 
@@ -126,9 +126,9 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		include["alarm"] = true
 	}
 
-	job.JobReportControlView.JobSummary.IntegrationID = integrationId
-	job.JobReportResourceView.JobSummary.IntegrationID = integrationId
-	job.JobReportControlSummary.JobSummary.IntegrationID = integrationId
+	job.JobReportControlView.JobSummary.IntegrationIDs = append(job.JobReportControlView.JobSummary.IntegrationIDs, integrationId)
+	job.JobReportResourceView.JobSummary.IntegrationIDs = append(job.JobReportResourceView.JobSummary.IntegrationIDs, integrationId)
+	job.JobReportControlSummary.JobSummary.IntegrationIDs = append(job.JobReportControlSummary.JobSummary.IntegrationIDs, integrationId)
 
 	job.JobReportResourceView.Integrations[integrationId] = types.AuditIntegrationResult{
 		ResourceTypes: make(map[string]types.AuditResourceTypesResult),
