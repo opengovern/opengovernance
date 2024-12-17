@@ -151,8 +151,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3.GET("/quick/scan/:run_id", httpserver2.AuthorizeHandler(h.GetQuickScanSummary, authApi.ViewerRole))
 	v3.GET("/quick/sequence/:run_id", httpserver2.AuthorizeHandler(h.GetQuickSequenceSummary, authApi.ViewerRole))
 
-	v3.GET("/compliance/report/:run_id", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
-	v3.GET("/job-report/:run_id/summary", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
+	v3.GET("/job-report/:run_id/details/by-control", httpserver2.AuthorizeHandler(h.GetComplianceJobReport, authApi.ViewerRole))
+	v3.GET("/job-report/:run_id/summary", httpserver2.AuthorizeHandler(h.GetJobReportSummary, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -7856,7 +7856,7 @@ func (h HttpHandler) GetQuickSequenceSummary(c echo.Context) error {
 //	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
 //	@Param			run_id			path		string		true	"compliance summary job id"
 //	@Success		200
-//	@Router			/compliance/api/v3/compliance/report/{run_id} [get]
+//	@Router			/compliance/api/v3/job-report/:run_id/details/by-control [get]
 func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
@@ -7892,4 +7892,116 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, summary)
+}
+
+// GetJobReportSummary godoc
+//
+//	@Summary		Get Job Report Summary
+//	@Description	Get Job Report Summary
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Param			controls		query		[]string	false	"List of controls to get results"
+//	@Param			with_incidents	query		bool	false	"Whether the job was with incidents or not"
+//	@Param			run_id			path		string		true	"compliance summary job id"
+//	@Success		200
+//	@Router			/compliance/api/v3/job-report/:run_id/summary [get]
+func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
+
+	jobId := ctx.Param("run_id")
+	controlsFilter := httpserver2.QueryArrayParam(ctx, "controls")
+
+	complianceJob, err := h.schedulerClient.GetComplianceJobStatus(clientCtx, jobId)
+	if err != nil {
+		h.logger.Error("failed to get compliance job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
+	}
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
+	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
+		complianceJob.JobStatus == string(schedulerapi.ComplianceJobSummarizerInProgress) {
+		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
+	}
+	if complianceJob.WithIncidents {
+		if complianceJob.SummaryJobId == nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
+		}
+		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
+	}
+
+	framework, err := h.db.GetBenchmark(ctx.Request().Context(), complianceJob.BenchmarkId)
+	if err != nil {
+		h.logger.Error("failed to get framework by frameworkID", zap.String("framework", complianceJob.BenchmarkId), zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get framework by frameworkID")
+	}
+
+	controlsMap, err := h.getControlsUnderBenchmark(ctx.Request().Context(), complianceJob.BenchmarkId, make(map[string]BenchmarkControlsCache))
+	if err != nil {
+		h.logger.Error("failed to get controls under benchmark", zap.String("framework", complianceJob.BenchmarkId), zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not get framework by frameworkID")
+	}
+	var controlsStr []string
+	for c, _ := range controlsMap {
+		controlsStr = append(controlsStr, c)
+	}
+	controls, err := h.db.ListControls(ctx.Request().Context(), controlsStr, nil)
+
+	summary, err := es.GetJobReportControlSummaryByJobID(ctx.Request().Context(), h.logger, h.client,
+		jobId, complianceJob.WithIncidents, controlsFilter)
+	if err != nil {
+		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
+	}
+
+	response := api.GetJobReportSummaryResponse{
+		JobID:         complianceJob.JobId,
+		WithIncidents: complianceJob.WithIncidents,
+		JobDetails: api.GetJobReportSummaryJobDetails{
+			Status:    complianceJob.JobStatus,
+			CreatedAt: complianceJob.CreatedAt,
+			UpdatedAt: complianceJob.UpdatedAt,
+			Framework: struct {
+				ID    string `json:"id"`
+				Title string `json:"title"`
+			}{
+				ID:    framework.ID,
+				Title: framework.Title,
+			},
+			IntegrationIDs: []string{complianceJob.IntegrationInfo.IntegrationID},
+			Results: api.GetJobReportSummaryJobDetailsResults{
+				Ok:    summary.ComplianceSummary[types2.ComplianceStatusOK],
+				Alarm: summary.ComplianceSummary[types2.ComplianceStatusALARM],
+			},
+		},
+	}
+	jobScore := api.JobScore{
+		TotalControls:  summary.ControlScore.TotalControls,
+		FailedControls: summary.ControlScore.FailedControls,
+		ControlView: api.JobScoreControlView{
+			BySeverity: make(map[string]*api.JobScoreControlViewBySeverityScore),
+		},
+	}
+	for _, c := range controls {
+		if _, ok := jobScore.ControlView.BySeverity[c.Severity.String()]; !ok {
+			jobScore.ControlView.BySeverity[c.Severity.String()] = &api.JobScoreControlViewBySeverityScore{}
+		}
+		jobScore.ControlView.BySeverity[c.Severity.String()].TotalControls += 1
+	}
+
+	for _, cs := range summary.Controls {
+		if _, ok := jobScore.ControlView.BySeverity[cs.Severity.String()]; !ok {
+			jobScore.ControlView.BySeverity[cs.Severity.String()] = &api.JobScoreControlViewBySeverityScore{}
+		}
+		if cs.Alarms > 0 {
+			jobScore.ControlView.BySeverity[cs.Severity.String()].FailedControls += 1
+		}
+	}
+	response.JobDetails.JobScore = jobScore
+
+	return ctx.JSON(http.StatusOK, response)
 }
