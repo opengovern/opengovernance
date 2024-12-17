@@ -138,7 +138,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
 
-			if f.ComplianceJobID == j.ComplianceJobID {
+			if f.BenchmarkID == j.BenchmarkID {
 				addJobSummary(controlSummary, controlView, resourceView, f)
 				integrationsMap[f.IntegrationID] = true
 				totalControls[f.ControlID] = true
