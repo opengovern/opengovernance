@@ -67,6 +67,16 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 				Name:       fmt.Sprintf("GitHub Container Registry - %s", credentials.GhcrCredentials.Owner),
 			},
 		}, nil
+	case configs.RegistryTypeGCR:
+		if credentials.GcrCredentials == nil {
+			return nil, fmt.Errorf("gcr credentials are required with registry type: %s", credentials.GetRegistryType())
+		}
+		return []models.Integration{
+			{
+				ProviderID: fmt.Sprintf("gcr/%s/%s", credentials.GcrCredentials.ProjectID, credentials.GcrCredentials.Location),
+				Name:       fmt.Sprintf("Google Container Registry - %s/%s", credentials.GcrCredentials.ProjectID, credentials.GcrCredentials.Location),
+			},
+		}, nil
 	case configs.RegistryTypeECR:
 		if credentials.EcrCredentials == nil {
 			return nil, fmt.Errorf("ecr credentials are required with registry type: %s", credentials.GetRegistryType())
