@@ -166,16 +166,16 @@ func (w *Worker) ProcessMessage(ctx context.Context, msg jetstream.Msg) (err err
 
 	result := JobResult{
 		JobID:          job.JobID,
-		Status:         model.ComplianceQuickRunStatusInProgress,
+		Status:         model.ComplianceJobRunnersInProgress,
 		FailureMessage: "",
 	}
 
 	defer func() {
 		if err != nil {
 			result.FailureMessage = err.Error()
-			result.Status = model.ComplianceQuickRunStatusFailed
+			result.Status = model.ComplianceJobFailed
 		} else {
-			result.Status = model.ComplianceQuickRunStatusSucceeded
+			result.Status = model.ComplianceJobSucceeded
 		}
 
 		resultJson, err := json.Marshal(result)

@@ -128,6 +128,7 @@ type GetComplianceJobsHistoryRequest struct {
 
 type GetComplianceJobsHistoryResponse struct {
 	JobId           uint                `json:"job_id"`
+	WithIncidents   bool                `json:"with_incidents"`
 	BenchmarkId     string              `json:"benchmark_id"`
 	JobStatus       ComplianceJobStatus `json:"job_status"`
 	DateTime        time.Time           `json:"date_time"`
@@ -292,6 +293,7 @@ type GetDescribeJobsHistoryByIntegrationRequest struct {
 
 type GetComplianceJobsHistoryByIntegrationRequest struct {
 	IntegrationInfo IntegrationInfoFilter `json:"integration_info"`
+	WithIncidents   *bool                 `json:"with_incidents"`
 	BenchmarkId     []string              `json:"benchmark_id"`
 	JobStatus       []string              `json:"job_status"`
 	StartTime       time.Time             `json:"start_time"`

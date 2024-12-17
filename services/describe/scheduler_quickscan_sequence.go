@@ -96,20 +96,17 @@ type RunQuickComplianceScan struct {
 }
 
 func (s *RunQuickComplianceScan) Do(ctx context.Context) error {
-	jobId, err := s.s.db.CreateComplianceQuickRun(&model.ComplianceQuickRun{
-		FrameworkID:    s.job.FrameworkID,
-		IntegrationIDs: s.job.IntegrationIDs,
-		IncludeResults: s.job.IncludeResults,
-		Status:         model.ComplianceQuickRunStatusCreated,
-		CreatedBy:      "QuickScanSequencer",
-		ParentJobId:    &s.job.ID,
-	})
-	if err != nil {
-		return err
+	var jobIDs []uint
+	for _, i := range s.job.IntegrationIDs {
+		jobId, err := s.s.complianceScheduler.CreateComplianceReportJobs(false, s.job.FrameworkID, nil, i, true, "QuickScanSequencer", &s.job.ID)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
+		jobIDs = append(jobIDs, jobId)
 	}
 
 	s.s.logger.Info("Waiting for quick scan", zap.Uint("JobID", s.job.ID))
-	err = s.s.db.UpdateQuickScanSequenceStatus(s.job.ID, model.QuickScanSequenceComplianceRunning, "")
+	err := s.s.db.UpdateQuickScanSequenceStatus(s.job.ID, model.QuickScanSequenceComplianceRunning, "")
 	if err != nil {
 		return err
 	}
@@ -118,12 +115,18 @@ func (s *RunQuickComplianceScan) Do(ctx context.Context) error {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		run, err := s.s.db.GetComplianceQuickRunByID(jobId)
-		if err != nil {
-			return err
+		allFinished := true
+		for _, jobID := range jobIDs {
+			run, err := s.s.db.GetComplianceJobByID(jobID)
+			if err != nil {
+				return err
+			}
+			if !(run.Status == model.ComplianceJobSucceeded || run.Status == model.ComplianceJobFailed ||
+				run.Status == model.ComplianceJobCanceled || run.Status == model.ComplianceJobTimeOut) {
+				allFinished = false
+			}
 		}
-		if run.Status == model.ComplianceQuickRunStatusSucceeded || run.Status == model.ComplianceQuickRunStatusFailed ||
-			run.Status == model.ComplianceQuickRunStatusCanceled || run.Status == model.ComplianceQuickRunStatusTimeOut {
+		if allFinished {
 			break
 		}
 	}

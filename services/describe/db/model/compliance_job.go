@@ -37,11 +37,14 @@ func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
 type ComplianceJob struct {
 	gorm.Model
 	BenchmarkID         string
+	WithIncidents       bool
 	Status              ComplianceJobStatus
+	IncludeResults      pq.StringArray `gorm:"type:text[]"`
 	AreAllRunnersQueued bool
 	IntegrationID       string
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
+	ParentID            *uint
 	CreatedBy           string
 }
 

@@ -10,9 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db Database) CountComplianceJobsByDate(start time.Time, end time.Time) (int64, error) {
+func (db Database) CountComplianceJobsByDate(withIncidents bool, start time.Time, end time.Time) (int64, error) {
 	var count int64
 	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("with_incidents = ?", withIncidents).
 		Where("status = ? AND updated_at >= ? AND updated_at < ?", model.ComplianceJobSucceeded, start, end).Count(&count)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -70,7 +71,7 @@ func (db Database) UpdateComplianceJobAreAllRunnersQueued(id uint, areAllRunners
 func (db Database) UpdateComplianceJobsTimedOut(complianceIntervalHours int64) error {
 	tx := db.ORM.
 		Model(&model.ComplianceJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", complianceIntervalHours)).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d MINUTES'", complianceIntervalHours)).
 		Where("status IN ?", []string{string(model.ComplianceJobCreated),
 			string(model.ComplianceJobRunnersInProgress),
 			string(model.ComplianceJobSummarizerInProgress),
@@ -93,6 +94,16 @@ func (db Database) GetComplianceJobByID(ID uint) (*model.ComplianceJob, error) {
 	return &job, nil
 }
 
+func (db Database) GetComplianceJobByCreatedByAndParentID(createdBy string, ParentID uint) (*model.ComplianceJob, error) {
+	var job model.ComplianceJob
+	tx := db.ORM.Where("parent_id = ?", ParentID).Where("created_by = ?", createdBy).Find(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 func (db Database) CleanupComplianceJobsOlderThan(t time.Time) error {
 	tx := db.ORM.Where("updated_at < ?", t).Unscoped().Delete(&model.ComplianceJob{})
 	if tx.Error != nil {
@@ -102,9 +113,11 @@ func (db Database) CleanupComplianceJobsOlderThan(t time.Time) error {
 	return nil
 }
 
-func (db Database) GetLastComplianceJob(benchmarkID string) (*model.ComplianceJob, error) {
+func (db Database) GetLastComplianceJob(withIncidents bool, benchmarkID string) (*model.ComplianceJob, error) {
 	var job model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id = ?", benchmarkID).Order("created_at DESC").First(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("with_incidents = ?", withIncidents).
+		Where("benchmark_id = ?", benchmarkID).Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -114,9 +127,11 @@ func (db Database) GetLastComplianceJob(benchmarkID string) (*model.ComplianceJo
 	return &job, nil
 }
 
-func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobs(withIncidents bool) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).First(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("with_incidents = ?", withIncidents).
+		First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -126,10 +141,29 @@ func (db Database) ListComplianceJobs() ([]model.ComplianceJob, error) {
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsForInterval(interval, triggerType, createdBy string) ([]model.ComplianceJob, error) {
+func (db Database) ListCreatedComplianceJobs(withIncidents bool) ([]model.ComplianceJob, error) {
+	var job []model.ComplianceJob
+	tx := db.ORM.Model(&model.ComplianceJob{}).
+		Where("with_incidents = ?", withIncidents).
+		Where("status = ?", model.ComplianceJobCreated).
+		First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+func (db Database) ListComplianceJobsForInterval(withIncidents *bool, interval, triggerType, createdBy string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 
 	tx := db.ORM.Model(&model.ComplianceJob{})
+
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
 
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - updated_at < INTERVAL '%s'", interval))
@@ -152,7 +186,7 @@ func (db Database) ListComplianceJobsForInterval(interval, triggerType, createdB
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, createdBy string, benchmarkIDs []string) ([]model.ComplianceJobWithSummarizerJob, error) {
+func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interval, triggerType, createdBy string, benchmarkIDs []string) ([]model.ComplianceJobWithSummarizerJob, error) {
 	var result []model.ComplianceJobWithSummarizerJob
 
 	// Base query
@@ -172,6 +206,10 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 		Group("compliance_jobs.id")
 
 	// Apply filters
+	if withIncidents != nil {
+		tx = tx.Where("compliance_jobs.with_incidents = ?", *withIncidents)
+	}
+
 	if interval != "" {
 		tx = tx.Where(fmt.Sprintf("NOW() - compliance_jobs.updated_at < INTERVAL '%s'", interval))
 	}
@@ -196,9 +234,13 @@ func (db Database) ListComplianceJobsWithSummaryJob(interval, triggerType, creat
 	return result, nil
 }
 
-func (db Database) ListComplianceJobsByIntegrationID(integrationIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByIntegrationID(withIncidents *bool, integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("integration_id IN ?", integrationIds).Find(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("integration_id IN ?", integrationIds)
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -208,12 +250,15 @@ func (db Database) ListComplianceJobsByIntegrationID(integrationIds []string) ([
 	return job, nil
 }
 
-func (db Database) ListPendingComplianceJobsByIntegrationID(integrationIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListPendingComplianceJobsByIntegrationID(withIncidents *bool, integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).
 		Where("integration_id IN ?", integrationIds).
-		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress}).
-		Find(&job)
+		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress})
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -223,9 +268,13 @@ func (db Database) ListPendingComplianceJobsByIntegrationID(integrationIds []str
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsByBenchmarkID(benchmarkIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByBenchmarkID(withIncidents *bool, benchmarkIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id IN ?", benchmarkIds).Find(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id IN ?", benchmarkIds)
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -235,9 +284,13 @@ func (db Database) ListComplianceJobsByBenchmarkID(benchmarkIds []string) ([]mod
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsByStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByStatus(withIncidents *bool, status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
-	tx := db.ORM.Where("status = ?", status).Find(&jobs)
+	tx := db.ORM.Where("status = ?", status)
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -245,9 +298,13 @@ func (db Database) ListComplianceJobsByStatus(status model.ComplianceJobStatus) 
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsByIds(ids []string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByIds(withIncidents *bool, ids []string) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
-	tx := db.ORM.Where("id IN ?", ids).Find(&jobs)
+	tx := db.ORM.Where("id IN ?", ids)
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -255,9 +312,13 @@ func (db Database) ListComplianceJobsByIds(ids []string) ([]model.ComplianceJob,
 	return jobs, nil
 }
 
-func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceRunnersWithStatus(withIncidents *bool, status model.ComplianceJobStatus) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
-	tx := db.ORM.Where("status = ?", status).Find(&jobs)
+	tx := db.ORM.Where("status = ?", status)
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
+	tx = tx.Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -265,9 +326,9 @@ func (db Database) ListComplianceRunnersWithStatus(status model.ComplianceJobSta
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsWithUnqueuedRunners() ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsWithUnqueuedRunners(withIncidents bool) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
-	tx := db.ORM.Where("are_all_runners_queued = ?", false).
+	tx := db.ORM.Where("are_all_runners_queued = ?", false).Where("with_incidents = ?", withIncidents).
 		Where("status IN ?", []string{string(model.ComplianceJobCreated), string(model.ComplianceJobRunnersInProgress)}).
 		Find(&jobs)
 	if tx.Error != nil {
@@ -296,7 +357,7 @@ func (db Database) ListJobsWithRunnersCompleted(manuals bool) ([]model.Complianc
 	var jobs []model.ComplianceJob
 
 	query := `
-SELECT * FROM compliance_jobs j WHERE status IN ('RUNNERS_IN_PROGRESS', 'SINK_IN_PROGRESS') AND are_all_runners_queued = TRUE AND
+SELECT * FROM compliance_jobs j WHERE status IN ('RUNNERS_IN_PROGRESS', 'SINK_IN_PROGRESS') AND with_incidents = true AND are_all_runners_queued = TRUE AND
 	(select count(*) from compliance_runners where parent_job_id = j.id AND 
 	                                               NOT (status = 'SUCCEEDED' OR status = 'TIMEOUT' OR (status = 'FAILED' and retry_count >= ?))
 	                                         ) = 0
@@ -350,7 +411,7 @@ func (db Database) FetchTotalFindingCountForComplianceJob(jobID uint) (int, erro
 func (db Database) ListJobsToFinish() ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Raw(`
-SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
+SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND with_incidents = true AND
 	(select count(*) from compliance_summarizers where parent_job_id = j.id AND (status = 'SUCCEEDED' OR (status = 'FAILED' and retry_count >= 3))) > 0
 `).Find(&jobs)
 	if tx.Error != nil {
@@ -360,10 +421,14 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsByFilters(integrationId []string, benchmarkId []string, status []string,
+func (db Database) ListComplianceJobsByFilters(withIncidents *bool, integrationId []string, benchmarkId []string, status []string,
 	startTime, endTime *time.Time) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{})
+
+	if withIncidents != nil {
+		tx = tx.Where("with_incidents = ?", *withIncidents)
+	}
 
 	if len(integrationId) > 0 {
 		tx = tx.Where("integration_id IN ?", integrationId)

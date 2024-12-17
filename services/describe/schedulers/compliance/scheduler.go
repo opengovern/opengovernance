@@ -63,7 +63,7 @@ func (s *JobScheduler) runScheduler() error {
 			continue
 		}
 
-		complianceJob, err := s.db.GetLastComplianceJob(benchmark.ID)
+		complianceJob, err := s.db.GetLastComplianceJob(true, benchmark.ID)
 		if err != nil {
 			s.logger.Error("error while getting last compliance job", zap.Error(err))
 			return err
@@ -74,7 +74,7 @@ func (s *JobScheduler) runScheduler() error {
 			complianceJob.CreatedAt.Before(timeAt) {
 
 			for _, c := range integrations {
-				_, err := s.CreateComplianceReportJobs(benchmark.ID, complianceJob, c.IntegrationID, false, "system")
+				_, err := s.CreateComplianceReportJobs(true, benchmark.ID, complianceJob, c.IntegrationID, false, "system", nil)
 				if err != nil {
 					s.logger.Error("error while creating compliance job", zap.Error(err))
 					return err
