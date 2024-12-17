@@ -45,6 +45,7 @@ var TablesToResourceTypes = map[string]string{
 	"github_rubygems_package":                "Github/Package/RubyGems",
 	"github_nuget_package":                   "Github/Package/Nuget",
 	"github_package_version":                 "Github/Package/Version",
+	"github_artifact_dockerfile":             "Github/ArtifactDockerFile",
 }
 
 var ResourceTypesList = []string{
@@ -92,4 +93,5 @@ var ResourceTypesList = []string{
 	"Github/Package/RubyGems",
 	"Github/Package/Nuget",
 	"Github/Package/Version",
+	"Github/ArtifactDockerFile",
 }
