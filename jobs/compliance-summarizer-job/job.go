@@ -143,12 +143,12 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource, jobIntegrations)
 
-			if f.ComplianceJobID == j.ComplianceJobID {
-				//if len(jobIntegrations) > 0 {
-				//	if _, ok := jobIntegrations[f.IntegrationID]; !ok {
-				//		continue
-				//	}
-				//}
+			if f.BenchmarkID == j.BenchmarkID {
+				if len(jobIntegrations) > 0 {
+					if _, ok := jobIntegrations[f.IntegrationID]; !ok {
+						continue
+					}
+				}
 				addJobSummary(controlSummary, controlView, resourceView, f)
 				integrationsMap[f.IntegrationID] = true
 				totalControls[f.ControlID] = true
