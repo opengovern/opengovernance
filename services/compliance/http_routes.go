@@ -7677,9 +7677,7 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 		h.logger.Error("failed to get compliance job", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
 	}
-	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
-		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
 		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
 	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
 		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
@@ -7868,9 +7866,7 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 		h.logger.Error("failed to get compliance job", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
 	}
-	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
-		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
 		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
 	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
 		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
@@ -7918,9 +7914,7 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 		h.logger.Error("failed to get compliance job", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance job")
 	}
-	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobFailed) {
-		return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
+	if complianceJob.JobStatus == string(schedulerapi.ComplianceJobTimeout) {
 		return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
 	} else if complianceJob.JobStatus == string(schedulerapi.ComplianceJobRunnersInProgress) ||
 		complianceJob.JobStatus == string(schedulerapi.ComplianceJobCreated) ||
