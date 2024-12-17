@@ -204,7 +204,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 	}
 
 	for _, integration := range integrations.Integrations {
-		if integration.State == models.IntegrationStateSample {
+		if integration.State == models.IntegrationStateSample || integration.State == models.IntegrationStateInactive {
 			continue
 		}
 		s.logger.Info("running describe job scheduler for integration", zap.String("IntegrationID", integration.IntegrationID))
