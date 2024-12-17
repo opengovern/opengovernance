@@ -142,7 +142,7 @@ func (s *Scheduler) runNextJob(ctx context.Context, job model.JobSequencer) erro
 				}
 
 				runnerJob := model.ComplianceRunner{
-					BenchmarkID:    parameters.BenchmarkID,
+					FrameworkID:    parameters.BenchmarkID,
 					QueryID:        control.Query.ID,
 					IntegrationID:  &connectionID,
 					StartedAt:      time.Time{},

@@ -35,7 +35,7 @@ func (s *JobScheduler) runScheduler() error {
 	}
 
 	for _, benchmark := range benchmarks {
-		var integrations []integrationapi.Integration
+		var integrationIDs []string
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			s.logger.Error("error while listing assignments", zap.Error(err))
@@ -56,10 +56,10 @@ func (s *JobScheduler) runScheduler() error {
 				continue
 			}
 
-			integrations = append(integrations, *integration)
+			integrationIDs = append(integrationIDs, integration.IntegrationID)
 		}
 
-		if len(integrations) == 0 {
+		if len(integrationIDs) == 0 {
 			continue
 		}
 
@@ -73,12 +73,10 @@ func (s *JobScheduler) runScheduler() error {
 		if complianceJob == nil ||
 			complianceJob.CreatedAt.Before(timeAt) {
 
-			for _, c := range integrations {
-				_, err := s.CreateComplianceReportJobs(true, benchmark.ID, complianceJob, c.IntegrationID, false, "system", nil)
-				if err != nil {
-					s.logger.Error("error while creating compliance job", zap.Error(err))
-					return err
-				}
+			_, err := s.CreateComplianceReportJobs(true, benchmark.ID, complianceJob, integrationIDs, false, "system", nil)
+			if err != nil {
+				s.logger.Error("error while creating compliance job", zap.Error(err))
+				return err
 			}
 
 			ComplianceJobsCount.WithLabelValues("successful").Inc()

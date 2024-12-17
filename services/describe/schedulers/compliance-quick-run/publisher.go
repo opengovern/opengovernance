@@ -17,7 +17,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 
 	s.logger.Info("Query Runner publisher started")
 
-	err := s.db.UpdateComplianceJobsTimedOut(20)
+	err := s.db.UpdateComplianceJobsTimedOut(false, 20)
 	if err != nil {
 		s.logger.Error("failed to update timed out query runners", zap.Error(err))
 	}
@@ -30,10 +30,10 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 	s.logger.Info("Fetch Created Query Runner Jobs", zap.Any("Jobs Count", len(jobs)))
 	for _, job := range jobs {
 		auditJobMsg := auditjob.AuditJob{
-			JobID:         job.ID,
-			FrameworkID:   job.BenchmarkID,
-			IntegrationID: job.IntegrationID,
-			IncludeResult: job.IncludeResults,
+			JobID:          job.ID,
+			FrameworkID:    job.FrameworkID,
+			IntegrationIDs: job.IntegrationIDs,
+			IncludeResult:  job.IncludeResults,
 		}
 
 		jobJson, err := json.Marshal(auditJobMsg)

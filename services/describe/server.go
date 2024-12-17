@@ -504,12 +504,8 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 	}
 
-	for _, c := range connectionIDs {
-		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmarkID, lastJob, c, true, userID, nil)
-		if err != nil {
-			return fmt.Errorf("error while creating compliance job: %v", err)
-		}
-	}
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmarkID, lastJob, connectionIDs, true, userID, nil)
+
 	return ctx.JSON(http.StatusOK, "")
 }
 
@@ -566,11 +562,9 @@ func (h HttpServer) TriggerConnectionsComplianceJobs(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "compliance job is already running")
 		}
 
-		for _, c := range connectionIDs {
-			_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmark.ID, lastJob, c, true, userID, nil)
-			if err != nil {
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
+		_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmark.ID, lastJob, connectionIDs, true, userID, nil)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
 	}
 	return ctx.JSON(http.StatusOK, "")
@@ -1128,7 +1122,7 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 		jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
 			JobId:         j.ID,
 			WithIncidents: j.WithIncidents,
-			BenchmarkId:   j.BenchmarkID,
+			BenchmarkId:   j.FrameworkID,
 			JobStatus:     j.Status.ToApi(),
 			DateTime:      j.UpdatedAt,
 		})
@@ -1244,57 +1238,67 @@ func (h HttpServer) RunBenchmarkById(ctx echo.Context) error {
 		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
-	var connectionInfo []api.IntegrationInfo
+	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
 	for _, c := range integrations {
 		if _, ok := validIntegrationTypes[c.IntegrationType.String()]; !ok {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid integration type for this framework")
 		}
-		connectionInfo = append(connectionInfo, api.IntegrationInfo{
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
 			IntegrationID:   c.IntegrationID,
 			IntegrationType: string(c.IntegrationType),
 			Name:            c.Name,
 			ProviderID:      c.ProviderID,
-		})
+		}
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
 
-	var jobs []api.RunBenchmarkItem
+	var apiJobs []api.RunBenchmarkItem
 	if request.WithIncidents {
 		lastJob, err := h.Scheduler.db.GetLastComplianceJob(true, benchmark.ID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 
-		for _, c := range connectionIDs {
-			jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmarkID, lastJob, c, true, userID, nil)
-			if err != nil {
-				return fmt.Errorf("error while creating compliance job: %v", err)
+		jobs, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmarkID, lastJob, connectionIDs, true, userID, nil)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
+		for _, j := range jobs {
+			job := api.RunBenchmarkItem{
+				JobId:        j.ID,
+				WithIncident: request.WithIncidents,
+				BenchmarkId:  benchmark.ID,
 			}
-			jobs = append(jobs, api.RunBenchmarkItem{
-				JobId:           jobId,
-				WithIncident:    request.WithIncidents,
-				BenchmarkId:     benchmark.ID,
-				IntegrationInfo: connectionInfo,
-			})
+			for _, integration := range j.IntegrationIDs {
+				if v, ok := connectionInfo[integration]; ok {
+					job.IntegrationInfo = append(job.IntegrationInfo, v)
+				}
+			}
+			apiJobs = append(apiJobs, job)
 		}
 	} else {
-		for _, c := range connectionIDs {
-			jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(false, benchmarkID, nil, c, true, userID, nil)
-			if err != nil {
-				return fmt.Errorf("error while creating compliance job: %v", err)
+		jobs, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(false, benchmarkID, nil, connectionIDs, true, userID, nil)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
+		for _, j := range jobs {
+			job := api.RunBenchmarkItem{
+				JobId:        j.ID,
+				WithIncident: request.WithIncidents,
+				BenchmarkId:  benchmark.ID,
 			}
-			jobs = append(jobs, api.RunBenchmarkItem{
-				JobId:           jobId,
-				WithIncident:    request.WithIncidents,
-				BenchmarkId:     benchmark.ID,
-				IntegrationInfo: connectionInfo,
-			})
+			for _, integration := range j.IntegrationIDs {
+				if v, ok := connectionInfo[integration]; ok {
+					job.IntegrationInfo = append(job.IntegrationInfo, v)
+				}
+			}
+			apiJobs = append(apiJobs, job)
 		}
 	}
 
 	return ctx.JSON(http.StatusOK, api.RunBenchmarkResponse{
-		Jobs: jobs,
+		Jobs: apiJobs,
 	})
 }
 
@@ -1354,20 +1358,26 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 		integrations = append(integrations, connectionsTmp.Integrations...)
 	}
 
-	var connectionInfo []api.IntegrationInfo
+	connectionInfo := make(map[string]api.IntegrationInfo)
 	var connectionIDs []string
 	for _, c := range integrations {
-		connectionInfo = append(connectionInfo, api.IntegrationInfo{
+		connectionIDs = append(connectionIDs, c.IntegrationID)
+	}
+	connections2, err := h.Scheduler.integrationClient.ListIntegrations(clientCtx, nil)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to list connections", zap.Error(err))
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	for _, c := range connections2.Integrations {
+		connectionInfo[c.IntegrationID] = api.IntegrationInfo{
 			IntegrationID:   c.IntegrationID,
 			IntegrationType: string(c.IntegrationType),
 			Name:            c.Name,
 			ProviderID:      c.ProviderID,
-		})
-		connectionIDs = append(connectionIDs, c.IntegrationID)
+		}
 	}
 
 	var benchmarks []complianceapi.Benchmark
-	var err error
 	if len(request.BenchmarkIds) == 0 {
 		benchmarks, err = h.Scheduler.complianceClient.ListBenchmarks(clientCtx, nil)
 		if err != nil {
@@ -1393,18 +1403,24 @@ func (h HttpServer) RunBenchmark(ctx echo.Context) error {
 			return err
 		}
 
-		for _, c := range connectionIDs {
-			jobId, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmark.ID, lastJob, c, true, userID, nil)
-			if err != nil {
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			jobs = append(jobs, api.RunBenchmarkItem{
-				JobId:           jobId,
-				BenchmarkId:     benchmark.ID,
-				IntegrationInfo: connectionInfo,
-			})
+		benchmarkJobs, err := h.Scheduler.complianceScheduler.CreateComplianceReportJobs(true, benchmark.ID, lastJob, connectionIDs, true, userID, nil)
+		if err != nil {
+			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
+
+		for _, j := range benchmarkJobs {
+			job := api.RunBenchmarkItem{
+				JobId:       j.ID,
+				BenchmarkId: benchmark.ID,
+			}
+			for _, integration := range j.IntegrationIDs {
+				if v, ok := connectionInfo[integration]; ok {
+					job.IntegrationInfo = append(job.IntegrationInfo, v)
+				}
+			}
+			jobs = append(jobs, job)
+		}
+
 	}
 
 	return ctx.JSON(http.StatusOK, api.RunBenchmarkResponse{
@@ -1642,24 +1658,27 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 		summaryJobId = &summaryJobs[0].ID
 	}
 
-	var integrationInfo api.IntegrationInfo
-	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	integrationInfo = api.IntegrationInfo{
-		IntegrationID:   integration.IntegrationID,
-		IntegrationType: string(integration.IntegrationType),
-		ProviderID:      integration.ProviderID,
-		Name:            integration.Name,
+	var integrations []api.IntegrationInfo
+	for _, i := range j.IntegrationIDs {
+		integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, i)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		integrationInfo := api.IntegrationInfo{
+			IntegrationID:   integration.IntegrationID,
+			IntegrationType: string(integration.IntegrationType),
+			ProviderID:      integration.ProviderID,
+			Name:            integration.Name,
+		}
+		integrations = append(integrations, integrationInfo)
 	}
 
 	jobsResult := api.GetComplianceJobStatusResponse{
 		JobId:           j.ID,
 		WithIncidents:   j.WithIncidents,
 		SummaryJobId:    summaryJobId,
-		IntegrationInfo: integrationInfo,
-		BenchmarkId:     j.BenchmarkID,
+		IntegrationInfo: integrations,
+		FrameworkId:     j.FrameworkID,
 		JobStatus:       string(j.Status),
 		CreatedAt:       j.CreatedAt,
 		UpdatedAt:       j.UpdatedAt,
@@ -1887,12 +1906,14 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		jobResult := api.GetComplianceJobsHistoryResponse{
 			JobId:         j.ID,
 			WithIncidents: j.WithIncidents,
-			BenchmarkId:   j.BenchmarkID,
+			BenchmarkId:   j.FrameworkID,
 			JobStatus:     j.Status.ToApi(),
 			DateTime:      j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.IntegrationID]; ok {
-			jobResult.IntegrationInfo = info
+		for _, i := range j.IntegrationIDs {
+			if info, ok := connectionInfo[i]; ok {
+				jobResult.IntegrationInfo = []api.IntegrationInfo{info}
+			}
 		}
 
 		jobsResults = append(jobsResults, jobResult)
@@ -2028,14 +2049,16 @@ func (h HttpServer) BenchmarkAuditHistory(ctx echo.Context) error {
 		item := api.BenchmarkAuditHistoryItem{
 			JobId:         j.ID,
 			WithIncidents: j.WithIncidents,
-			BenchmarkId:   j.BenchmarkID,
+			BenchmarkId:   j.FrameworkID,
 			JobStatus:     j.Status.ToApi(),
 			CreatedAt:     j.CreatedAt,
 			UpdatedAt:     j.UpdatedAt,
 		}
-		if info, ok := connectionInfo[j.IntegrationID]; ok {
-			item.IntegrationInfo = []api.IntegrationInfo{info}
-			item.NumberOfIntegrations = 1
+		for _, i := range j.IntegrationIDs {
+			if info, ok := connectionInfo[i]; ok {
+				item.IntegrationInfo = []api.IntegrationInfo{info}
+				item.NumberOfIntegrations = 1
+			}
 		}
 
 		items = append(items, item)
@@ -2358,30 +2381,32 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 		}
 
 		for _, j := range jobs {
-			var jobIntegrations api.IntegrationInfo
-			if info, ok := connectionInfo[j.IntegrationID]; ok {
-				jobIntegrations = info
-			} else {
-				integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-				}
-				if integration != nil {
-					info = api.IntegrationInfo{
-						IntegrationID:   integration.IntegrationID,
-						IntegrationType: string(integration.IntegrationType),
-						Name:            integration.Name,
-						ProviderID:      integration.ProviderID,
+			var jobIntegrations []api.IntegrationInfo
+			for _, i := range j.IntegrationIDs {
+				if info, ok := connectionInfo[i]; ok {
+					jobIntegrations = append(jobIntegrations, info)
+				} else {
+					integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, i)
+					if err != nil {
+						return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 					}
-					connectionInfo[j.IntegrationID] = info
-					jobIntegrations = info
+					if integration != nil {
+						info = api.IntegrationInfo{
+							IntegrationID:   integration.IntegrationID,
+							IntegrationType: string(integration.IntegrationType),
+							Name:            integration.Name,
+							ProviderID:      integration.ProviderID,
+						}
+						connectionInfo[i] = info
+						jobIntegrations = append(jobIntegrations, info)
+					}
 				}
 			}
 
 			jobsResults = append(jobsResults, api.GetComplianceJobsHistoryResponse{
 				JobId:           j.ID,
 				WithIncidents:   j.WithIncidents,
-				BenchmarkId:     j.BenchmarkID,
+				BenchmarkId:     j.FrameworkID,
 				JobStatus:       j.Status.ToApi(),
 				DateTime:        j.UpdatedAt,
 				IntegrationInfo: jobIntegrations,
@@ -3054,7 +3079,7 @@ func (h HttpServer) ListJobsByType(ctx echo.Context) error {
 			}
 		}
 	case "benchmark":
-		jobs, err := h.DB.ListComplianceJobsByBenchmarkID(aws.Bool(true), request.Benchmark)
+		jobs, err := h.DB.ListComplianceJobsByFrameworkID(aws.Bool(true), request.Benchmark)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
