@@ -33,9 +33,9 @@ type AuditControlResult struct {
 }
 
 type JobSummary struct {
-	JobID         uint      `json:"job_id"`
-	Auditable     bool      `json:"auditable"`
-	FrameworkID   string    `json:"framework_id"`
-	JobStartedAt  time.Time `json:"job_started_at"`
-	IntegrationID string    `json:"integration_id"`
+	JobID          uint      `json:"job_id"`
+	Auditable      bool      `json:"auditable"`
+	FrameworkID    string    `json:"framework_id"`
+	JobStartedAt   time.Time `json:"job_started_at"`
+	IntegrationIDs []string  `json:"integration_ids"`
 }
