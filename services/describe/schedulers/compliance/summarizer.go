@@ -130,7 +130,7 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 		}
 		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.FrameworkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
 
-		err = s.CreateSummarizer(job.FrameworkID, &job.ID, job.TriggerType)
+		err = s.CreateSummarizer(job.FrameworkID, job.IntegrationIDs, &job.ID, job.TriggerType)
 		if err != nil {
 			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
@@ -222,13 +222,14 @@ func (s *JobScheduler) finishComplianceJob(job model.ComplianceJob) error {
 	return s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSucceeded, "")
 }
 
-func (s *JobScheduler) CreateSummarizer(benchmarkId string, jobId *uint, triggerType model.ComplianceTriggerType) error {
+func (s *JobScheduler) CreateSummarizer(benchmarkId string, integrationIDs []string, jobId *uint, triggerType model.ComplianceTriggerType) error {
 	// run summarizer
 	dbModel := model.ComplianceSummarizer{
-		BenchmarkID: benchmarkId,
-		StartedAt:   time.Now(),
-		Status:      summarizer.ComplianceSummarizerCreated,
-		TriggerType: triggerType,
+		BenchmarkID:    benchmarkId,
+		IntegrationIDs: integrationIDs,
+		StartedAt:      time.Now(),
+		Status:         summarizer.ComplianceSummarizerCreated,
+		TriggerType:    triggerType,
 	}
 	if jobId != nil {
 		dbModel.ParentJobID = *jobId
@@ -247,6 +248,7 @@ func (s *JobScheduler) triggerSummarizer(ctx context.Context, job model.Complian
 	summarizerJob := types2.Job{
 		ID:              job.ID,
 		ComplianceJobID: job.ParentJobID,
+		IntegrationIDs:  job.IntegrationIDs,
 		RetryCount:      job.RetryCount,
 		BenchmarkID:     job.BenchmarkID,
 		CreatedAt:       job.CreatedAt,
