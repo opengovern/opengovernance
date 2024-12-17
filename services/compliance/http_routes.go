@@ -7972,7 +7972,7 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 				ID:    framework.ID,
 				Title: framework.Title,
 			},
-			IntegrationIDs: []string{complianceJob.IntegrationInfo.IntegrationID},
+			IntegrationIDs: summary.JobSummary.IntegrationIDs,
 			Results: api.GetJobReportSummaryJobDetailsResults{
 				Ok:    summary.ComplianceSummary[types2.ComplianceStatusOK],
 				Alarm: summary.ComplianceSummary[types2.ComplianceStatusALARM],
