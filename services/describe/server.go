@@ -105,7 +105,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v3.GET("/integration/discovery/last-job", httpserver.AuthorizeHandler(h.GetIntegrationLastDiscoveryJob, apiAuth.ViewerRole))
 
-	v3.GET("/compliance/quick/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickRun, apiAuth.ViewerRole))
 	v3.POST("/compliance/quick/sequence", httpserver.AuthorizeHandler(h.CreateComplianceQuickSequence, apiAuth.EditorRole))
 	v3.GET("/compliance/quick/sequence/:run_id", httpserver.AuthorizeHandler(h.GetComplianceQuickSequence, apiAuth.ViewerRole))
 }
@@ -1643,12 +1642,12 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 		summaryJobId = &summaryJobs[0].ID
 	}
 
-	var connectionInfo api.IntegrationInfo
+	var integrationInfo api.IntegrationInfo
 	integration, err := h.Scheduler.integrationClient.GetIntegration(clientCtx, j.IntegrationID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	connectionInfo = api.IntegrationInfo{
+	integrationInfo = api.IntegrationInfo{
 		IntegrationID:   integration.IntegrationID,
 		IntegrationType: string(integration.IntegrationType),
 		ProviderID:      integration.ProviderID,
@@ -1657,8 +1656,9 @@ func (h HttpServer) GetComplianceJobStatus(ctx echo.Context) error {
 
 	jobsResult := api.GetComplianceJobStatusResponse{
 		JobId:           j.ID,
+		WithIncidents:   j.WithIncidents,
 		SummaryJobId:    summaryJobId,
-		IntegrationInfo: connectionInfo,
+		IntegrationInfo: integrationInfo,
 		BenchmarkId:     j.BenchmarkID,
 		JobStatus:       string(j.Status),
 		CreatedAt:       j.CreatedAt,
@@ -3661,37 +3661,6 @@ func parseTimeInterval(intervalStr string) (*time.Time, *time.Time, error) {
 	startTime := endTime.Add(-duration)
 
 	return &startTime, &endTime, nil
-}
-
-// GetComplianceQuickRun godoc
-//
-//	@Summary		Get audit job by job id
-//	@Description	Get audit job by job id
-//	@Security		BearerToken
-//	@Tags			audit
-//	@Accept			json
-//	@Produce		json
-//	@Success		200
-//	@Router			/schedule/api/v3/compliance/quick/{run_id} [get]
-func (h HttpServer) GetComplianceQuickRun(c echo.Context) error {
-	jobIdStr := c.Param("run_id")
-
-	var jobId int64
-	var err error
-	if jobIdStr != "" {
-		jobId, err = strconv.ParseInt(jobIdStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-
-	auditJob, err := h.DB.GetComplianceJobByID(uint(jobId))
-	if err != nil {
-		h.Scheduler.logger.Error("failed to get compliance quick run", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get compliance quick run")
-	}
-
-	return c.JSON(http.StatusOK, auditJob.ToApi())
 }
 
 // CreateComplianceQuickSequence godoc
