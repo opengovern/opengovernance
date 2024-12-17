@@ -237,14 +237,14 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		integrations = append(integrations, i)
 	}
 
-	controlView.JobSummary.IntegrationIDs = integrations
+	controlView.JobSummary.IntegrationID = integrations
 	keys, idx = controlView.KeysAndIndex()
 	controlView.EsID = es2.HashOf(keys...)
 	controlView.EsIndex = idx
 
 	err = sendDataToOpensearch(w.esClient.ES(), controlView)
 
-	resourceView.JobSummary.IntegrationIDs = integrations
+	resourceView.JobSummary.IntegrationID = integrations
 	keys, idx = resourceView.KeysAndIndex()
 	resourceView.EsID = es2.HashOf(keys...)
 	resourceView.EsIndex = idx
@@ -254,7 +254,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		return err
 	}
 
-	controlSummary.JobSummary.IntegrationIDs = integrations
+	controlSummary.JobSummary.IntegrationID = integrations
 	controlSummary.ControlScore.TotalControls = int64(len(totalControls))
 	controlSummary.ControlScore.FailedControls = int64(len(failedControls))
 	keys, idx = controlSummary.KeysAndIndex()

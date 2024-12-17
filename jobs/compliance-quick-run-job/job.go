@@ -19,10 +19,10 @@ import (
 )
 
 type AuditJob struct {
-	JobID          uint
-	FrameworkID    string
-	IntegrationIDs []string
-	IncludeResult  []string
+	JobID         uint
+	FrameworkID   string
+	IntegrationID string
+	IncludeResult []string
 
 	JobReportControlSummary *types.ComplianceJobReportControlSummary
 	JobReportControlView    *types.ComplianceJobReportControlView
@@ -31,7 +31,7 @@ type AuditJob struct {
 
 type JobResult struct {
 	JobID          uint
-	Status         model.ComplianceQuickRunStatus
+	Status         model.ComplianceJobStatus
 	FailureMessage string
 }
 
@@ -40,11 +40,11 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 		Controls:          make(map[string]types.AuditControlResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:          job.JobID,
-			FrameworkID:    job.FrameworkID,
-			Auditable:      false,
-			JobStartedAt:   time.Now(),
-			IntegrationIDs: job.IntegrationIDs,
+			JobID:         job.JobID,
+			FrameworkID:   job.FrameworkID,
+			Auditable:     false,
+			JobStartedAt:  time.Now(),
+			IntegrationID: job.IntegrationID,
 		},
 	}
 	job.JobReportControlSummary = &types.ComplianceJobReportControlSummary{
@@ -55,50 +55,40 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 			FailedControls: 0,
 		},
 		JobSummary: types.JobSummary{
-			JobID:          job.JobID,
-			FrameworkID:    job.FrameworkID,
-			Auditable:      false,
-			JobStartedAt:   time.Now(),
-			IntegrationIDs: job.IntegrationIDs,
+			JobID:         job.JobID,
+			FrameworkID:   job.FrameworkID,
+			Auditable:     false,
+			JobStartedAt:  time.Now(),
+			IntegrationID: job.IntegrationID,
 		},
 	}
 	job.JobReportResourceView = &types.ComplianceJobReportResourceView{
 		Integrations:      make(map[string]types.AuditIntegrationResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:          job.JobID,
-			FrameworkID:    job.FrameworkID,
-			Auditable:      false,
-			JobStartedAt:   time.Now(),
-			IntegrationIDs: job.IntegrationIDs,
+			JobID:         job.JobID,
+			FrameworkID:   job.FrameworkID,
+			Auditable:     false,
+			JobStartedAt:  time.Now(),
+			IntegrationID: job.IntegrationID,
 		},
 	}
 
 	totalControls := make(map[string]bool)
 	failedControls := make(map[string]bool)
-	if len(job.IntegrationIDs) > 0 {
-		for _, integrationID := range job.IntegrationIDs {
-			err := w.RunJobForIntegration(ctx, job, integrationID, &totalControls, &failedControls)
-			if err != nil {
-				w.logger.Error("failed to run audit job for integration", zap.String("integration_id", integrationID), zap.Error(err))
-				return err
-			}
-			w.logger.Info("audit job for integration completed", zap.String("integration_id", integrationID))
-		}
-	} else {
-		err := w.RunJobForIntegration(ctx, job, "all", &totalControls, &failedControls)
-		if err != nil {
-			w.logger.Error("failed to run audit job for all integrations", zap.Error(err))
-			return err
-		}
-		w.logger.Info("audit job for all integration completed")
+
+	err := w.RunJobForIntegration(ctx, job, job.IntegrationID, &totalControls, &failedControls)
+	if err != nil {
+		w.logger.Error("failed to run audit job for integration", zap.String("integration_id", job.IntegrationID), zap.Error(err))
+		return err
 	}
+	w.logger.Info("audit job for integration completed", zap.String("integration_id", job.IntegrationID))
 
 	keys, idx := job.JobReportControlView.KeysAndIndex()
 	job.JobReportControlView.EsID = es.HashOf(keys...)
 	job.JobReportControlView.EsIndex = idx
 
-	err := sendDataToOpensearch(w.esClient.ES(), *job.JobReportControlView)
+	err = sendDataToOpensearch(w.esClient.ES(), *job.JobReportControlView)
 	if err != nil {
 		return err
 	}
@@ -136,9 +126,9 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		include["alarm"] = true
 	}
 
-	job.JobReportControlView.JobSummary.IntegrationIDs = append(job.JobReportControlView.JobSummary.IntegrationIDs, integrationId)
-	job.JobReportResourceView.JobSummary.IntegrationIDs = append(job.JobReportResourceView.JobSummary.IntegrationIDs, integrationId)
-	job.JobReportControlSummary.JobSummary.IntegrationIDs = append(job.JobReportControlSummary.JobSummary.IntegrationIDs, integrationId)
+	job.JobReportControlView.JobSummary.IntegrationID = integrationId
+	job.JobReportResourceView.JobSummary.IntegrationID = integrationId
+	job.JobReportControlSummary.JobSummary.IntegrationID = integrationId
 
 	job.JobReportResourceView.Integrations[integrationId] = types.AuditIntegrationResult{
 		ResourceTypes: make(map[string]types.AuditResourceTypesResult),
@@ -169,8 +159,8 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		queryJob := QueryJob{
 			AuditJobID: job.JobID,
 			ExecutionPlan: ExecutionPlan{
-				Query:          *control.Query,
-				IntegrationIDs: job.IntegrationIDs,
+				Query:         *control.Query,
+				IntegrationID: job.IntegrationID,
 			},
 		}
 		queryResults, err := w.RunQuery(ctx, queryJob)

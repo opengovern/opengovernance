@@ -197,8 +197,8 @@ func (s *JobScheduler) buildRunners(
 	return jobs, globalJobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
-	lastJob *model.ComplianceJob, connectionID string, manual bool, createdBy string) (uint, error) {
+func (s *JobScheduler) CreateComplianceReportJobs(withIncident bool, benchmarkID string,
+	lastJob *model.ComplianceJob, connectionID string, manual bool, createdBy string, parentJobID *uint) (uint, error) {
 	// delete old runners
 	if lastJob != nil {
 		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
@@ -220,11 +220,13 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 
 	job := model.ComplianceJob{
 		BenchmarkID:         benchmarkID,
+		WithIncidents:       withIncident,
 		Status:              model.ComplianceJobCreated,
 		AreAllRunnersQueued: false,
 		IntegrationID:       connectionID,
 		TriggerType:         triggerType,
 		CreatedBy:           createdBy,
+		ParentID:            parentJobID,
 	}
 	err := s.db.CreateComplianceJob(nil, &job)
 	if err != nil {
@@ -238,7 +240,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string,
 func (s *JobScheduler) enqueueRunnersCycle() error {
 	s.logger.Info("enqueue runners cycle started")
 	var err error
-	jobsWithUnqueuedRunners, err := s.db.ListComplianceJobsWithUnqueuedRunners()
+	jobsWithUnqueuedRunners, err := s.db.ListComplianceJobsWithUnqueuedRunners(true)
 	if err != nil {
 		s.logger.Error("error while listing jobs with unqueued runners", zap.Error(err))
 		return err

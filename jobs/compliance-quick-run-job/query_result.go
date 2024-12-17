@@ -30,7 +30,7 @@ type QueryResult struct {
 type ExecutionPlan struct {
 	Query complianceApi.Query
 
-	IntegrationIDs []string
+	IntegrationID string
 }
 
 type QueryJob struct {
@@ -41,7 +41,7 @@ type QueryJob struct {
 func (w *Worker) RunQuery(ctx context.Context, j QueryJob) ([]QueryResult, error) {
 	w.logger.Info("Running query",
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
-		zap.Strings("integration_ids", j.ExecutionPlan.IntegrationIDs),
+		zap.String("integration_ids", j.ExecutionPlan.IntegrationID),
 	)
 
 	queryParams, err := w.metadataClient.ListQueryParameters(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole})
@@ -59,7 +59,7 @@ func (w *Worker) RunQuery(ctx context.Context, j QueryJob) ([]QueryResult, error
 			w.logger.Error("required query parameter not found",
 				zap.String("key", param.Key),
 				zap.String("query_id", j.ExecutionPlan.Query.ID),
-				zap.Strings("integration_ids", j.ExecutionPlan.IntegrationIDs),
+				zap.String("integration_id", j.ExecutionPlan.IntegrationID),
 			)
 			return nil, fmt.Errorf("required query parameter not found: %s for query: %s", param.Key, j.ExecutionPlan.Query.ID)
 		}
@@ -67,7 +67,7 @@ func (w *Worker) RunQuery(ctx context.Context, j QueryJob) ([]QueryResult, error
 			w.logger.Info("optional query parameter not found",
 				zap.String("key", param.Key),
 				zap.String("query_id", j.ExecutionPlan.Query.ID),
-				zap.Strings("integration_ids", j.ExecutionPlan.IntegrationIDs),
+				zap.String("integration_id", j.ExecutionPlan.IntegrationID),
 			)
 			queryParamMap[param.Key] = ""
 		}
@@ -106,7 +106,7 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j QueryJob, queryParamMap 
 		w.logger.Error("failed to execute query template",
 			zap.Error(err),
 			zap.String("query_id", j.ExecutionPlan.Query.ID),
-			zap.Strings("integration_ids", j.ExecutionPlan.IntegrationIDs),
+			zap.String("integration_id", j.ExecutionPlan.IntegrationID),
 			zap.Uint("job_id", j.AuditJobID),
 		)
 		return nil, fmt.Errorf("failed to execute query template: %w for query: %s", err, j.ExecutionPlan.Query.ID)
@@ -119,7 +119,7 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j QueryJob, queryParamMap 
 		zap.String("query", queryOutput.String()))
 	res, err := w.steampipeConn.QueryAll(ctx, queryOutput.String())
 	if err != nil {
-		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Strings("integration_ids", j.ExecutionPlan.IntegrationIDs))
+		w.logger.Error("failed to run query", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.String("integration_id", j.ExecutionPlan.IntegrationID))
 		return nil, err
 	}
 
