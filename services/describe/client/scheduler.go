@@ -33,7 +33,7 @@ type SchedulerServiceClient interface {
 	ListComplianceJobsHistory(ctx *httpclient.Context, interval, triggerType, createdBy string, cursor, perPage int) (*api.ListComplianceJobsHistoryResponse, error)
 	GetSummaryJobs(ctx *httpclient.Context, jobIDs []string) ([]string, error)
 	GetIntegrationLastDiscoveryJob(ctx *httpclient.Context, request api.GetIntegrationLastDiscoveryJobRequest) (*model.DescribeIntegrationJob, error)
-	GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceQuickRun, error)
+	GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceJob, error)
 	GetComplianceQuickSequence(ctx *httpclient.Context, jobID string) (*api.QuickScanSequence, error)
 	GetComplianceJobStatus(ctx *httpclient.Context, jobId string) (*api.GetComplianceJobStatusResponse, error)
 }
@@ -230,10 +230,10 @@ func (s *schedulerClient) GetIntegrationLastDiscoveryJob(ctx *httpclient.Context
 	return &job, nil
 }
 
-func (s *schedulerClient) GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceQuickRun, error) {
+func (s *schedulerClient) GetComplianceQuickRun(ctx *httpclient.Context, jobID string) (*api.ComplianceJob, error) {
 	url := fmt.Sprintf("%s/api/v3/compliance/quick/%s", s.baseURL, jobID)
 
-	var job api.ComplianceQuickRun
+	var job api.ComplianceJob
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

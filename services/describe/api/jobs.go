@@ -6,18 +6,6 @@ import (
 	queryrunner "github.com/opengovern/opencomply/jobs/query-runner-job"
 )
 
-type ComplianceQuickRunStatus string
-
-const (
-	AuditJobStatusCreated    ComplianceQuickRunStatus = "CREATED"
-	AuditJobStatusQueued     ComplianceQuickRunStatus = "QUEUED"
-	AuditJobStatusInProgress ComplianceQuickRunStatus = "IN_PROGRESS"
-	AuditJobStatusFailed     ComplianceQuickRunStatus = "FAILED"
-	AuditJobStatusSucceeded  ComplianceQuickRunStatus = "SUCCEEDED"
-	AuditJobStatusTimeOut    ComplianceQuickRunStatus = "TIMEOUT"
-	AuditJobStatusCanceled   ComplianceQuickRunStatus = "CANCELED"
-)
-
 type QuickScanSequenceStatus string
 
 const (
@@ -414,15 +402,6 @@ type GetIntegrationDiscoveryProgressResponse struct {
 	IntegrationProgress        []IntegrationDiscoveryProgressStatus `json:"integration_progress"`
 	TriggerIdProgressSummary   *DiscoveryProgressStatusSummary      `json:"trigger_id_progress_summary"`
 	TriggerIdProgressBreakdown *DiscoveryProgressStatusBreakdown    `json:"trigger_id_progress_breakdown"`
-}
-
-type ComplianceQuickRun struct {
-	ID             string                   `json:"id"`
-	FrameworkID    string                   `json:"framework_id"`
-	IntegrationIDs []string                 `json:"integration_ids"`
-	Status         ComplianceQuickRunStatus `json:"status"`
-	FailureMessage string                   `json:"failure_message"`
-	CreatedBy      string                   `json:"created_by"`
 }
 
 type QuickScanSequence struct {

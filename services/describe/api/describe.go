@@ -30,6 +30,7 @@ const (
 	ComplianceJobSummarizerInProgress ComplianceJobStatus = "SUMMARIZER_IN_PROGRESS"
 	ComplianceJobFailed               ComplianceJobStatus = "FAILED"
 	ComplianceJobSucceeded            ComplianceJobStatus = "SUCCEEDED"
+	ComplianceJobTimeout            ComplianceJobStatus = "TIMEOUT"
 )
 
 type ComplianceJob struct {
