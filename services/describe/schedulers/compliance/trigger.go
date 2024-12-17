@@ -89,7 +89,7 @@ func (s *JobScheduler) buildRunners(
 		}
 		if control.Query.Global == true {
 			runnerJob := model.ComplianceRunner{
-				BenchmarkID:          rootBenchmarkID,
+				FrameworkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
 				IntegrationID:        nil,
 				ResourceCollectionID: resourceCollectionID,
@@ -107,7 +107,7 @@ func (s *JobScheduler) buildRunners(
 			globalRunners = append(globalRunners, &runnerJob)
 		} else {
 			runnerJob := model.ComplianceRunner{
-				BenchmarkID:          rootBenchmarkID,
+				FrameworkID:          rootBenchmarkID,
 				QueryID:              control.Query.ID,
 				IntegrationID:        connectionID,
 				ResourceCollectionID: resourceCollectionID,
@@ -197,20 +197,20 @@ func (s *JobScheduler) buildRunners(
 	return jobs, globalJobs, nil
 }
 
-func (s *JobScheduler) CreateComplianceReportJobs(withIncident bool, benchmarkID string,
-	lastJob *model.ComplianceJob, connectionID string, manual bool, createdBy string, parentJobID *uint) (uint, error) {
+func (s *JobScheduler) CreateComplianceReportJobs(withIncident bool, frameworkID string,
+	lastJob *model.ComplianceJob, integrationIDs []string, manual bool, createdBy string, parentJobID *uint) ([]model.ComplianceJob, error) {
 	// delete old runners
 	if lastJob != nil {
 		err := s.db.DeleteOldRunnerJob(&lastJob.ID)
 		if err != nil {
 			s.logger.Error("error while deleting old runners", zap.Error(err))
-			return 0, err
+			return nil, err
 		}
 	} else {
 		err := s.db.DeleteOldRunnerJob(nil)
 		if err != nil {
 			s.logger.Error("error while deleting old runners", zap.Error(err))
-			return 0, err
+			return nil, err
 		}
 	}
 	triggerType := model.ComplianceTriggerTypeScheduled
@@ -218,23 +218,51 @@ func (s *JobScheduler) CreateComplianceReportJobs(withIncident bool, benchmarkID
 		triggerType = model.ComplianceTriggerTypeManual
 	}
 
-	job := model.ComplianceJob{
-		BenchmarkID:         benchmarkID,
-		WithIncidents:       withIncident,
-		Status:              model.ComplianceJobCreated,
-		AreAllRunnersQueued: false,
-		IntegrationID:       connectionID,
-		TriggerType:         triggerType,
-		CreatedBy:           createdBy,
-		ParentID:            parentJobID,
+	var jobs []model.ComplianceJob
+	var integrationsEpoch []string
+
+	for _, integrationID := range integrationIDs {
+		integrationsEpoch = append(integrationsEpoch, integrationID)
+		if len(integrationsEpoch) >= 10 {
+			job := model.ComplianceJob{
+				FrameworkID:         frameworkID,
+				WithIncidents:       withIncident,
+				Status:              model.ComplianceJobCreated,
+				AreAllRunnersQueued: false,
+				IntegrationIDs:      integrationsEpoch,
+				TriggerType:         triggerType,
+				CreatedBy:           createdBy,
+				ParentID:            parentJobID,
+			}
+			err := s.db.CreateComplianceJob(nil, &job)
+			if err != nil {
+				s.logger.Error("error while creating compliance job", zap.Error(err))
+				return nil, err
+			}
+			jobs = append(jobs, job)
+			integrationsEpoch = []string{}
+		}
 	}
-	err := s.db.CreateComplianceJob(nil, &job)
-	if err != nil {
-		s.logger.Error("error while creating compliance job", zap.Error(err))
-		return 0, err
+	if len(integrationsEpoch) > 0 {
+		job := model.ComplianceJob{
+			FrameworkID:         frameworkID,
+			WithIncidents:       withIncident,
+			Status:              model.ComplianceJobCreated,
+			AreAllRunnersQueued: false,
+			IntegrationIDs:      integrationsEpoch,
+			TriggerType:         triggerType,
+			CreatedBy:           createdBy,
+			ParentID:            parentJobID,
+		}
+		err := s.db.CreateComplianceJob(nil, &job)
+		if err != nil {
+			s.logger.Error("error while creating compliance job", zap.Error(err))
+			return nil, err
+		}
+		jobs = append(jobs, job)
 	}
 
-	return job.ID, nil
+	return jobs, nil
 }
 
 func (s *JobScheduler) enqueueRunnersCycle() error {
@@ -251,7 +279,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 		var allRunners []*model.ComplianceRunner
 		var assignments *complianceApi.BenchmarkAssignedEntities
 		integrations, err := s.integrationClient.ListIntegrationsByFilters(&httpclient.Context{UserRole: api.AdminRole}, integrationapi.ListIntegrationsRequest{
-			IntegrationID: []string{job.IntegrationID},
+			IntegrationID: job.IntegrationIDs,
 		})
 		if err != nil {
 			s.logger.Error("error while getting integrations", zap.Error(err))
@@ -276,7 +304,7 @@ func (s *JobScheduler) enqueueRunnersCycle() error {
 				continue
 			}
 			connection := it
-			runners, globalRunners, err = s.buildRunners(job.ID, &connection.IntegrationID, &connection.IntegrationType, nil, job.BenchmarkID, nil, job.BenchmarkID, nil, job.TriggerType)
+			runners, globalRunners, err = s.buildRunners(job.ID, &connection.IntegrationID, &connection.IntegrationType, nil, job.FrameworkID, nil, job.FrameworkID, nil, job.TriggerType)
 			if err != nil {
 				s.logger.Error("error while building runners", zap.Error(err))
 				return err

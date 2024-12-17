@@ -7934,15 +7934,15 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
 	}
 
-	framework, err := h.db.GetBenchmark(ctx.Request().Context(), complianceJob.BenchmarkId)
+	framework, err := h.db.GetBenchmark(ctx.Request().Context(), complianceJob.FrameworkId)
 	if err != nil {
-		h.logger.Error("failed to get framework by frameworkID", zap.String("framework", complianceJob.BenchmarkId), zap.Error(err))
+		h.logger.Error("failed to get framework by frameworkID", zap.String("framework", complianceJob.FrameworkId), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get framework by frameworkID")
 	}
 
-	controlsMap, err := h.getControlsUnderBenchmark(ctx.Request().Context(), complianceJob.BenchmarkId, make(map[string]BenchmarkControlsCache))
+	controlsMap, err := h.getControlsUnderBenchmark(ctx.Request().Context(), complianceJob.FrameworkId, make(map[string]BenchmarkControlsCache))
 	if err != nil {
-		h.logger.Error("failed to get controls under benchmark", zap.String("framework", complianceJob.BenchmarkId), zap.Error(err))
+		h.logger.Error("failed to get controls under benchmark", zap.String("framework", complianceJob.FrameworkId), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "could not get framework by frameworkID")
 	}
 	var controlsStr []string

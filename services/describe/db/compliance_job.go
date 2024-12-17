@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"math/rand"
 	"time"
 
@@ -114,11 +115,11 @@ func (db Database) CleanupComplianceJobsOlderThan(t time.Time) error {
 	return nil
 }
 
-func (db Database) GetLastComplianceJob(withIncidents bool, benchmarkID string) (*model.ComplianceJob, error) {
+func (db Database) GetLastComplianceJob(withIncidents bool, frameworkID string) (*model.ComplianceJob, error) {
 	var job model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).
 		Where("with_incidents = ?", withIncidents).
-		Where("benchmark_id = ?", benchmarkID).Order("created_at DESC").First(&job)
+		Where("framework_id = ?", frameworkID).Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -187,7 +188,7 @@ func (db Database) ListComplianceJobsForInterval(withIncidents *bool, interval, 
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interval, triggerType, createdBy string, benchmarkIDs []string) ([]model.ComplianceJobWithSummarizerJob, error) {
+func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interval, triggerType, createdBy string, frameworkIDs []string) ([]model.ComplianceJobWithSummarizerJob, error) {
 	var result []model.ComplianceJobWithSummarizerJob
 
 	// Base query
@@ -196,9 +197,9 @@ func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interva
 			compliance_jobs.id, 
 			compliance_jobs.created_at, 
 			compliance_jobs.updated_at, 
-			compliance_jobs.benchmark_id, 
+			compliance_jobs.framework_id, 
 			compliance_jobs.status, 
-			compliance_jobs.integration_id, 
+			compliance_jobs.integration_ids, 
 			compliance_jobs.trigger_type, 
 			compliance_jobs.created_by,
 			COALESCE(array_agg(COALESCE(compliance_summarizers.id::text, '')), '{}') as summarizer_jobs
@@ -220,8 +221,8 @@ func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interva
 	if createdBy != "" {
 		tx = tx.Where("compliance_jobs.created_by = ?", createdBy)
 	}
-	if len(benchmarkIDs) > 0 {
-		tx = tx.Where("compliance_jobs.benchmark_id IN ?", benchmarkIDs)
+	if len(frameworkIDs) > 0 {
+		tx = tx.Where("compliance_jobs.framework_id IN ?", frameworkIDs)
 	}
 
 	// Execute the query
@@ -237,7 +238,7 @@ func (db Database) ListComplianceJobsWithSummaryJob(withIncidents *bool, interva
 
 func (db Database) ListComplianceJobsByIntegrationID(withIncidents *bool, integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("integration_id IN ?", integrationIds)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("integration_ids && ?", pq.Array(integrationIds))
 	if withIncidents != nil {
 		tx = tx.Where("with_incidents = ?", *withIncidents)
 	}
@@ -254,7 +255,7 @@ func (db Database) ListComplianceJobsByIntegrationID(withIncidents *bool, integr
 func (db Database) ListPendingComplianceJobsByIntegrationID(withIncidents *bool, integrationIds []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{}).
-		Where("integration_id IN ?", integrationIds).
+		Where("integration_ids && ?", integrationIds).
 		Where("status IN ?", []model.ComplianceJobStatus{model.ComplianceJobCreated, model.ComplianceJobRunnersInProgress})
 	if withIncidents != nil {
 		tx = tx.Where("with_incidents = ?", *withIncidents)
@@ -269,9 +270,9 @@ func (db Database) ListPendingComplianceJobsByIntegrationID(withIncidents *bool,
 	return job, nil
 }
 
-func (db Database) ListComplianceJobsByBenchmarkID(withIncidents *bool, benchmarkIds []string) ([]model.ComplianceJob, error) {
+func (db Database) ListComplianceJobsByFrameworkID(withIncidents *bool, frameworkIDs []string) ([]model.ComplianceJob, error) {
 	var job []model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id IN ?", benchmarkIds)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("framework_id IN ?", frameworkIDs)
 	if withIncidents != nil {
 		tx = tx.Where("with_incidents = ?", *withIncidents)
 	}
@@ -422,7 +423,7 @@ SELECT * FROM compliance_jobs j WHERE status = 'SUMMARIZER_IN_PROGRESS' AND with
 	return jobs, nil
 }
 
-func (db Database) ListComplianceJobsByFilters(withIncidents *bool, integrationId []string, benchmarkId []string, status []string,
+func (db Database) ListComplianceJobsByFilters(withIncidents *bool, integrationId []string, frameworkId []string, status []string,
 	startTime, endTime *time.Time) ([]model.ComplianceJob, error) {
 	var jobs []model.ComplianceJob
 	tx := db.ORM.Model(&model.ComplianceJob{})
@@ -432,11 +433,11 @@ func (db Database) ListComplianceJobsByFilters(withIncidents *bool, integrationI
 	}
 
 	if len(integrationId) > 0 {
-		tx = tx.Where("integration_id IN ?", integrationId)
+		tx = tx.Where("integration_ids && ?", pq.Array(integrationId))
 	}
 
-	if len(benchmarkId) > 0 {
-		tx = tx.Where("benchmark_id IN ?", benchmarkId)
+	if len(frameworkId) > 0 {
+		tx = tx.Where("framework_id IN ?", frameworkId)
 	}
 	if len(status) > 0 {
 		tx = tx.Where("status IN ?", status)
@@ -458,14 +459,18 @@ func (db Database) ListComplianceJobsByFilters(withIncidents *bool, integrationI
 
 func (db Database) GetComplianceJobsIntegrations() ([]string, error) {
 	var uniqueIntegrationIDs []string
-	if err := db.ORM.Model(&model.ComplianceJob{}).Distinct("integration_id").Pluck("integration_id", &uniqueIntegrationIDs).Error; err != nil {
+	query := `
+		SELECT DISTINCT unnest(integration_ids) AS integration
+		FROM compliance_jobs
+	`
+	if err := db.ORM.Raw(query).Pluck("integration", &uniqueIntegrationIDs).Error; err != nil {
 		return nil, err
 	}
 	return uniqueIntegrationIDs, nil
 }
 
-func (db Database) CleanupAllComplianceJobsForIntegrations(integrations []string) error {
-	tx := db.ORM.Where("integration_id IN ?", integrations).Unscoped().Delete(&model.ComplianceJob{})
+func (db Database) CleanupAllComplianceJobsForIntegrations(integrationId []string) error {
+	tx := db.ORM.Where("integration_ids && ?", pq.Array(integrationId)).Unscoped().Delete(&model.ComplianceJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}

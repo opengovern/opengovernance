@@ -19,10 +19,10 @@ import (
 )
 
 type AuditJob struct {
-	JobID         uint
-	FrameworkID   string
-	IntegrationID string
-	IncludeResult []string
+	JobID          uint
+	FrameworkID    string
+	IntegrationIDs []string
+	IncludeResult  []string
 
 	JobReportControlSummary *types.ComplianceJobReportControlSummary
 	JobReportControlView    *types.ComplianceJobReportControlView
@@ -77,18 +77,20 @@ func (w *Worker) RunJob(ctx context.Context, job *AuditJob) error {
 	totalControls := make(map[string]bool)
 	failedControls := make(map[string]bool)
 
-	err := w.RunJobForIntegration(ctx, job, job.IntegrationID, &totalControls, &failedControls)
-	if err != nil {
-		w.logger.Error("failed to run audit job for integration", zap.String("integration_id", job.IntegrationID), zap.Error(err))
-		return err
+	for _, integrationID := range job.IntegrationIDs {
+		err := w.RunJobForIntegration(ctx, job, integrationID, &totalControls, &failedControls)
+		if err != nil {
+			w.logger.Error("failed to run audit job for integration", zap.String("integration_id", integrationID), zap.Error(err))
+			return err
+		}
+		w.logger.Info("audit job for integration completed", zap.String("integration_id", integrationID))
 	}
-	w.logger.Info("audit job for integration completed", zap.String("integration_id", job.IntegrationID))
 
 	keys, idx := job.JobReportControlView.KeysAndIndex()
 	job.JobReportControlView.EsID = es.HashOf(keys...)
 	job.JobReportControlView.EsIndex = idx
 
-	err = sendDataToOpensearch(w.esClient.ES(), *job.JobReportControlView)
+	err := sendDataToOpensearch(w.esClient.ES(), *job.JobReportControlView)
 	if err != nil {
 		return err
 	}
@@ -159,8 +161,8 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 		queryJob := QueryJob{
 			AuditJobID: job.JobID,
 			ExecutionPlan: ExecutionPlan{
-				Query:         *control.Query,
-				IntegrationID: job.IntegrationID,
+				Query:          *control.Query,
+				IntegrationIDs: job.IntegrationIDs,
 			},
 		}
 		queryResults, err := w.RunQuery(ctx, queryJob)
