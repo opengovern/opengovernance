@@ -12,7 +12,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-googleworkspace:0.0.1 as googleworkspac
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-oci:0.0.1 as oci
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-render:0.0.1 as render
 FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
-
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-doppler:0.0.1 as doppler
 FROM ubuntu:20.04 AS base
 RUN apt-get update && apt-get install -y \
     curl \
@@ -33,7 +33,7 @@ COPY --from=googleworkspace /steampipe-plugin-googleworkspace.plugin /home/steam
 COPY --from=oci /steampipe-plugin-oci.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/oci@latest/steampipe-plugin-oci.plugin
 COPY --from=render /steampipe-plugin-render.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/render@latest/steampipe-plugin-render.plugin
 COPY --from=opengovernance /cloudql.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
-
+COPY --from=doppler /steampipe-plugin-doppler.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/doppler@latest/steampipe-plugin-doppler.plugin
 USER root
 RUN useradd -ms /bin/bash steampipe
 RUN mkdir -p /home/steampipe/.steampipe/config
