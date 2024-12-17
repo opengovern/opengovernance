@@ -91,20 +91,20 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 		s.logger.Info("no jobs with runners completed, skipping this summarizer scheduling")
 	}
 	for _, job := range jobs {
-		sankDocCount, err := s.getSankDocumentCountBenchmark(ctx, job.BenchmarkID, job.ID)
+		sankDocCount, err := s.getSankDocumentCountBenchmark(ctx, job.FrameworkID, job.ID)
 		if err != nil {
-			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			s.logger.Error("failed to get sank document count", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
 		}
 		totalDocCount, err := s.db.FetchTotalFindingCountForComplianceJob(job.ID)
 		if err != nil {
-			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			s.logger.Error("failed to get total document count", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
 		}
 
 		lastUpdatedRunner, err := s.db.GetLastUpdatedRunnerForParent(job.ID)
 		if err != nil {
-			s.logger.Error("failed to get last updated runner", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			s.logger.Error("failed to get last updated runner", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
 		}
 
@@ -112,7 +112,7 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 			// do not summarize if all docs are not sank
 			// do not summarize if either less than 90% of the docs are sank or last job update is in less than an hour ago
 			s.logger.Info("waiting for documents to sink",
-				zap.String("benchmarkId", job.BenchmarkID),
+				zap.String("benchmarkId", job.FrameworkID),
 				zap.Int("sankDocCount", sankDocCount),
 				zap.Int("totalDocCount", totalDocCount),
 				zap.Time("lastUpdatedRunner", lastUpdatedRunner.UpdatedAt),
@@ -120,7 +120,7 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 			if job.Status != model.ComplianceJobSinkInProgress {
 				err = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSinkInProgress, "")
 				if err != nil {
-					s.logger.Error("failed to update compliance job status", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+					s.logger.Error("failed to update compliance job status", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 					return err
 				}
 				continue
@@ -128,11 +128,11 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 				continue
 			}
 		}
-		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.BenchmarkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
+		s.logger.Info("documents are sank, creating summarizer", zap.String("benchmarkId", job.FrameworkID), zap.Int("sankDocCount", sankDocCount), zap.Int("totalDocCount", totalDocCount))
 
-		err = s.CreateSummarizer(job.BenchmarkID, &job.ID, job.TriggerType)
+		err = s.CreateSummarizer(job.FrameworkID, &job.ID, job.TriggerType)
 		if err != nil {
-			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			s.logger.Error("failed to create summarizer", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
 		}
 	}
@@ -155,7 +155,7 @@ func (s *JobScheduler) runSummarizer(ctx context.Context, manuals bool) error {
 	for _, job := range jobs {
 		err = s.finishComplianceJob(job)
 		if err != nil {
-			s.logger.Error("failed to finish compliance job", zap.Error(err), zap.String("benchmarkId", job.BenchmarkID))
+			s.logger.Error("failed to finish compliance job", zap.Error(err), zap.String("benchmarkId", job.FrameworkID))
 			return err
 		}
 	}

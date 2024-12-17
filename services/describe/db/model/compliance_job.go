@@ -36,12 +36,12 @@ func (c ComplianceJobStatus) ToApi() api.ComplianceJobStatus {
 
 type ComplianceJob struct {
 	gorm.Model
-	BenchmarkID         string
+	FrameworkID         string
 	WithIncidents       bool
 	Status              ComplianceJobStatus
 	IncludeResults      pq.StringArray `gorm:"type:text[]"`
 	AreAllRunnersQueued bool
-	IntegrationID       string
+	IntegrationIDs      pq.StringArray `gorm:"type:text[]"`
 	FailureMessage      string
 	TriggerType         ComplianceTriggerType
 	ParentID            *uint
@@ -51,7 +51,7 @@ type ComplianceJob struct {
 func (c ComplianceJob) ToApi() api.ComplianceJob {
 	return api.ComplianceJob{
 		ID:             c.ID,
-		BenchmarkID:    c.BenchmarkID,
+		BenchmarkID:    c.FrameworkID,
 		Status:         c.Status.ToApi(),
 		FailureMessage: c.FailureMessage,
 	}
@@ -61,7 +61,7 @@ type ComplianceRunner struct {
 	gorm.Model
 
 	Callers              string
-	BenchmarkID          string
+	FrameworkID          string
 	QueryID              string
 	IntegrationID        *string
 	ResourceCollectionID *string
@@ -82,7 +82,7 @@ func (cr *ComplianceRunner) GetKeyIdentifier() string {
 	if cr.IntegrationID != nil {
 		cid = *cr.IntegrationID
 	}
-	return fmt.Sprintf("%s-%s-%s-%d", cr.BenchmarkID, cr.QueryID, cid, cr.ParentJobID)
+	return fmt.Sprintf("%s-%s-%s-%d", cr.FrameworkID, cr.QueryID, cid, cr.ParentJobID)
 }
 
 func (cr *ComplianceRunner) GetCallers() ([]runner.Caller, error) {

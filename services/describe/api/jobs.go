@@ -120,7 +120,7 @@ type GetComplianceJobsHistoryResponse struct {
 	BenchmarkId     string              `json:"benchmark_id"`
 	JobStatus       ComplianceJobStatus `json:"job_status"`
 	DateTime        time.Time           `json:"date_time"`
-	IntegrationInfo IntegrationInfo     `json:"integration_info"`
+	IntegrationInfo []IntegrationInfo   `json:"integration_info"`
 }
 
 type BenchmarkAuditHistoryItem struct {
@@ -209,14 +209,14 @@ type GetDescribeJobStatusResponse struct {
 }
 
 type GetComplianceJobStatusResponse struct {
-	JobId           uint            `json:"job_id"`
-	WithIncidents   bool            `json:"with_incidents"`
-	SummaryJobId    *uint           `json:"summary_job_id"`
-	IntegrationInfo IntegrationInfo `json:"integration_info"`
-	JobStatus       string          `json:"job_status"`
-	BenchmarkId     string          `json:"benchmark_id"`
-	CreatedAt       time.Time       `json:"created_at"`
-	UpdatedAt       time.Time       `json:"updated_at"`
+	JobId           uint              `json:"job_id"`
+	WithIncidents   bool              `json:"with_incidents"`
+	SummaryJobId    *uint             `json:"summary_job_id"`
+	IntegrationInfo []IntegrationInfo `json:"integration_info"`
+	JobStatus       string            `json:"job_status"`
+	FrameworkId     string            `json:"framework_id"`
+	CreatedAt       time.Time         `json:"created_at"`
+	UpdatedAt       time.Time         `json:"updated_at"`
 }
 
 type GetAsyncQueryRunJobStatusResponse struct {
