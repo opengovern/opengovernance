@@ -103,8 +103,9 @@ func (cr *ComplianceRunner) SetCallers(callers []runner.Caller) error {
 type ComplianceSummarizer struct {
 	gorm.Model
 
-	BenchmarkID string
-	ParentJobID uint
+	BenchmarkID    string
+	ParentJobID    uint
+	IntegrationIDs pq.StringArray `gorm:"type:text[]"`
 
 	StartedAt      time.Time
 	RetryCount     int

@@ -17,7 +17,7 @@ type JobDocs struct {
 }
 
 func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
-	complianceResult types.ComplianceResult, resource *es.LookupResource,
+	complianceResult types.ComplianceResult, resource *es.LookupResource, jobIntegrations map[string]bool,
 ) {
 	if complianceResult.Severity == "" {
 		complianceResult.Severity = types.ComplianceResultSeverityNone
@@ -30,7 +30,11 @@ func (jd *JobDocs) AddComplianceResult(logger *zap.Logger, job Job,
 	}
 
 	if job.BenchmarkID == complianceResult.BenchmarkID {
-		jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
+		if len(jobIntegrations) == 0 {
+			jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
+		} else if _, ok := jobIntegrations[complianceResult.IntegrationID]; ok {
+			jd.BenchmarkSummary.Integrations.addComplianceResult(complianceResult)
+		}
 	}
 
 	var platformResourceID, resourceType, resourceName string

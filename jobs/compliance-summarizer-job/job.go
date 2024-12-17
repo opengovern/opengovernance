@@ -103,6 +103,11 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 	}
 
+	jobIntegrations := make(map[string]bool)
+	for _, i := range j.IntegrationIDs {
+		jobIntegrations[i] = true
+	}
+
 	totalControls := make(map[string]bool)
 	failedControls := make(map[string]bool)
 	integrationsMap := make(map[string]bool)
@@ -136,9 +141,14 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			}
 			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
 				zap.Any("resource", resource))
-			jd.AddComplianceResult(w.logger, j, f, resource)
+			jd.AddComplianceResult(w.logger, j, f, resource, jobIntegrations)
 
 			if f.BenchmarkID == j.BenchmarkID {
+				if len(jobIntegrations) > 0 {
+					if _, ok := jobIntegrations[f.IntegrationID]; !ok {
+						continue
+					}
+				}
 				addJobSummary(controlSummary, controlView, resourceView, f)
 				integrationsMap[f.IntegrationID] = true
 				totalControls[f.ControlID] = true

@@ -7,5 +7,6 @@ type Job struct {
 	ComplianceJobID uint
 	RetryCount      int
 	BenchmarkID     string
+	IntegrationIDs  []string
 	CreatedAt       time.Time
 }

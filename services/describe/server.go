@@ -603,7 +603,7 @@ func (h HttpServer) TriggerConnectionsComplianceJobSummary(ctx echo.Context) err
 	}
 
 	for _, benchmark := range benchmarks {
-		err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmark.ID, nil, model2.ComplianceTriggerTypeManual)
+		err = h.Scheduler.complianceScheduler.CreateSummarizer(benchmark.ID, nil, nil, model2.ComplianceTriggerTypeManual)
 		if err != nil {
 			return fmt.Errorf("error while creating compliance job summarizer: %v", err)
 		}
