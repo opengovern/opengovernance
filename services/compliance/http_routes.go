@@ -7690,11 +7690,11 @@ func (h HttpHandler) GetQuickScanSummary(c echo.Context) error {
 			h.logger.Error("failed to get audit job", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
 		}
-		if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+		if auditJob.Status == schedulerapi.ComplianceJobFailed {
 			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+		} else if auditJob.Status == schedulerapi.ComplianceJobTimeout {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
+		} else if auditJob.Status == schedulerapi.ComplianceJobRunnersInProgress || auditJob.Status == schedulerapi.ComplianceJobCreated || auditJob.Status == schedulerapi.ComplianceJobSummarizerInProgress {
 			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
 		}
 	}
@@ -7888,11 +7888,11 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 			h.logger.Error("failed to get audit job", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get audit job")
 		}
-		if auditJob.Status == schedulerapi.AuditJobStatusFailed {
+		if auditJob.Status == schedulerapi.ComplianceJobFailed {
 			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.AuditJobStatusTimeOut {
-			return echo.NewHTTPError(http.StatusBadRequest, "job has been failed")
-		} else if auditJob.Status == schedulerapi.AuditJobStatusCreated || auditJob.Status == schedulerapi.AuditJobStatusQueued || auditJob.Status == schedulerapi.AuditJobStatusInProgress {
+		} else if auditJob.Status == schedulerapi.ComplianceJobTimeout {
+			return echo.NewHTTPError(http.StatusBadRequest, "job has been timed out")
+		} else if auditJob.Status == schedulerapi.ComplianceJobRunnersInProgress || auditJob.Status == schedulerapi.ComplianceJobCreated || auditJob.Status == schedulerapi.ComplianceJobSummarizerInProgress {
 			return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
 		}
 	}
