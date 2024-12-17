@@ -408,10 +408,9 @@ export default function NewBenchmarkSummary() {
         } else {
             url = window.location.origin
         }
-        console.log(c)
         const body = {
-            with_incidents: true,
-            // with_incidents: b,
+            // with_incidents: true,
+            with_incidents: b,
 
             integration_info: c.map((c) => {
                 return {

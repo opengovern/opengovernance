@@ -87,8 +87,8 @@ export default function Evaluate({
             url = window.location.origin
         }
         const body = {
-            // with_incidents: withIncidents,
-            with_incidents: true,
+            with_incidents: withIncidents,
+            // with_incidents: true,
 
             integration_info: connections.map((c) => {
                 return {
@@ -452,13 +452,13 @@ export default function Evaluate({
                         setConnections(detail.selectedOptions)
                     }}
                 />
-                {/* <Checkbox
+                <Checkbox
                     className="mt-2 w-full"
                     onChange={({ detail }) => setWithIncidents(detail.checked)}
                     checked={withIncidents}
                 >
                     Create auditable incident
-                </Checkbox> */}
+                </Checkbox>
             </Modal>
         </>
     )

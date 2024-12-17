@@ -52,7 +52,7 @@ import {
 import { AppLayout, SplitPanel } from '@cloudscape-design/components'
 import { dateTimeDisplay } from '../../../../../../utilities/dateDisplay'
 import StatusIndicator from '@cloudscape-design/components/status-indicator'
-import SeverityBar from '../../../BenchmarkCard/SeverityBar'
+import SeverityBar from './SeverityBar'
 import { useParams } from 'react-router-dom'
 import { RunDetail } from './types'
 import TopHeader from '../../../../../../components/Layout/Header'
@@ -146,12 +146,14 @@ export default function EvaluateDetail() {
         axios
             .get(
                 // @ts-ignore
-                `${url}/main/compliance/api/v3/compliance/summary/${id}`,
+                `${url}/main/compliance/api/v3/job-report/${id}/summary`,
                 config
             )
             .then((res) => {
                 //   setAccounts(res.data.integrations)
                 setDetail(res.data)
+                setIntegrations(res.data?.job_details?.integration_ids)
+
                 setDetailLoading(false)
             })
             .catch((err) => {
@@ -181,7 +183,7 @@ export default function EvaluateDetail() {
         axios
             .get(
                 // @ts-ignore
-                `${url}/main/compliance/api/v3/compliance/report/${id}?with_incidents=true`,
+                `${url}/main/compliance/api/v3/job-report/${id}/details/by-control `,
                 config
             )
             .then((res) => {
@@ -195,7 +197,6 @@ export default function EvaluateDetail() {
                         oks: value.oks,
                     })
                 })
-                setIntegrations(res.data?.job_summary?.integration_ids)
                 setRunDetail(temp)
                 setDetailLoading(false)
             })
@@ -225,7 +226,7 @@ export default function EvaluateDetail() {
         axios
             .get(
                 // @ts-ignore
-                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=true&controls=${selectedControl.title}`,
+                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=${detail?.with_incidents}&controls=${selectedControl.title}`,
                 config
             )
             .then((res) => {
@@ -271,7 +272,7 @@ export default function EvaluateDetail() {
         axios
             .get(
                 // @ts-ignore
-                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=true`,
+                `${url}/main/compliance/api/v3/quick/scan/${id}?with_incidents=${detail?.with_incidents}`,
                 config
             )
             .then((res) => {
@@ -395,16 +396,24 @@ export default function EvaluateDetail() {
                             },
                             {
                                 label: 'Benchmark ID',
-                                value: detail?.benchmark_id,
+                                value: detail?.job_details?.framework?.id,
                             },
                             {
                                 label: 'Benchmark Title',
-                                value: detail?.benchmark_title,
+                                value: detail?.job_details?.framework?.title,
                             },
                             {
                                 label: 'Control score',
                                 value:
-                                    detail?.compliance_score.toFixed(2) * 100+ "%",
+                                    (
+                                        1 -
+                                        detail?.job_details?.job_score
+                                            ?.failed_controls /
+                                            detail?.job_details?.job_score
+                                                ?.total_controls
+                                    )?.toFixed(2) *
+                                        100 +
+                                    '%',
                             },
                             {
                                 label: 'Integrations',
@@ -434,11 +443,7 @@ export default function EvaluateDetail() {
                             {
                                 label: 'Last Evaulated at',
                                 value: (
-                                    <>
-                                        {dateTimeDisplay(
-                                            detail?.last_evaluated_at
-                                        )}
-                                    </>
+                                    <>{dateTimeDisplay(detail?.job_details?.updated_at)}</>
                                 ),
                             },
                             {
@@ -447,7 +452,7 @@ export default function EvaluateDetail() {
                                 value: (
                                     <>
                                         <Flex className="w-full ">
-                                            <SeverityBar benchmark={detail} />
+                                            <SeverityBar benchmark={detail?.job_details?.job_score} />
                                         </Flex>
                                     </>
                                 ),
