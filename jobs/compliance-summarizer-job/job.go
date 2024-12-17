@@ -137,11 +137,14 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 			w.logger.Info("Before adding resource finding", zap.String("platform_resource_id", f.PlatformResourceID),
 				zap.Any("resource", resource))
 			jd.AddComplianceResult(w.logger, j, f, resource)
-			addJobSummary(controlSummary, controlView, resourceView, f)
-			integrationsMap[f.IntegrationID] = true
-			totalControls[f.ControlID] = true
-			if f.ComplianceStatus == types.ComplianceStatusALARM {
-				failedControls[f.ControlID] = true
+
+			if f.ComplianceJobID == j.ComplianceJobID {
+				addJobSummary(controlSummary, controlView, resourceView, f)
+				integrationsMap[f.IntegrationID] = true
+				totalControls[f.ControlID] = true
+				if f.ComplianceStatus == types.ComplianceStatusALARM {
+					failedControls[f.ControlID] = true
+				}
 			}
 		}
 
