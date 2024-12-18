@@ -4,6 +4,7 @@ import (
 	"github.com/opengovern/og-util/pkg/jq"
 	"github.com/opengovern/og-util/pkg/ticker"
 	"github.com/opengovern/opencomply/pkg/utils"
+	"github.com/opengovern/opencomply/services/tasks/config"
 	"github.com/opengovern/opencomply/services/tasks/db"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -24,6 +25,8 @@ type TaskScheduler struct {
 	db                  db.Database
 	logger              *zap.Logger
 
+	cfg config.Config
+
 	TaskID     string
 	NatsConfig NatsConfig
 	Interval   uint64
@@ -36,12 +39,16 @@ func NewTaskScheduler(
 	db db.Database,
 	jq *jq.JobQueue,
 
+	cfg config.Config,
+
 	taskID string, natsConfig NatsConfig, interval uint64, timeout uint64) *TaskScheduler {
 	return &TaskScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
 		logger:              logger,
 		db:                  db,
 		jq:                  jq,
+
+		cfg: cfg,
 
 		TaskID:     taskID,
 		NatsConfig: natsConfig,

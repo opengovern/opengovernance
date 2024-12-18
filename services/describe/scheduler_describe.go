@@ -408,6 +408,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			TriggerType:            dc.TriggerType,
 			RetryCounter:           0,
 		},
+
+		ExtraInputs: nil,
 	}
 
 	if err := s.db.QueueDescribeIntegrationJob(dc.ID); err != nil {
