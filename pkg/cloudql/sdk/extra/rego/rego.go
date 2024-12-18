@@ -85,7 +85,7 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 
 func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego.Rego), error) {
 
-	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema value != any ($1)", excludedTableSchema)
+	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema != any ($1)", excludedTableSchema)
 	if err != nil {
 		r.logger.Error("Unable to query database", zap.Error(err))
 		return nil, err
