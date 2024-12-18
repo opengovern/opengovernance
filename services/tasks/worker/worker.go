@@ -15,6 +15,13 @@ import (
 	"strconv"
 )
 
+var (
+	ESAddress  = os.Getenv("ELASTICSEARCH_ADDRESS")
+	ESUsername = os.Getenv("ELASTICSEARCH_USERNAME")
+	ESPassword = os.Getenv("ELASTICSEARCH_PASSWORD")
+	ESIsOnAks  = os.Getenv("ELASTICSEARCH_ISONAKS")
+)
+
 func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, taskConfig *Task, namespace string) error {
 	soNatsUrl, _ := os.LookupEnv("SCALED_OBJECT_NATS_URL")
 
@@ -155,19 +162,19 @@ func defaultEnvs(cfg config.Config, taskConfig *Task) []corev1.EnvVar {
 		},
 		{
 			Name:  consts.ElasticSearchAddressEnv,
-			Value: cfg.ElasticSearch.Address,
+			Value: ESAddress,
 		},
 		{
 			Name:  consts.ElasticSearchUsernameEnv,
-			Value: cfg.ElasticSearch.Username,
+			Value: ESUsername,
 		},
 		{
 			Name:  consts.ElasticSearchPasswordEnv,
-			Value: cfg.ElasticSearch.Password,
+			Value: ESPassword,
 		},
 		{
 			Name:  consts.ElasticSearchIsOnAksNameEnv,
-			Value: strconv.FormatBool(cfg.ElasticSearch.IsOnAks),
+			Value: ESIsOnAks,
 		},
 		{
 			Name:  consts.ElasticSearchIsOpenSearch,
@@ -175,11 +182,11 @@ func defaultEnvs(cfg config.Config, taskConfig *Task) []corev1.EnvVar {
 		},
 		{
 			Name:  consts.ElasticSearchAwsRegionEnv,
-			Value: cfg.ElasticSearch.AwsRegion,
+			Value: "",
 		},
 		{
 			Name:  consts.ElasticSearchAssumeRoleArnEnv,
-			Value: cfg.ElasticSearch.AssumeRoleArn,
+			Value: "",
 		},
 	}
 }
