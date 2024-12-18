@@ -33,6 +33,7 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 	selfClientConfig, err := pgxpool.ParseConfig(fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`, option.Host, option.Port, option.User, option.Pass, option.Db))
 	if err != nil {
 		logger.Error("Unable to parse config", zap.Error(err))
+		logger.Sync()
 		return
 	}
 
@@ -41,8 +42,10 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		db, err := pgxpool.NewWithConfig(ctx, selfClientConfig)
 		if err != nil {
 			logger.Error("Unable to connect to database", zap.Error(err), zap.Int("try", i+1))
+			logger.Sync()
 			if i == tries-1 {
 				logger.Error("Exhausted all tries to connect to database")
+				logger.Sync()
 				return
 			}
 			time.Sleep(10 * time.Second)
@@ -57,8 +60,10 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		functions, err := engine.getRegoFunctionForTables(ctx)
 		if err != nil {
 			logger.Error("Error getting rego functions", zap.Error(err), zap.Int("try", i+1))
+			logger.Sync()
 			if i == tries-1 {
 				logger.Error("Exhausted all tries to get rego functions")
+				logger.Sync()
 				return
 			}
 			time.Sleep(10 * time.Second)
@@ -77,9 +82,11 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 	engine.httpServer = echo.New()
 	engine.httpServer.POST("/evaluate", engine.evaluateEndpoint)
 
+	logger.Info("Starting rego server", zap.String("port", port))
 	err = engine.httpServer.Start(fmt.Sprintf(":%s", port))
 	if err != nil {
 		logger.Error("Error starting rego server", zap.Error(err))
+		logger.Sync()
 	}
 }
 
@@ -88,6 +95,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema != any ($1)", excludedTableSchema)
 	if err != nil {
 		r.logger.Error("Unable to query database", zap.Error(err))
+		r.logger.Sync()
 		return nil, err
 	}
 	defer rows.Close()
@@ -98,6 +106,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 		err := rows.Scan(&tableName)
 		if err != nil {
 			r.logger.Error("Unable to scan table name", zap.Error(err))
+			r.logger.Sync()
 			return nil, err
 		}
 
@@ -111,6 +120,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 			rows, err := r.db.Query(bctx.Context, fmt.Sprintf("SELECT * FROM %s", tableName))
 			if err != nil {
 				r.logger.Error("Unable to query database", zap.Error(err), zap.String("table", tableName))
+				r.logger.Sync()
 				return nil, err
 			}
 			defer rows.Close()
@@ -118,12 +128,14 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 			results, err := pgx.CollectRows(rows, pgx.RowToMap)
 			if err != nil {
 				r.logger.Error("Unable to scan row", zap.Error(err), zap.String("table", tableName))
+				r.logger.Sync()
 				return nil, err
 			}
 
 			value, err := ast.InterfaceToValue(results)
 			if err != nil {
 				r.logger.Error("Unable to convert to value", zap.Error(err), zap.String("table", tableName))
+				r.logger.Sync()
 				return nil, err
 			}
 
@@ -146,6 +158,7 @@ func (r *RegoEngine) evaluate(ctx context.Context, policies []string, query stri
 	results, err := regoEngine.Eval(ctx)
 	if err != nil {
 		r.logger.Error("Error evaluating policy", zap.Error(err))
+		r.logger.Sync()
 		return nil, err
 	}
 
