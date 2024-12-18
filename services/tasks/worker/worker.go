@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, taskConfig *Task, namespace string) error {
@@ -24,28 +25,7 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 			Value: v,
 		})
 	}
-	env = append(env, []corev1.EnvVar{
-		{
-			Name:  consts.NatsURLEnv,
-			Value: cfg.NATS.URL,
-		},
-		{
-			Name:  consts.NatsConsumerEnv,
-			Value: taskConfig.NatsConfig.Consumer,
-		},
-		{
-			Name:  consts.NatsStreamNameEnv,
-			Value: taskConfig.NatsConfig.Stream,
-		},
-		{
-			Name:  consts.NatsTopicNameEnv,
-			Value: taskConfig.NatsConfig.Topic,
-		},
-		{
-			Name:  consts.NatsResultTopicNameEnv,
-			Value: taskConfig.NatsConfig.ResultTopic,
-		},
-	}...)
+	env = append(env, defaultEnvs(cfg, taskConfig)...)
 	switch taskConfig.WorkloadType {
 	case WorkloadTypeDeployment:
 		// deployment
@@ -149,4 +129,57 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 	}
 
 	return nil
+}
+
+func defaultEnvs(cfg config.Config, taskConfig *Task) []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name:  consts.NatsURLEnv,
+			Value: cfg.NATS.URL,
+		},
+		{
+			Name:  consts.NatsConsumerEnv,
+			Value: taskConfig.NatsConfig.Consumer,
+		},
+		{
+			Name:  consts.NatsStreamNameEnv,
+			Value: taskConfig.NatsConfig.Stream,
+		},
+		{
+			Name:  consts.NatsTopicNameEnv,
+			Value: taskConfig.NatsConfig.Topic,
+		},
+		{
+			Name:  consts.NatsResultTopicNameEnv,
+			Value: taskConfig.NatsConfig.ResultTopic,
+		},
+		{
+			Name:  consts.ElasticSearchAddressEnv,
+			Value: cfg.ElasticSearch.Address,
+		},
+		{
+			Name:  consts.ElasticSearchUsernameEnv,
+			Value: cfg.ElasticSearch.Username,
+		},
+		{
+			Name:  consts.ElasticSearchPasswordEnv,
+			Value: cfg.ElasticSearch.Password,
+		},
+		{
+			Name:  consts.ElasticSearchIsOnAksNameEnv,
+			Value: strconv.FormatBool(cfg.ElasticSearch.IsOnAks),
+		},
+		{
+			Name:  consts.ElasticSearchIsOpenSearch,
+			Value: strconv.FormatBool(cfg.ElasticSearch.IsOpenSearch),
+		},
+		{
+			Name:  consts.ElasticSearchAwsRegionEnv,
+			Value: cfg.ElasticSearch.AwsRegion,
+		},
+		{
+			Name:  consts.ElasticSearchAssumeRoleArnEnv,
+			Value: cfg.ElasticSearch.AssumeRoleArn,
+		},
+	}
 }
