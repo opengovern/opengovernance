@@ -1,4 +1,4 @@
-package opengovernance
+package view_sync
 
 import (
 	"context"
@@ -19,14 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func newZapLogger() (*zap.Logger, error) {
-	cfg := zap.NewProductionConfig()
-	cfg.OutputPaths = []string{
-		"/home/steampipe/.steampipe/logs/opengovernance.log",
-	}
-	return cfg.Build()
-}
-
 type ViewSync struct {
 	logger *zap.Logger
 
@@ -38,8 +30,7 @@ type ViewSync struct {
 	viewCheckpoint time.Time
 }
 
-func newViewSync() *ViewSync {
-	logger, _ := newZapLogger()
+func NewViewSync(logger *zap.Logger) *ViewSync {
 	v := ViewSync{
 		logger:         logger,
 		updateLock:     sync.Mutex{},
@@ -194,7 +185,7 @@ initLoop:
 	}
 }
 
-func (v *ViewSync) start(ctx context.Context) {
+func (v *ViewSync) Start(ctx context.Context) {
 	v.logger.Info("Initializing materialized views")
 	v.logger.Info("Creating self client")
 	v.logger.Sync()
