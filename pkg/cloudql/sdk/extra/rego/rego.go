@@ -36,6 +36,8 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		logger.Sync()
 		return
 	}
+	logger.Info("Connecting to database", zap.String("host", option.Host), zap.String("port", option.Port), zap.String("user", option.User), zap.String("db", option.Db))
+	logger.Sync()
 
 	tries := 5
 	for i := 0; i < tries; i++ {
@@ -54,6 +56,8 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		engine.db = db
 		break
 	}
+	logger.Info("Connected to database")
+	logger.Sync()
 
 	tries = 5
 	for i := 0; i < tries; i++ {
@@ -72,6 +76,8 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		engine.regoFunctions = functions
 		break
 	}
+	logger.Info("Got rego functions")
+	logger.Sync()
 
 	port := os.Getenv("REGO_PORT")
 	if port == "" {
@@ -83,6 +89,7 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 	engine.httpServer.POST("/evaluate", engine.evaluateEndpoint)
 
 	logger.Info("Starting rego server", zap.String("port", port))
+	logger.Sync()
 	err = engine.httpServer.Start(fmt.Sprintf(":%s", port))
 	if err != nil {
 		logger.Error("Error starting rego server", zap.Error(err))
