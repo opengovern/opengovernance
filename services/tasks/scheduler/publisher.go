@@ -45,7 +45,7 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 			TaskDefinition: tasks.TaskDefinition{
 				RunID:      run.ID,
 				TaskType:   s.TaskID,
-				ResultType: s.TaskID, // TODO: specify result type
+				ResultType: s.ResultType,
 				Params:     params,
 			},
 			ExtraInputs: nil,

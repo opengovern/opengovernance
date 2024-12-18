@@ -9,6 +9,7 @@ type Task struct {
 	gorm.Model
 	ID          string `gorm:"primarykey"`
 	Name        string `gorm:"unique;not null"` // Enforces uniqueness and non-null constraint
+	ResultType  string
 	Description string
 	ImageUrl    string
 	Interval    uint64

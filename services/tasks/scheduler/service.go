@@ -74,6 +74,7 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 			s.jq,
 			s.cfg,
 			task.ID,
+			task.ResultType,
 			natsConfig,
 			task.Interval,
 			task.Timeout)
