@@ -46,8 +46,10 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 				return
 			}
 			time.Sleep(10 * time.Second)
+			continue
 		}
 		engine.db = db
+		break
 	}
 
 	tries = 5
@@ -60,8 +62,10 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 				return
 			}
 			time.Sleep(10 * time.Second)
+			continue
 		}
 		engine.regoFunctions = functions
+		break
 	}
 
 	port := os.Getenv("REGO_PORT")
@@ -80,7 +84,7 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 }
 
 func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego.Rego), error) {
-	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema NOT IN $1", excludedTableSchema)
+	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema NOT IN ($1)", excludedTableSchema)
 	if err != nil {
 		r.logger.Error("Unable to query database", zap.Error(err))
 		return nil, err
@@ -103,7 +107,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 			Memoize:          true,
 			Nondeterministic: true,
 		}, func(bctx rego.BuiltinContext, terms []*ast.Term) (*ast.Term, error) {
-			rows, err := r.db.Query(bctx.Context, "SELECT * FROM $1", tableName)
+			rows, err := r.db.Query(bctx.Context, fmt.Sprintf("SELECT * FROM %s", tableName))
 			if err != nil {
 				r.logger.Error("Unable to query database", zap.Error(err), zap.String("table", tableName))
 				return nil, err
