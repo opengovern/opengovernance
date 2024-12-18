@@ -28,6 +28,7 @@ type TaskScheduler struct {
 	cfg config.Config
 
 	TaskID     string
+	ResultType string
 	NatsConfig NatsConfig
 	Interval   uint64
 	Timeout    uint64
@@ -41,7 +42,7 @@ func NewTaskScheduler(
 
 	cfg config.Config,
 
-	taskID string, natsConfig NatsConfig, interval uint64, timeout uint64) *TaskScheduler {
+	taskID, ResultType string, natsConfig NatsConfig, interval uint64, timeout uint64) *TaskScheduler {
 	return &TaskScheduler{
 		runSetupNatsStreams: runSetupNatsStreams,
 		logger:              logger,
@@ -51,6 +52,7 @@ func NewTaskScheduler(
 		cfg: cfg,
 
 		TaskID:     taskID,
+		ResultType: ResultType,
 		NatsConfig: natsConfig,
 		Interval:   interval,
 		Timeout:    timeout,

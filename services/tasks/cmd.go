@@ -180,6 +180,7 @@ func setupTasks(ctx context.Context, cfg config.Config, db db.Database, kubeClie
 		err = db.CreateTask(&models.Task{
 			ID:          task.ID,
 			Name:        task.Name,
+			ResultType:  task.ResultType,
 			Description: task.Description,
 			ImageUrl:    task.ImageURL,
 			Interval:    task.Interval,

@@ -31,6 +31,7 @@ type Task struct {
 	Description  string            `yaml:"Description"`
 	ImageURL     string            `yaml:"ImageURL"`
 	Command      string            `yaml:"Command"`
+	ResultType   string            `yaml:"ResultType"`
 	WorkloadType WorkloadType      `yaml:"WorkloadType"`
 	EnvVars      map[string]string `yaml:"EnvVars"`
 	Interval     uint64            `yaml:"Interval"`
