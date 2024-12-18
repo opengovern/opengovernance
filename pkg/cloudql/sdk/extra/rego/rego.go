@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/types"
@@ -81,16 +82,17 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 
 	port := os.Getenv("REGO_PORT")
 	if port == "" {
-		port = "8080"
+		port = "8001"
 	}
 
 	// use echo
 	engine.httpServer = echo.New()
+	engine.httpServer.Use(middleware.Recover())
 	engine.httpServer.POST("/evaluate", engine.evaluateEndpoint)
 
 	logger.Info("Starting rego server", zap.String("port", port))
 	logger.Sync()
-	err = engine.httpServer.Start(fmt.Sprintf(":%s", port))
+	err = engine.httpServer.Start(fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		logger.Error("Error starting rego server", zap.Error(err))
 		logger.Sync()
