@@ -3,7 +3,6 @@ package worker
 type WorkloadType string
 
 const (
-	WorkloadTypeJob        WorkloadType = "job"
 	WorkloadTypeDeployment WorkloadType = "deployment"
 )
 

@@ -7,26 +7,7 @@ import (
 
 	"github.com/opengovern/og-util/pkg/describe/enums"
 	"github.com/opengovern/opencomply/services/describe/api"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
-
-const MAX_INT64 = 9223372036854775807
-
-var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "opengovernance",
-	Subsystem: "describe_worker",
-	Name:      "do_describe_jobs_total",
-	Help:      "Count of done describe jobs in describe-worker service",
-}, []string{"provider", "resource_type", "status"})
-
-var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "opengovernance",
-	Subsystem: "describe_worker",
-	Name:      "do_describe_jobs_duration_seconds",
-	Help:      "Duration of done describe jobs in describe-worker service",
-	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
-}, []string{"provider", "resource_type", "status"})
 
 const (
 	InventorySummaryIndex = "inventory_summary"

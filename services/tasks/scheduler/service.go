@@ -18,6 +18,8 @@ type MainScheduler struct {
 	db     db.Database
 	logger *zap.Logger
 
+	cfg config.Config
+
 	Tasks []TaskScheduler
 }
 
@@ -34,6 +36,7 @@ func NewMainScheduler(cfg config.Config, logger *zap.Logger, db db.Database) (*M
 		jq:     jq,
 		db:     db,
 		logger: logger,
+		cfg:    cfg,
 	}, nil
 }
 
@@ -69,6 +72,7 @@ func (s *MainScheduler) Start(ctx context.Context) error {
 			s.logger,
 			s.db,
 			s.jq,
+			s.cfg,
 			task.ID,
 			natsConfig,
 			task.Interval,

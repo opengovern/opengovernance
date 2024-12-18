@@ -8,7 +8,6 @@ import (
 	"github.com/opengovern/opencomply/services/tasks/worker/consts"
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -48,116 +47,6 @@ func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Clie
 		},
 	}...)
 	switch taskConfig.WorkloadType {
-	case WorkloadTypeJob:
-		// job
-		var job v1.Job
-		err := kubeClient.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      taskConfig.ID,
-		}, &job)
-		if err != nil {
-			job = v1.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      taskConfig.ID,
-					Namespace: namespace,
-					Labels: map[string]string{
-						"app": taskConfig.ID,
-					},
-				},
-				Spec: v1.JobSpec{
-					Template: corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"app": taskConfig.ID,
-							},
-						},
-						Spec: corev1.PodSpec{
-							RestartPolicy: corev1.RestartPolicyNever,
-							Containers: []corev1.Container{
-								{
-									Name:  taskConfig.ID,
-									Image: taskConfig.ImageURL,
-									Command: []string{
-										taskConfig.Command,
-									},
-									ImagePullPolicy: corev1.PullAlways,
-									Env:             env,
-								},
-							},
-						},
-					},
-				},
-			}
-			err := kubeClient.Create(ctx, &job)
-			if err != nil {
-				return err
-			}
-		}
-
-		// scaled-job
-		var scaledObject kedav1alpha1.ScaledJob
-		err = kubeClient.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      taskConfig.ID + "-scaled-job",
-		}, &scaledObject)
-		if err != nil {
-			scaledObject = kedav1alpha1.ScaledJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      taskConfig.ID + "-scaled-job",
-					Namespace: namespace,
-				},
-				Spec: kedav1alpha1.ScaledJobSpec{
-					JobTargetRef: &v1.JobSpec{
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"app": taskConfig.ID,
-							},
-						},
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{
-									"app": taskConfig.ID,
-								},
-							},
-							Spec: corev1.PodSpec{
-								RestartPolicy: corev1.RestartPolicyNever,
-								Containers: []corev1.Container{
-									{
-										Name:  taskConfig.ID,
-										Image: taskConfig.ImageURL,
-										Command: []string{
-											taskConfig.Command,
-										},
-										ImagePullPolicy: corev1.PullAlways,
-										Env:             env,
-									},
-								},
-							},
-						},
-					},
-					PollingInterval: aws.Int32(taskConfig.ScaleConfig.PollingInterval),
-					MinReplicaCount: aws.Int32(taskConfig.ScaleConfig.MinReplica),
-					MaxReplicaCount: aws.Int32(taskConfig.ScaleConfig.MaxReplica),
-					Triggers: []kedav1alpha1.ScaleTriggers{
-						{
-							Type: "nats-jetstream",
-							Metadata: map[string]string{
-								"account":                      "$G",
-								"natsServerMonitoringEndpoint": soNatsUrl,
-								"stream":                       taskConfig.ScaleConfig.Stream,
-								"consumer":                     taskConfig.ScaleConfig.Consumer + "-service",
-								"lagThreshold":                 taskConfig.ScaleConfig.LagThreshold,
-								"useHttps":                     "false",
-							},
-						},
-					},
-				},
-			}
-			err = kubeClient.Create(ctx, &scaledObject)
-			if err != nil {
-				return err
-			}
-		}
 	case WorkloadTypeDeployment:
 		// deployment
 		var deployment appsv1.Deployment

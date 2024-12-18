@@ -6,15 +6,11 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
+	"github.com/opengovern/og-util/pkg/tasks"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
-
-type TaskRequest struct {
-	RunID  uint              `json:"run_id"`
-	Params map[string]string `json:"params"`
-}
 
 func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 	ctx2 := &httpclient.Context{UserRole: api.AdminRole}
@@ -42,9 +38,17 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 			s.logger.Error("failed to get params", zap.Error(err), zap.Uint("runId", run.ID))
 			return err
 		}
-		req := TaskRequest{
-			RunID:  run.ID,
-			Params: params,
+		req := tasks.TaskRequest{
+			EsDeliverEndpoint:         s.cfg.ESSinkEndpoint,
+			IngestionPipelineEndpoint: s.cfg.ElasticSearch.IngestionEndpoint,
+			UseOpenSearch:             s.cfg.ElasticSearch.IsOpenSearch,
+			TaskDefinition: tasks.TaskDefinition{
+				RunID:      run.ID,
+				TaskType:   s.TaskID,
+				ResultType: s.TaskID, // TODO: specify result type
+				Params:     params,
+			},
+			ExtraInputs: nil,
 		}
 		reqJson, err := json.Marshal(req)
 		if err != nil {
