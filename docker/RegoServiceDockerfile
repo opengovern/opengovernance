@@ -11,12 +11,14 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-cohereai:0.0.1 as cohereai
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-googleworkspace:0.0.1 as googleworkspace
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-oci:0.0.1 as oci
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-render:0.0.1 as render
-FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-doppler:0.0.1 as doppler
+
+
+FROM ${PLUGIN_REGISTRY}/cloudql:0.0.1 as opengovernance
+
 FROM ubuntu:20.04 AS base
 RUN apt-get update && apt-get install -y \
     curl \
-    net-tools \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,29 +31,29 @@ COPY --from=github /steampipe-plugin-github.plugin /home/steampipe/.steampipe/pl
 COPY --from=digitalocean /steampipe-plugin-digitalocean.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/digitalocean@latest/steampipe-plugin-digitalocean.plugin
 COPY --from=cloudflare /steampipe-plugin-cloudflare.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/cloudflare@latest/steampipe-plugin-cloudflare.plugin
 COPY --from=openai /steampipe-plugin-openai.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/openai@latest/steampipe-plugin-openai.plugin
+COPY --from=linode /steampipe-plugin-linode.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/linode@latest/steampipe-plugin-linode.plugin
 COPY --from=cohereai /steampipe-plugin-cohereai.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/cohereai@latest/steampipe-plugin-cohereai.plugin
 COPY --from=googleworkspace /steampipe-plugin-googleworkspace.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/googleworkspace@latest/steampipe-plugin-googleworkspace.plugin
 COPY --from=oci /steampipe-plugin-oci.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/oci@latest/steampipe-plugin-oci.plugin
-COPY --from=render /steampipe-plugin-render.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/render@latest/steampipe-plugin-render.plugin
-COPY --from=opengovernance /cloudql.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
+COPY  --from=render /steampipe-plugin-render.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/render@latest/steampipe-plugin-render.plugin
 COPY --from=doppler /steampipe-plugin-doppler.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/doppler@latest/steampipe-plugin-doppler.plugin
+
+COPY --from=opengovernance /cloudql.plugin /home/steampipe/.steampipe/plugins/local/opengovernance/opengovernance.plugin
+
 USER root
 RUN useradd -ms /bin/bash steampipe
 RUN mkdir -p /home/steampipe/.steampipe/config
+RUN mkdir -p /home/steampipe/.steampipe/db
+RUN mkdir -p /home/steampipe/.steampipe/db/14.2.0
 RUN chown -R steampipe:steampipe /home/steampipe
 RUN chmod -R 755 /home/steampipe
 RUN apt update
 RUN apt install -y procps htop
 USER steampipe
 
-RUN echo "connection \"digitalocean\" {\n  plugin = \"digitalocean\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/digitalocean.spc
-RUN echo "connection \"github\" {\n  plugin = \"github\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/github.spc
-RUN echo "connection \"cloudflare\" {\n  plugin = \"cloudflare\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/cloudflare.spc
-RUN echo "connection \"openai\" {\n  plugin = \"openai\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/openai.spc
-RUN echo "connection \"linode\" {\n  plugin = \"linode\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/linode.spc
-RUN echo "connection \"cohereai\" {\n  plugin = \"cohereai\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/cohereai.spc
-RUN echo "connection \"googleworkspace\" {\n  plugin = \"googleworkspace\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/googleworkspace.spc
-RUN echo "connection \"oci\" {\n  plugin = \"oci\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/oci.spc
-RUN echo "connection \"render\" {\n  plugin = \"render\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/render.spc
-
 RUN steampipe plugin list
+
+COPY ./build/rego-service /
+
+ENTRYPOINT [ "/rego-service" ]
+CMD [ "/rego-service" ]
