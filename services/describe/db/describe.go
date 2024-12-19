@@ -247,6 +247,14 @@ UNION ALL
 )
 ) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
 `, whereQuery, sortBy, sortOrder)
+	} else{
+		rawQuery = fmt.Sprintf(`
+SELECT * FROM (
+(SELECT id, created_at, updated_at, 'discovery' AS job_type, integration_id, resource_type AS title, status, failure_message FROM describe_integration_jobs)
+UNION ALL
+(SELECT id, created_at, updated_at, 'compliance' AS job_type, 'all' AS integration_id, framework_id::text AS title, status, failure_message FROM compliance_jobs)
+) AS t %s ORDER BY %s %s LIMIT ? OFFSET ?;
+`, whereQuery, sortBy, sortOrder)
 	}
 
 	values = append(values, pageEnd-pageStart, pageStart)
