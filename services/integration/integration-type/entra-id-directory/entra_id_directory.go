@@ -74,8 +74,12 @@ func (i *EntraIdDirectoryIntegration) DiscoverIntegrations(jsonData []byte) ([]m
 	return integrations, nil
 }
 
-func (i *EntraIdDirectoryIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return entraidDescriberLocal.ResourceTypesList, nil
+func (i *EntraIdDirectoryIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range entraidDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *EntraIdDirectoryIntegration) GetResourceTypeFromTableName(tableName string) string {

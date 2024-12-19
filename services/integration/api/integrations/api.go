@@ -19,6 +19,7 @@ import (
 	"github.com/opengovern/opencomply/services/integration/db"
 	"github.com/opengovern/opencomply/services/integration/entities"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	models2 "github.com/opengovern/opencomply/services/integration/models"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -88,6 +89,10 @@ func (h API) Register(g *echo.Group) {
 	types.PUT("/:integration_type/enable", httpserver.AuthorizeHandler(h.EnableIntegrationType, api.EditorRole))
 	types.PUT("/:integration_type/disable", httpserver.AuthorizeHandler(h.DisableIntegrationType, api.EditorRole))
 	types.PUT("/:integration_type/upgrade", httpserver.AuthorizeHandler(h.UpgradeIntegrationType, api.EditorRole))
+
+	resourceTypes := types.Group("/:integration_type/resource_types")
+	resourceTypes.GET("", httpserver.AuthorizeHandler(h.ListIntegrationTypeResourceTypes, api.ViewerRole))
+	resourceTypes.GET("/:resource_type", httpserver.AuthorizeHandler(h.GetIntegrationTypeResourceType, api.ViewerRole))
 }
 
 // DiscoverIntegrations godoc
@@ -1618,4 +1623,107 @@ func EnableIntegrationType(ctx context.Context, logger *zap.Logger, kubeClient c
 	}
 
 	return nil
+}
+
+// ListIntegrationTypeResourceTypes godoc
+//
+//	@Summary		List integration type resource types
+//	@Description	List integration type resource types
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			per_page		query		int		false	"PerPage"
+//	@Param			cursor			query		int		false	"Cursor"
+//	@Param			integration_type	path	string	true	"integration_type"
+//	@Success		200				{object}	models.ListIntegrationTypesResponse
+//	@Router			/integration/api/v1/integrations/types/:integration_type/resource_types [get]
+func (h API) ListIntegrationTypeResourceTypes(c echo.Context) error {
+	integrationType := c.Param("integration_type")
+
+	perPageStr := c.QueryParam("per_page")
+	cursorStr := c.QueryParam("cursor")
+	var perPage, cursor int64
+	if perPageStr != "" {
+		perPage, _ = strconv.ParseInt(perPageStr, 10, 64)
+	}
+	if cursorStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+	}
+
+	var items []interfaces.ResourceTypeConfiguration
+	if it, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType)]; ok {
+		resourceTypes, err := it.GetResourceTypesByLabels(nil)
+		if err != nil {
+			h.logger.Error("failed to list integration type resource types", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integration type resource types")
+		}
+		for rt, rtConfig := range resourceTypes {
+			if rtConfig != nil {
+				items = append(items, *rtConfig)
+			} else {
+				items = append(items, interfaces.ResourceTypeConfiguration{
+					Name:            rt,
+					IntegrationType: integration_type.ParseType(integrationType),
+				})
+			}
+		}
+	} else {
+		return echo.NewHTTPError(http.StatusInternalServerError, "integration type resource types not found")
+	}
+
+	totalCount := len(items)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name > items[j].Name
+	})
+
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	return c.JSON(http.StatusOK, models.ListIntegrationTypeResourceTypesResponse{
+		ResourceTypes: items,
+		TotalCount:    totalCount,
+	})
+}
+
+// GetIntegrationTypeResourceType godoc
+//
+//	@Summary		List integration type resource types
+//	@Description	List integration type resource types
+//	@Security		BearerToken
+//	@Tags			credentials
+//	@Produce		json
+//	@Param			integration_type	path	string	true	"integration_type"
+//	@Param			resource_type		path	string	true	"resource_type"
+//	@Success		200				{object}	models.ListIntegrationTypesResponse
+//	@Router			/integration/api/v1/integrations/types/:integration_type/resource_types/:resource_type [get]
+func (h API) GetIntegrationTypeResourceType(c echo.Context) error {
+	integrationType := c.Param("integration_type")
+	resourceType := c.Param("resource_type")
+
+	if it, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType)]; ok {
+		resourceTypes, err := it.GetResourceTypesByLabels(nil)
+		if err != nil {
+			h.logger.Error("failed to list integration type resource types", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to list integration type resource types")
+		}
+		if rt, ok := resourceTypes[resourceType]; ok {
+			if rt != nil {
+				return c.JSON(http.StatusOK, *rt)
+			} else {
+				return c.JSON(http.StatusOK, interfaces.ResourceTypeConfiguration{
+					Name:            resourceType,
+					IntegrationType: integration_type.ParseType(integrationType),
+				})
+			}
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, "resource type not found")
+		}
+	} else {
+		return echo.NewHTTPError(http.StatusInternalServerError, "integration type resource types not found")
+	}
 }

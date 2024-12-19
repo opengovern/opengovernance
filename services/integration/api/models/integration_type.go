@@ -1,5 +1,7 @@
 package models
 
+import "github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
+
 type IntegrationType struct {
 	ID           int64  `json:"id"`
 	Name         string `json:"name"`
@@ -32,4 +34,9 @@ type ListIntegrationTypesItem struct {
 type ListIntegrationTypesResponse struct {
 	IntegrationTypes []ListIntegrationTypesItem `json:"integration_types"`
 	TotalCount       int                        `json:"total_count"`
+}
+
+type ListIntegrationTypeResourceTypesResponse struct {
+	ResourceTypes []interfaces.ResourceTypeConfiguration `json:"integration_types"`
+	TotalCount    int                                    `json:"total_count"`
 }

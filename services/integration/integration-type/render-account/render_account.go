@@ -58,8 +58,12 @@ func (i *RenderAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	return integrations, nil
 }
 
-func (i *RenderAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return renderDescriberLocal.ResourceTypesList, nil
+func (i *RenderAccountIntegration) GetResourceTypesByLabels(map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range renderDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *RenderAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

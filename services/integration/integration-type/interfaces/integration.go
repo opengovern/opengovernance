@@ -19,7 +19,7 @@ type IntegrationConfiguration struct {
 
 type IntegrationType interface {
 	GetConfiguration() IntegrationConfiguration
-	GetResourceTypesByLabels(map[string]string) ([]string, error)
+	GetResourceTypesByLabels(map[string]string) (map[string]*ResourceTypeConfiguration, error)
 	HealthCheck(jsonData []byte, providerId string, labels map[string]string, annotations map[string]string) (bool, error)
 	DiscoverIntegrations(jsonData []byte) ([]models.Integration, error)
 	GetResourceTypeFromTableName(tableName string) string
