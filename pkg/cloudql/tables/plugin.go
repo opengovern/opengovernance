@@ -2,12 +2,9 @@ package opengovernance
 
 import (
 	"context"
+	"github.com/opengovern/opencomply/pkg/cloudql/sdk/config"
 	"github.com/opengovern/opencomply/pkg/cloudql/sdk/extra/utils"
 	"github.com/opengovern/opencomply/pkg/cloudql/sdk/extra/view-sync"
-	"github.com/opengovern/opencomply/services/rego/internal"
-	"os"
-
-	"github.com/opengovern/opencomply/pkg/cloudql/sdk/config"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin/transform"
 )
@@ -35,10 +32,6 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 
 	viewSync := view_sync.NewViewSync(extraLogger)
 	go viewSync.Start(ctx)
-
-	if os.Getenv("REGO_ENABLED") == "true" {
-		go internal.NewRegoEngine(ctx, extraLogger)
-	}
 
 	return p
 }
