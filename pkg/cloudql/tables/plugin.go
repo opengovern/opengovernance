@@ -2,9 +2,9 @@ package opengovernance
 
 import (
 	"context"
-	"github.com/opengovern/opencomply/pkg/cloudql/sdk/extra/rego"
 	"github.com/opengovern/opencomply/pkg/cloudql/sdk/extra/utils"
 	"github.com/opengovern/opencomply/pkg/cloudql/sdk/extra/view-sync"
+	"github.com/opengovern/opencomply/services/rego/internal"
 	"os"
 
 	"github.com/opengovern/opencomply/pkg/cloudql/sdk/config"
@@ -37,7 +37,7 @@ func Plugin(ctx context.Context) *plugin.Plugin {
 	go viewSync.Start(ctx)
 
 	if os.Getenv("REGO_ENABLED") == "true" {
-		go rego.NewRegoEngine(ctx, extraLogger)
+		go internal.NewRegoEngine(ctx, extraLogger)
 	}
 
 	return p

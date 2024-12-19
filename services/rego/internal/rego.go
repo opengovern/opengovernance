@@ -1,32 +1,28 @@
-package rego
+package internal
 
 import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/types"
 	steampipesdk "github.com/opengovern/og-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"os"
 	"time"
 )
 
 type RegoEngine struct {
-	logger     *zap.Logger
-	db         *pgxpool.Pool
-	httpServer *echo.Echo
+	logger *zap.Logger
+	db     *pgxpool.Pool
 
 	regoFunctions []func(*rego.Rego)
 }
 
 var excludedTableSchema = []string{"information_schema", "pg_catalog", "steampipe_internal", "steampipe_command", "public"}
 
-func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
+func NewRegoEngine(ctx context.Context, logger *zap.Logger) (*RegoEngine, error) {
 	engine := RegoEngine{
 		logger: logger,
 	}
@@ -34,22 +30,18 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 	selfClientConfig, err := pgxpool.ParseConfig(fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`, option.Host, option.Port, option.User, option.Pass, option.Db))
 	if err != nil {
 		logger.Error("Unable to parse config", zap.Error(err))
-		logger.Sync()
-		return
+		return nil, err
 	}
 	logger.Info("Connecting to database", zap.String("host", option.Host), zap.String("port", option.Port), zap.String("user", option.User), zap.String("db", option.Db))
-	logger.Sync()
 
 	tries := 5
 	for i := 0; i < tries; i++ {
 		db, err := pgxpool.NewWithConfig(ctx, selfClientConfig)
 		if err != nil {
-			logger.Error("Unable to connect to database", zap.Error(err), zap.Int("try", i+1))
-			logger.Sync()
+			logger.Error("Unable to connect to database", zap.Error(err), zap.Int("try", i))
 			if i == tries-1 {
 				logger.Error("Exhausted all tries to connect to database")
-				logger.Sync()
-				return
+				return nil, err
 			}
 			time.Sleep(10 * time.Second)
 			continue
@@ -58,18 +50,14 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		break
 	}
 	logger.Info("Connected to database")
-	logger.Sync()
 
-	tries = 5
 	for i := 0; i < tries; i++ {
 		functions, err := engine.getRegoFunctionForTables(ctx)
 		if err != nil {
-			logger.Error("Error getting rego functions", zap.Error(err), zap.Int("try", i+1))
-			logger.Sync()
+			logger.Error("Error getting rego functions", zap.Error(err))
 			if i == tries-1 {
 				logger.Error("Exhausted all tries to get rego functions")
-				logger.Sync()
-				return
+				return nil, err
 			}
 			time.Sleep(10 * time.Second)
 			continue
@@ -78,25 +66,8 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) {
 		break
 	}
 	logger.Info("Got rego functions")
-	logger.Sync()
 
-	port := os.Getenv("REGO_PORT")
-	if port == "" {
-		port = "8001"
-	}
-
-	// use echo
-	engine.httpServer = echo.New()
-	engine.httpServer.Use(middleware.Recover())
-	engine.httpServer.POST("/evaluate", engine.evaluateEndpoint)
-
-	logger.Info("Starting rego server", zap.String("port", port))
-	logger.Sync()
-	err = engine.httpServer.Start(fmt.Sprintf("0.0.0.0:%s", port))
-	if err != nil {
-		logger.Error("Error starting rego server", zap.Error(err))
-		logger.Sync()
-	}
+	return &engine, nil
 }
 
 func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego.Rego), error) {
@@ -157,7 +128,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 	return results, nil
 }
 
-func (r *RegoEngine) evaluate(ctx context.Context, policies []string, query string) (rego.ResultSet, error) {
+func (r *RegoEngine) Evaluate(ctx context.Context, policies []string, query string) (rego.ResultSet, error) {
 	params := append(r.regoFunctions, rego.Query(query))
 	for i, policy := range policies {
 		params = append(params, rego.Module(fmt.Sprintf("policy_%d.rego", i+1), policy))
