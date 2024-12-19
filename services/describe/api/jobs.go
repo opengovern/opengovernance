@@ -183,6 +183,7 @@ type RunDiscoveryRequest struct {
 	ResourceTypes   []string                `json:"resource_types"`
 	ForceFull       bool                    `json:"force_full"` // force full discovery. only matters if ResourceTypes is empty
 	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
+	Parameters      map[string][]string     `json:"parameters"`
 }
 
 type RunDiscoveryJob struct {

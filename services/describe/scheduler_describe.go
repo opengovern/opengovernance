@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/integration/api/models"
 	"math/rand"
 	"time"
@@ -225,7 +226,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 			zap.String("integration_type", string(integration.IntegrationType)),
 			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
 		for resourceType, _ := range resourceTypes {
-			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
+			_, err = s.describe(integration, resourceType, true, false, false, nil, "system", nil)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -268,7 +269,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 }
 
 func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
-	removeResources bool, parentId *uint, createdBy string) (*model.DescribeIntegrationJob, error) {
+	removeResources bool, parentId *uint, createdBy string, parameters map[string][]string) (*model.DescribeIntegrationJob, error) {
 
 	integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
 	if !ok {
@@ -338,8 +339,19 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 	if costFullDiscovery {
 		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
+
+	if parameters == nil {
+		parameters = make(map[string][]string)
+	}
+	parametersJsonData, err := json.Marshal(parameters)
+	if err != nil {
+		return nil, err
+	}
+	parametersJsonb := pgtype.JSONB{}
+	err = parametersJsonb.Set(parametersJsonData)
+
 	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("IntegrationID", integration.IntegrationID), zap.String("resourceType", resourceType))
-	daj := newDescribeConnectionJob(integration, resourceType, triggerType, parentId, createdBy)
+	daj := newDescribeConnectionJob(integration, resourceType, triggerType, parentId, createdBy, parametersJsonb)
 	if removeResources {
 		daj.Status = apiDescribe.DescribeResourceJobRemovingResources
 	}
@@ -355,7 +367,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 }
 
 func newDescribeConnectionJob(a integrationapi.Integration, resourceType string, triggerType enums.DescribeTriggerType,
-	parentId *uint, createdBy string) model.DescribeIntegrationJob {
+	parentId *uint, createdBy string, parameters pgtype.JSONB) model.DescribeIntegrationJob {
 	return model.DescribeIntegrationJob{
 		CreatedBy:       createdBy,
 		ParentID:        parentId,
@@ -365,6 +377,7 @@ func newDescribeConnectionJob(a integrationapi.Integration, resourceType string,
 		TriggerType:     triggerType,
 		ResourceType:    resourceType,
 		Status:          apiDescribe.DescribeResourceJobCreated,
+		Parameters:      parameters,
 	}
 }
 
@@ -385,6 +398,13 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		zap.String("integrationType", string(dc.IntegrationType)),
 		zap.String("resourceType", dc.ResourceType),
 	)
+
+	var parameters map[string][]string
+	if dc.Parameters.Status == pgtype.Present {
+		if err := json.Unmarshal(dc.Parameters.Bytes, &parameters); err != nil {
+			return err
+		}
+	}
 
 	input := describe.DescribeWorkerInput{
 		JobEndpoint:               s.describeExternalEndpoint,
@@ -409,7 +429,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 			RetryCounter:           0,
 		},
 
-		ExtraInputs: nil,
+		ExtraInputs: parameters,
 	}
 
 	if err := s.db.QueueDescribeIntegrationJob(dc.ID); err != nil {

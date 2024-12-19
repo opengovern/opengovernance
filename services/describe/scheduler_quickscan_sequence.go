@@ -162,7 +162,7 @@ func (s *DescribeDependencies) Do(ctx context.Context) error {
 			if _, ok := validResourceTypes[resourceType]; !ok {
 				continue
 			}
-			_, err = s.s.describe(integration, resourceType, false, false, false, &s.job.ID, "QuickScanSequencer")
+			_, err = s.s.describe(integration, resourceType, false, false, false, &s.job.ID, "QuickScanSequencer", nil)
 			if err != nil {
 				return err
 			}
