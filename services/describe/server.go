@@ -1503,9 +1503,6 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		}
 		rtToDescribe := request.ResourceTypes
 		discoveryType := model2.DiscoveryType_Fast
-		if request.ForceFull {
-			discoveryType = model2.DiscoveryType_Full
-		}
 		integrationDiscovery := &model2.IntegrationDiscovery{
 			TriggerID:     uint(triggerId),
 			ConnectionID:  integration.IntegrationID,
