@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/types"
@@ -14,43 +13,21 @@ import (
 )
 
 type RegoEngine struct {
-	logger *zap.Logger
-	db     *pgxpool.Pool
+	logger    *zap.Logger
+	steampipe *steampipesdk.Database
 
 	regoFunctions []func(*rego.Rego)
 }
 
 var excludedTableSchema = []string{"information_schema", "pg_catalog", "steampipe_internal", "steampipe_command", "public"}
 
-func NewRegoEngine(ctx context.Context, logger *zap.Logger) (*RegoEngine, error) {
+func NewRegoEngine(ctx context.Context, logger *zap.Logger, steampipeDb *steampipesdk.Database) (*RegoEngine, error) {
 	engine := RegoEngine{
-		logger: logger,
+		logger:    logger,
+		steampipe: steampipeDb,
 	}
-	option := steampipesdk.GetDefaultSteampipeOption()
-	selfClientConfig, err := pgxpool.ParseConfig(fmt.Sprintf(`host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=GMT`, option.Host, option.Port, option.User, option.Pass, option.Db))
-	if err != nil {
-		logger.Error("Unable to parse config", zap.Error(err))
-		return nil, err
-	}
-	logger.Info("Connecting to database", zap.String("host", option.Host), zap.String("port", option.Port), zap.String("user", option.User), zap.String("db", option.Db))
 
 	tries := 5
-	for i := 0; i < tries; i++ {
-		db, err := pgxpool.NewWithConfig(ctx, selfClientConfig)
-		if err != nil {
-			logger.Error("Unable to connect to database", zap.Error(err), zap.Int("try", i))
-			if i == tries-1 {
-				logger.Error("Exhausted all tries to connect to database")
-				return nil, err
-			}
-			time.Sleep(10 * time.Second)
-			continue
-		}
-		engine.db = db
-		break
-	}
-	logger.Info("Connected to database")
-
 	for i := 0; i < tries; i++ {
 		functions, err := engine.getRegoFunctionForTables(ctx)
 		if err != nil {
@@ -72,7 +49,7 @@ func NewRegoEngine(ctx context.Context, logger *zap.Logger) (*RegoEngine, error)
 
 func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego.Rego), error) {
 
-	rows, err := r.db.Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema != any ($1)", excludedTableSchema)
+	rows, err := r.steampipe.Conn().Query(ctx, "SELECT table_name FROM information_schema.tables WHERE table_schema != any ($1)", excludedTableSchema)
 	if err != nil {
 		r.logger.Error("Unable to query database", zap.Error(err))
 		r.logger.Sync()
@@ -97,7 +74,7 @@ func (r *RegoEngine) getRegoFunctionForTables(ctx context.Context) ([]func(*rego
 			Memoize:          true,
 			Nondeterministic: true,
 		}, func(bctx rego.BuiltinContext, terms []*ast.Term) (*ast.Term, error) {
-			rows, err := r.db.Query(bctx.Context, fmt.Sprintf("SELECT * FROM %s", tableName))
+			rows, err := r.steampipe.Conn().Query(bctx.Context, fmt.Sprintf("SELECT * FROM %s", tableName))
 			if err != nil {
 				r.logger.Error("Unable to query database", zap.Error(err), zap.String("table", tableName))
 				r.logger.Sync()
