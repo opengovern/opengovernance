@@ -401,7 +401,7 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		}
 
 		for _, resourceType := range resourceTypes {
-			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil, userID)
+			daj, err := h.Scheduler.describe(src, resourceType, false, costFullDiscovery, false, nil, userID, nil)
 			if err != nil && errors.Is(err, ErrJobInProgress) {
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
 			}
@@ -461,7 +461,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		}
 
 		for _, resourceType := range rtToDescribe {
-			_, err = h.Scheduler.describe(integration, resourceType, false, false, false, nil, userID)
+			_, err = h.Scheduler.describe(integration, resourceType, false, false, false, nil, userID, nil)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 			}
@@ -732,7 +732,7 @@ func (h HttpServer) ReEvaluateComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, describeJob := range describeJobs {
-		daj, err := h.Scheduler.describe(describeJob.Integration, describeJob.ResourceType, false, false, false, nil, userID)
+		daj, err := h.Scheduler.describe(describeJob.Integration, describeJob.ResourceType, false, false, false, nil, userID, nil)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", describeJob.Integration.IntegrationID), zap.Error(err))
 			continue
@@ -1503,9 +1503,6 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		}
 		rtToDescribe := request.ResourceTypes
 		discoveryType := model2.DiscoveryType_Fast
-		if request.ForceFull {
-			discoveryType = model2.DiscoveryType_Full
-		}
 		integrationDiscovery := &model2.IntegrationDiscovery{
 			TriggerID:     uint(triggerId),
 			ConnectionID:  integration.IntegrationID,
@@ -1550,7 +1547,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				continue
 			}
 			var status, failureReason string
-			job, err := h.Scheduler.describe(integration, resourceType, false, false, false, &integrationDiscovery.ID, userID)
+			job, err := h.Scheduler.describe(integration, resourceType, false, false, false, &integrationDiscovery.ID, userID, request.Parameters)
 			if err != nil {
 				if err.Error() == "job already in progress" {
 					tmpJob, err := h.Scheduler.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
