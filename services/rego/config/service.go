@@ -1,9 +1,11 @@
 package config
 
-import "github.com/opengovern/og-util/pkg/koanf"
+import (
+	"github.com/opengovern/og-util/pkg/config"
+)
 
 type RegoConfig struct {
-	Http          koanf.HttpServer    `json:"http,omitempty" koanf:"http"`
-	ElasticSearch koanf.ElasticSearch `json:"elasticsearch,omitempty" koanf:"elasticsearch"`
-	Steampipe     koanf.Postgres      `json:"steampipe,omitempty" koanf:"steampipe"`
+	Http          config.HttpServer    `json:"http,omitempty" koanf:"http"`
+	ElasticSearch config.ElasticSearch `json:"elasticsearch,omitempty" koanf:"elasticsearch"`
+	Steampipe     config.Postgres      `json:"steampipe,omitempty" koanf:"steampipe"`
 }
