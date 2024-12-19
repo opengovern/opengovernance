@@ -19,7 +19,6 @@ import (
 	"github.com/opengovern/opencomply/services/integration/db"
 	"github.com/opengovern/opencomply/services/integration/entities"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
-	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 	models2 "github.com/opengovern/opencomply/services/integration/models"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -1650,7 +1649,7 @@ func (h API) ListIntegrationTypeResourceTypes(c echo.Context) error {
 		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
 	}
 
-	var items []interfaces.ResourceTypeConfiguration
+	var items []models.ResourceTypeConfiguration
 	if it, ok := integration_type.IntegrationTypes[integration_type.ParseType(integrationType)]; ok {
 		resourceTypes, err := it.GetResourceTypesByLabels(nil)
 		if err != nil {
@@ -1659,9 +1658,9 @@ func (h API) ListIntegrationTypeResourceTypes(c echo.Context) error {
 		}
 		for rt, rtConfig := range resourceTypes {
 			if rtConfig != nil {
-				items = append(items, *rtConfig)
+				items = append(items, rtConfig.ToAPI())
 			} else {
-				items = append(items, interfaces.ResourceTypeConfiguration{
+				items = append(items, models.ResourceTypeConfiguration{
 					Name:            rt,
 					IntegrationType: integration_type.ParseType(integrationType),
 				})
@@ -1713,9 +1712,9 @@ func (h API) GetIntegrationTypeResourceType(c echo.Context) error {
 		}
 		if rt, ok := resourceTypes[resourceType]; ok {
 			if rt != nil {
-				return c.JSON(http.StatusOK, *rt)
+				return c.JSON(http.StatusOK, rt.ToAPI())
 			} else {
-				return c.JSON(http.StatusOK, interfaces.ResourceTypeConfiguration{
+				return c.JSON(http.StatusOK, models.ResourceTypeConfiguration{
 					Name:            resourceType,
 					IntegrationType: integration_type.ParseType(integrationType),
 				})
