@@ -74,8 +74,12 @@ func (i *CloudFlareAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]
 	return integrations, nil
 }
 
-func (i *CloudFlareAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return cloudflareDescriberLocal.ResourceTypesList, nil
+func (i *CloudFlareAccountIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range cloudflareDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *CloudFlareAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

@@ -267,7 +267,7 @@ func getIntegrationTypesValidResourceTypes(integration models.Integration) (map[
 		if err != nil {
 			return nil, err
 		}
-		for _, resourceType := range resourceTypes {
+		for resourceType, _ := range resourceTypes {
 			resourceTypesMap[resourceType] = true
 		}
 		return resourceTypesMap, nil

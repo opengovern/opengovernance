@@ -83,8 +83,16 @@ func (i *GithubAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	return integrations, nil
 }
 
-func (i *GithubAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return githubDescriberLocal.ResourceTypesList, nil
+func (i *GithubAccountIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range githubDescriberLocal.ResourceTypesList {
+		if v, ok := githubDescriberLocal.ResourceTypeConfigs[resourceType]; ok {
+			resourceTypesMap[resourceType] = v
+		} else {
+			resourceTypesMap[resourceType] = nil
+		}
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *GithubAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

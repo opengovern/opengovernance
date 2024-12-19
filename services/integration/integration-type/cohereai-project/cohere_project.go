@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"github.com/jackc/pgtype"
 	cohereaiDescriberLocal "github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/configs"
-	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
-	"github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/healthcheck"
 	"github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/discovery"
+	"github.com/opengovern/opencomply/services/integration/integration-type/cohereai-project/healthcheck"
+	"github.com/opengovern/opencomply/services/integration/integration-type/interfaces"
 
 	"github.com/opengovern/opencomply/services/integration/models"
 )
@@ -54,9 +54,8 @@ func (i *CohereAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	}
 	labels := map[string]string{
 		"ClientName": credentials.ClientName,
-		
 	}
-	if(len(connectors) > 0){
+	if len(connectors) > 0 {
 		labels["OrganizationID"] = connectors[0].OrganizationID
 	}
 	labelsJsonData, err := json.Marshal(labels)
@@ -70,20 +69,22 @@ func (i *CohereAIProjectIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	}
 	// for in esponse
 	for _, connector := range connectors {
-integrations = append(integrations, models.Integration{
-		ProviderID: connector.ID,
-		Name:       connector.Name,
-		Labels:     integrationLabelsJsonb,
-	})
+		integrations = append(integrations, models.Integration{
+			ProviderID: connector.ID,
+			Name:       connector.Name,
+			Labels:     integrationLabelsJsonb,
+		})
 	}
-
-	
 
 	return integrations, nil
 }
 
-func (i *CohereAIProjectIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return cohereaiDescriberLocal.ResourceTypesList, nil
+func (i *CohereAIProjectIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range cohereaiDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *CohereAIProjectIntegration) GetResourceTypeFromTableName(tableName string) string {

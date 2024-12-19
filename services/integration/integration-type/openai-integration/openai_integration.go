@@ -74,8 +74,12 @@ func (i *OpenAIIntegration) DiscoverIntegrations(jsonData []byte) ([]models.Inte
 	return integrations, nil
 }
 
-func (i *OpenAIIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return openaiDescriberLocal.ResourceTypesList, nil
+func (i *OpenAIIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range openaiDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *OpenAIIntegration) GetResourceTypeFromTableName(tableName string) string {

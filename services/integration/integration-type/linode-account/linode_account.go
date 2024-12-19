@@ -72,8 +72,12 @@ func (i *LinodeAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mode
 	return integrations, nil
 }
 
-func (i *LinodeAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return linodeDescriberLocal.ResourceTypesList, nil
+func (i *LinodeAccountIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range linodeDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *LinodeAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

@@ -73,8 +73,12 @@ func (i *DopplerAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mod
 	return integrations, nil
 }
 
-func (i *DopplerAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return dopplerDescriberLocal.ResourceTypesList, nil
+func (i *DopplerAccountIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range dopplerDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *DopplerAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

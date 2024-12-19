@@ -63,8 +63,12 @@ func (i *DigitaloceanTeamIntegration) DiscoverIntegrations(jsonData []byte) ([]m
 	}, nil
 }
 
-func (i *DigitaloceanTeamIntegration) GetResourceTypesByLabels(_ map[string]string) ([]string, error) {
-	return digitaloceanDescriberLocal.ResourceTypesList, nil
+func (i *DigitaloceanTeamIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range digitaloceanDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *DigitaloceanTeamIntegration) GetResourceTypeFromTableName(tableName string) string {

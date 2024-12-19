@@ -76,8 +76,12 @@ func (i *GoogleWorkspaceAccountIntegration) DiscoverIntegrations(jsonData []byte
 	return integrations, nil
 }
 
-func (i *GoogleWorkspaceAccountIntegration) GetResourceTypesByLabels(map[string]string) ([]string, error) {
-	return googleWorkspaceDescriberLocal.ResourceTypesList, nil
+func (i *GoogleWorkspaceAccountIntegration) GetResourceTypesByLabels(map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range googleWorkspaceDescriberLocal.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *GoogleWorkspaceAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

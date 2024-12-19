@@ -102,8 +102,12 @@ func (i *Integration) DiscoverIntegrations(jsonData []byte) ([]models.Integratio
 	return nil, fmt.Errorf("unknown registry type: %s", credentials.GetRegistryType())
 }
 
-func (i *Integration) GetResourceTypesByLabels(_ map[string]string) ([]string, error) {
-	return configs.ResourceTypesList, nil
+func (i *Integration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range configs.ResourceTypesList {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *Integration) GetResourceTypeFromTableName(tableName string) string {

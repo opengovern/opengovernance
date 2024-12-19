@@ -105,12 +105,16 @@ func (i *AwsCloudAccountIntegration) DiscoverIntegrations(jsonData []byte) ([]mo
 	return integrations, nil
 }
 
-func (i *AwsCloudAccountIntegration) GetResourceTypesByLabels(labels map[string]string) ([]string, error) {
+func (i *AwsCloudAccountIntegration) GetResourceTypesByLabels(labels map[string]string) (map[string]*interfaces.ResourceTypeConfiguration, error) {
 	resourceTypes := awsDescriberLocal.ResourceTypesList
 	if labels["integration/aws/organization-master"] == "true" {
 		resourceTypes = append(resourceTypes, awsDescriberLocal.OrganizationMasterResourceTypesList...)
 	}
-	return resourceTypes, nil
+	resourceTypesMap := make(map[string]*interfaces.ResourceTypeConfiguration)
+	for _, resourceType := range resourceTypes {
+		resourceTypesMap[resourceType] = nil
+	}
+	return resourceTypesMap, nil
 }
 
 func (i *AwsCloudAccountIntegration) GetResourceTypeFromTableName(tableName string) string {

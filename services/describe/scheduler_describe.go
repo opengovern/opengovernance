@@ -224,7 +224,7 @@ func (s *Scheduler) scheduleDescribeJob(ctx context.Context) {
 			zap.String("integration_id", integration.IntegrationID),
 			zap.String("integration_type", string(integration.IntegrationType)),
 			zap.String("resource_types", fmt.Sprintf("%v", len(resourceTypes))))
-		for _, resourceType := range resourceTypes {
+		for resourceType, _ := range resourceTypes {
 			_, err = s.describe(integration, resourceType, true, false, false, nil, "system")
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.String("resource_type", resourceType), zap.Error(err))
@@ -280,7 +280,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 		return nil, err
 	}
 	valid := false
-	for _, rt := range validResourceTypes {
+	for rt, _ := range validResourceTypes {
 		if rt == resourceType {
 			valid = true
 		}

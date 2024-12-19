@@ -390,10 +390,13 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		resourceTypes := ctx.QueryParams()["resource_type"]
 
 		if resourceTypes == nil {
-			resourceTypes, err = integrationType.GetResourceTypesByLabels(src.Labels)
+			resourceTypesMap, err := integrationType.GetResourceTypesByLabels(src.Labels)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
+			}
+			for rt, _ := range resourceTypesMap {
+				resourceTypes = append(resourceTypes, rt)
 			}
 		}
 
@@ -447,10 +450,13 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		rtToDescribe := resourceTypes
 
 		if len(rtToDescribe) == 0 {
-			resourceTypes, err = integrationType.GetResourceTypesByLabels(integration.Labels)
+			resourceTypesMap, err := integrationType.GetResourceTypesByLabels(integration.Labels)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
+			}
+			for rt, _ := range resourceTypesMap {
+				rtToDescribe = append(rtToDescribe, rt)
 			}
 		}
 
@@ -641,7 +647,7 @@ func (h HttpServer) getReEvaluateParams(benchmarkID string, connectionIDs, contr
 			return nil, nil, fmt.Errorf("failed to get resource types by labels")
 		}
 
-		for _, resourceType := range possibleRt {
+		for resourceType, _ := range possibleRt {
 			describeJobs = append(describeJobs, ReEvaluateDescribeJob{
 				Integration:  integration,
 				ResourceType: resourceType,
@@ -1520,10 +1526,14 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "unknown integration type")
 		}
 
-		possibleRt, err := integrationType.GetResourceTypesByLabels(integration.Labels)
+		possibleRtMap, err := integrationType.GetResourceTypesByLabels(integration.Labels)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
+		}
+		var possibleRt []string
+		for rt, _ := range possibleRtMap {
+			possibleRt = append(possibleRt, rt)
 		}
 		if len(rtToDescribe) == 0 {
 			rtToDescribe = possibleRt
