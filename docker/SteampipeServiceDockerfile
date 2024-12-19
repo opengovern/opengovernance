@@ -16,6 +16,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-doppler:0.0.1 as doppler
 FROM ubuntu:20.04 AS base
 RUN apt-get update && apt-get install -y \
     curl \
+    net-tools \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
