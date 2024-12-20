@@ -115,7 +115,7 @@ func (p OciArtifactVulnerabilitiesPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p OciArtifactVulnerabilitiesPaginator) NextPage(ctx context.Context) ([]OciArtifactVulnerabilities, error) {
+func (p OciArtifactVulnerabilitiesPaginator) NextPage(ctx context.Context) ([]ArtifactVulnerabilitiesTaskResult, error) {
 	var response OciArtifactVulnerabilitiesSearchResponse
 	err := p.paginator.SearchWithLog(ctx, &response, true)
 	if err != nil {
