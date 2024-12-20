@@ -58,14 +58,26 @@ type VulnerabilityFix struct {
 	State    string   `json:"state"`
 }
 
+type ArtifactVulnerabilitiesTaskResult struct {
+	PlatformID   string                     `json:"platform_id"`
+	ResourceID   string                     `json:"resource_id"`
+	ResourceName string                     `json:"resource_name"`
+	Description  OciArtifactVulnerabilities `json:"description"`
+	TaskType     string                     `json:"task_type"`
+	ResultType   string                     `json:"result_type"`
+	Metadata     map[string]string          `json:"metadata"`
+	DescribedBy  string                     `json:"described_by"`
+	DescribedAt  int64                      `json:"described_at"`
+}
+
 type OciArtifactVulnerabilitiesHit struct {
-	ID      string                     `json:"_id"`
-	Score   float64                    `json:"_score"`
-	Index   string                     `json:"_index"`
-	Type    string                     `json:"_type"`
-	Version int64                      `json:"_version,omitempty"`
-	Source  OciArtifactVulnerabilities `json:"_source"`
-	Sort    []any                      `json:"sort"`
+	ID      string                            `json:"_id"`
+	Score   float64                           `json:"_score"`
+	Index   string                            `json:"_index"`
+	Type    string                            `json:"_type"`
+	Version int64                             `json:"_version,omitempty"`
+	Source  ArtifactVulnerabilitiesTaskResult `json:"_source"`
+	Sort    []any                             `json:"sort"`
 }
 
 type OciArtifactVulnerabilitiesHits struct {
@@ -103,14 +115,14 @@ func (p OciArtifactVulnerabilitiesPaginator) Close(ctx context.Context) error {
 	return p.paginator.Deallocate(ctx)
 }
 
-func (p OciArtifactVulnerabilitiesPaginator) NextPage(ctx context.Context) ([]OciArtifactVulnerabilities, error) {
+func (p OciArtifactVulnerabilitiesPaginator) NextPage(ctx context.Context) ([]ArtifactVulnerabilitiesTaskResult, error) {
 	var response OciArtifactVulnerabilitiesSearchResponse
 	err := p.paginator.SearchWithLog(ctx, &response, true)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []OciArtifactVulnerabilities
+	var values []ArtifactVulnerabilitiesTaskResult
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}
@@ -126,8 +138,8 @@ func (p OciArtifactVulnerabilitiesPaginator) NextPage(ctx context.Context) ([]Oc
 }
 
 var artifactVulnerabilitiesMapping = map[string]string{
-	"image_url":       "imageUrl",
-	"artifact_digest": "artifactDigest",
+	"image_url":       "Description.imageUrl",
+	"artifact_digest": "Description.artifactDigest",
 }
 
 func ListArtifactVulnerabilities(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (any, error) {

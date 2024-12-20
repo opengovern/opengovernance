@@ -1502,6 +1502,12 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			continue
 		}
 		rtToDescribe := request.ResourceTypes
+
+		var resourceTypesNames []string
+		for _, rt := range rtToDescribe {
+			resourceTypesNames = append(resourceTypesNames, rt.ResourceType)
+		}
+
 		discoveryType := model2.DiscoveryType_Fast
 		integrationDiscovery := &model2.IntegrationDiscovery{
 			TriggerID:     uint(triggerId),
@@ -1510,7 +1516,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			TriggerType:   enums.DescribeTriggerTypeManual,
 			TriggeredBy:   userID,
 			DiscoveryType: discoveryType,
-			ResourceTypes: rtToDescribe,
+			ResourceTypes: resourceTypesNames,
 		}
 		err = h.DB.CreateIntegrationDiscovery(integrationDiscovery)
 		if err != nil {
@@ -1528,9 +1534,11 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			h.Scheduler.logger.Error("failed to get resource types by labels", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to get resource types by labels")
 		}
-		var possibleRt []string
+		var possibleRt []api.ResourceTypeRunDiscoveryRequest
 		for rt, _ := range possibleRtMap {
-			possibleRt = append(possibleRt, rt)
+			possibleRt = append(possibleRt, api.ResourceTypeRunDiscoveryRequest{
+				ResourceType: rt,
+			})
 		}
 		if len(rtToDescribe) == 0 {
 			rtToDescribe = possibleRt
@@ -1539,7 +1547,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 		for _, resourceType := range rtToDescribe {
 			isOK := false
 			for _, rt := range possibleRt {
-				if rt == resourceType {
+				if rt.ResourceType == resourceType.ResourceType {
 					isOK = true
 				}
 			}
@@ -1547,12 +1555,12 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 				continue
 			}
 			var status, failureReason string
-			job, err := h.Scheduler.describe(integration, resourceType, false, false, false, &integrationDiscovery.ID, userID, request.Parameters)
+			job, err := h.Scheduler.describe(integration, resourceType.ResourceType, false, false, false, &integrationDiscovery.ID, userID, resourceType.Parameters)
 			if err != nil {
 				if err.Error() == "job already in progress" {
-					tmpJob, err := h.Scheduler.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType)
+					tmpJob, err := h.Scheduler.db.GetLastDescribeIntegrationJob(integration.IntegrationID, resourceType.ResourceType)
 					if err != nil {
-						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType), zap.String("connection_id", integration.IntegrationID), zap.Error(err))
+						h.Scheduler.logger.Error("failed to get last describe job", zap.String("resource_type", resourceType.ResourceType), zap.String("connection_id", integration.IntegrationID), zap.Error(err))
 					}
 					h.Scheduler.logger.Error("failed to describe connection", zap.String("integration_id", integration.IntegrationID), zap.Error(err))
 					status = "FAILED"
@@ -1574,7 +1582,7 @@ func (h HttpServer) RunDiscovery(ctx echo.Context) error {
 			}
 			jobs = append(jobs, api.RunDiscoveryJob{
 				JobId:         jobId,
-				ResourceType:  resourceType,
+				ResourceType:  resourceType.ResourceType,
 				Status:        status,
 				FailureReason: failureReason,
 				IntegrationInfo: api.IntegrationInfo{

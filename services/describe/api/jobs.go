@@ -179,10 +179,14 @@ type RunBenchmarkResponse struct {
 	Jobs []RunBenchmarkItem `json:"jobs"`
 }
 
+type ResourceTypeRunDiscoveryRequest struct {
+	ResourceType string              `json:"resource_type"`
+	Parameters   map[string][]string `json:"parameters"`
+}
+
 type RunDiscoveryRequest struct {
-	ResourceTypes   []string                `json:"resource_types"`
-	IntegrationInfo []IntegrationInfoFilter `json:"integration_info"`
-	Parameters      map[string][]string     `json:"parameters"`
+	ResourceTypes   []ResourceTypeRunDiscoveryRequest `json:"resource_types"`
+	IntegrationInfo []IntegrationInfoFilter           `json:"integration_info"`
 }
 
 type RunDiscoveryJob struct {

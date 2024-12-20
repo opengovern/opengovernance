@@ -22,17 +22,17 @@ func tablePlatformArtifactVulnerabilities(_ context.Context) *plugin.Table {
 		Columns: []*plugin.Column{
 			{
 				Name:      "image_url",
-				Transform: transform.FromField("imageUrl"),
+				Transform: transform.FromField("Description.imageUrl"),
 				Type:      proto.ColumnType_STRING,
 			},
 			{
 				Name:      "artifact_digest",
-				Transform: transform.FromField("artifactDigest"),
+				Transform: transform.FromField("Description.artifactDigest"),
 				Type:      proto.ColumnType_STRING,
 			},
 			{
 				Name:      "vulnerabilities",
-				Transform: transform.FromField("Vulnerabilities"),
+				Transform: transform.FromField("Description.Vulnerabilities"),
 				Type:      proto.ColumnType_JSON,
 			},
 		},
