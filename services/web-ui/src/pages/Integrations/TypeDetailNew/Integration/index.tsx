@@ -279,7 +279,6 @@ export default function IntegrationList({
         let body ={}
         if(flag){
             body = {
-                force_full: true,
                 integration_info:row?.map((item)=>{
                     return {
                         integration_type: integration_type,
@@ -292,7 +291,6 @@ export default function IntegrationList({
         }
         else{
             body = {
-                force_full: true,
                 integration_info: [
                     {
                         integration_type: integration_type,
@@ -302,6 +300,14 @@ export default function IntegrationList({
                     },
                 ],
             }
+        }
+        if(selectedResourceType?.length > 0 && selectedResourceType?.length < resourceTypes?.length){
+            // @ts-ignore
+            body['resource_types'] = selectedResourceType?.map((item:any)=>{
+                return {
+                    resource_type: item.value,
+                }
+            })
         }
         
 
@@ -313,6 +319,7 @@ export default function IntegrationList({
                     ...actionLoading,
                     discovery: false,
                 })
+                setRunOpen(false)
                 setNotification({
                     text: `Discovery started`,
                     type: 'success',
@@ -687,21 +694,35 @@ export default function IntegrationList({
                         // @ts-ignore
                         header={'Run Discovery'}
                         footer={
-                            <>
-                               <Button 
-                                onClick={() => {
-                                    setRunOpen(false)
-                                }}
-                               >
+                            <Flex className='gap-3' justifyContent='end'>
+                                <Button
+                                    onClick={() => {
+                                        setRunOpen(false)
+                                    }}
+                                >
                                     Cancel
                                 </Button>
-                                <Button onClick={()=>{
-                                    const temp = []
-                                    selectedResourceType?.map((item:any)=>{
-                                        temp.push(item.value)
-                                    })
-                                }}>
-                                    Select All
+                                <Button
+                                    onClick={() => {
+                                        if (
+                                            selectedResourceType?.length ==
+                                            resourceTypes?.length
+                                        ){
+                                            setSelectedResourceType([])
+                                            return
+                                        }
+                                            const temp: any = []
+                                        resourceTypes?.map((item: any) => {
+                                            temp.push({
+                                                label: item?.name,
+                                                value: item?.name,
+                                                params: item?.params,
+                                            })
+                                        })
+                                        setSelectedResourceType(temp)
+                                    }}
+                                >
+                                  {selectedResourceType?.length == resourceTypes?.length ? 'Unselect all' : 'Select all'}
                                 </Button>
                                 <Button
                                     variant="primary"
@@ -710,8 +731,8 @@ export default function IntegrationList({
                                     }}
                                 >
                                     Confirm
-                               </Button>
-                            </>
+                                </Button>
+                            </Flex>
                         }
                     >
                         <Multiselect
@@ -723,9 +744,10 @@ export default function IntegrationList({
                                 }
                             })}
                             selectedOptions={selectedResourceType}
-                            onChange={({ detail }) =>{
+                            onChange={({ detail }) => {
                                 setSelectedResourceType(detail.selectedOptions)
                             }}
+                            tokenLimit={2}
                             placeholder="Select resource type"
                         />
                     </Modal>
