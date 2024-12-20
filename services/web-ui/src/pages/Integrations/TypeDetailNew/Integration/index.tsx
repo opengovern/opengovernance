@@ -20,6 +20,7 @@ import {
     Header,
     KeyValuePairs,
     Modal,
+    Multiselect,
     Pagination,
     SpaceBetween,
     Spinner,
@@ -71,6 +72,10 @@ export default function IntegrationList({
     const [confirmModal, setConfirmModal] = useState(false)
     const [action, setAction] = useState()
     const setNotification = useSetAtom(notificationAtom)
+    const [resourceTypes, setResourceTypes] = useState<any>([])
+    const [selectedResourceType, setSelectedResourceType] = useState<any>()
+    const [runOpen, setRunOpen] = useState(false)
+    const [runAll, setRunAll] = useState(false)
 
     const GetIntegrations = () => {
         setLoading(true)
@@ -326,6 +331,41 @@ export default function IntegrationList({
                 })
             })
     }
+    const GetResourceTypes = () => {
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
+        }
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+
+        // const body = {
+        //     integration_type: [integration_type],
+        // }
+        axios
+            .get(
+                `${url}/main/integration/api/v1/integrations/types/${integration_type}/resource_types`,
+                
+                config
+            )
+            .then((res) => {
+                const data = res.data
+                console.log(data?.integration_types)
+                setResourceTypes(data?.integration_types)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+    }
+
 
     
     useEffect(() => {
@@ -410,7 +450,10 @@ export default function IntegrationList({
                                         <Button
                                             loading={actionLoading['discovery']}
                                             onClick={() => {
-                                                RunDiscovery(false)
+                                                // RunDiscovery(false)
+                                                GetResourceTypes()
+                                                setRunOpen(true)
+                                                setRunAll(false)
                                             }}
                                         >
                                             Run discovery
@@ -555,7 +598,10 @@ export default function IntegrationList({
                                                         ]
                                                     }
                                                     onClick={() => {
-                                                        RunDiscovery(true)
+                                                        // RunDiscovery(true)
+                                                        GetResourceTypes()
+                                                        setRunOpen(true)
+                                                        setRunAll(true)
                                                     }}
                                                 >
                                                     Run discovery for all
@@ -634,6 +680,54 @@ export default function IntegrationList({
                                 </Button>
                             </Flex>
                         </Box>
+                    </Modal>
+                    <Modal
+                        visible={runOpen}
+                        onDismiss={() => setRunOpen(false)}
+                        // @ts-ignore
+                        header={'Run Discovery'}
+                        footer={
+                            <>
+                               <Button 
+                                onClick={() => {
+                                    setRunOpen(false)
+                                }}
+                               >
+                                    Cancel
+                                </Button>
+                                <Button onClick={()=>{
+                                    const temp = []
+                                    selectedResourceType?.map((item:any)=>{
+                                        temp.push(item.value)
+                                    })
+                                }}>
+                                    Select All
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => {
+                                        RunDiscovery(runAll)
+                                    }}
+                                >
+                                    Confirm
+                               </Button>
+                            </>
+                        }
+                    >
+                        <Multiselect
+                            options={resourceTypes?.map((item: any) => {
+                                return {
+                                    label: item?.name,
+                                    value: item?.name,
+                                    params: item?.params,
+                                }
+                            })}
+                            selectedOptions={selectedResourceType}
+                            onChange={({ detail }) =>{
+                                setSelectedResourceType(detail.selectedOptions)
+                            }}
+                            placeholder="Select resource type"
+                        />
                     </Modal>
                 </>
             ) : (
