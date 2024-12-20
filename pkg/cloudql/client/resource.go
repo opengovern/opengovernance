@@ -110,12 +110,15 @@ func (p ResourcePaginator) NextPage(ctx context.Context) ([]Resource, error) {
 }
 
 var resourceMapping = map[string]string{
-	"resource_id":   "id",
-	"resource_arn":  "arn",
-	"connector":     "source_type",
-	"region":        "location",
-	"connection_id": "source_id",
-	"name":          "metadata.Name",
+	"platform_id":      "platform_id",
+	"resource_id":      "resource_id",
+	"integration_id":   "integration_id",
+	"integration_type": "integration_type",
+	"resource_type":    "resource_type",
+	"resource_name":    "resource_name",
+	"described_by":     "described_by",
+	"described_at":     "described_at",
+	"name":             "metadata.Name",
 }
 
 var resourceTypeMap = map[string]string{
