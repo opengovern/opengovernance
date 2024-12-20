@@ -21,6 +21,6 @@ type TaskResponse struct {
 }
 
 type RunTaskRequest struct {
-	TaskID string            `json:"task_id"`
-	Params map[string]string `json:"params"`
+	TaskID string              `json:"task_id"`
+	Params map[string][]string `json:"params"`
 }
