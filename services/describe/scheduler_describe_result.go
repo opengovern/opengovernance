@@ -337,65 +337,6 @@ func (s *Scheduler) cleanupDescribeResourcesNotInIntegrations(ctx context.Contex
 	return
 }
 
-func (s *Scheduler) cleanupDescribeResourcesForIntegrations(ctx context.Context, connectionIds []string) {
-	for _, connectionId := range connectionIds {
-		var searchAfter []any
-		for {
-			esResp, err := es.GetResourceIDsForIntegrationFromES(ctx, s.es, connectionId, searchAfter, 1000)
-			if err != nil {
-				s.logger.Error("failed to get resource ids from es", zap.Error(err))
-				break
-			}
-
-			if len(esResp.Hits.Hits) == 0 {
-				break
-			}
-			deletedCount := 0
-			for _, hit := range esResp.Hits.Hits {
-				searchAfter = hit.Sort
-
-				resource := es2.Resource{
-					ResourceID:      hit.Source.ResourceID,
-					IntegrationID:   hit.Source.IntegrationID,
-					ResourceType:    strings.ToLower(hit.Source.ResourceType),
-					IntegrationType: hit.Source.IntegrationType,
-				}
-				keys, idx := resource.KeysAndIndex()
-				deletedCount += 1
-				key := es2.HashOf(keys...)
-				resource.EsID = key
-				resource.EsIndex = idx
-				err = s.es.Delete(key, idx)
-				if err != nil {
-					s.logger.Error("failed to delete resource from open-search", zap.Error(err))
-					return
-				}
-
-				lookupResource := es2.LookupResource{
-					ResourceID:      hit.Source.ResourceID,
-					IntegrationID:   hit.Source.IntegrationID,
-					ResourceType:    strings.ToLower(hit.Source.ResourceType),
-					IntegrationType: hit.Source.IntegrationType,
-				}
-				deletedCount += 1
-				keys, idx = lookupResource.KeysAndIndex()
-				key = es2.HashOf(keys...)
-				lookupResource.EsID = key
-				lookupResource.EsIndex = idx
-				err = s.es.Delete(key, idx)
-				if err != nil {
-					s.logger.Error("failed to delete lookup from open-search", zap.Error(err))
-					return
-				}
-			}
-
-			s.logger.Info("deleted old resources", zap.Int("deleted_count", deletedCount), zap.String("connection_id", connectionId))
-		}
-	}
-
-	return
-}
-
 func (s *Scheduler) cleanupDescribeResourcesForConnectionAndResourceType(IntegrationID, resourceType string) error {
 	root := make(map[string]any)
 	root["query"] = map[string]any{

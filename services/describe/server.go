@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/opengovern/opencomply/pkg/types"
+	"golang.org/x/net/context"
 	"net/http"
 	"regexp"
 	"sort"
@@ -3843,7 +3845,11 @@ func (h HttpServer) PurgeSampleData(c echo.Context) error {
 		ids = append(ids, i)
 	}
 
-	go es.CleanupSummariesForJobs(h.Scheduler.logger, h.Scheduler.es, ids)
+	_, err = h.Scheduler.es.ES().Indices.Delete([]string{types.BenchmarkSummaryIndex}, h.Scheduler.es.ES().Indices.Delete.WithContext(context.Background()))
+	if err != nil {
+		h.Scheduler.logger.Error("failed to delete summary job", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete summary jobs")
+	}
 
 	return c.NoContent(http.StatusOK)
 }
