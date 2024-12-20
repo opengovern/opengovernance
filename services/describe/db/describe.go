@@ -325,6 +325,16 @@ UNION ALL
 (SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs WHERE created_at >= ? AND created_at <= ? GROUP BY status )
 )
 ) AS t %s;`, whereQuery)
+	}else{
+		rawQuery = fmt.Sprintf(`
+SELECT * FROM (
+	(
+		(SELECT 'discovery' AS job_type, status, count(*) AS count FROM describe_integration_jobs GROUP BY status)
+		UNION ALL
+		(SELECT 'compliance' AS job_type, status, count(*) AS count FROM compliance_jobs GROUP BY status)
+	)
+) AS t %s;`, whereQuery)
+
 	}
 	tx := db.ORM.Raw(rawQuery, values...).Find(&job)
 	if tx.Error != nil {
