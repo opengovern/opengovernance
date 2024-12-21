@@ -115,7 +115,6 @@
           "detail": true,
           "detail_order": 1
         },
-
         {
           "name": "provider_id",
           "label": "Provider ID",
@@ -128,14 +127,26 @@
           "detail_order": 2
         },
         {
-          "name": "state",
-          "label": "State",
-          "fieldType": "status",
+          "name": "credential_id",
+          "label": "Credential ID",
+          "fieldType": "text",
           "order": 3,
           "sortable": true,
           "filterable": true,
+          "info": "Credential ID.",
           "detail": true,
-          "detail_order": 3,
+          "detail_order": 3
+        },
+
+        {
+          "name": "state",
+          "label": "State",
+          "fieldType": "status",
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "detail": true,
+          "detail_order": 4,
           "info": "Current state of the Azure Subscription integration.",
           "statusOptions": [
             {
@@ -154,6 +165,17 @@
               "color": "blue"
             }
           ]
+        },
+        {
+          "name": "last_check",
+          "label": "Last Check",
+          "fieldType": "date",
+          "order": 5,
+          "sortable": true,
+          "filterable": true,
+          "info": "Timestamp when the integration was last checked.",
+          "detail": true,
+          "detail_order": 5
         }
       ]
     }
