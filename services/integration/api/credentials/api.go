@@ -166,7 +166,23 @@ func (h API) UpdateCredential(c echo.Context) error {
 		h.logger.Error("failed to encrypt secret", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 	}
-	err = h.database.UpdateCredential(credentialId, secret)
+	masked := make(map[string]any)
+		for key, value := range req.Credentials {
+		strValue, ok := value.(string) // Ensure the value is a string
+		if !ok {
+			// If it's not a string, just skip masking
+			masked[key] = "not available"
+			continue
+		}
+
+		// Get the last 5 characters, or the full string if it's shorter
+		if len(strValue) > 5 {
+			masked[key] = "*****" + strValue[len(strValue)-5:]
+		} else {
+			masked[key] = "*****" + strValue
+		}
+			}
+	err = h.database.UpdateCredential(credentialId, secret,masked,req.Description)
 	if err != nil {
 		h.logger.Error("failed to update credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update credential")

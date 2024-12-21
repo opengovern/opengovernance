@@ -199,17 +199,45 @@ func (h API) DiscoverIntegrations(c echo.Context) error {
 			h.logger.Error("failed to encrypt secret", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 		}
+		masked := make(map[string]any)
+		for key, value := range req.Credentials {
+		strValue, ok := value.(string) // Ensure the value is a string
+		if !ok {
+			// If it's not a string, just skip masking
+			masked[key] = "not available"
+			continue
+		}
+
+		// Get the last 5 characters, or the full string if it's shorter
+		if len(strValue) > 5 {
+			masked[key] = "*****" + strValue[len(strValue)-5:]
+		} else {
+			masked[key] = "*****" + strValue
+		}
+			}
+		// convert to jsonb
+		maskedSecreyJsonData, err := json.Marshal(masked)
+		maskedSecretJsonb := pgtype.JSONB{}
+		err = maskedSecretJsonb.Set(maskedSecreyJsonData)
+		if err != nil {
+			h.logger.Error("failed to set masked secret", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to set masked secret")
+		}
+		
 
 		credentialID := uuid.New()
 
 		metadata := make(map[string]string)
 		metadataJsonData, err := json.Marshal(metadata)
 		credentialMetadataJsonb := pgtype.JSONB{}
+		
 		err = credentialMetadataJsonb.Set(metadataJsonData)
 		err = h.database.CreateCredential(&models2.Credential{
 			ID:              credentialID,
 			IntegrationType: req.IntegrationType,
 			CredentialType:  req.CredentialType,
+			Description:    req.Description,
+			MaskedSecret: maskedSecretJsonb,
 			Secret:          secret,
 			Metadata:        credentialMetadataJsonb,
 		})
@@ -338,6 +366,8 @@ func (h API) AddIntegrations(c echo.Context) error {
 	for _, i := range integrationTypeIntegrations {
 		integrationTypeIntegrationsMap[i.ProviderID] = true
 	}
+	// 
+	var count = 0
 
 	for _, i := range integrations {
 		if _, ok := providerIDs[i.ProviderID]; !ok {
@@ -387,7 +417,11 @@ func (h API) AddIntegrations(c echo.Context) error {
 			h.logger.Error("failed to create integration", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create integration")
 		}
+		count++
+		// update credentials
 	}
+	err= h.database.UpdateCredentialIntegrationCount(req.CredentialID,count)
+
 
 	return c.NoContent(http.StatusOK)
 }
@@ -789,12 +823,29 @@ func (h API) Update(c echo.Context) error {
 		h.logger.Error("failed to encrypt secret", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt config")
 	}
+	masked := make(map[string]any)
+		for key, value := range req.Credentials {
+		strValue, ok := value.(string) // Ensure the value is a string
+		if !ok {
+			// If it's not a string, just skip masking
+			masked[key] = "not available"
+			continue
+		}
 
-	err = h.database.UpdateCredential(integration.CredentialID.String(), secret)
+		// Get the last 5 characters, or the full string if it's shorter
+		if len(strValue) > 5 {
+			masked[key] = "*****" + strValue[len(strValue)-5:]
+		} else {
+			masked[key] = "*****" + strValue
+		}
+			}
+
+	err = h.database.UpdateCredential(integration.CredentialID.String(), secret,masked,req.Description)
 	if err != nil {
 		h.logger.Error("failed to update credential", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update credential")
 	}
+	
 
 	return c.NoContent(http.StatusOK)
 }

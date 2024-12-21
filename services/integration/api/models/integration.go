@@ -17,6 +17,7 @@ const (
 type DiscoverIntegrationRequest struct {
 	IntegrationType integration.Type `json:"integration_type"`
 	CredentialType  string           `json:"credential_type"`
+	Description     string           `json:"description"`
 	CredentialID    *string          `json:"credential_id"`
 	Credentials     map[string]any   `json:"credentials"`
 }
@@ -34,6 +35,7 @@ type AddIntegrationsRequest struct {
 
 type UpdateRequest struct {
 	Credentials map[string]any `json:"credentials"`
+	Description string         `json:"description"`
 }
 
 type Integration struct {

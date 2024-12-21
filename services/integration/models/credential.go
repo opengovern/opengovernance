@@ -17,6 +17,9 @@ type Credential struct {
 	CredentialType  string
 	Secret          string
 	Metadata        pgtype.JSONB
+	IntegrationCount int       `gorm:"default:0"`      
+	MaskedSecret  pgtype.JSONB 
+	Description     string            
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -30,12 +33,21 @@ func (c *Credential) ToApi(returnSecret bool) (*models.Credential, error) {
 			fmt.Println("could not unmarshal metadata", err)
 		}
 	}
+	var maskedMetadata map[string]string
+	if c.MaskedSecret.Status == pgtype.Present {
+		if err := json.Unmarshal(c.MaskedSecret.Bytes, &maskedMetadata); err != nil {
+			fmt.Println("could not unmarshal masked metadata", err)
+		}
+	}
 
 	credential := &models.Credential{
 		ID:              c.ID.String(),
 		IntegrationType: c.IntegrationType,
 		CredentialType:  c.CredentialType,
 		Metadata:        metadata,
+		IntegrationCount: c.IntegrationCount,
+		MaskedSecret:  maskedMetadata,
+		Description:     c.Description,
 		CreatedAt:       c.CreatedAt,
 		UpdatedAt:       c.UpdatedAt,
 	}

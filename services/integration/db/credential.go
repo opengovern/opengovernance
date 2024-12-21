@@ -1,7 +1,10 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/integration/models"
 	"gorm.io/gorm/clause"
 )
@@ -83,10 +86,16 @@ func (db Database) GetCredential(id string) (*models.Credential, error) {
 	return &credential, nil
 }
 
-func (db Database) UpdateCredential(id string, secret string) error {
+func (db Database) UpdateCredential(id string, secret string,masked map[string]any,description string) error {
+	maskedSecreyJsonData, err := json.Marshal(masked)
+		maskedSecretJsonb := pgtype.JSONB{}
+		err = maskedSecretJsonb.Set(maskedSecreyJsonData)
+		if err != nil {
+				return err
+		}
 	tx := db.Orm.
 		Model(&models.Credential{}).
-		Where("id = ?", id).Update("secret", secret)
+		Where("id = ?", id).Update("secret", secret).Update("masked_secret", maskedSecretJsonb).Update("description", description)
 
 	if tx.Error != nil {
 		return tx.Error
@@ -94,3 +103,17 @@ func (db Database) UpdateCredential(id string, secret string) error {
 
 	return nil
 }
+
+// update descripion and integration count
+func (db Database) UpdateCredentialIntegrationCount(id string, count int) error {
+	tx:= db.Orm.
+		Model(&models.Credential{}).
+		Where("id = ?", id).
+		Update("integration_count", count)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+

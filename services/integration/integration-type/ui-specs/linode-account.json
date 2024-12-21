@@ -49,17 +49,19 @@
           "sortable": true,
           "filterable": true,
           "info": "ID.",
-          "detail": true,
+          "detail": false,
+          "show": true,
           "detail_order": 1
         },
         {
-          "name": "created_at",
-          "label": "Created At",
-          "fieldType": "date",
+          "name": "description",
+          "label": "Description",
+          "fieldType": "text",
           "order": 2,
           "sortable": true,
           "filterable": true,
-          "info": "Timestamp when the integration was created.",
+          "show": true,
+          "info": "Description of the credential.",
           "detail": true,
           "detail_order": 2
         },
@@ -70,23 +72,35 @@
           "order": 3,
           "sortable": true,
           "filterable": true,
-          "info": "Timestamp when the integration was last updated.",
-          "detail": true,
+          "show": true,
+          "info": "Timestamp when the credential was last updated.",
+          "detail": false,
           "detail_order": 3
+        },
+        {
+          "name": "integration_count",
+          "label": "Integration Count",
+          "fieldType": "text",
+          "order": 4,
+          "sortable": true,
+          "filterable": true,
+          "show": true,
+          "info": "Number of active integrations using this credential.",
+          "detail": true,
+          "detail_order": 4
         },
         {
           "name": "credential_type",
           "label": "Credential Type",
           "fieldType": "text",
-          "required": true,
-          "order": 4,
-          "info": "Type of Credential used (Single Account/Multi-Account).",
+          "order": 5,
+          "show": false,
+          "info": "Type of Credential used (Classic PAT).",
           "valueMap": {
-            "aws_single_account": "Single Account",
-            "aws_multi_account": "Multi-Account"
+            "classic_pat": "Classic Personal Access Token (PAT)"
           },
           "detail": true,
-          "detail_order": 3
+          "detail_order": 5
         }
       ]
     },
