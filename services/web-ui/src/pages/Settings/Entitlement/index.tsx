@@ -371,18 +371,17 @@ export default function SettingsEntitlement() {
      axios
          .get(`${url}/main/metadata/api/v3/sample/sync/status `, config)
          .then((res) => {
-             if(res?.data?.progress !==1){
-                // @ts-ignore
+             if (res?.data?.progress !== 1 || res?.data?.progress !== 0) {
+                 // @ts-ignore
                  setLoaded('True')
                  localStorage.setItem('sample', 'true')
                  setSample('true')
+             } else {
+                 // @ts-ignore
+                 setLoaded('False')
+                 localStorage.setItem('sample', 'false')
+                 setSample('false')
              }
-                else{
-                    // @ts-ignore
-                    setLoaded('False')
-                    localStorage.setItem('sample', 'false')
-                    setSample('false')
-                }
              //  const temp = []
              //  if (!res.data.items) {
              //      setLoading(false)
