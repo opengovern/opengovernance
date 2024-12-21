@@ -365,8 +365,16 @@ export default function IntegrationList({
             )
             .then((res) => {
                 const data = res.data
-                console.log(data?.integration_types)
                 setResourceTypes(data?.integration_types)
+                const temp : any = []
+                data?.integration_types?.map((item: any) => {
+                    temp.push({
+                        label: item?.name,
+                        value: item?.name,
+                        params: item?.params,
+                    })
+                })
+                setSelectedResourceType(temp)
             })
             .catch((err) => {
                 console.log(err)
@@ -747,7 +755,7 @@ export default function IntegrationList({
                             onChange={({ detail }) => {
                                 setSelectedResourceType(detail.selectedOptions)
                             }}
-                            tokenLimit={2}
+                            tokenLimit={0}
                             placeholder="Select resource type"
                         />
                     </Modal>
