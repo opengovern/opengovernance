@@ -18,10 +18,17 @@ export interface Credentials {
     secret:           string;
     integration_type: string;
     metadata:         Metadata;
+    masked_secret:    MaskedSecret;
+    integration_count: number;
+    description:      string;
     created_at:       Date;
     updated_at:       Date;
 }
 
+export interface MaskedSecret {
+     [key: string]: string[]
+
+}
 export interface Metadata {
 }
 
@@ -148,6 +155,7 @@ export interface CredentialsField {
     fieldType:      string;
     order:          number;
     sortable?:      boolean;
+    show?:          boolean;
     filterable?:    boolean;
     info:           string;
     detail:         boolean;

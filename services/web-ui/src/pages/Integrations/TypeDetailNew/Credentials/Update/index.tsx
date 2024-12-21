@@ -22,7 +22,9 @@ import {
     AppLayout,
     Box,
     Button,
+    FormField,
     Header,
+    Input,
     Modal,
     Multiselect,
     Pagination,
@@ -69,6 +71,7 @@ export default function UpdateCredentials({
     const [credentialId, setCredentialId] = useState<string>('')
     const [described, setDescribed] = useState<boolean>(false)
     const [credentialType, setCredentialType] = useState<string>('')
+    const [description, setDescription] = useState<string>('')
 
     const UpdateCredentials = () => {
         setLoading(true)
@@ -90,6 +93,8 @@ export default function UpdateCredentials({
             const formData = new FormData()
             // @ts-ignore
             formData.append('credential_type', credentialType)
+            formData.append('description', description)
+
             Object.keys(credential).forEach((key) => {
                 formData.append(`credentials.${key}`, credential[key])
             })
@@ -124,6 +129,7 @@ export default function UpdateCredentials({
              const body = {
                  credentials: credential,
                  credential_type: credentialType,
+                    description: description
              }
              axios
                  .put(
@@ -181,7 +187,9 @@ export default function UpdateCredentials({
                                                             credential_type:
                                                                 cred.label,
                                                         })
-                                                        setCredentialType(cred.label)
+                                                        setCredentialType(
+                                                            cred.label
+                                                        )
                                                     }}
                                                 >
                                                     {cred.label}
@@ -224,6 +232,20 @@ export default function UpdateCredentials({
                                         </>
                                     )
                                 })}
+                                <FormField
+                                    className="w-full"
+                                    label={'Description'}
+                                    errorText={''}
+                                >
+                                    <Input
+                                        className="w-full"
+                                        value={description}
+                                        type={'text'}
+                                        onChange={({ detail }) =>
+                                            setDescription(detail.value)
+                                        }
+                                    />
+                                </FormField>
                             </>
                         </Flex>
                         <Flex

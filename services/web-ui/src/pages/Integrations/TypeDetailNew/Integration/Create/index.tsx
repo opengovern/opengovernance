@@ -17,7 +17,9 @@ import {
     AppLayout,
     Box,
     Button,
+    FormField,
     Header,
+    Input,
     Modal,
     Multiselect,
     Pagination,
@@ -57,6 +59,7 @@ export default function CreateIntegration({
     const [credentialId, setCredentialId] = useState<string>('')
     const [described, setDescribed] = useState<boolean>(false)
     const [credentialType, setCredentialType] = useState<string>('')
+    const [description, setDescription] = useState<string>('')
    
     const DiscoverIntegrations = () => {
         setLoading(true)
@@ -85,6 +88,7 @@ export default function CreateIntegration({
         const formData = new FormData()
         // @ts-ignore
         formData.append('integration_type', integration_type)
+        formData.append('description', description)
         formData.append('credential_type', credentialType)
         Object.keys(integration).forEach((key) => {
             formData.append(`credentials.${key}`, integration[key])
@@ -125,6 +129,7 @@ export default function CreateIntegration({
                  integration_type: integration_type,
                  credentials: integration,
                  credential_type: credentialType,
+                    description: description,
              }
              axios
                  .post(
@@ -222,14 +227,15 @@ export default function CreateIntegration({
                                         return (
                                             <>
                                                 <Button
-                                                    onClick={() =>{
+                                                    onClick={() => {
                                                         setSelectedCredential(
                                                             index
                                                         )
-                                                        setCredentialType(credential.label)
-                                                        setIntegration({...integration,credential_type:credential.label})
-                                                    }
-                                                    }
+                                                        setCredentialType(
+                                                            credential.label
+                                                        )
+                                                        // setIntegration({...integration,credential_type:credential.label})
+                                                    }}
                                                 >
                                                     {credential.label}
                                                 </Button>
@@ -377,6 +383,22 @@ export default function CreateIntegration({
                                                 </>
                                             )
                                         })}
+                                        <FormField
+                                            className="w-full"
+                                            label={"Description"}
+                                            errorText={
+                                                ''
+                                            }
+                                        >
+                                            <Input
+                                                className="w-full"
+                                                value={description}
+                                                type={"text"}
+                                                onChange={({ detail }) =>
+                                                    setDescription(detail.value)
+                                                }
+                                            />
+                                        </FormField>
                                     </>
                                 </Flex>
                                 <Flex
