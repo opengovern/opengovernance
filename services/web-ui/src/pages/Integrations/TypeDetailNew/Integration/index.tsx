@@ -75,8 +75,7 @@ export default function IntegrationList({
     const [resourceTypes, setResourceTypes] = useState<any>([])
     const [selectedResourceType, setSelectedResourceType] = useState<any>()
     const [runOpen, setRunOpen] = useState(false)
-    const [runAll, setRunAll] = useState(false)
-
+    const [selectedIntegrations, setSelectedIntegrations] = useState<any>([])
     const GetIntegrations = () => {
         setLoading(true)
         let url = ''
@@ -260,7 +259,7 @@ export default function IntegrationList({
             })
     }
 
-    const RunDiscovery = (flag: boolean) => {
+    const RunDiscovery = () => {
         setActionLoading({ ...actionLoading, discovery: true })
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
@@ -277,29 +276,15 @@ export default function IntegrationList({
             },
         }
         let body ={}
-        if(flag){
-            body = {
-                integration_info:row?.map((item)=>{
-                    return {
-                        integration_type: integration_type,
-                        provider_id: item.provider_id,
-                        integration_id: item.integration_id,
-                        name: item.name,
-                    }
-                }) ,
-            }
-        }
-        else{
-            body = {
-                integration_info: [
-                    {
-                        integration_type: integration_type,
-                        provider_id: selectedItem?.provider_id,
-                        integration_id: selectedItem?.integration_id,
-                        name: selectedItem?.name,
-                    },
-                ],
-            }
+        body = {
+            integration_info: selectedIntegrations?.map((item:any) => {
+                return {
+                    integration_type: integration_type,
+                    provider_id: item.provider_id,
+                    integration_id: item.integration_id,
+                    name: item.name,
+                }
+            }),
         }
         if(selectedResourceType?.length > 0 && selectedResourceType?.length < resourceTypes?.length){
             // @ts-ignore
@@ -462,17 +447,6 @@ export default function IntegrationList({
                                                 }
                                             }
                                         )}
-                                        <Button
-                                            loading={actionLoading['discovery']}
-                                            onClick={() => {
-                                                // RunDiscovery(false)
-                                                GetResourceTypes()
-                                                setRunOpen(true)
-                                                setRunAll(false)
-                                            }}
-                                        >
-                                            Run discovery
-                                        </Button>
                                     </>
                                 </Flex>
                             </SplitPanel>
@@ -604,7 +578,7 @@ export default function IntegrationList({
                                                         DisableIntegration()
                                                     }}
                                                 >
-                                                    Disable Integration
+                                                    Disable Integration Type
                                                 </Button>
                                                 <Button
                                                     loading={
@@ -616,11 +590,9 @@ export default function IntegrationList({
                                                         // RunDiscovery(true)
                                                         GetResourceTypes()
                                                         setRunOpen(true)
-                                                        setRunAll(true)
                                                     }}
                                                 >
-                                                    Run discovery for all
-                                                    integrations
+                                                    Run discovery
                                                 </Button>
                                             </Flex>
                                         }
@@ -702,7 +674,7 @@ export default function IntegrationList({
                         // @ts-ignore
                         header={'Run Discovery'}
                         footer={
-                            <Flex className='gap-3' justifyContent='end'>
+                            <Flex className="gap-3" justifyContent="end">
                                 <Button
                                     onClick={() => {
                                         setRunOpen(false)
@@ -715,11 +687,11 @@ export default function IntegrationList({
                                         if (
                                             selectedResourceType?.length ==
                                             resourceTypes?.length
-                                        ){
+                                        ) {
                                             setSelectedResourceType([])
                                             return
                                         }
-                                            const temp: any = []
+                                        const temp: any = []
                                         resourceTypes?.map((item: any) => {
                                             temp.push({
                                                 label: item?.name,
@@ -730,12 +702,15 @@ export default function IntegrationList({
                                         setSelectedResourceType(temp)
                                     }}
                                 >
-                                  {selectedResourceType?.length == resourceTypes?.length ? 'Unselect all' : 'Select all'}
+                                    {selectedResourceType?.length ==
+                                    resourceTypes?.length
+                                        ? 'Unselect all types'
+                                        : 'Select all types'}
                                 </Button>
                                 <Button
                                     variant="primary"
                                     onClick={() => {
-                                        RunDiscovery(runAll)
+                                        RunDiscovery()
                                     }}
                                 >
                                     Confirm
@@ -743,21 +718,46 @@ export default function IntegrationList({
                             </Flex>
                         }
                     >
-                        <Multiselect
-                            options={resourceTypes?.map((item: any) => {
-                                return {
-                                    label: item?.name,
-                                    value: item?.name,
-                                    params: item?.params,
-                                }
-                            })}
-                            selectedOptions={selectedResourceType}
-                            onChange={({ detail }) => {
-                                setSelectedResourceType(detail.selectedOptions)
-                            }}
-                            tokenLimit={0}
-                            placeholder="Select resource type"
-                        />
+                        <Flex className="gap-5 w-full" flexDirection="col">
+                            <Multiselect
+                                className="w-full"
+                                options={row?.map((item: any) => {
+                                    return {
+                                        label: item?.name,
+                                        value: item?.name,
+                                        provider_id: item.provider_id,
+                                        integration_id: item.integration_id,
+                                        name: item.name,
+                                    }
+                                })}
+                                selectedOptions={selectedIntegrations}
+                                onChange={({ detail }) => {
+                                    setSelectedIntegrations(
+                                        detail.selectedOptions
+                                    )
+                                }}
+                                tokenLimit={5}
+                                placeholder="Select Integration"
+                            />
+                            <Multiselect
+                                className="w-full"
+                                options={resourceTypes?.map((item: any) => {
+                                    return {
+                                        label: item?.name,
+                                        value: item?.name,
+                                        params: item?.params,
+                                    }
+                                })}
+                                selectedOptions={selectedResourceType}
+                                onChange={({ detail }) => {
+                                    setSelectedResourceType(
+                                        detail.selectedOptions
+                                    )
+                                }}
+                                tokenLimit={0}
+                                placeholder="Select resource type"
+                            />
+                        </Flex>
                     </Modal>
                 </>
             ) : (

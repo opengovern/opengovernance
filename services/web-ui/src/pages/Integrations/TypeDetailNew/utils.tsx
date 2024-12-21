@@ -22,34 +22,41 @@ export const GetActions=(type: number,schema: Schema | undefined)=>{
 export const GetTableColumns=(type: number,schema: Schema | undefined)=>{
     if(type===1){
         const fields = schema?.render?.credentials?.fields
-        return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
-            return {
-                title: field.label,
-                dataIndex: field.name,
-                key: field.name,
-                sorter: field.sortable,
-                filter: field.filterable,
-                statusOptions: field.statusOptions,
-                type: field.fieldType,
-            }
-        })
+        
+        return fields
+            ?.filter((field) => field?.show)
+            ?.sort((a, b) => a.order - b.order)
+            .map((field) => {
+                return {
+                    title: field.label,
+                    dataIndex: field.name,
+                    key: field.name,
+                    sorter: field.sortable,
+                    filter: field.filterable,
+                    statusOptions: field.statusOptions,
+                    type: field.fieldType,
+                }
+            })
         
     }
 
     const fields = schema?.render?.integrations?.fields
   
 
-    return fields?.sort((a,b)=>a.order-b.order).map((field)=>{
-        return {
-            title: field.label,
-            dataIndex: field.name,
-            key: field.name,
-            sorter: field.sortable,
-            filter: field.filterable,
-            type: field.fieldType,
-            statusOptions: field.statusOptions,
-        }
-    })
+    return fields
+        // ?.filter((field) => field?.show)
+        ?.sort((a, b) => a.order - b.order)
+        .map((field) => {
+            return {
+                title: field.label,
+                dataIndex: field.name,
+                key: field.name,
+                sorter: field.sortable,
+                filter: field.filterable,
+                type: field.fieldType,
+                statusOptions: field.statusOptions,
+            }
+        })
 }
 
 export const GetTableColumnsDefintion=(type: number,schema: Schema | undefined)=>{
