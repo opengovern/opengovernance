@@ -1,10 +1,10 @@
 package configs
 
 var TablesToResourceTypes = map[string]string{
-	 "Github/Actions/Artifact": "github_actions_artifact",
-  "Github/Actions/Repository/Runner": "github_actions_runner",
-  "Github/Actions/Repository/Secret": "github_actions_secret",
-  "Github/Actions/Repository/Workflow_run": "github_actions_workflow_run",
+"Github/Actions/Artifact": "github_actions_artifact",
+  "Github/Actions/Runner": "github_actions_runner",
+  "Github/Actions/Secret": "github_actions_secret",
+  "Github/Actions/WorkflowRun": "github_actions_workflow_run",
   "Github/Blob": "github_blob",
   "Github/Branch": "github_branch",
   "Github/Branch/Protection": "github_branch_protection",
@@ -27,7 +27,6 @@ var TablesToResourceTypes = map[string]string{
   "Github/Repository/SBOM": "github_repository_sbom",
   "Github/Repository/VulnerabilityAlert": "github_repository_vulnerability_alert",
   "Github/Tag": "github_tag",
-  "Github/Team": "github_team",
   "Github/Team/Member": "github_team_member",
   "Github/Tree": "github_tree",
   "Github/User": "github_user",
@@ -41,9 +40,9 @@ var TablesToResourceTypes = map[string]string{
 
 var ResourceTypesList = []string{
   "Github/Actions/Artifact",
-  "Github/Actions/Repository/Runner",
-  "Github/Actions/Repository/Secret",
-  "Github/Actions/Repository/Workflow_run",
+  "Github/Actions/Runner",
+  "Github/Actions/Secret",
+  "Github/Actions/WorkflowRun",
   "Github/Blob",
   "Github/Branch",
   "Github/Branch/Protection",
@@ -66,7 +65,6 @@ var ResourceTypesList = []string{
   "Github/Repository/SBOM",
   "Github/Repository/VulnerabilityAlert",
   "Github/Tag",
-  "Github/Team",
   "Github/Team/Member",
   "Github/Tree",
   "Github/User",
