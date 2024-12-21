@@ -371,7 +371,7 @@ export default function SettingsEntitlement() {
      axios
          .get(`${url}/main/metadata/api/v3/sample/sync/status `, config)
          .then((res) => {
-             if (res?.data?.progress !== 1 || res?.data?.progress !== 0) {
+             if (res?.data?.progress !== 1 && res?.data?.progress !== 0) {
                  // @ts-ignore
                  setLoaded('True')
                  localStorage.setItem('sample', 'true')
