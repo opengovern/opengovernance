@@ -166,7 +166,7 @@
     "Availability": "GA",
     "SourceCode": "https://github.com/opengovern/og-describer-render",
     "PackageURL": "ghcr.io/opengovern/og-describer-render",
-    "PackageTag": "local-v0.1.0"
+    "PackageTag": "local-latest"
   },
   {
     "id": 13,
