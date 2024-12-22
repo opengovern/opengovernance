@@ -221,7 +221,8 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
+            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-base:0.0.1
+            ghcr.io/${{ github.repository_owner }}/steampipe-plugin-base:${{ needs.tag.outputs.latest_tag }}
           file: docker/SteampipeBaseImageDockerfile
           build-args: |
             PLUGIN_REGISTRY=ghcr.io/opengovern
