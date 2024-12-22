@@ -269,7 +269,7 @@ func (s *Scheduler) retryFailedJobs(ctx context.Context) error {
 }
 
 func (s *Scheduler) describe(integration integrationapi.Integration, resourceType string, scheduled bool, costFullDiscovery bool,
-	removeResources bool, parentId *uint, createdBy string, parameters map[string][]string) (*model.DescribeIntegrationJob, error) {
+	removeResources bool, parentId *uint, createdBy string, parameters map[string]string) (*model.DescribeIntegrationJob, error) {
 
 	integrationType, ok := integration_type.IntegrationTypes[integration.IntegrationType]
 	if !ok {
@@ -341,7 +341,7 @@ func (s *Scheduler) describe(integration integrationapi.Integration, resourceTyp
 	}
 
 	if parameters == nil {
-		parameters = make(map[string][]string)
+		parameters = make(map[string]string)
 	}
 	parametersJsonData, err := json.Marshal(parameters)
 	if err != nil {
