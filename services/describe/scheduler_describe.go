@@ -399,7 +399,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 		zap.String("resourceType", dc.ResourceType),
 	)
 
-	var parameters map[string][]string
+	var parameters map[string]string
 	if dc.Parameters.Status == pgtype.Present {
 		if err := json.Unmarshal(dc.Parameters.Bytes, &parameters); err != nil {
 			return err
