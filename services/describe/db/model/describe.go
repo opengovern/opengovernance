@@ -51,7 +51,7 @@ type DescribeIntegrationJob struct {
 	ProviderID      string
 	TriggerType     enums.DescribeTriggerType
 
-	Parameters pgtype.JSONB // map[string][]string
+	Parameters pgtype.JSONB // map[string]string
 
 	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
 	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`
