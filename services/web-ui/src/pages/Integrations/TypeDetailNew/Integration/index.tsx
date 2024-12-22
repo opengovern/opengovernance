@@ -17,7 +17,9 @@ import {
     Badge,
     Box,
     Button,
+    FormField,
     Header,
+    Input,
     KeyValuePairs,
     Modal,
     Multiselect,
@@ -76,6 +78,7 @@ export default function IntegrationList({
     const [selectedResourceType, setSelectedResourceType] = useState<any>()
     const [runOpen, setRunOpen] = useState(false)
     const [selectedIntegrations, setSelectedIntegrations] = useState<any>([])
+    const [params, setParams] = useState<any>()
     const GetIntegrations = () => {
         setLoading(true)
         let url = ''
@@ -289,11 +292,23 @@ export default function IntegrationList({
         if(selectedResourceType?.length > 0 && selectedResourceType?.length < resourceTypes?.length){
             // @ts-ignore
             body['resource_types'] = selectedResourceType?.map((item:any)=>{
+                 if (selectedResourceType?.length == 1) {
+                     if (selectedResourceType[0]?.params?.length > 0) {
+                         if (params) {
+                             // @ts-ignore
+                             return {
+                                 resource_type: item.value,
+                                 parameters: params,
+                             }
+                         }
+                     }
+                 }
                 return {
                     resource_type: item.value,
                 }
             })
         }
+       
         
 
         axios
@@ -309,6 +324,7 @@ export default function IntegrationList({
                     text: `Discovery started`,
                     type: 'success',
                 })
+                setParams({})
 
             })
             .catch((err) => {
@@ -670,7 +686,12 @@ export default function IntegrationList({
                     </Modal>
                     <Modal
                         visible={runOpen}
-                        onDismiss={() => setRunOpen(false)}
+                        onDismiss={() =>{
+                            setRunOpen(false)
+                            setSelectedIntegrations([])
+                            setSelectedResourceType([])
+                            setParams({})
+                        }}
                         // @ts-ignore
                         header={'Run Discovery'}
                         footer={
@@ -678,6 +699,10 @@ export default function IntegrationList({
                                 <Button
                                     onClick={() => {
                                         setRunOpen(false)
+                                         setRunOpen(false)
+                                         setSelectedIntegrations([])
+                                         setSelectedResourceType([])
+                                         setParams({})
                                     }}
                                 >
                                     Cancel
@@ -757,6 +782,32 @@ export default function IntegrationList({
                                 tokenLimit={0}
                                 placeholder="Select resource type"
                             />
+                            {selectedResourceType?.length == 1 && (<>
+                                {/* show params to input */}
+                                {selectedResourceType[0]?.params?.map((item: any) => {
+                                    return (
+                                        <FormField
+                                            className="w-full"
+                                            label={`${item.name} (Optional)`}
+                                            description={item.description}
+                                            
+                                        >
+                                            <Input
+                                                className="w-full"
+                                                value={params?.[item.name]}
+                                                type={"text"}
+                                                onChange={({ detail }) =>
+                                                    setParams({
+                                                        ...params,
+                                                        [item.name]: detail.value,
+                                                    })
+                                                }
+                                            />
+                                        </FormField>
+                                    )
+                                })}
+                            </>)}
+
                         </Flex>
                     </Modal>
                 </>
