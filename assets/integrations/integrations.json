@@ -110,7 +110,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-linode",
     "schema_ids": ["linode"],
     "PackageURL": "ghcr.io/opengovern/og-describer-linode",
-    "PackageTag": "local-v0.1.4"
+    "PackageTag": "local-latest"
   },
   {
     "id": 9,
