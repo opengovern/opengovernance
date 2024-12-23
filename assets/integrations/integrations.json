@@ -96,7 +96,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-openai",
     "schema_ids": ["openai"],
     "PackageURL": "ghcr.io/opengovern/og-describer-openai",
-    "PackageTag": "local-v0.1.11"
+    "PackageTag": "local-latest"
   },
   {
     "id": 8,
@@ -180,7 +180,7 @@
     "schema_ids": ["doppler"],
     "SourceCode": "https://github.com/opengovern/og-describer-doppler",
     "PackageURL": "ghcr.io/opengovern/og-describer-doppler",
-    "PackageTag": "local-v0.0.1"
+    "PackageTag": "local-latest"
   },
   {
     "id": 14,
