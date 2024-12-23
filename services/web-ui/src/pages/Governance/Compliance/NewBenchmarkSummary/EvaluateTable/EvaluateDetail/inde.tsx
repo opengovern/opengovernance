@@ -443,7 +443,11 @@ export default function EvaluateDetail() {
                             {
                                 label: 'Last Evaulated at',
                                 value: (
-                                    <>{dateTimeDisplay(detail?.job_details?.updated_at)}</>
+                                    <>
+                                        {dateTimeDisplay(
+                                            detail?.job_details?.updated_at
+                                        )}
+                                    </>
                                 ),
                             },
                             {
@@ -452,7 +456,12 @@ export default function EvaluateDetail() {
                                 value: (
                                     <>
                                         <Flex className="w-full ">
-                                            <SeverityBar benchmark={detail?.job_details?.job_score} />
+                                            <SeverityBar
+                                                benchmark={
+                                                    detail?.job_details
+                                                        ?.job_score
+                                                }
+                                            />
                                         </Flex>
                                     </>
                                 ),
@@ -741,7 +750,10 @@ export default function EvaluateDetail() {
                     enableKeyboardNavigation
                     items={
                         resources
-                            ? resources.slice(page * 7, (page + 1) * 7)
+                            ? resources.slice(
+                                  resourcePage * 7,
+                                  (resourcePage + 1) * 7
+                              )
                             : []
                     }
                     loading={detailLoading}
