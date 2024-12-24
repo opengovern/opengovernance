@@ -11,7 +11,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-aws",
     "schema_ids": ["aws"],
     "PackageURL": "ghcr.io/opengovern/og-describer-aws",
-    "PackageTag": "local-v0.1.4"
+    "PackageTag": "local-latest"
   },
   {
     "id": 2,
@@ -25,7 +25,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-azure",
     "schema_ids": ["azure"],
     "PackageURL": "ghcr.io/opengovern/og-describer-azure",
-    "PackageTag": "local-v0.1.5"
+    "PackageTag": "local-latest"
   },
   {
     "id": 3,
@@ -39,7 +39,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-entraid",
     "schema_ids": ["entraid"],
     "PackageURL": "ghcr.io/opengovern/og-describer-entraid",
-    "PackageTag": "local-v0.2.0"
+    "PackageTag": "local-latest"
   },
   {
     "id": 4,
@@ -53,7 +53,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-github",
     "schema_ids": ["github"],
     "PackageURL": "ghcr.io/opengovern/og-describer-github",
-    "PackageTag": "local-v0.23.0"
+    "PackageTag": "local-latest"
   },
   {
     "id": 5,
@@ -67,7 +67,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-digitalocean",
     "schema_ids": ["digitalocean"],
     "PackageURL": "ghcr.io/opengovern/og-describer-digitalocean",
-    "PackageTag": "local-v0.0.7"
+    "PackageTag": "local-latest"
   },
   {
     "id": 6,
@@ -81,7 +81,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-cloudflare",
     "schema_ids": ["cloudflare"],
     "PackageURL": "ghcr.io/opengovern/og-describer-cloudflare",
-    "PackageTag": "local-v0.2.6"
+    "PackageTag": "local-latest"
   },
 
   {
@@ -124,7 +124,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-cohereai",
     "schema_ids": ["cohereai"],
     "PackageURL": "ghcr.io/opengovern/og-describer-cohereai",
-    "PackageTag": "local-v0.2.2"
+    "PackageTag": "local-latest"
   },
   {
     "id": 10,
@@ -138,7 +138,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-googleworkspace",
     "schema_ids": ["googleworkspace"],
     "PackageURL": "ghcr.io/opengovern/og-describer-googleworkspace",
-    "PackageTag": "local-v0.4.1"
+    "PackageTag": "local-latest"
   },
   {
     "id": 11,
@@ -152,7 +152,7 @@
     "SourceCode": "https://github.com/opengovern/og-describer-oci",
     "schema_ids": ["oci"],
     "PackageURL": "ghcr.io/opengovern/og-describer-oci",
-    "PackageTag": "local-v0.8.0"
+    "PackageTag": "local-latest"
   },
   {
     "id": 12,
