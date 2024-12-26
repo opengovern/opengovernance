@@ -7880,8 +7880,7 @@ func (h HttpHandler) GetComplianceJobReport(c echo.Context) error {
 		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
 	}
 
-	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client,
-		jobId, complianceJob.WithIncidents, controls)
+	summary, err := es.GetJobReportControlSummaryByJobID(c.Request().Context(), h.logger, h.client, jobId, controls)
 	if err != nil {
 		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
@@ -7939,8 +7938,7 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 	}
 	controls, err := h.db.ListControls(ctx.Request().Context(), controlsStr, nil)
 
-	summary, err := es.GetJobReportControlSummaryByJobID(ctx.Request().Context(), h.logger, h.client,
-		jobId, controlsFilter)
+	summary, err := es.GetJobReportControlSummaryByJobID(ctx.Request().Context(), h.logger, h.client, jobId, controlsFilter)
 	if err != nil {
 		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
