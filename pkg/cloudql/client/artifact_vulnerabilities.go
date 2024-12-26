@@ -38,7 +38,7 @@ type Vulnerability struct {
 	Namespace   string             `json:"namespace"`
 	Severity    string             `json:"severity"`
 	URLs        []string           `json:"urls"`
-	Description string             `json:"description"`
+	Description string             `json:"Description"`
 	CVSs        []VulnerabilityCVS `json:"cvss"`
 	Fix         VulnerabilityFix   `json:"fix"`
 	Advisories  interface{}        `json:"advisories"`
