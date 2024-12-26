@@ -91,7 +91,7 @@ type ControlSummaryResponse struct {
 	}
 }
 
-func GetJobReportControlSummaryByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string, auditable bool,
+func GetJobReportControlSummaryByJobID(ctx context.Context, logger *zap.Logger, client opengovernance.Client, jobID string,
 	controls []string) (*types.ComplianceJobReportControlSummary, error) {
 	request := make(map[string]any)
 	request["size"] = 1
@@ -101,11 +101,6 @@ func GetJobReportControlSummaryByJobID(ctx context.Context, logger *zap.Logger, 
 				{
 					"term": map[string]any{
 						"job_summary.job_id": jobID,
-					},
-				},
-				{
-					"term": map[string]any{
-						"job_summary.auditable": auditable,
 					},
 				},
 			},
