@@ -85,12 +85,12 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 	return nil
 }
 
-func JSONBToMap(jsonb pgtype.JSONB) (map[string][]string, error) {
+func JSONBToMap(jsonb pgtype.JSONB) (map[string]any, error) {
 	if jsonb.Status != pgtype.Present {
 		return nil, fmt.Errorf("JSONB data is not present")
 	}
 
-	var result map[string][]string
+	var result map[string]any
 	if err := json.Unmarshal(jsonb.Bytes, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSONB: %w", err)
 	}
