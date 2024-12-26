@@ -72,7 +72,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		Controls:          make(map[string]types.AuditControlResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:        j.ID,
+			JobID:        j.ComplianceJobID,
 			FrameworkID:  j.BenchmarkID,
 			Auditable:    true,
 			JobStartedAt: time.Now(),
@@ -86,7 +86,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		},
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:        j.ID,
+			JobID:        j.ComplianceJobID,
 			FrameworkID:  j.BenchmarkID,
 			Auditable:    true,
 			JobStartedAt: time.Now(),
@@ -96,7 +96,7 @@ func (w *Worker) RunJob(ctx context.Context, j types2.Job) error {
 		Integrations:      make(map[string]types.AuditIntegrationResult),
 		ComplianceSummary: make(map[types.ComplianceStatus]uint64),
 		JobSummary: types.JobSummary{
-			JobID:        j.ID,
+			JobID:        j.ComplianceJobID,
 			FrameworkID:  j.BenchmarkID,
 			Auditable:    true,
 			JobStartedAt: time.Now(),

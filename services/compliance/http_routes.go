@@ -7921,12 +7921,6 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 		complianceJob.JobStatus == string(schedulerapi.ComplianceJobSummarizerInProgress) {
 		return echo.NewHTTPError(http.StatusBadRequest, "job is in progress")
 	}
-	if complianceJob.WithIncidents {
-		if complianceJob.SummaryJobId == nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "compliance job not summarized yet")
-		}
-		jobId = strconv.Itoa(int(*complianceJob.SummaryJobId))
-	}
 
 	framework, err := h.db.GetBenchmark(ctx.Request().Context(), complianceJob.FrameworkId)
 	if err != nil {
@@ -7946,10 +7940,18 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 	controls, err := h.db.ListControls(ctx.Request().Context(), controlsStr, nil)
 
 	summary, err := es.GetJobReportControlSummaryByJobID(ctx.Request().Context(), h.logger, h.client,
-		jobId, complianceJob.WithIncidents, controlsFilter)
+		jobId, controlsFilter)
 	if err != nil {
 		h.logger.Error("failed to get job report control summary by job id", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get job report control summary by job id")
+	}
+	if summary == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "summary does not exist")
+	}
+
+	var integrationIDs []string
+	for _, ii := range complianceJob.IntegrationInfo {
+		integrationIDs = append(integrationIDs, ii.IntegrationID)
 	}
 
 	response := api.GetJobReportSummaryResponse{
@@ -7966,7 +7968,7 @@ func (h HttpHandler) GetJobReportSummary(ctx echo.Context) error {
 				ID:    framework.ID,
 				Title: framework.Title,
 			},
-			IntegrationIDs: summary.JobSummary.IntegrationIDs,
+			IntegrationIDs: integrationIDs,
 			Results: api.GetJobReportSummaryJobDetailsResults{
 				Ok:    summary.ComplianceSummary[types2.ComplianceStatusOK],
 				Alarm: summary.ComplianceSummary[types2.ComplianceStatusALARM],
