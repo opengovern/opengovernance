@@ -10,5 +10,6 @@ RUN echo "connection \"cohereai\" {\n  plugin = \"cohereai\"\n  addresses = []\n
 RUN echo "connection \"googleworkspace\" {\n  plugin = \"googleworkspace\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/googleworkspace.spc
 RUN echo "connection \"oci\" {\n  plugin = \"oci\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/oci.spc
 RUN echo "connection \"render\" {\n  plugin = \"render\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/render.spc
+RUN echo "connection \"doppler\" {\n  plugin = \"doppler\"\n  addresses = []\n  username = \"\"\n  password = \"\"\n}" > /home/steampipe/.steampipe/config/doppler.spc
 
 RUN steampipe plugin list
