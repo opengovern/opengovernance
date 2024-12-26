@@ -383,6 +383,8 @@ func newDescribeConnectionJob(a integrationapi.Integration, resourceType string,
 
 func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeIntegrationJob, cipherText string,
 	integration *integrationapi.Integration) error {
+	var err error
+
 	ctx, span := otel.Tracer(opengovernanceTrace.JaegerTracerName).Start(ctx, opengovernanceTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -443,7 +445,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.
 	isFailed := false
 	defer func() {
 		if isFailed {
-			err := s.db.UpdateDescribeIntegrationJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0, 0)
+			var errMsg string
+			if err != nil {
+				errMsg = err.Error()
+			}
+			err := s.db.UpdateDescribeIntegrationJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, errMsg, "Failed to send job through nats", 0, 0)
 			if err != nil {
 				s.logger.Error("failed to update describe resource job status",
 					zap.Uint("jobID", dc.ID),
