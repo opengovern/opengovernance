@@ -398,7 +398,7 @@ func (w *Worker) deleteComplianceResultsAndResourceFindingsOfRemovedIntegrations
 func addJobSummary(controlSummary *types.ComplianceJobReportControlSummary,
 	controlView *types.ComplianceJobReportControlView, resourceView *types.ComplianceJobReportResourceView,
 	cr types.ComplianceResult) {
-	if cr.ComplianceStatus != types.ComplianceStatusALARM {
+	if cr.ComplianceStatus != types.ComplianceStatusALARM && cr.ComplianceStatus != types.ComplianceStatusOK {
 		return
 	}
 

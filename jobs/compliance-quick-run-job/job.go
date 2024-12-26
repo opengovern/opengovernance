@@ -125,7 +125,8 @@ func (w *Worker) RunJobForIntegration(ctx context.Context, job *AuditJob, integr
 			include[result] = true
 		}
 	} else {
-		include["alarm"] = true
+		include[string(types.ComplianceStatusOK)] = true
+		include[string(types.ComplianceStatusALARM)] = true
 	}
 
 	job.JobReportControlView.JobSummary.IntegrationIDs = append(job.JobReportControlView.JobSummary.IntegrationIDs, integrationId)
