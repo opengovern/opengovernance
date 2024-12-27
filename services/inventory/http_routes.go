@@ -1113,8 +1113,11 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if req.ID == "" || req.Type == "" {
+	if req.ID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type and ID should be provided")
+	}
+	if req.Type == "" {
+		req.Type = "namedquery"
 	}
 
 	newCtx, cancel := context.WithTimeout(ctx.Request().Context(), 30*time.Second)
