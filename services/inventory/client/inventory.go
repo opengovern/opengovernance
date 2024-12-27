@@ -27,6 +27,7 @@ type InventoryServiceClient interface {
 	ListResourceCollectionsMetadata(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 	GetTablesResourceCategories(ctx *httpclient.Context, tables []string) ([]api.CategoriesTables, error)
 	GetResourceCategories(ctx *httpclient.Context, tables []string, categories []string) (*api.GetResourceCategoriesResponse, error)
+	RunQueryByID(ctx *httpclient.Context, req api.RunQueryByIDRequest) (*api.RunQueryResponse, error)
 }
 
 type inventoryClient struct {
@@ -339,4 +340,22 @@ func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]ap
 		return nil, err
 	}
 	return response, nil
+}
+
+func (s *inventoryClient) RunQueryByID(ctx *httpclient.Context, req api.RunQueryByIDRequest) (*api.RunQueryResponse, error) {
+	url := fmt.Sprintf("%s/api/v3/query/run", s.baseURL)
+
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp api.RunQueryResponse
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), reqBytes, &resp); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &resp, nil
 }
