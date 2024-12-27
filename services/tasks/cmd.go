@@ -100,18 +100,11 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	errors := make(chan error, 1)
-	go func() {
-		routes := httpRoutes{
-			logger:        logger,
-			db:            db,
-			mainScheduler: mainScheduler,
-		}
-		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(ctx, logger, cfg.Http.Address, &routes))
-	}()
-
-	return <-errors
-
+	return httpserver.RegisterAndStart(ctx, logger, cfg.Http.Address, &httpRoutes{
+		logger:        logger,
+		db:            db,
+		mainScheduler: mainScheduler,
+	})
 }
 
 func NewKubeClient() (client.Client, error) {
