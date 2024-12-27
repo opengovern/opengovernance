@@ -101,9 +101,8 @@ func start(ctx context.Context) error {
 	}
 
 	return httpserver.RegisterAndStart(ctx, logger, cfg.Http.Address, &httpRoutes{
-		logger:        logger,
-		db:            db,
-		mainScheduler: mainScheduler,
+		logger: logger,
+		db:     db,
 	})
 }
 

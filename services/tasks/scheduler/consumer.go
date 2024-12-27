@@ -31,9 +31,13 @@ func (s *TaskScheduler) RunTaskResponseConsumer(ctx context.Context) error {
 			taskRunUpdate := models.TaskRun{
 				Status:         response.Status,
 				FailureMessage: response.FailureMessage,
-				Result:         string(response.Result),
 			}
-			err := s.db.UpdateTaskRun(response.RunID, taskRunUpdate.Status, taskRunUpdate.Result, taskRunUpdate.FailureMessage)
+			err := taskRunUpdate.Result.Set(response.Result)
+			if err != nil {
+				s.logger.Error("failed to set result", zap.Error(err))
+				return
+			}
+			err = s.db.UpdateTaskRun(response.RunID, taskRunUpdate.Status, taskRunUpdate.Result, taskRunUpdate.FailureMessage)
 			if err != nil {
 				s.logger.Error("Failed to update the status of RunTaskResponse",
 					zap.String("Task", s.TaskID),

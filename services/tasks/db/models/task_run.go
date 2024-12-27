@@ -22,7 +22,7 @@ type TaskRun struct {
 	TaskID         string
 	Params         pgtype.JSONB
 	Status         TaskRunStatus
-	Result         string
+	Result         pgtype.JSONB
 	FailureMessage string
 }
 
@@ -33,7 +33,6 @@ func (tr TaskRun) ToAPI() api.TaskRun {
 		UpdatedAt:      tr.UpdatedAt,
 		TaskID:         tr.TaskID,
 		Status:         string(tr.Status),
-		Result:         tr.Result,
 		FailureMessage: tr.FailureMessage,
 	}
 }
