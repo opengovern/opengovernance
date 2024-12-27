@@ -20,6 +20,8 @@ var (
 	ESUsername = os.Getenv("ELASTICSEARCH_USERNAME")
 	ESPassword = os.Getenv("ELASTICSEARCH_PASSWORD")
 	ESIsOnAks  = os.Getenv("ELASTICSEARCH_ISONAKS")
+
+	InventoryBaseURL = os.Getenv("INVENTORY_BASEURL")
 )
 
 func CreateWorker(ctx context.Context, cfg config.Config, kubeClient client.Client, taskConfig *Task, namespace string) error {
@@ -187,6 +189,10 @@ func defaultEnvs(cfg config.Config, taskConfig *Task) []corev1.EnvVar {
 		{
 			Name:  consts.ElasticSearchAssumeRoleArnEnv,
 			Value: "",
+		},
+		{
+			Name:  consts.InventoryBaseURL,
+			Value: InventoryBaseURL,
 		},
 	}
 }
