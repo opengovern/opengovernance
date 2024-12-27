@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/jackc/pgtype"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"gorm.io/gorm"
 )
@@ -108,7 +109,7 @@ func (db Database) CreateTaskRun(taskRun *models.TaskRun) error {
 }
 
 // UpdateTaskRun creates a task result
-func (db Database) UpdateTaskRun(runID uint, status models.TaskRunStatus, result string, failureMessage string) error {
+func (db Database) UpdateTaskRun(runID uint, status models.TaskRunStatus, result pgtype.JSONB, failureMessage string) error {
 	tx := db.Orm.Where("id = ?", runID).Updates(&models.TaskRun{
 		Status: status, Result: result, FailureMessage: failureMessage,
 	})

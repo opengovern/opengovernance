@@ -8,7 +8,6 @@ import (
 	"github.com/opengovern/opencomply/services/tasks/api"
 	"github.com/opengovern/opencomply/services/tasks/db"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
-	"github.com/opengovern/opencomply/services/tasks/scheduler"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -20,7 +19,6 @@ type httpRoutes struct {
 
 	platformPrivateKey *rsa.PrivateKey
 	db                 db.Database
-	mainScheduler      *scheduler.MainScheduler
 }
 
 func (r *httpRoutes) Register(e *echo.Echo) {
