@@ -81,7 +81,7 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 		r.logger.Error("failed to set params", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set params")
 	}
-	err = run.Result.Set([]byte(""))
+	err = run.Result.Set([]byte("{}"))
 	if err != nil {
 		r.logger.Error("failed to set results", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to set results")
