@@ -34,7 +34,9 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 	for _, run := range runs {
 		params, err := JSONBToMap(run.Params)
 		if err != nil {
-			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, "", "failed to get params")
+			result := pgtype.JSONB{}
+			_ = result.Set([]byte(""))
+			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, result, "failed to get params")
 			s.logger.Error("failed to get params", zap.Error(err), zap.Uint("runId", run.ID))
 			return err
 		}
@@ -52,7 +54,9 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 		}
 		reqJson, err := json.Marshal(req)
 		if err != nil {
-			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, "", "failed to marshal run")
+			result := pgtype.JSONB{}
+			_ = result.Set([]byte(""))
+			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, result, "failed to marshal run")
 			s.logger.Error("failed to marshal Task Run", zap.Error(err), zap.Uint("runId", run.ID))
 			return err
 		}
@@ -68,17 +72,23 @@ func (s *TaskScheduler) runPublisher(ctx context.Context) error {
 				}
 				_, err = s.jq.Produce(ctx, s.NatsConfig.Topic, reqJson, fmt.Sprintf("run-%d", run.ID))
 				if err != nil {
-					_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, "", err.Error())
+					result := pgtype.JSONB{}
+					_ = result.Set([]byte(""))
+					_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, result, err.Error())
 					s.logger.Error("failed to send run", zap.Error(err), zap.Uint("runId", run.ID))
 					continue
 				}
 			} else {
-				_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, "", err.Error())
+				result := pgtype.JSONB{}
+				_ = result.Set([]byte(""))
+				_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusFailed, result, err.Error())
 				s.logger.Error("failed to send run", zap.Error(err), zap.Uint("runId", run.ID), zap.String("error message", err.Error()))
 				continue
 			}
 		} else {
-			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusQueued, "", "")
+			result := pgtype.JSONB{}
+			_ = result.Set([]byte(""))
+			_ = s.db.UpdateTaskRun(run.ID, models.TaskRunStatusQueued, result, "")
 		}
 	}
 
