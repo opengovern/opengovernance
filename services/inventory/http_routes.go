@@ -1157,7 +1157,19 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		engine = inventoryApi.QueryEngine(engineStr)
 	}
 
-	queryParamMap := req.QueryParams
+	queryParams, err := h.metadataClient.ListQueryParameters(&httpclient.Context{UserRole: api.AdminRole})
+	if err != nil {
+		h.logger.Error("failed to get query parameters", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get query parameters")
+	}
+	queryParamMap := make(map[string]string)
+	for _, qp := range queryParams.QueryParameters {
+		queryParamMap[qp.Key] = qp.Value
+	}
+
+	for k, v := range req.QueryParams {
+		queryParamMap[k] = v
+	}
 
 	queryTemplate, err := template.New("query").Parse(query)
 	if err != nil {
