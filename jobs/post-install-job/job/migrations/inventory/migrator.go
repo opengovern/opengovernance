@@ -66,6 +66,19 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	}
 	dbm := db.Database{ORM: orm}
 
+	ormMetadata, err := postgres.NewClient(&postgres.Config{
+		Host:    conf.PostgreSQL.Host,
+		Port:    conf.PostgreSQL.Port,
+		User:    conf.PostgreSQL.Username,
+		Passwd:  conf.PostgreSQL.Password,
+		DB:      "metadata",
+		SSLMode: conf.PostgreSQL.SSLMode,
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+	dbMetadata := db.Database{ORM: ormMetadata}
+
 	awsResourceTypesContent, err := os.ReadFile(path.Join(m.AttachmentFolderPath(), "aws-resource-types.json"))
 	if err != nil {
 		return err
@@ -168,6 +181,22 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 
 	err = populateQueries(logger, dbm)
 	if err != nil {
+		return err
+	}
+
+	err = dbMetadata.ORM.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, obj := range QueryParameters {
+			err := tx.Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).Create(&obj).Error
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed to insert query params", zap.Error(err))
 		return err
 	}
 
