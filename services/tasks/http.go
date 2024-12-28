@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	api2 "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpserver"
+	"github.com/opengovern/opencomply/pkg/utils"
 	"github.com/opengovern/opencomply/services/tasks/api"
 	"github.com/opengovern/opencomply/services/tasks/db"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -23,12 +25,16 @@ type httpRoutes struct {
 
 func (r *httpRoutes) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	// Get all tasks
-	v1.GET("/tasks", httpserver.AuthorizeHandler(r.getTasks, api2.EditorRole))
+	// List all tasks
+	v1.GET("/tasks", httpserver.AuthorizeHandler(r.ListTasks, api2.ViewerRole))
+	// Get task
+	v1.GET("/tasks/:id", httpserver.AuthorizeHandler(r.GetTask, api2.ViewerRole))
 	// Create a new task
-	v1.POST("/tasks/run", httpserver.AuthorizeHandler(r.runTask, api2.EditorRole))
+	v1.POST("/tasks/run", httpserver.AuthorizeHandler(r.RunTask, api2.EditorRole))
 	// Get Task Result
-	v1.GET("/tasks/run/:id/result", httpserver.AuthorizeHandler(r.getTaskRunResult, api2.EditorRole))
+	v1.GET("/tasks/run/:id", httpserver.AuthorizeHandler(r.GetTaskRunResult, api2.ViewerRole))
+	// List Tasks Result
+	v1.GET("/tasks/run", httpserver.AuthorizeHandler(r.ListTaskRunResult, api2.ViewerRole))
 
 }
 
@@ -44,18 +50,86 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
-func (r *httpRoutes) getTasks(ctx echo.Context) error {
-	tasks, err := r.db.GetTaskList()
+// ListTasks godoc
+//
+//	@Summary	List tasks
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		cursor			query	int		false	"cursor"
+//	@Param		per_page		query	int		false	"per page"
+//	@Produce	json
+//	@Success	200	{object}	api.ListTaskRunsResponse
+//	@Router		/tasks/api/v1/tasks [get]
+func (r *httpRoutes) ListTasks(ctx echo.Context) error {
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	items, err := r.db.GetTaskList()
 	if err != nil {
 		r.logger.Error("failed to get tasks", zap.Error(err))
 		return ctx.JSON(http.StatusInternalServerError, "failed to get tasks")
 
 	}
 
-	return ctx.JSON(http.StatusOK, tasks)
+	totalCount := len(items)
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, api.TaskListResponse{
+		TotalCount: totalCount,
+		Items:      items,
+	})
 }
 
-func (r *httpRoutes) runTask(ctx echo.Context) error {
+// GetTask godoc
+//
+//	@Summary	Get task by id
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		id			path	string		true	"run id"
+//	@Produce	json
+//	@Success	200	{object}	models.Task
+//	@Router		/tasks/api/v1/tasks/:id [get]
+func (r *httpRoutes) GetTask(ctx echo.Context) error {
+	id := ctx.Param("id")
+	task, err := r.db.GetTask(id)
+	if err != nil {
+		r.logger.Error("failed to get task results", zap.Error(err))
+		return ctx.JSON(http.StatusInternalServerError, "failed to get task results")
+	}
+
+	return ctx.JSON(http.StatusOK, task)
+}
+
+// RunTask godoc
+//
+//	@Summary	Run a new task
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		request	body	api.RunTaskRequest	true	"Run task request"
+//	@Produce	json
+//	@Success	200	{object}	models.TaskRun
+//	@Router		/tasks/api/v1/tasks/run [post]
+func (r *httpRoutes) RunTask(ctx echo.Context) error {
 	var req api.RunTaskRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		r.logger.Error("failed to bind task", zap.Error(err))
@@ -95,7 +169,16 @@ func (r *httpRoutes) runTask(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, run)
 }
 
-func (r *httpRoutes) getTaskRunResult(ctx echo.Context) error {
+// GetTaskRunResult godoc
+//
+//	@Summary	Get task run
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		id			path	string		true	"run id"
+//	@Produce	json
+//	@Success	200	{object}	models.TaskRun
+//	@Router		/tasks/api/v1/tasks/run/:id [get]
+func (r *httpRoutes) GetTaskRunResult(ctx echo.Context) error {
 	id := ctx.Param("id")
 	taskResults, err := r.db.GetTaskRunResult(id)
 	if err != nil {
@@ -104,4 +187,53 @@ func (r *httpRoutes) getTaskRunResult(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, taskResults)
+}
+
+// ListTaskRunResult godoc
+//
+//	@Summary	List task runs
+//	@Security	BearerToken
+//	@Tags		scheduler
+//	@Param		cursor			query	int		false	"cursor"
+//	@Param		per_page		query	int		false	"per page"
+//	@Produce	json
+//	@Success	200	{object}	api.ListTaskRunsResponse
+//	@Router		/tasks/api/v1/tasks/run [get]
+func (r *httpRoutes) ListTaskRunResult(ctx echo.Context) error {
+	var cursor, perPage int64
+	var err error
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	items, err := r.db.ListTaskRunResult()
+	if err != nil {
+		r.logger.Error("failed to get task results", zap.Error(err))
+		return ctx.JSON(http.StatusInternalServerError, "failed to get task results")
+	}
+
+	totalCount := len(items)
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, api.ListTaskRunsResponse{
+		TotalCount: totalCount,
+		Items:      items,
+	})
 }

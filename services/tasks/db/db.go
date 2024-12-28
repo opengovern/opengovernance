@@ -68,6 +68,19 @@ func (db Database) GetTaskRunResult(id string) (*models.TaskRun, error) {
 	return task, nil
 }
 
+// ListTaskRunResult retrieves a task result by Task ID
+func (db Database) ListTaskRunResult() ([]models.TaskRun, error) {
+	var task []models.TaskRun
+	tx := db.Orm.
+		Order("created_at desc").
+		Find(&task)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return task, nil
+}
+
 // FetchCreatedTaskRunsByTaskID retrieves a list of task runs
 func (db Database) FetchCreatedTaskRunsByTaskID(taskID string) ([]models.TaskRun, error) {
 	var tasks []models.TaskRun

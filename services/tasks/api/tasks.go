@@ -1,23 +1,10 @@
 package api
 
-type TaskListResponse struct {
-	Tasks      []TaskResponse `json:"tasks"`
-	TotalCount int            `json:"total_count"`
-}
+import "github.com/opengovern/opencomply/services/tasks/db/models"
 
-type TaskResponse struct {
-	ID            uint   `json:"id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	IsCompleted   bool   `json:"is_completed"`
-	CompletedDate string `json:"completed_date"`
-	LastRunDate   string `json:"last_run_date"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
-	ImageUrl      string `json:"image_url"`
-	Interval      int    `json:"interval"`
-	Status        string `json:"status"`
-	Autorun       bool   `json:"autorun"`
+type TaskListResponse struct {
+	Items      []models.Task `json:"items"`
+	TotalCount int           `json:"total_count"`
 }
 
 type RunTaskRequest struct {

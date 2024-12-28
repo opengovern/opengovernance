@@ -1,6 +1,9 @@
 package api
 
-import "time"
+import (
+	"github.com/opengovern/opencomply/services/tasks/db/models"
+	"time"
+)
 
 type TaskRun struct {
 	ID             uint      `json:"id"`
@@ -10,4 +13,9 @@ type TaskRun struct {
 	Status         string    `json:"status"`
 	Result         string    `json:"result"`
 	FailureMessage string    `json:"failure_message"`
+}
+
+type ListTaskRunsResponse struct {
+	TotalCount int              `json:"total_count"`
+	Items      []models.TaskRun `json:"items"`
 }
