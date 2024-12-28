@@ -2,7 +2,6 @@ package models
 
 import (
 	"github.com/jackc/pgtype"
-	"github.com/opengovern/opencomply/services/tasks/api"
 	"gorm.io/gorm"
 )
 
@@ -24,15 +23,4 @@ type TaskRun struct {
 	Status         TaskRunStatus
 	Result         pgtype.JSONB
 	FailureMessage string
-}
-
-func (tr TaskRun) ToAPI() api.TaskRun {
-	return api.TaskRun{
-		ID:             tr.ID,
-		CreatedAt:      tr.CreatedAt,
-		UpdatedAt:      tr.UpdatedAt,
-		TaskID:         tr.TaskID,
-		Status:         string(tr.Status),
-		FailureMessage: tr.FailureMessage,
-	}
 }
