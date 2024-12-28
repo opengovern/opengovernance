@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/opengovern/opencomply/services/tasks/db/models"
@@ -31,6 +32,10 @@ func (s *TaskScheduler) RunTaskResponseConsumer(ctx context.Context) error {
 			taskRunUpdate := models.TaskRun{
 				Status:         response.Status,
 				FailureMessage: response.FailureMessage,
+			}
+			emptyResult := []byte("")
+			if response.Result == nil || len(response.Result) == 0 || bytes.Equal(response.Result, emptyResult) {
+				response.Result = []byte("{}")
 			}
 			err := taskRunUpdate.Result.Set(response.Result)
 			if err != nil {
