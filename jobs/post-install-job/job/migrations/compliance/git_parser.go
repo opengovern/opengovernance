@@ -263,8 +263,8 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 					} else {
 						paramsValues := make(map[string]string)
 						for _, pv := range control.Query.Parameters {
-							if pv.DefaultValue != nil {
-								paramsValues[pv.Key] = *pv.DefaultValue
+							if pv.DefaultValue != "" {
+								paramsValues[pv.Key] = pv.DefaultValue
 							}
 						}
 						var integrationTypes pq.StringArray
@@ -294,10 +294,10 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 									Value: v,
 								})
 							} else {
-								if parameter.DefaultValue != nil {
+								if parameter.DefaultValue != "" {
 									g.queryParams = append(g.queryParams, models.QueryParameterValues{
 										Key:   parameter.Key,
-										Value: *parameter.DefaultValue,
+										Value: parameter.DefaultValue,
 									})
 								}
 							}
@@ -323,10 +323,10 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 							Required: parameter.Required,
 						})
 
-						if parameter.DefaultValue != nil {
+						if parameter.DefaultValue != "" {
 							g.queryParams = append(g.queryParams, models.QueryParameterValues{
 								Key:   parameter.Key,
-								Value: *parameter.DefaultValue,
+								Value: parameter.DefaultValue,
 							})
 						}
 					}
@@ -775,8 +775,8 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 				} else {
 					paramsValues := make(map[string]string)
 					for _, pv := range obj.Query.Parameters {
-						if pv.DefaultValue != nil {
-							paramsValues[pv.Key] = *pv.DefaultValue
+						if pv.DefaultValue != "" {
+							paramsValues[pv.Key] = pv.DefaultValue
 						}
 					}
 					var integrationTypes pq.StringArray
@@ -805,10 +805,10 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 								Value: v,
 							})
 						} else {
-							if parameter.DefaultValue != nil {
+							if parameter.DefaultValue != "" {
 								g.queryParams = append(g.queryParams, models.QueryParameterValues{
 									Key:   parameter.Key,
-									Value: *parameter.DefaultValue,
+									Value: parameter.DefaultValue,
 								})
 							}
 						}
@@ -832,10 +832,10 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 						Required: parameter.Required,
 					})
 
-					if parameter.DefaultValue != nil {
+					if parameter.DefaultValue != "" {
 						g.queryParams = append(g.queryParams, models.QueryParameterValues{
 							Key:   parameter.Key,
-							Value: *parameter.DefaultValue,
+							Value: parameter.DefaultValue,
 						})
 					}
 				}

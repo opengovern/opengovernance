@@ -284,10 +284,10 @@ func populateFinderItem(logger *zap.Logger, tx *gorm.DB, path string, info fs.Fi
 			Required: qp.Required,
 			QueryID:  dbMetric.ID,
 		})
-		if qp.DefaultValue != nil {
+		if qp.DefaultValue != "" {
 			queryParamObj := models.QueryParameterValues{
 				Key:   qp.Key,
-				Value: *qp.DefaultValue,
+				Value: qp.DefaultValue,
 			}
 			QueryParameters = append(QueryParameters, queryParamObj)
 		}
