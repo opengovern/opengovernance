@@ -70,7 +70,7 @@ func (s *JobScheduler) runPublisher(ctx context.Context) error {
 			return err
 		}
 		queryParamMap := make(map[string]string)
-		for _, qp := range queryParams.QueryParameters {
+		for _, qp := range queryParams.Items {
 			queryParamMap[qp.Key] = qp.Value
 		}
 		queryTemplate, err := template.New("query").Parse(query)

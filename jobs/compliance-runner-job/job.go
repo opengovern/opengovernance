@@ -97,7 +97,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		return 0, err
 	}
 	queryParamMap := make(map[string]string)
-	for _, qp := range queryParams.QueryParameters {
+	for _, qp := range queryParams.Items {
 		queryParamMap[qp.Key] = qp.Value
 	}
 

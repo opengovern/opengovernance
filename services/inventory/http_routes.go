@@ -494,7 +494,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		return err
 	}
 	queryParamMap := make(map[string]string)
-	for _, qp := range queryParams.QueryParameters {
+	for _, qp := range queryParams.Items {
 		queryParamMap[qp.Key] = qp.Value
 	}
 
@@ -1163,7 +1163,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get query parameters")
 	}
 	queryParamMap := make(map[string]string)
-	for _, qp := range queryParams.QueryParameters {
+	for _, qp := range queryParams.Items {
 		queryParamMap[qp.Key] = qp.Value
 	}
 
