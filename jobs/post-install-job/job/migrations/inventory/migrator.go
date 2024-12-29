@@ -295,7 +295,8 @@ func populateFinderItem(logger *zap.Logger, tx *gorm.DB, path string, info fs.Fi
 	}
 	listOfTables, err := utils.ExtractTableRefsFromQuery(item.Query.QueryToExecute)
 	if err != nil {
-		return err
+		logger.Error("failed to extract table refs from query", zap.String("query-id", dbMetric.ID), zap.Error(err))
+		listOfTables = item.Query.ListOfTables
 	}
 	query := inventory.Query{
 		ID:             dbMetric.ID,
