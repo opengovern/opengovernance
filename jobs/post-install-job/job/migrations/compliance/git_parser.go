@@ -730,9 +730,9 @@ func (g *GitParser) ExtractCompliance(compliancePath string, controlEnrichmentBa
 	if err := g.ExtractBenchmarks(path.Join(compliancePath, "frameworks")); err != nil {
 		return err
 	}
-	if err := g.CheckForDuplicate(); err != nil {
-		return err
-	}
+	//if err := g.CheckForDuplicate(); err != nil {
+	//	return err
+	//}
 
 	if err := g.ExtractBenchmarksMetadata(); err != nil {
 		return err
