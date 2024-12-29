@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
 	"strings"
 	"time"
 
@@ -36,6 +38,9 @@ type HttpHandler struct {
 	vaultSecretHandler vault.VaultSecretHandler
 	dexClient          dexApi.DexClient
 	logger             *zap.Logger
+
+	complianceClient complianceClient.ComplianceServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
 
 	viewCheckpoint time.Time
 }
@@ -120,6 +125,9 @@ func InitializeHttpHandler(
 		dexClient:      dexClient,
 		viewCheckpoint: time.Now().Add(-time.Hour * 2),
 	}
+
+	h.complianceClient = complianceClient.NewComplianceClient(cfg.Compliance.BaseURL)
+	h.inventoryClient = inventoryClient.NewInventoryServiceClient(cfg.Inventory.BaseURL)
 
 	switch cfg.Vault.Provider {
 	case vault.AwsKMS:

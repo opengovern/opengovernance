@@ -70,7 +70,7 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 }
 
 func (s *inventoryClient) GetQuery(ctx *httpclient.Context, id string) (*api.NamedQueryItemV2, error) {
-	url := fmt.Sprintf("%s/api/v3/query/%s", s.baseURL, id)
+	url := fmt.Sprintf("%s/api/v3/queries/%s", s.baseURL, id)
 
 	var namedQuery api.NamedQueryItemV2
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &namedQuery); err != nil {
