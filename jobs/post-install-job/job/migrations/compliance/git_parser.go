@@ -274,7 +274,8 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 						}
 						listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
 						if err != nil {
-							return err
+							g.logger.Error("failed to extract table refs from query", zap.String("query-id", control.ID), zap.Error(err))
+							listOfTables = query.Query.ListOfTables
 						}
 						q := db.Query{
 							ID:              control.ID,
@@ -313,7 +314,8 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 				} else {
 					listOfTables, err := utils.ExtractTableRefsFromQuery(control.Query.QueryToExecute)
 					if err != nil {
-						return err
+						g.logger.Error("failed to extract table refs from query", zap.String("query-id", control.ID), zap.Error(err))
+						listOfTables = control.Query.ListOfTables
 					}
 
 					q := db.Query{
@@ -796,7 +798,8 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 
 					listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
 					if err != nil {
-						return err
+						g.logger.Error("failed to extract table refs from query", zap.String("query-id", obj.ID), zap.Error(err))
+						listOfTables = query.Query.ListOfTables
 					}
 
 					q := models.Query{
@@ -835,7 +838,8 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 			} else {
 				listOfTables, err := utils.ExtractTableRefsFromQuery(obj.Query.QueryToExecute)
 				if err != nil {
-					return err
+					g.logger.Error("failed to extract table refs from query", zap.String("query-id", obj.ID), zap.Error(err))
+					listOfTables = obj.Query.ListOfTables
 				}
 
 				q := models.Query{
