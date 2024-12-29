@@ -114,7 +114,7 @@ export default function ResourceFindingDetail({
             onClose={onClose}
             title={
                 <Flex justifyContent="start">
-                    {getConnectorIcon(resourceFinding?.connector)}
+                    {resourceFinding?.integrationType}
                     <Title className="text-lg font-semibold ml-2 my-1">
                         {resourceFinding?.resourceName}
                     </Title>
@@ -124,8 +124,8 @@ export default function ResourceFindingDetail({
             <Grid className="w-full gap-4 mb-6" numItems={2}>
                 <SummaryCard
                     title="Account"
-                    metric={resourceFinding?.providerConnectionName}
-                    secondLine={resourceFinding?.providerConnectionID}
+                    metric={resourceFinding?.integrationName}
+                    secondLine={resourceFinding?.integrationID}
                     blur={isDemo}
                     blurSecondLine={isDemo}
                     isString

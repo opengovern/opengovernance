@@ -421,7 +421,7 @@ export default function ResourcesWithFailure({ query }: ICount) {
                             },
                             {
                                 id: 'providerConnectionName',
-                                header: 'Cloud account',
+                                header: 'Integration Type',
                                 maxWidth: 100,
                                 cell: (item) => (
                                     <>
@@ -431,23 +431,21 @@ export default function ResourcesWithFailure({ query }: ICount) {
                                                 isDemo ? 'blur-sm' : ''
                                             }`}
                                         >
-                                            {getConnectorIcon(item.connector)}
-                                            <Flex
+                                            {item.integrationType}
+                                            {/* <Flex
                                                 flexDirection="col"
                                                 alignItems="start"
                                             >
                                                 <Text className="text-gray-800">
-                                                    {
-                                                        item.providerConnectionName
-                                                    }
+                                                    {item.integrationID}
                                                 </Text>
                                                 <Text>
-                                                    {item.providerConnectionID}
+                                                    {item.integrationName}
                                                 </Text>
-                                            </Flex>
-                                            <Card className="cursor-pointer absolute w-fit h-fit z-40 right-1 scale-0 transition-all py-1 px-4 group-hover:scale-100">
+                                            </Flex> */}
+                                            {/* <Card className="cursor-pointer absolute w-fit h-fit z-40 right-1 scale-0 transition-all py-1 px-4 group-hover:scale-100">
                                                 <Text color="blue">Open</Text>
-                                            </Card>
+                                            </Card> */}
                                         </Flex>
                                     </>
                                 ),
