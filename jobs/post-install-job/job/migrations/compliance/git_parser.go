@@ -279,6 +279,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 							ListOfTables:    query.Query.ListOfTables,
 							Engine:          query.Query.Engine,
 							Global:          query.Query.Global,
+							RegoPolicies:    query.Query.RegoPolicies,
 						}
 						g.controlsQueries[control.ID] = q
 						for _, parameter := range query.Query.Parameters {
@@ -314,6 +315,7 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 						ListOfTables:    control.Query.ListOfTables,
 						Engine:          control.Query.Engine,
 						Global:          control.Query.Global,
+						RegoPolicies:    control.Query.RegoPolicies,
 					}
 					g.controlsQueries[control.ID] = q
 					for _, parameter := range control.Query.Parameters {

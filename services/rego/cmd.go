@@ -7,7 +7,7 @@ import (
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"github.com/opengovern/opencomply/services/rego/api"
 	"github.com/opengovern/opencomply/services/rego/config"
-	"github.com/opengovern/opencomply/services/rego/internal"
+	"github.com/opengovern/opencomply/services/rego/service"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"time"
@@ -46,7 +46,7 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			regoEngine, err := internal.NewRegoEngine(ctx, logger, steampipeConn)
+			regoEngine, err := service.NewRegoEngine(ctx, logger, steampipeConn)
 			if err != nil {
 				return err
 			}

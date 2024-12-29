@@ -508,14 +508,14 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	}
 
 	var resp *inventoryApi.RunQueryResponse
-	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngine_cloudql {
+	if req.Engine == nil || *req.Engine == inventoryApi.QueryEngineCloudQL {
 		resp, err = h.RunSQLNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
-	} else if *req.Engine == inventoryApi.QueryEngine_cloudqlRego {
+	} else if *req.Engine == inventoryApi.QueryEngineCloudQLRego {
 		resp, err = h.RunRegoNamedQuery(outputS, *req.Query, queryOutput.String(), &req)
 		if err != nil {
 			span.RecordError(err)
@@ -1152,7 +1152,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	}
 	var engine inventoryApi.QueryEngine
 	if engineStr == "" {
-		engine = inventoryApi.QueryEngine_cloudql
+		engine = inventoryApi.QueryEngineCloudQL
 	} else {
 		engine = inventoryApi.QueryEngine(engineStr)
 	}
@@ -1181,7 +1181,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 	}
 
 	var resp *inventoryApi.RunQueryResponse
-	if engine == inventoryApi.QueryEngine_cloudql {
+	if engine == inventoryApi.QueryEngineCloudQL {
 		resp, err = h.RunSQLNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,
@@ -1193,7 +1193,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
-	} else if engine == inventoryApi.QueryEngine_cloudqlRego {
+	} else if engine == inventoryApi.QueryEngineCloudQLRego {
 		resp, err = h.RunRegoNamedQuery(newCtx, query, queryOutput.String(), &inventoryApi.RunQueryRequest{
 			Page:   req.Page,
 			Query:  &query,

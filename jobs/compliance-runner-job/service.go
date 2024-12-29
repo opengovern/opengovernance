@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	"os"
 	"time"
 
-	"github.com/opengovern/og-util/pkg/api"
-
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/config"
 	esSinkClient "github.com/opengovern/og-util/pkg/es/ingest/client"
 	"github.com/opengovern/og-util/pkg/httpclient"
@@ -19,8 +17,10 @@ import (
 	"github.com/opengovern/og-util/pkg/steampipe"
 	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
 	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
+	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
 	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
+	regoService "github.com/opengovern/opencomply/services/rego/service"
 	"go.uber.org/zap"
 )
 
@@ -42,6 +42,7 @@ type Worker struct {
 	steampipeConn    *steampipe.Database
 	esClient         opengovernance.Client
 	jq               *jq.JobQueue
+	regoEngine       *regoService.RegoEngine
 	complianceClient complianceClient.ComplianceServiceClient
 	inventoryClient  inventoryClient.InventoryServiceClient
 	metadataClient   metadataClient.MetadataServiceClient
@@ -105,12 +106,18 @@ func NewWorker(
 		return nil, err
 	}
 
+	regoEngine, err := regoService.NewRegoEngine(ctx, logger, steampipeConn)
+	if err != nil {
+		return nil, err
+	}
+
 	w := &Worker{
 		config:           config,
 		logger:           logger,
 		steampipeConn:    steampipeConn,
 		esClient:         esClient,
 		jq:               jq,
+		regoEngine:       regoEngine,
 		complianceClient: complianceClient.NewComplianceClient(config.Compliance.BaseURL),
 		inventoryClient:  inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL),
 		metadataClient:   metadataClient.NewMetadataServiceClient(config.Metadata.BaseURL),

@@ -772,7 +772,7 @@ func (h HttpHandler) GetAbout(echoCtx echo.Context) error {
 	inventoryClient := client2.NewInventoryServiceClient(inventoryURL)
 
 	var engine inventoryApi.QueryEngine
-	engine = inventoryApi.QueryEngine_cloudql
+	engine = inventoryApi.QueryEngineCloudQL
 	query := `SELECT
     (SELECT SUM(cost) FROM azure_costmanagement_costbyresourcetype) +
     (SELECT SUM(amortized_cost_amount) FROM aws_cost_by_service_daily) AS total_cost;`
