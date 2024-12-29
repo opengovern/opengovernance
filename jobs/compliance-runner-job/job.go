@@ -109,6 +109,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
 				zap.Uint("job_id", j.ID),
 			)
+			w.logger.Info("query params", zap.Any("map", queryParamMap), zap.Any("resp", queryParams))
 			return 0, fmt.Errorf("required query parameter not found: %s for query: %s", param.Key, j.ExecutionPlan.Query.ID)
 		}
 		if _, ok := queryParamMap[param.Key]; !ok && !param.Required {
