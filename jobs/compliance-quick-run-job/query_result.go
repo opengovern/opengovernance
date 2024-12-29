@@ -50,7 +50,7 @@ func (w *Worker) RunQuery(ctx context.Context, j QueryJob) ([]QueryResult, error
 		return nil, err
 	}
 	queryParamMap := make(map[string]string)
-	for _, qp := range queryParams.QueryParameters {
+	for _, qp := range queryParams.Items {
 		queryParamMap[qp.Key] = qp.Value
 	}
 
