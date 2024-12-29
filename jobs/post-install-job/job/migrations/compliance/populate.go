@@ -3,7 +3,10 @@ package compliance
 import (
 	"context"
 	"fmt"
+	authApi "github.com/opengovern/og-util/pkg/api"
+	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/inventory"
+	metadataClient "github.com/opengovern/opencomply/services/metadata/client"
 	"github.com/opengovern/opencomply/services/metadata/models"
 
 	"github.com/opengovern/og-util/pkg/postgres"
@@ -282,6 +285,13 @@ func (m Migration) Run(ctx context.Context, conf config.MigratorConfig, logger *
 	if err != nil {
 		logger.Error("failed to insert query views", zap.Error(err))
 		return err
+	}
+
+	mClient := metadataClient.NewMetadataServiceClient(conf.Metadata.BaseURL)
+	err = mClient.ReloadViews(&httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole})
+	if err != nil {
+		logger.Error("failed to reload views", zap.Error(err))
+		return fmt.Errorf("failed to reload views: %s", err.Error())
 	}
 
 	return nil
