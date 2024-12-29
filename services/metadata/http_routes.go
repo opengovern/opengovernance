@@ -314,7 +314,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 		h.logger.Error("error listing controls", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "error listing controls")
 	}
-	namedQueries, err := inventoryClient.ListQueriesV2(clientCtx)
+	namedQueries, err := inventoryClient.ListQueriesV2(clientCtx, nil)
 	if err != nil {
 		h.logger.Error("error listing queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "error listing queries")
