@@ -21,11 +21,13 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	model2 "github.com/opengovern/opencomply/jobs/demo-importer-job/db/model"
 	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
 	schedulerClient "github.com/opengovern/opencomply/services/describe/client"
 	integrationApi "github.com/opengovern/opencomply/services/integration/api/models"
 	integrationClient "github.com/opengovern/opencomply/services/integration/client"
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	client2 "github.com/opengovern/opencomply/services/inventory/client"
+	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -302,12 +304,17 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	queryID := ctx.QueryParam("query_id")
 	controlID := ctx.QueryParam("control_id")
 
-	controls, err := h.complianceClient.ListControl(clientCtx, nil, nil)
+	complianceURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.Compliance.BaseURL)
+	complianceClient := complianceClient.NewComplianceClient(complianceURL)
+	inventoryURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.Inventory.BaseURL)
+	inventoryClient := inventoryClient.NewInventoryServiceClient(inventoryURL)
+
+	controls, err := complianceClient.ListControl(clientCtx, nil, nil)
 	if err != nil {
 		h.logger.Error("error listing controls", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "error listing controls")
 	}
-	namedQueries, err := h.inventoryClient.ListQueriesV2(clientCtx)
+	namedQueries, err := inventoryClient.ListQueriesV2(clientCtx)
 	if err != nil {
 		h.logger.Error("error listing queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "error listing queries")
@@ -315,7 +322,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 
 	var filteredQueryParams []string
 	if controlID != "" {
-		control, err := h.complianceClient.GetControl(clientCtx, controlID)
+		control, err := complianceClient.GetControl(clientCtx, controlID)
 		if err != nil {
 			h.logger.Error("error getting control", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting control")
@@ -327,7 +334,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 			filteredQueryParams = append(filteredQueryParams, param.Key)
 		}
 	} else if queryID != "" {
-		query, err := h.inventoryClient.GetQuery(clientCtx, queryID)
+		query, err := inventoryClient.GetQuery(clientCtx, queryID)
 		if err != nil {
 			h.logger.Error("error getting query", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting query")
