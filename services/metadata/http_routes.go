@@ -304,9 +304,9 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	queryID := ctx.QueryParam("query_id")
 	controlID := ctx.QueryParam("control_id")
 
-	complianceURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.Compliance.BaseURL)
+	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := complianceClient.NewComplianceClient(complianceURL)
-	inventoryURL := strings.ReplaceAll(h.cfg.Scheduler.BaseURL, "%NAMESPACE%", h.cfg.Inventory.BaseURL)
+	inventoryURL := strings.ReplaceAll(h.cfg.Inventory.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	inventoryClient := inventoryClient.NewInventoryServiceClient(inventoryURL)
 
 	controls, err := complianceClient.ListControl(clientCtx, nil, nil)
