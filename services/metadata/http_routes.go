@@ -673,7 +673,7 @@ func (h HttpHandler) WorkspaceLoadedSampleData(echoCtx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	api.GetMigrationStatusResponse
-//	@Router			/workspace/api/v3/migration/status [get]
+//	@Router			/metadata/api/v3/migration/status [get]
 func (h HttpHandler) GetMigrationStatus(echoCtx echo.Context) error {
 	var mig *model.Migration
 	tx := h.migratorDb.ORM.Model(&model.Migration{}).Where("id = ?", "main").First(&mig)
