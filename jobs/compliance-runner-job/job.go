@@ -403,14 +403,17 @@ func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[
 	regoResultMaps := make([]map[string]any, 0)
 	for _, regoResult := range regoResults {
 		for _, expression := range regoResult.Expressions {
-			if messages, ok := expression.Value.([]map[string]any); ok {
+			if messages, ok := expression.Value.([]any); ok {
 				for _, msg := range messages {
-					msg := msg
-					regoResultMaps = append(regoResultMaps, msg)
+					msgMap, ok := msg.(map[string]any)
+					if !ok {
+						w.logger.Error("failed to parse rego result, output is not an object", zap.Any("regoResult", expression.Value), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID), zap.Uint("job_id", j.ID), zap.String("type", fmt.Sprintf("%T", msg)))
+						return nil, fmt.Errorf("failed to parse rego result output is not an object")
+					}
+					regoResultMaps = append(regoResultMaps, msgMap)
 				}
 			} else {
-				w.logger.Error("failed to parse rego result, output is not a map", zap.Any("regoResult", expression.Value))
-				return nil, fmt.Errorf("failed to parse rego result output is not a map")
+
 			}
 		}
 	}
@@ -436,7 +439,7 @@ func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[
 		zap.String("query_id", j.ExecutionPlan.Query.ID),
 		zap.Int("result_count", len(results.Data)),
 	)
-	
+
 	return &results, nil
 }
 
