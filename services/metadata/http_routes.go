@@ -272,30 +272,131 @@ func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
+//	@Param			query_id	query	string	false	"Query ID to filter with"
+//	@Param			control_id	query	string	false	"Control ID to filter with"
+//	@Param			cursor		query	int		false	"Cursor"
+//	@Param			per_page	query	int		false	"Per Page"
 //	@Success		200	{object}	api.ListQueryParametersResponse
 //	@Router			/metadata/api/v1/query_parameter [get]
 func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
-	_, span := tracer.Start(ctx.Request().Context(), "new_ListQueryParameters", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_ListQueryParameters")
+	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
 
-	queryParams, err := h.db.GetQueryParameters()
+	var cursor, perPage int64
+	var err error
+
+	cursorStr := ctx.QueryParam("cursor")
+	if cursorStr != "" {
+		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	perPageStr := ctx.QueryParam("per_page")
+	if perPageStr != "" {
+		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	queryID := ctx.QueryParam("query_id")
+	controlID := ctx.QueryParam("control_id")
+
+	controls, err := h.complianceClient.ListControl(clientCtx, nil, nil)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		h.logger.Error("error getting query parameters", zap.Error(err))
-		return err
+		h.logger.Error("error listing controls", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "error listing controls")
 	}
-	span.End()
+	namedQueries, err := h.inventoryClient.ListQueriesV2(clientCtx)
+	if err != nil {
+		h.logger.Error("error listing queries", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "error listing queries")
+	}
 
-	result := api.ListQueryParametersResponse{
-		QueryParameters: make([]api.QueryParameter, 0, len(queryParams)),
+	var filteredQueryParams []string
+	if controlID != "" {
+		control, err := h.complianceClient.GetControl(clientCtx, controlID)
+		if err != nil {
+			h.logger.Error("error getting control", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "error getting control")
+		}
+		if control == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "control not found")
+		}
+		for _, param := range control.Query.Parameters {
+			filteredQueryParams = append(filteredQueryParams, param.Key)
+		}
+	} else if queryID != "" {
+		query, err := h.inventoryClient.GetQuery(clientCtx, queryID)
+		if err != nil {
+			h.logger.Error("error getting query", zap.Error(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, "error getting query")
+		}
+		if query == nil {
+			return echo.NewHTTPError(http.StatusNotFound, "query not found")
+		}
+		for _, param := range query.Query.Parameters {
+			filteredQueryParams = append(filteredQueryParams, param.Key)
+		}
 	}
+
+	var queryParams []models.QueryParameterValues
+	if len(filteredQueryParams) > 0 {
+		queryParams, err = h.db.GetQueryParametersByIds(filteredQueryParams)
+		if err != nil {
+			h.logger.Error("error getting query parameters", zap.Error(err))
+			return err
+		}
+	} else {
+		queryParams, err = h.db.GetQueryParameters()
+		if err != nil {
+			h.logger.Error("error getting query parameters", zap.Error(err))
+			return err
+		}
+	}
+
+	parametersMap := make(map[string]*api.QueryParameter)
 	for _, dbParam := range queryParams {
 		apiParam := dbParam.ToAPI()
-		result.QueryParameters = append(result.QueryParameters, apiParam)
+		parametersMap[apiParam.Key] = &apiParam
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	for _, c := range controls {
+		for _, p := range c.Query.Parameters {
+			if _, ok := parametersMap[p.Key]; !ok {
+				parametersMap[p.Key].ControlsCount += 1
+			}
+		}
+	}
+	for _, q := range namedQueries.Items {
+		for _, p := range q.Query.Parameters {
+			if _, ok := parametersMap[p.Key]; !ok {
+				parametersMap[p.Key].QueriesCount += 1
+			}
+		}
+	}
+
+	var items []api.QueryParameter
+	for _, i := range parametersMap {
+		items = append(items, *i)
+	}
+
+	totalCount := len(items)
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Key < items[j].Key
+	})
+	if perPage != 0 {
+		if cursor == 0 {
+			items = utils.Paginate(1, perPage, items)
+		} else {
+			items = utils.Paginate(cursor, perPage, items)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, api.ListQueryParametersResponse{
+		TotalCount: totalCount,
+		Items:      items,
+	})
 }
 
 // PurgeSampleData godoc

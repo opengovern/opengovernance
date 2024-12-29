@@ -77,7 +77,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v3 := e.Group("/api/v3")
 	v3.POST("/queries", httpserver.AuthorizeHandler(h.ListQueriesV2, api.ViewerRole))
 	v3.GET("/queries/filters", httpserver.AuthorizeHandler(h.ListQueriesFilters, api.ViewerRole))
-	v3.GET("/query/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
+	v3.GET("/queries/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api.ViewerRole))
 	v3.GET("/queries/tags", httpserver.AuthorizeHandler(h.ListQueriesTags, api.ViewerRole))
 	v3.POST("/query/run", httpserver.AuthorizeHandler(h.RunQueryByID, api.ViewerRole))
 	v3.GET("/query/async/run/:run_id/result", httpserver.AuthorizeHandler(h.GetAsyncQueryRunResult, api.ViewerRole))
@@ -385,7 +385,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			query_id	path		string	true	"QueryID"
 //	@Success		200			{object}	inventoryApi.NamedQueryItemV2
-//	@Router			/inventory/api/v3/query/{query_id} [get]
+//	@Router			/inventory/api/v3/queries/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 

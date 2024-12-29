@@ -54,6 +54,15 @@ func (db Database) GetQueryParameters() ([]models.QueryParameterValues, error) {
 	return queryParams, nil
 }
 
+func (db Database) GetQueryParametersByIds(ids []string) ([]models.QueryParameterValues, error) {
+	var queryParams []models.QueryParameterValues
+	err := db.orm.Where("key IN ?", ids).Find(&queryParams).Error
+	if err != nil {
+		return nil, err
+	}
+	return queryParams, nil
+}
+
 func (db Database) DeleteQueryParameter(key string) error {
 	return db.orm.Unscoped().Delete(&models.QueryParameterValues{}, "key = ?", key).Error
 }
