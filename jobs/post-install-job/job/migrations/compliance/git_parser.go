@@ -6,6 +6,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/opengovern/opencomply/jobs/post-install-job/config"
 	"github.com/opengovern/opencomply/jobs/post-install-job/job/migrations/inventory"
+	"github.com/opengovern/opencomply/jobs/post-install-job/utils"
 	"io/fs"
 	"os"
 	"path"
@@ -271,12 +272,16 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 						for _, it := range query.IntegrationTypes {
 							integrationTypes = append(integrationTypes, string(it))
 						}
+						listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
+						if err != nil {
+							return err
+						}
 						q := db.Query{
 							ID:              control.ID,
 							QueryToExecute:  query.Query.QueryToExecute,
 							IntegrationType: integrationTypes,
 							PrimaryTable:    query.Query.PrimaryTable,
-							ListOfTables:    query.Query.ListOfTables,
+							ListOfTables:    listOfTables,
 							Engine:          query.Query.Engine,
 							Global:          query.Query.Global,
 						}
@@ -306,12 +311,17 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 						p.QueryID = &control.ID
 					}
 				} else {
+					listOfTables, err := utils.ExtractTableRefsFromQuery(control.Query.QueryToExecute)
+					if err != nil {
+						return err
+					}
+
 					q := db.Query{
 						ID:              control.ID,
 						QueryToExecute:  control.Query.QueryToExecute,
 						IntegrationType: control.IntegrationType,
 						PrimaryTable:    control.Query.PrimaryTable,
-						ListOfTables:    control.Query.ListOfTables,
+						ListOfTables:    listOfTables,
 						Engine:          control.Query.Engine,
 						Global:          control.Query.Global,
 					}
@@ -783,12 +793,18 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 					for _, it := range query.IntegrationTypes {
 						integrationTypes = append(integrationTypes, string(it))
 					}
+
+					listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
+					if err != nil {
+						return err
+					}
+
 					q := models.Query{
 						ID:              obj.ID,
 						QueryToExecute:  query.Query.QueryToExecute,
 						IntegrationType: integrationTypes,
 						PrimaryTable:    query.Query.PrimaryTable,
-						ListOfTables:    query.Query.ListOfTables,
+						ListOfTables:    listOfTables,
 						Engine:          query.Query.Engine,
 						Global:          query.Query.Global,
 					}
@@ -817,11 +833,16 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 					qv.QueryID = &obj.ID
 				}
 			} else {
+				listOfTables, err := utils.ExtractTableRefsFromQuery(obj.Query.QueryToExecute)
+				if err != nil {
+					return err
+				}
+
 				q := models.Query{
 					ID:             obj.ID,
 					QueryToExecute: obj.Query.QueryToExecute,
 					PrimaryTable:   obj.Query.PrimaryTable,
-					ListOfTables:   obj.Query.ListOfTables,
+					ListOfTables:   listOfTables,
 					Engine:         obj.Query.Engine,
 					Global:         obj.Query.Global,
 				}
