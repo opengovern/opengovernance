@@ -182,7 +182,7 @@ func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]
 	hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
-	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*").Preload(clause.Associations).Preload("Tags")
+	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*").Preload(clause.Associations).Preload("Query.Parameters").Preload("Tags")
 
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
