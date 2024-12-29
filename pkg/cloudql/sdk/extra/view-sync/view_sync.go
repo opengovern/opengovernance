@@ -2,6 +2,7 @@ package view_sync
 
 import (
 	"context"
+	"gorm.io/gorm/clause"
 	"os"
 	"strings"
 	"sync"
@@ -132,7 +133,7 @@ func (v *ViewSync) updateViewsInDatabase(ctx context.Context, selfClient *steamp
 
 	var queryViews []models.QueryView
 
-	err := metadataClient.DB().Model(&models.QueryView{}).Find(&queryViews).Error
+	err := metadataClient.DB().Model(&models.QueryView{}).Preload(clause.Associations).Preload("Query.Parameters").Find(&queryViews).Error
 	if err != nil {
 		v.logger.Error("Error fetching query views from metadata", zap.Error(err))
 		v.logger.Sync()
@@ -173,6 +174,11 @@ initLoop:
 			if err != nil {
 				v.logger.Error("Error dropping materialized view", zap.Error(err), zap.String("view", view.ID))
 				v.logger.Sync()
+				continue
+			}
+
+			if view.Query == nil || view.Query.QueryToExecute == "" {
+				v.logger.Error("Error fetching view from database", zap.String("view", view.ID))
 				continue
 			}
 
