@@ -370,14 +370,14 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 
 	for _, c := range controls {
 		for _, p := range c.Query.Parameters {
-			if _, ok := parametersMap[p.Key]; !ok {
+			if _, ok := parametersMap[p.Key]; ok {
 				parametersMap[p.Key].ControlsCount += 1
 			}
 		}
 	}
 	for _, q := range namedQueries.Items {
 		for _, p := range q.Query.Parameters {
-			if _, ok := parametersMap[p.Key]; !ok {
+			if _, ok := parametersMap[p.Key]; ok {
 				parametersMap[p.Key].QueriesCount += 1
 			}
 		}
