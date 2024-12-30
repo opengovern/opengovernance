@@ -152,7 +152,7 @@ func (s *metadataClient) VaultConfigured(ctx *httpclient.Context) (*string, erro
 }
 
 func (s *metadataClient) ReloadViews(ctx *httpclient.Context) error {
-	url := fmt.Sprintf("%s/api/v1/views/reload", s.baseURL)
+	url := fmt.Sprintf("%s/api/v3/views/reload", s.baseURL)
 
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
@@ -164,7 +164,7 @@ func (s *metadataClient) ReloadViews(ctx *httpclient.Context) error {
 }
 
 func (s *metadataClient) GetViewsCheckpoint(ctx *httpclient.Context) (*api.GetViewsCheckpointResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/views/checkpoint", s.baseURL)
+	url := fmt.Sprintf("%s/api/v3/views/checkpoint", s.baseURL)
 	var resp api.GetViewsCheckpointResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
