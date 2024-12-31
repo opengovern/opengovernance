@@ -8,10 +8,12 @@ import (
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 )
 
+type QueryEngine string
+
 const (
-	QueryengineCloudQL      = "cloudql-v0.0.1"
-	QueryEngine_cloudql     = "cloudql"
-	QueryEngine_cloudqlRego = "cloudql-rego"
+	QueryEngineCloudQLLegacy QueryEngine = "cloudql-v0.0.1"
+	QueryEngineCloudQL       QueryEngine = "cloudql"
+	QueryEngineCloudQLRego   QueryEngine = "cloudql-rego"
 )
 
 type BenchmarkAssignment struct {
@@ -111,13 +113,19 @@ type QueryParameter struct {
 
 type Query struct {
 	ID              string             `json:"id" example:"azure_ad_manual_control"`
+	Engine          QueryEngine        `json:"engine" example:"CLOUDQL"`
 	QueryToExecute  string             `json:"queryToExecute" example:"select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"`
 	IntegrationType []integration.Type `json:"integrationType" example:"Azure"`
 	PrimaryTable    *string            `json:"primaryTable" example:"null"`
 	ListOfTables    []string           `json:"listOfTables" example:"null"`
-	Engine          string             `json:"engine" example:"steampipe-v0.5"`
-	Parameters      []QueryParameter   `json:"parameters"`
-	Global          bool               `json:"Global"`
-	CreatedAt       time.Time          `json:"createdAt" example:"2023-06-07T14:00:15.677558Z"`
-	UpdatedAt       time.Time          `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
+
+	// CloudQL Fields
+	Parameters []QueryParameter `json:"parameters"`
+	Global     bool             `json:"Global"`
+
+	// Rego Fields
+	RegoPolicies []string `json:"regoPolicies" example:"null"`
+
+	CreatedAt time.Time `json:"createdAt" example:"2023-06-07T14:00:15.677558Z"`
+	UpdatedAt time.Time `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
 }

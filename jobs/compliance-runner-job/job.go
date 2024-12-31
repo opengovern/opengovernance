@@ -5,48 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"text/template"
-	"time"
-
 	authApi "github.com/opengovern/og-util/pkg/api"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	"github.com/opengovern/opencomply/services/compliance/api"
-	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
+	"strings"
+	"text/template"
 
 	"github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/opengovernance-es-sdk"
 	"github.com/opengovern/og-util/pkg/steampipe"
 	"github.com/opengovern/opencomply/pkg/types"
-	complianceApi "github.com/opengovern/opencomply/services/compliance/api"
 	es2 "github.com/opengovern/opencomply/services/compliance/es"
 	"go.uber.org/zap"
 )
-
-type Caller struct {
-	RootBenchmark      string
-	TracksDriftEvents  bool
-	ParentBenchmarkIDs []string
-	ControlID          string
-	ControlSeverity    types.ComplianceResultSeverity
-}
-
-type ExecutionPlan struct {
-	Callers []Caller
-	Query   complianceApi.Query
-
-	IntegrationID *string
-	ProviderID    *string
-}
-
-type Job struct {
-	ID          uint
-	RetryCount  int
-	ParentJobID uint
-	CreatedAt   time.Time
-
-	ExecutionPlan ExecutionPlan
-}
 
 type JobConfig struct {
 	config        Config
@@ -124,11 +95,12 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 	}
 	var res *steampipe.Result
 
-	if j.ExecutionPlan.Query.Engine == api.QueryengineCloudQL || j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudql {
-		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
-	} else if j.ExecutionPlan.Query.Engine == api.QueryEngine_cloudqlRego {
+	switch j.ExecutionPlan.Query.Engine {
+	case api.QueryEngineCloudQLRego:
 		res, err = w.runRegoWorkerJob(ctx, j, queryParamMap)
-	} else {
+	case api.QueryEngineCloudQLLegacy, api.QueryEngineCloudQL:
+		fallthrough
+	default:
 		res, err = w.runSqlWorkerJob(ctx, j, queryParamMap)
 	}
 
@@ -423,28 +395,53 @@ func (w *Worker) runSqlWorkerJob(ctx context.Context, j Job, queryParamMap map[s
 }
 
 func (w *Worker) runRegoWorkerJob(ctx context.Context, j Job, queryParamMap map[string]string) (*steampipe.Result, error) {
-	ctx2 := &httpclient.Context{Ctx: ctx, UserRole: authApi.AdminRole}
-	ctx2.Ctx = ctx
-	var engine inventoryApi.QueryEngine
-	engine = inventoryApi.QueryEngine_cloudqlRego
-	queryResponse, err := w.inventoryClient.RunQuery(ctx2, inventoryApi.RunQueryRequest{
-		Page: inventoryApi.Page{
-			No:   1,
-			Size: 1000,
-		},
-		Engine: &engine,
-		Query:  &j.ExecutionPlan.Query.QueryToExecute,
-		Sorts:  nil,
-	})
+	regoResults, err := w.regoEngine.Evaluate(ctx, j.ExecutionPlan.Query.RegoPolicies, j.ExecutionPlan.Query.QueryToExecute)
 	if err != nil {
+		w.logger.Error("failed to evaluate rego", zap.Error(err), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID))
 		return nil, err
 	}
 
-	results := &steampipe.Result{
-		Headers: queryResponse.Headers,
-		Data:    queryResponse.Result,
+	regoResultMaps := make([]map[string]any, 0)
+	for _, regoResult := range regoResults {
+		for _, expression := range regoResult.Expressions {
+			if messages, ok := expression.Value.([]any); ok {
+				for _, msg := range messages {
+					msgMap, ok := msg.(map[string]any)
+					if !ok {
+						w.logger.Error("failed to parse rego result, output is not an object", zap.Any("regoResult", expression.Value), zap.String("query_id", j.ExecutionPlan.Query.ID), zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID), zap.Uint("job_id", j.ID), zap.String("type", fmt.Sprintf("%T", msg)))
+						return nil, fmt.Errorf("failed to parse rego result output is not an object")
+					}
+					regoResultMaps = append(regoResultMaps, msgMap)
+				}
+			} else {
+
+			}
+		}
 	}
-	return results, nil
+
+	var results steampipe.Result
+	for _, regoResultMap := range regoResultMaps {
+		if len(results.Headers) == 0 {
+			for k := range regoResultMap {
+				results.Headers = append(results.Headers, k)
+			}
+		}
+		var record []any
+		for _, header := range results.Headers {
+			record = append(record, regoResultMap[header])
+		}
+		results.Data = append(results.Data, record)
+	}
+
+	w.logger.Info("runRegoWorkerJob QueryOutput",
+		zap.Uint("job_id", j.ID),
+		zap.Int("caller_count", len(j.ExecutionPlan.Callers)),
+		zap.String("query", j.ExecutionPlan.Query.QueryToExecute),
+		zap.String("query_id", j.ExecutionPlan.Query.ID),
+		zap.Int("result_count", len(results.Data)),
+	)
+
+	return &results, nil
 }
 
 type ComplianceResultsMultiGetResponse struct {

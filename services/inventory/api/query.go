@@ -7,8 +7,8 @@ import (
 type QueryEngine string
 
 const (
-	QueryEngine_cloudql     = "cloudql"
-	QueryEngine_cloudqlRego = "cloudql-rego"
+	QueryEngineCloudQL     = "cloudql"
+	QueryEngineCloudQLRego = "cloudql-rego"
 )
 
 type RunQueryRequest struct {
