@@ -53,20 +53,6 @@ import KButton from '@cloudscape-design/components/button'
 import KeyValuePairs from '@cloudscape-design/components/key-value-pairs'
 
 
-const jobTypes = [
-    {
-        label: 'Discovery',
-        value: 'discovery',
-    },
-    {
-        label: 'Compliance',
-        value: 'compliance',
-    },
-    {
-        label: 'Analytics',
-        value: 'analytics',
-    },
-]
 const ShowHours = [
     {
         label: '1h',
@@ -141,26 +127,9 @@ export default function ComplianceJobs() {
         if (filter) {
             // @ts-ignore
 
-            if (filter.value == '1') {
-                setDate({
-                    key: 'previous-6-hours',
-                    amount: 6,
-                    unit: 'hour',
-                    type: 'relative',
-                })
-                setQueries({
-                    tokens: [
-                        {
-                            propertyKey: 'job_type',
-                            value: 'compliance',
-                            operator: '=',
-                        },
-                    ],
-                    operation: 'and',
-                })
-            }
+           
             // @ts-ignore
-            else if (filter.value == '2') {
+             if (filter.value == '2') {
                 setDate({
                     key: 'previous-6-hours',
                     amount: 6,
@@ -169,11 +138,7 @@ export default function ComplianceJobs() {
                 })
                 setQueries({
                     tokens: [
-                        {
-                            propertyKey: 'job_type',
-                            value: 'compliance',
-                            operator: '=',
-                        },
+                       
                         {
                             propertyKey: 'job_status',
                             value: 'FAILED',
@@ -182,29 +147,7 @@ export default function ComplianceJobs() {
                     ],
                     operation: 'and',
                 })
-            } else if (filter.value == '3') {
-                setDate({
-                    key: 'previous-7-days',
-                    amount: 7,
-                    unit: 'day',
-                    type: 'relative',
-                })
-                setQueries({
-                    tokens: [
-                        {
-                            propertyKey: 'job_type',
-                            value: 'discovery',
-                            operator: '=',
-                        },
-                        {
-                            propertyKey: 'job_status',
-                            value: 'FAILED',
-                            operator: '=',
-                        },
-                    ],
-                    operation: 'and',
-                })
-            }
+            } 
         }
     }, [filter])
    
@@ -245,13 +188,11 @@ export default function ComplianceJobs() {
         const api = new Api()
         api.instance = AxiosAPI
         const status_filter = []
-        const jobType_filter = []
+        const jobType_filter = ['compliance']
         queries.tokens.map((item) => {
             if (item.propertyKey == 'job_status') {
                 status_filter.push(item.value)
-            } else if (item.propertyKey == 'job_type') {
-                jobType_filter.push(item.value)
-            }
+            } 
         })
         let body = {
             pageStart: page * 15,
@@ -294,12 +235,7 @@ export default function ComplianceJobs() {
                         value: item.value,
                     })
                 })
-                jobTypes?.map((item) => {
-                    temp_option.push({
-                        propertyKey: 'job_type',
-                        value: item.value,
-                    })
-                })
+              
                 setPropertyOptions(temp_option)
 
                 if (resp.data.jobs) {
@@ -359,6 +295,16 @@ export default function ComplianceJobs() {
         // { title: 'Account Name', value: clickedJob?.connectionProviderName },
         { title: 'Status', value: clickedJob?.status },
         { title: 'Failure Reason', value: clickedJob?.failureReason },
+        {
+            title: 'Report link',
+            value: (
+                <>
+                    <Link href={`/compliance/${clickedJob?.title}/report/${clickedJob?.id}`}>
+                        {clickedJob?.title}
+                    </Link>
+                </>
+            ),
+        },
     ]
 
     return (
@@ -459,7 +405,7 @@ export default function ComplianceJobs() {
                                 cell: (item) => <>{item.title}</>,
                                 sortingField: 'title',
                                 isRowHeader: true,
-                                maxWidth: 100,
+                                maxWidth: 150,
                             },
                             {
                                 id: 'status',
@@ -522,7 +468,7 @@ export default function ComplianceJobs() {
                                 },
                                 sortingField: 'status',
                                 isRowHeader: true,
-                                maxWidth: 100,
+                                maxWidth: 50,
                             },
                             {
                                 id: 'updatedAt',
@@ -541,11 +487,11 @@ export default function ComplianceJobs() {
                         ]}
                         columnDisplay={[
                             { id: 'id', visible: true },
-                            { id: 'updatedAt', visible: true },
                             { id: 'title', visible: true },
-                            { id: 'type', visible: true },
+                            { id: 'type', visible: false },
                             { id: 'status', visible: true },
                             { id: 'createdAt', visible: true },
+                            { id: 'updatedAt', visible: true },
                         ]}
                         enableKeyboardNavigation
                         // @ts-ignore
@@ -585,18 +531,12 @@ export default function ComplianceJobs() {
                                         setFilter(detail.selectedOption)
                                     }
                                     options={[
-                                        {
-                                            label: 'Recent Compliance Jobs',
-                                            value: '1',
-                                        },
+                                       
                                         {
                                             label: 'Failing Compliance Jobs',
                                             value: '2',
                                         },
-                                        {
-                                            label: 'All Discovery Jobs',
-                                            value: '3',
-                                        },
+
                                     ]}
                                 />
                                 <PropertyFilter
@@ -619,12 +559,7 @@ export default function ComplianceJobs() {
                                     // @ts-ignore
 
                                     filteringProperties={[
-                                        {
-                                            key: 'job_type',
-                                            operators: ['='],
-                                            propertyLabel: 'Job Type',
-                                            groupValuesLabel: 'Job Type values',
-                                        },
+                                       
                                         {
                                             key: 'job_status',
                                             operators: ['='],
@@ -842,7 +777,12 @@ export default function ComplianceJobs() {
                                         onClick={() =>
                                             setJobTypeFilter(jobType.value)
                                         }
-                                        checked={
+                                         {
+                                            key: 'job_type',
+                                            operators: ['='],
+                                            propertyLabel: 'Job Type',
+                                            groupValuesLabel: 'Job Type values',
+                                        },checked={
                                             jobTypeFilter === jobType.value
                                         }
                                     >
