@@ -77,7 +77,7 @@ export default function SettingsParameters() {
 
         axios
             .get(
-                `${url}/main/metadata/api/v1/query_parameter?per_page=10&cursor=${page}`,
+                `${url}/main/metadata/api/v1/query_parameter?per_page=15&cursor=${page}`,
                 config
             )
             .then((res) => {
@@ -226,7 +226,7 @@ export default function SettingsParameters() {
                 pagination={
                     <Pagination
                         currentPageIndex={page}
-                        pagesCount={Math.ceil(total / 10)}
+                        pagesCount={Math.ceil(total / 15)}
                         onChange={({ detail }) =>
                             setPage(detail.currentPageIndex)
                         }
