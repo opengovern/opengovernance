@@ -1146,7 +1146,7 @@ func (h *HttpHandler) RunQueryByID(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Compliance query is empty")
 		}
 		query = control.Query.QueryToExecute
-		engineStr = control.Query.Engine
+		engineStr = string(control.Query.Engine)
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "Runnable Type is not valid. Options: named_query, control")
 	}
