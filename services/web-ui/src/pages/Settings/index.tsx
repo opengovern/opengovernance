@@ -176,13 +176,22 @@ export default function Settings() {
                         id: '0',
                     },
                     {
+                        label: 'Parameters',
+                        content: (
+                            <>
+                                <SettingsParameters />
+                            </>
+                        ),
+                        id: '1',
+                    },
+                    {
                         label: 'Authentication',
                         content: (
                             <>
                                 <SettingsMembers />
                             </>
                         ),
-                        id: '1',
+                        id: '2',
                     },
                     {
                         label: 'SSO Configuration',
@@ -191,7 +200,7 @@ export default function Settings() {
                                 <SettingsConnectors />
                             </>
                         ),
-                        id: '2',
+                        id: '3',
                     },
                     {
                         label: 'API',
@@ -200,7 +209,7 @@ export default function Settings() {
                                 <SettingsWorkspaceAPIKeys />
                             </>
                         ),
-                        id: '3',
+                        id: '4',
                     },
                 ]}
             />
