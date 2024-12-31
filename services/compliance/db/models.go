@@ -295,7 +295,7 @@ type Query struct {
 	Global       bool
 
 	// Rego Fields
-	RegoPolicies []string `gorm:"type:text[]"`
+	RegoPolicies pq.StringArray `gorm:"type:text[]"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
