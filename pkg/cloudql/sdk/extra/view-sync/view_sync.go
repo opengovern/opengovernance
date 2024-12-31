@@ -2,6 +2,7 @@ package view_sync
 
 import (
 	"context"
+	"gorm.io/gorm/clause"
 	"os"
 	"strings"
 	"sync"
@@ -71,6 +72,8 @@ func (v *ViewSync) pullBasedViewSync(ctx context.Context) {
 }
 
 func (v *ViewSync) updateViews(ctx context.Context) {
+	v.logger.Info("refreshing views in database")
+
 	v.updateLock.Lock()
 	defer v.updateLock.Unlock()
 	selfClient, err := steampipesdk.NewSelfClient(ctx)
@@ -126,9 +129,11 @@ $$ LANGUAGE plpgsql;`
 }
 
 func (v *ViewSync) updateViewsInDatabase(ctx context.Context, selfClient *steampipesdk.SelfClient, metadataClient pg.Client) {
+	v.logger.Info("updating views in database")
+
 	var queryViews []models.QueryView
 
-	err := metadataClient.DB().Find(&queryViews).Error
+	err := metadataClient.DB().Model(&models.QueryView{}).Preload(clause.Associations).Preload("Query.Parameters").Find(&queryViews).Error
 	if err != nil {
 		v.logger.Error("Error fetching query views from metadata", zap.Error(err))
 		v.logger.Sync()
@@ -155,6 +160,7 @@ func (v *ViewSync) updateViewsInDatabase(ctx context.Context, selfClient *steamp
 initLoop:
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
+		v.logger.Info("query views", zap.Any("query views", queryViews), zap.Strings("ids", sortedViewIds))
 
 		for _, viewId := range sortedViewIds {
 			view, ok := qvMap[viewId]
@@ -171,9 +177,15 @@ initLoop:
 				continue
 			}
 
+			if view.Query == nil || view.Query.QueryToExecute == "" {
+				v.logger.Error("Error fetching view from database", zap.String("view", view.ID))
+				continue
+			}
+
 			query := "CREATE MATERIALIZED VIEW IF NOT EXISTS " + view.ID + " AS " + view.Query.QueryToExecute
 			_, err = selfClient.GetConnection().Exec(ctx, query)
-			if strings.Contains(err.Error(), "SQLSTATE 42P01") {
+			if err != nil && strings.Contains(err.Error(), "SQLSTATE 42P01") {
+				v.logger.Error("Error creating materialized view", zap.Error(err), zap.String("view", view.ID))
 				continue initLoop
 			}
 			if err != nil {

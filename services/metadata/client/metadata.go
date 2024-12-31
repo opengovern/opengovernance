@@ -23,6 +23,7 @@ type MetadataServiceClient interface {
 	SetQueryParameter(ctx *httpclient.Context, request api.SetQueryParameterRequest) error
 	VaultConfigured(ctx *httpclient.Context) (*string, error)
 	GetViewsCheckpoint(ctx *httpclient.Context) (*api.GetViewsCheckpointResponse, error)
+	ReloadViews(ctx *httpclient.Context) error
 	GetAbout(ctx *httpclient.Context) (*api.About, error)
 }
 
@@ -150,8 +151,20 @@ func (s *metadataClient) VaultConfigured(ctx *httpclient.Context) (*string, erro
 	return &status, nil
 }
 
+func (s *metadataClient) ReloadViews(ctx *httpclient.Context) error {
+	url := fmt.Sprintf("%s/api/v3/views/reload", s.baseURL)
+
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPut, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return echo.NewHTTPError(statusCode, err.Error())
+		}
+		return err
+	}
+	return nil
+}
+
 func (s *metadataClient) GetViewsCheckpoint(ctx *httpclient.Context) (*api.GetViewsCheckpointResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/views/checkpoint", s.baseURL)
+	url := fmt.Sprintf("%s/api/v3/views/checkpoint", s.baseURL)
 	var resp api.GetViewsCheckpointResponse
 	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {

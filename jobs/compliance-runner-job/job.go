@@ -97,7 +97,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 		return 0, err
 	}
 	queryParamMap := make(map[string]string)
-	for _, qp := range queryParams.QueryParameters {
+	for _, qp := range queryParams.Items {
 		queryParamMap[qp.Key] = qp.Value
 	}
 
@@ -109,6 +109,7 @@ func (w *Worker) RunJob(ctx context.Context, j Job) (int, error) {
 				zap.Stringp("integration_id", j.ExecutionPlan.IntegrationID),
 				zap.Uint("job_id", j.ID),
 			)
+			w.logger.Info("query params", zap.Any("map", queryParamMap), zap.Any("resp", queryParams))
 			return 0, fmt.Errorf("required query parameter not found: %s for query: %s", param.Key, j.ExecutionPlan.Query.ID)
 		}
 		if _, ok := queryParamMap[param.Key]; !ok && !param.Required {

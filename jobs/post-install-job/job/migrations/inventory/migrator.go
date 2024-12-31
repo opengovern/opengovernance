@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/goccy/go-yaml"
+	utils "github.com/opengovern/opencomply/jobs/post-install-job/utils"
 	"io/fs"
 	"os"
 	"path"
@@ -284,19 +285,24 @@ func populateFinderItem(logger *zap.Logger, tx *gorm.DB, path string, info fs.Fi
 			Required: qp.Required,
 			QueryID:  dbMetric.ID,
 		})
-		if qp.DefaultValue != nil {
+		if qp.DefaultValue != "" {
 			queryParamObj := models.QueryParameterValues{
 				Key:   qp.Key,
-				Value: *qp.DefaultValue,
+				Value: qp.DefaultValue,
 			}
 			QueryParameters = append(QueryParameters, queryParamObj)
 		}
+	}
+	listOfTables, err := utils.ExtractTableRefsFromQuery(item.Query.QueryToExecute)
+	if err != nil {
+		logger.Error("failed to extract table refs from query", zap.String("query-id", dbMetric.ID), zap.Error(err))
+		listOfTables = item.Query.ListOfTables
 	}
 	query := inventory.Query{
 		ID:             dbMetric.ID,
 		QueryToExecute: item.Query.QueryToExecute,
 		PrimaryTable:   item.Query.PrimaryTable,
-		ListOfTables:   item.Query.ListOfTables,
+		ListOfTables:   listOfTables,
 		Engine:         item.Query.Engine,
 		Parameters:     queryParams,
 		Global:         item.Query.Global,

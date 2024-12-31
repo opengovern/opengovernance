@@ -844,7 +844,10 @@ func (db Database) ListComplianceTagKeysWithPossibleValues(ctx context.Context) 
 
 func (db Database) ListControls(ctx context.Context, controlIDs []string, tags map[string][]string) ([]Control, error) {
 	var s []Control
-	tx := db.Orm.WithContext(ctx).Model(&Control{}).Preload(clause.Associations)
+	tx := db.Orm.WithContext(ctx).Model(&Control{}).
+		Preload(clause.Associations).
+		Preload("Query.Parameters")
+
 	if len(controlIDs) > 0 {
 		tx = tx.Where("id IN ?", controlIDs)
 	}
