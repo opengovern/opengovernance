@@ -28,6 +28,7 @@ import (
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	client2 "github.com/opengovern/opencomply/services/inventory/client"
 	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
+	complianceapi "github.com/opengovern/opencomply/services/compliance/api"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -60,7 +61,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	queryParameter := v1.Group("/query_parameter")
 	queryParameter.POST("", httpserver.AuthorizeHandler(h.SetQueryParameter, api3.AdminRole))
-	queryParameter.GET("", httpserver.AuthorizeHandler(h.ListQueryParameters, api3.ViewerRole))
+	queryParameter.POST("", httpserver.AuthorizeHandler(h.ListQueryParameters, api3.ViewerRole))
+	queryParameter.GET("/key", httpserver.AuthorizeHandler(h.GetQueryParameter, api3.ViewerRole))
 
 	v3 := r.Group("/api/v3")
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.ViewerRole))
@@ -279,30 +281,25 @@ func (h HttpHandler) SetQueryParameter(ctx echo.Context) error {
 //	@Param			cursor		query	int		false	"Cursor"
 //	@Param			per_page	query	int		false	"Per Page"
 //	@Success		200	{object}	api.ListQueryParametersResponse
-//	@Router			/metadata/api/v1/query_parameter [get]
+//	@Router			/metadata/api/v1/query_parameter [post]
 func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
 
 	var cursor, perPage int64
 	var err error
-
-	cursorStr := ctx.QueryParam("cursor")
-	if cursorStr != "" {
-		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-	perPageStr := ctx.QueryParam("per_page")
-	if perPageStr != "" {
-		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
-		if err != nil {
-			return err
-		}
+	var request api.ListQueryParametersRequest
+	if err := ctx.Bind(&request); err != nil {
+		ctx.Logger().Errorf("bind the request: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	queryID := ctx.QueryParam("query_id")
-	controlID := ctx.QueryParam("control_id")
+	cursor = request.Cursor
+	perPage = request.PerPage
+
+	
+
+	Queries := request.Queries
+	Controls := request.Controls
 
 	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := complianceClient.NewComplianceClient(complianceURL)
@@ -321,20 +318,24 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	}
 
 	var filteredQueryParams []string
-	if controlID != "" {
-		control, err := complianceClient.GetControl(clientCtx, controlID)
+	if Controls !=nil {
+		all_control, err := complianceClient.ListControl(clientCtx, Controls,nil)
 		if err != nil {
 			h.logger.Error("error getting control", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting control")
 		}
-		if control == nil {
+		if all_control == nil {
 			return echo.NewHTTPError(http.StatusNotFound, "control not found")
 		}
-		for _, param := range control.Query.Parameters {
-			filteredQueryParams = append(filteredQueryParams, param.Key)
-		}
-	} else if queryID != "" {
-		query, err := inventoryClient.GetQuery(clientCtx, queryID)
+		for _, control := range all_control {
+			for _, param := range control.Query.Parameters {
+				filteredQueryParams = append(filteredQueryParams, param.Key)
+			}
+	}
+	} else if Queries != nil {
+		// TODO: Fix this part and write new client on inventory
+		for _, query := range Queries {
+		query, err := inventoryClient.GetQuery(clientCtx, query)
 		if err != nil {
 			h.logger.Error("error getting query", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting query")
@@ -345,6 +346,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 		for _, param := range query.Query.Parameters {
 			filteredQueryParams = append(filteredQueryParams, param.Key)
 		}
+	}
 	}
 
 	var queryParams []models.QueryParameterValues
@@ -405,6 +407,68 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 		Items:      items,
 	})
 }
+
+// GetQueryParameter godoc
+//
+//	@Summary		Get query parameter
+//	@Description	Returns the query parameter for the given key
+//	@Security		BearerToken
+//	@Tags			metadata
+//	@Produce		json
+//	@Param			id	path	string	true	"ID"
+//	@Success		200	{object}	models.QueryParameterValues
+//	@Router			/metadata/api/v1/query_parameter/{id} [get]
+func (h HttpHandler) GetQueryParameter(ctx echo.Context) error {
+	key := ctx.Param("key")
+	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
+	
+	
+	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	complianceClient := complianceClient.NewComplianceClient(complianceURL)
+	inventoryURL := strings.ReplaceAll(h.cfg.Inventory.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
+	inventoryClient := inventoryClient.NewInventoryServiceClient(inventoryURL)
+
+	controls, err := complianceClient.ListControl(clientCtx, nil, nil)
+	if err != nil {
+		h.logger.Error("error listing controls", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "error listing controls")
+	}
+	namedQueries, err := inventoryClient.ListQueriesV2(clientCtx, nil)
+	if err != nil {
+		h.logger.Error("error listing queries", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "error listing queries")
+	}
+	
+	queryParam, err := h.db.GetQueryParameter(key)
+		if err != nil {
+			h.logger.Error("error getting query parameters", zap.Error(err))
+			return err
+		}
+	var controlsList []complianceapi.Control
+	var queriesList []inventoryApi.NamedQueryItemV2
+	for _, c := range controls {
+		for _, p := range c.Query.Parameters {
+			if p.Key == key {
+				controlsList = append(controlsList, c)
+			}
+			
+		}
+	}
+	for _, q := range namedQueries.Items {
+		for _, p := range q.Query.Parameters {
+			if p.Key == key {
+				queriesList = append(queriesList, q)
+			}
+		}
+	}
+	return ctx.JSON(http.StatusOK, api.GetQueryParamDetailsResponse{
+		Key: key,
+		Value: queryParam.Value,
+		Controls: controlsList,
+		Queries: queriesList,
+	})
+}
+
 
 // PurgeSampleData godoc
 //
