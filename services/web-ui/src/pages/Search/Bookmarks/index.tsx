@@ -380,7 +380,7 @@ axios
             {isLoading ? (
                 <Spinner />
             ) : (
-                <>
+                <div className='flex flex-col'>
                     <Flex
                         className="w-full mb-3 mt-2 gap-2 flex-wrap"
                         flexDirection="row"
@@ -453,7 +453,9 @@ axios
                             loading={isLoading}
                         /> */}
                     </Flex>
-                    <Flex className="gap-4 flex-wrap">
+                    <Flex className="gap-4 flex-wrap justify-start items-start"
+                        style={{flex: "1 1 0"}}
+                    >
                         {rows?.length === 0 && (
                             <>
                                 <Spinner className="mt-2" />
@@ -475,6 +477,7 @@ axios
                             })
                             .map((q, i) => (
                                 <div
+                                className='h-full'
                                     style={{
                                         "width": `calc(calc(100% - ${
                                             rows.length >= 3 ? '2' : '1'
@@ -500,7 +503,7 @@ axios
                                 </div>
                             ))}
                     </Flex>
-                </>
+                </div>
             )}
             {error && (
                 <Flex
