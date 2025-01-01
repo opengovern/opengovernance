@@ -1803,9 +1803,16 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 	}
 
 	var jobsResults []api.GetDescribeJobsHistoryResponse
+	var startTime, endTime *time.Time
+	if request.Interval != nil {
+		startTime, endTime, _ = parseTimeInterval(*request.Interval)
+	} else {
+		startTime = &request.StartTime
+		endTime = request.EndTime
+	}	
 
 	jobs, err := h.DB.ListDescribeJobsByFilters(nil, connectionIDs, request.ResourceType,
-		request.DiscoveryType, request.JobStatus, &request.StartTime, request.EndTime)
+		request.DiscoveryType, request.JobStatus, startTime, endTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

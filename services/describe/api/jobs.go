@@ -245,6 +245,7 @@ type ListDescribeJobsRequest struct {
 	ResourceType    []string                `json:"resource_type"`
 	DiscoveryType   []string                `json:"discovery_type"`
 	JobStatus       []string                `json:"job_status"`
+	Interval 	  *string                 `json:"interval"`
 	StartTime       time.Time               `json:"start_time"`
 	EndTime         *time.Time              `json:"end_time"`
 	SortBy          *string                 `json:"sort_by"`
