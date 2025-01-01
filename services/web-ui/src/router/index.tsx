@@ -48,6 +48,7 @@ import SearchLanding from '../pages/Search/landing'
 import TypeDetail from '../pages/Integrations/TypeDetailNew'
 import EvaluateDetail from '../pages/Governance/Compliance/NewBenchmarkSummary/EvaluateTable/EvaluateDetail/inde'
 import Tasks from '../pages/Tasks'
+import TaskDetail from '../pages/Tasks/TaskDetail'
 
 const authRoutes = [
     // {
@@ -439,6 +440,11 @@ const authRoutes = [
         key: 'Tasks',
         path: '/tasks',
         element: <Tasks />,
+    },
+    {
+        key: 'Tasks',
+        path: '/tasks/:id',
+        element: <TaskDetail />,
     },
     // {
     //     key: 'Search Main',

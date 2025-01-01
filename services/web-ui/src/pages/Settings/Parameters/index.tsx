@@ -53,6 +53,7 @@ export default function SettingsParameters() {
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(false)
     const [selectedItem, setSelectedItem] = useState<any>()
+    const [selected, setSelected] = useState<any>()
     const [open, setOpen] = useState(false)
     const [editValue, setEditValue] = useState({
         key: '',
@@ -134,7 +135,7 @@ export default function SettingsParameters() {
             })
     }
      const GetParamDetail = (key: string) => {
-        //  setLoading(true)
+         setLoading(true)
          let url = ''
          if (window.location.origin === 'http://localhost:3000') {
              url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -177,11 +178,12 @@ export default function SettingsParameters() {
             header="Parameter Detail"
         >
             <KeyValuePairs
+                columns={4}
                 items={[
                     { label: 'Key', value: selectedItem?.key },
                     { label: 'Value', value: selectedItem?.value },
-                    { label: 'Using control count', value: selectedItem?.controls_count },
-                    { label: 'Using query count', value: selectedItem?.queries_count },
+                    { label: 'Using control count', value: selected?.controls_count },
+                    { label: 'Using query count', value: selected?.queries_count },
                 ]}
             />
 
@@ -192,6 +194,7 @@ export default function SettingsParameters() {
                 onRowClick={(event) => {
                     const row = event.detail.item
                     GetParamDetail(row.key)
+                    setSelected(row)
                 }}
                 columnDefinitions={[
                     {

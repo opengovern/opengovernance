@@ -56,7 +56,6 @@ export default function Tasks() {
    },[pageNo])
    return (
        <>
-         
            {/* <TopHeader /> */}
            {/* <Grid numItems={3} className="gap-4 mb-10">
                 <OnboardCard
@@ -130,13 +129,11 @@ export default function Tasks() {
                            <div className="p-4 sm:p-6 lg:p-8">
                                <main>
                                    <div className="flex items-center justify-between">
-                                      
-                                       <div className="flex items-center space-x-2">
-                                          
-                                       </div>
+                                       <div className="flex items-center space-x-2"></div>
                                    </div>
                                    <div className="flex items-center w-full">
                                        <Cards
+                                        className="w-full"
                                            ariaLabels={{
                                                itemSelectionLabel: (e, t) =>
                                                    `select `,
@@ -146,7 +143,6 @@ export default function Tasks() {
                                            onSelectionChange={({ detail }) => {
                                                const connector =
                                                    detail?.selectedItems[0]
-                                             
                                            }}
                                            selectedItems={[]}
                                            cardDefinition={{
@@ -154,15 +150,9 @@ export default function Tasks() {
                                                    <Link
                                                        className="w-100"
                                                        onClick={() => {
-                                                           // if (item.tier === 'Community') {
-                                                           //     navigate(
-                                                           //         '/integrations/' +
-                                                           //             item.schema_id +
-                                                           //             '/schema'
-                                                           //     )
-                                                           // } else {
-                                                           //     // setOpen(true);
-                                                           // }
+                                                              navigate(
+                                                                `/tasks/${item.id}`
+                                                              )
                                                        }}
                                                    >
                                                        <div className="w-100 flex flex-row justify-between">
@@ -177,13 +167,16 @@ export default function Tasks() {
                                                    </Link>
                                                ),
                                                sections: [
-                                                   
                                                    {
                                                        id: 'description',
                                                        header: (
                                                            <>
                                                                <div className="flex justify-between">
-                                                                   <span>{'Description'}</span>
+                                                                   <span>
+                                                                       {
+                                                                           'Description'
+                                                                       }
+                                                                   </span>
                                                                </div>
                                                            </>
                                                        ),
@@ -191,28 +184,29 @@ export default function Tasks() {
                                                            <>
                                                                <div className="flex justify-between">
                                                                    <span className="max-w-60">
-                                                                       {item.description}
+                                                                       {
+                                                                           item.description
+                                                                       }
                                                                    </span>
-                                                                   
                                                                </div>
                                                            </>
                                                        ),
                                                    },
-                                                 
                                                ],
                                            }}
                                            cardsPerRow={[
                                                { cards: 1 },
+                                               { minWidth: 540, cards: 2 },
                                                { minWidth: 750, cards: 3 },
-                                               { minWidth: 680, cards: 2 },
                                            ]}
                                            // @ts-ignore
-                                           items={tasks?.map((type :any) => {
+                                           items={tasks?.map((type: any) => {
                                                return {
                                                    id: type.id,
-                                                    name: type.name,
-                                                   description: type.Description,
-                                                   
+                                                   name: type.name,
+                                                   description:
+                                                       type.description,
+
                                                    // schema_id: type?.schema_ids[0],
                                                    // SourceCode: type.SourceCode,
                                                }
@@ -235,7 +229,6 @@ export default function Tasks() {
                                                </Box>
                                            }
                                        />
-                                     
                                    </div>
                                </main>
                            </div>
@@ -248,7 +241,6 @@ export default function Tasks() {
                            }}
                        />
                    </Flex>
-              
                </>
            )}
        </>
