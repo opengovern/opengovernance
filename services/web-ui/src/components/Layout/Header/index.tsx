@@ -388,7 +388,7 @@ export default function TopHeader({
     document.title = `${mainPage()} `
 
     return (
-        <div className="px-12 pl-48 z-10 absolute  top-0  left-0 w-full flex h-16 items-center justify-center gap-x-4 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 shadow-sm">
+        <div className="px-12 2xl:pl-48 z-10 absolute  top-0  left-0 w-full flex h-16 items-center justify-center gap-x-4 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 shadow-sm">
             <Flex className="">
                 {subPages().length > 0 ? (
                     <Flex justifyContent="start" className="w-fit">

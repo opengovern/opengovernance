@@ -368,7 +368,7 @@ export default function Integrations() {
                                                             item?.count
                                                                 ? item.count
                                                                 : '--',
-                                                        width: 50,
+                                                        width: 100,
                                                     },
                                                     // {
                                                     //   id: "tier",
@@ -386,8 +386,8 @@ export default function Integrations() {
                                             }}
                                             cardsPerRow={[
                                                 { cards: 1 },
-                                                { minWidth: 750, cards: 3 },
-                                                { minWidth: 680, cards: 2 },
+                                                { minWidth: 320, cards: 2 },
+                                                { minWidth: 700, cards: 3 },
                                             ]}
                                             // @ts-ignore
                                             items={connectorList?.map(

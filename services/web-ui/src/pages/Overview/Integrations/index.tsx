@@ -291,8 +291,8 @@ export default function Integrations({ height }: IQuery) {
                 </div>
             </Modal>
             <Card
-                className="h-full w-3/4 overflow-scroll no-scrollbar"
-                style={{ maxHeight: `${height}px` }}
+                className="h-full 2xl:w-3/4 sm:w-full overflow-scroll no-scrollbar"
+               
             >
                 <Flex justifyContent="between" alignItems="center">
                     <Flex justifyContent="start" className="gap-2 ">
@@ -546,7 +546,7 @@ export default function Integrations({ height }: IQuery) {
                                 header: 'Integrations',
                                 content: (item) =>
                                     item?.count ? item.count : '--',
-                                width: 50,
+                                width: 100,
                             },
                             // {
                             //   id: "tier",

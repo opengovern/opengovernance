@@ -99,7 +99,7 @@ export default function BenchmarkCards({ benchmark, all,loading }: IComplianceCa
                 cardDefinition={{
                     header: (item) => (
                         <Link
-                            className="mb-10"
+                            className="mb-10 w-full"
                             onClick={(e) => {
                                 e.preventDefault()
                                 // console.log(item.id)
@@ -108,9 +108,9 @@ export default function BenchmarkCards({ benchmark, all,loading }: IComplianceCa
                             href={`./compliance/${item.id}`}
                             fontSize="heading-m"
                         >
-                            <Flex className="w-full" justifyContent="between" alignItems='center'>
+                            <Flex className="w-full flex-row 2xl:flex-nowrap sm:flex-wrap  gap-2" justifyContent="between" alignItems='center'>
                                 <Flex className='w-full min-w-fit' justifyContent='start'>{truncate(item.name)}</Flex>
-                                <Flex justifyContent="end" className="gap-2 w-full">
+                                <Flex  className="gap-2 w-full 2xl:justify-end sm:justify-start">
                                     {item?.connectors?.map((sub) => {
                                         return (
                                             <>

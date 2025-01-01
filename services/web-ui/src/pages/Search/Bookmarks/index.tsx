@@ -382,7 +382,7 @@ axios
             ) : (
                 <>
                     <Flex
-                        className="w-full mb-3 mt-2 gap-2"
+                        className="w-full mb-3 mt-2 gap-2 flex-wrap"
                         flexDirection="row"
                         justifyContent="start"
                         alignItems="center"
@@ -453,10 +453,12 @@ axios
                             loading={isLoading}
                         /> */}
                     </Flex>
-                    <Grid className="gap-4" numItems={3}>
-                        {rows?.length === 0 && (<>
-                            <Spinner className='mt-2' />
-                        </>)}
+                    <Flex className="gap-4 flex-wrap">
+                        {rows?.length === 0 && (
+                            <>
+                                <Spinner className="mt-2" />
+                            </>
+                        )}
                         {rows
                             ?.sort((a, b) => {
                                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -472,7 +474,15 @@ axios
                                 return 0
                             })
                             .map((q, i) => (
-                                <>
+                                <div
+                                    style={{
+                                        "width": `calc(calc(100% - ${
+                                            rows.length >= 3 ? '2' : '1'
+                                        }rem) / ${
+                                            rows.length >= 3 ? '3' : rows.length
+                                        })`,
+                                    }}
+                                >
                                     <UseCaseCard
                                         // @ts-ignore
                                         title={q?.title}
@@ -487,9 +497,9 @@ axios
                                         }}
                                         tag="tag1"
                                     />
-                                </>
+                                </div>
                             ))}
-                    </Grid>
+                    </Flex>
                 </>
             )}
             {error && (

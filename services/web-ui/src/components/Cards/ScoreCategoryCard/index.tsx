@@ -58,14 +58,14 @@ export default function ScoreCategoryCard({
             }
             className={` ${
                 varient === 'default'
-                    ? 'gap-6 px-8 py-8 rounded-xl'
+                    ? 'gap-6 2xl:px-8 sm:px-4 py-8 rounded-xl'
                     : 'pl-5 pr-4 py-6 rounded-lg'
             } ${
                 varient === 'default' ? 'items-center' : 'items-start'
             } flex bg-white dark:bg-openg-950 shadow-sm  hover:shadow-lg hover:cursor-pointer`}
         >
             <Flex className="relative w-fit">
-                <ProgressCircle color={color} value={percentage} size="md">
+                <ProgressCircle color={color} value={percentage} size="md" >
                     <Text>{percentage.toFixed(1)}%</Text>
                 </ProgressCircle>
             </Flex>
