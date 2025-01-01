@@ -503,19 +503,18 @@ const {
                                                 Frameworks.
                                             </p>
                                             <Grid
-                                                numItemsMd={4}
-                                                numItemsLg={4}
-                                                className="gap-[30px] mt-6 w-full justify-items-center"
+                                                    numItems={window.innerWidth > 1440 ? 4 : 2}
+                                                className="2xl:gap-[30px] sm: gap-10 mt-6 w-full justify-items-center"
                                             >
                                                 {isLoading || !response
                                                     ? [1, 2, 3, 4].map((i) => (
-                                                          <Flex className="gap-6 px-8 py-8 bg-white rounded-xl shadow-sm hover:shadow-md hover:cursor-pointer">
+                                                          <Flex className="gap-6 2xl:px-8 sm:px-4 py-8 bg-white rounded-xl shadow-sm hover:shadow-md hover:cursor-pointer">
                                                               <Flex className="relative w-fit">
                                                                   <ProgressCircle
                                                                       value={0}
-                                                                      size="md"
+                                                                      size="sm"
                                                                   >
-                                                                      <div className="animate-pulse h-3 w-8 my-2 bg-slate-200 dark:bg-slate-700 rounded" />
+                                                                      <div className="animate-pulse h-3 2xl:w-8 sm:w-4 my-2 bg-slate-200 dark:bg-slate-700 rounded" />
                                                                   </ProgressCircle>
                                                               </Flex>
 
@@ -524,7 +523,7 @@ const {
                                                                   flexDirection="col"
                                                                   className="gap-1"
                                                               >
-                                                                  <div className="animate-pulse h-3 w-20 my-2 bg-slate-200 dark:bg-slate-700 rounded" />
+                                                                  <div className="animate-pulse h-3 2xl:w-20 sm:w-10 my-2 bg-slate-200 dark:bg-slate-700 rounded" />
                                                               </Flex>
                                                           </Flex>
                                                       ))

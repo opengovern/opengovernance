@@ -457,7 +457,9 @@ export default function Overview() {
                     />
                 </Col>
             </Grid> */}
-            <Grid numItems={6} className="w-full gap-4 h-fit mb-7">
+            <Grid numItems={6} className="w-full gap-4 h-fit mb-7" 
+                style={{"gridAutoRows" : "1fr"}}
+            >
                 <Col numColSpan={4}>
                     {/* <ScoreKPIs /> */}
                     {/* <QuickNav /> */}
@@ -469,7 +471,7 @@ export default function Overview() {
                     >
                         {/* <ScoreKPIs /> */}
 
-                        <Grid numItems={6} className="w-full gap-4 h-fit mb-4">
+                        <Grid numItems={6} className="w-full gap-4 h-fit ">
                             <Col numColSpan={6}>
                                 <Shortcuts />
                             </Col>

@@ -51,6 +51,7 @@ import {
 } from '@cloudscape-design/components'
 import KButton from '@cloudscape-design/components/button'
 import KeyValuePairs from '@cloudscape-design/components/key-value-pairs'
+import axios from 'axios'
 
 
 const ShowHours = [
@@ -99,22 +100,19 @@ export default function ComplianceJobs() {
     const [clickedJob, setClickedJob] =
         useState<GithubComKaytuIoKaytuEnginePkgDescribeApiJob>()
     const [searchParams, setSearchParams] = useSearchParams()
-    const [jobTypeFilter, setJobTypeFilter] = useState<string[] | undefined>(
-        findParmas('type')
-    )
+    
     const [statusFilter, setStatusFilter] = useState<string[] | undefined>(
         findParmas('status')
     )
     const [allStatuses, setAllStatuses] = useState<Option[]>([])
     const [loading, setLoading] = useState(false)
     const [jobs, setJobs] = useState([])
-    const [page, setPage] = useState(0)
+    const [page, setPage] = useState(1)
     const [sort, setSort] = useState('updatedAt')
     const [sortOrder, setSortOrder] = useState(true)
 
     const [totalCount, setTotalCount] = useState(0)
     const [totalPage, setTotalPage] = useState(0)
-    const [propertyOptions, setPropertyOptions] = useState()
     const [date, setDate] = useState({
         key: 'previous-6-hours',
         amount: 6,
@@ -166,14 +164,10 @@ export default function ComplianceJobs() {
 
     useEffect(() => {
         if (
-            searchParams.getAll('type') !== jobTypeFilter ||
+           
             searchParams.get('status') !== statusFilter
         ) {
-            if (jobTypeFilter?.length != 0) {
-                searchParams.set('type', jobTypeFilter)
-            } else {
-                searchParams.delete('type')
-            }
+            
             if (statusFilter?.length != 0) {
                 searchParams.set('status', statusFilter)
             } else {
@@ -181,25 +175,36 @@ export default function ComplianceJobs() {
             }
             window.history.pushState({}, '', `?${searchParams.toString()}`)
         }
-    }, [jobTypeFilter, statusFilter])
+    }, [ statusFilter])
     
     const GetRows = () => {
         setLoading(true)
-        const api = new Api()
-        api.instance = AxiosAPI
+        
+         let url = ''
+         if (window.location.origin === 'http://localhost:3000') {
+             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+         } else {
+             url = window.location.origin
+         }
+         // @ts-ignore
+         const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+         const config = {
+             headers: {
+                 Authorization: `Bearer ${token}`,
+             },
+         }
         const status_filter = []
-        const jobType_filter = ['compliance']
         queries.tokens.map((item) => {
             if (item.propertyKey == 'job_status') {
                 status_filter.push(item.value)
             } 
         })
         let body = {
-            pageStart: page * 15,
-            pageEnd: (page + 1) * 15,
+            cursor: page,
+            per_page: 15,
 
-            statusFilter: status_filter,
-            typeFilters: jobType_filter,
+            job_status: status_filter,
             sortBy: sort,
             sortOrder: sortOrder ? 'DESC' : 'ASC',
         }
@@ -207,99 +212,76 @@ export default function ComplianceJobs() {
             if (date.type == 'relative') {
                 body.interval = `${date.amount} ${date.unit}s`
             } else {
-                body.from = date.startDate
-                body.to = date.endDate
+                body.start_time = date.startDate
+                body.end_time = date.endDate
             }
         }
 
-        api.schedule
-            .apiV1JobsCreate(body)
-            .then((resp) => {
-                const response = resp.data
-                const temp =
-                    response?.summaries
-                        ?.map((v) => {
-                            return { label: v.status, value: v.status }
-                        })
-                        .filter(
-                            (thing, i, arr) =>
-                                arr.findIndex(
-                                    (t) => t.label === thing.label
-                                ) === i
-                        ) || []
-                setAllStatuses(temp)
-                const temp_option = []
-                temp.map((item) => {
-                    temp_option.push({
-                        propertyKey: 'job_status',
-                        value: item.value,
-                    })
-                })
+       axios
+           .post(`${url}/main/schedule/api/v3/jobs/compliance`, body, config)
+           .then((resp) => {
+               const response = resp.data
               
-                setPropertyOptions(temp_option)
 
-                if (resp.data.jobs) {
-                    setJobs(resp.data.jobs)
-                } else {
-                    setJobs([])
-                }
+              
+               if (resp.data.items) {
+                   setJobs(resp.data.items)
+               } else {
+                   setJobs([])
+               }
 
-                setTotalCount(
-                    resp.data.summaries
-                        ?.map((v) => v.count)
-                        ?.reduce((prev, curr) => (prev || 0) + (curr || 0), 0)
-                )
-                setTotalPage(
-                    Math.ceil(
-                        resp.data.summaries
-                            ?.map((v) => v.count)
-                            ?.reduce(
-                                (prev, curr) => (prev || 0) + (curr || 0),
-                                0
-                            ) / 15
-                    )
-                )
-                setLoading(false)
+               setTotalCount(
+                   resp?.data?.total_count
+               )
+               setTotalPage(Math.ceil(resp?.data?.total_count / 15))
+               setLoading(false)
 
-                // params.success({
-                //     rowData: resp.data.jobs || [],
-                //     rowCount: resp.data.summaries
-                //         ?.map((v) => v.count)
-                //         .reduce((prev, curr) => (prev || 0) + (curr || 0), 0),
-                // })
-            })
-            .catch((err) => {
-                console.log(err)
-                setLoading(false)
+               // params.success({
+               //     rowData: resp.data.jobs || [],
+               //     rowCount: resp.data.summaries
+               //         ?.map((v) => v.count)
+               //         .reduce((prev, curr) => (prev || 0) + (curr || 0), 0),
+               // })
+           })
+           .catch((err) => {
+               console.log(err)
+               setLoading(false)
 
-                // params.fail()
-            })
+               // params.fail()
+           })
     }
 
     useEffect(() => {
 
         GetRows()
     }, [queries, date, page, sort, sortOrder])
-
+    // function for truncate 
+    const truncate = (str: string, n: number) => {
+        return str?.length > n ? str.substr(0, n - 1) + '...' : str
+    }
     const clickedJobDetails = [
-        { title: 'ID', value: clickedJob?.id },
+        { title: 'ID', value: clickedJob?.job_id },
         { title: 'Title', value: clickedJob?.title },
-        { title: 'Type', value: clickedJob?.type },
-        { title: 'Created At', value: clickedJob?.createdAt },
-        { title: 'Updated At', value: clickedJob?.updatedAt },
+        { title: 'Created At', value: clickedJob?.created_at },
+        { title: 'Updated At', value: clickedJob?.updated_at },
         // {
         //     title: 'OpenGovernance Connection ID',
         //     value: clickedJob?.connectionID,
         // },
         // { title: 'Account ID', value: clickedJob?.connectionProviderID },
         // { title: 'Account Name', value: clickedJob?.connectionProviderName },
-        { title: 'Status', value: clickedJob?.status },
-        { title: 'Failure Reason', value: clickedJob?.failureReason },
+        { title: 'Status', value: clickedJob?.job_status },
+        {
+            title: 'Failure Reason',
+            value: truncate(clickedJob?.failure_message, 150),
+        },
         {
             title: 'Report link',
             value: (
                 <>
-                    <Link href={`/compliance/${clickedJob?.title}/report/${clickedJob?.id}`}>
+                    <Link
+                        href={`/compliance/${clickedJob?.benchmark_id}/report/${clickedJob?.job_id}`}
+                    >
                         {clickedJob?.title}
                     </Link>
                 </>
@@ -372,33 +354,26 @@ export default function ComplianceJobs() {
                             {
                                 id: 'id',
                                 header: 'Id',
-                                cell: (item) => <>{item.id}</>,
+                                cell: (item) => <>{item.job_id}</>,
                                 // sortingField: 'id',
                                 isRowHeader: true,
-                                maxWidth: 100,
+                                maxWidth: 50,
                             },
                             {
                                 id: 'createdAt',
                                 header: 'Created At',
                                 cell: (item) => (
-                                    <>{`${item?.createdAt.split('T')[0]} ${
-                                        item?.createdAt
+                                    <>{`${item?.created_at.split('T')[0]} ${
+                                        item?.created_at
                                             .split('T')[1]
                                             .split('.')[0]
                                     } `}</>
                                 ),
                                 sortingField: 'createdAt',
                                 isRowHeader: true,
-                                maxWidth: 100,
+                                maxWidth: 70,
                             },
-                            {
-                                id: 'type',
-                                header: 'Job Type',
-                                cell: (item) => <>{item.type}</>,
-                                sortingField: 'type',
-                                isRowHeader: true,
-                                maxWidth: 100,
-                            },
+
                             {
                                 id: 'title',
                                 header: 'Title',
@@ -413,7 +388,7 @@ export default function ComplianceJobs() {
                                 cell: (item) => {
                                     let jobStatus = ''
                                     let jobColor: Color = 'gray'
-                                    switch (item?.status) {
+                                    switch (item?.job_status) {
                                         case 'CREATED':
                                             jobStatus = 'created'
                                             break
@@ -430,6 +405,10 @@ export default function ComplianceJobs() {
                                             break
                                         case 'SUMMARIZER_IN_PROGRESS':
                                             jobStatus = 'summarizing'
+                                            jobColor = 'orange'
+                                            break
+                                        case 'SINK_IN_PROGRESS':
+                                            jobStatus = 'sinking'
                                             jobColor = 'orange'
                                             break
                                         case 'OLD_RESOURCE_DELETION':
@@ -474,15 +453,15 @@ export default function ComplianceJobs() {
                                 id: 'updatedAt',
                                 header: 'Updated At',
                                 cell: (item) => (
-                                    <>{`${item?.updatedAt.split('T')[0]} ${
-                                        item?.updatedAt
+                                    <>{`${item?.updated_at.split('T')[0]} ${
+                                        item?.updated_at
                                             .split('T')[1]
                                             .split('.')[0]
                                     } `}</>
                                 ),
                                 sortingField: 'updatedAt',
                                 isRowHeader: true,
-                                maxWidth: 100,
+                                maxWidth: 70,
                             },
                         ]}
                         columnDisplay={[
@@ -531,12 +510,10 @@ export default function ComplianceJobs() {
                                         setFilter(detail.selectedOption)
                                     }
                                     options={[
-                                       
                                         {
                                             label: 'Failing Compliance Jobs',
                                             value: '2',
                                         },
-
                                     ]}
                                 />
                                 <PropertyFilter
@@ -555,11 +532,43 @@ export default function ComplianceJobs() {
                                     // filteringOptions={filters}
                                     filteringPlaceholder="Job Filters"
                                     // @ts-ignore
-                                    filteringOptions={propertyOptions}
+                                    filteringOptions={[
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SUCCEEDED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'FAILED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'TIMEOUT',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SUMMARIZER_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'RUNNERS_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SINK_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'QUEUED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'CREATED',
+                                        },
+                                    ]}
                                     // @ts-ignore
 
                                     filteringProperties={[
-                                       
                                         {
                                             key: 'job_status',
                                             operators: ['='],
@@ -666,10 +675,10 @@ export default function ComplianceJobs() {
                         }
                         pagination={
                             <Pagination
-                                currentPageIndex={page + 1}
+                                currentPageIndex={page }
                                 pagesCount={totalPage}
                                 onChange={({ detail }) =>
-                                    setPage(detail.currentPageIndex - 1)
+                                    setPage(detail.currentPageIndex )
                                 }
                             />
                         }
@@ -680,196 +689,4 @@ export default function ComplianceJobs() {
     )
 }
 
-{
-    /**
-       <Flex flexDirection="col">
-                <Flex
-                    flexDirection="row"
-                    alignItems="start"
-                    justifyContent="between"
-                    className="gap-2"
-                >
-                    <Flex
-                        flexDirection="row"
-                        alignItems="start"
-                        justifyContent="start"
-                        className="gap-2"
-                    >
-                        <KFilter
-                            options={jobTypes}
-                            type="multi"
-                            hasCondition={true}
-                            condition={jobTypeContains}
-                            selectedItems={jobTypeFilter}
-                            onChange={(values: string[]) => {
-                                console.log(values, 'values')
-                                console.log(jobTypeFilter, 'filter')
 
-                                setJobTypeFilter(values)
-                            }}
-                            label="Job Types"
-                            icon={CloudIcon}
-                        />
-                        <KFilter
-                            options={allStatuses}
-                            type="multi"
-                            selectedItems={statusFilter}
-                            condition={jobStatusContains}
-                            hasCondition={true}
-                            onChange={(values: string[]) => {
-                                setStatusFilter(values)
-                            }}
-                            label="Job Status"
-                            icon={CloudIcon}
-                        />
-                        <KFilter
-                            options={ShowHours}
-                            type="multi"
-                            hasCondition={false}
-                            selectedItems={showHoursFilter}
-                            onChange={(values: string[]) => {
-                                if (values.length == 0) {
-                                    setShowHourFilter([])
-                                } else {
-                                    setShowHourFilter([values.pop()])
-                                }
-                            }}
-                            label="Show jobs in"
-                            icon={CloudIcon}
-                        />
-                    </Flex>
-
-                    <Button
-                        onClick={() => {
-                            // @ts-ignore
-                            ssr()
-                        }}
-                        disabled={false}
-                        loading={false}
-                        loadingText="Running"
-                    >
-                        Refresh
-                    </Button>
-                </Flex>
-                <Card className="mt-4">
-                    <Title className="font-semibold mb-5">Jobs</Title>
-
-                    <Flex alignItems="start">
-                        {/* <Card className="sticky top-6 min-w-[200px] max-w-[200px]">
-                    <Accordion
-                        defaultOpen
-                        className="border-0 rounded-none bg-transparent mb-1"
-                    >
-                        <AccordionHeader className="pl-0 pr-0.5 py-1 w-full bg-transparent">
-                            <Text className="font-semibold text-gray-800">
-                                Job Type
-                            </Text>
-                        </AccordionHeader>
-                        <AccordionBody className="pt-3 pb-1 px-0.5 w-full cursor-default bg-transparent">
-                            <Flex
-                                flexDirection="col"
-                                alignItems="start"
-                                className="gap-1.5"
-                            >
-                                {jobTypes.map((jobType) => (
-                                    <Radio
-                                        name="jobType"
-                                        onClick={() =>
-                                            setJobTypeFilter(jobType.value)
-                                        }
-                                         {
-                                            key: 'job_type',
-                                            operators: ['='],
-                                            propertyLabel: 'Job Type',
-                                            groupValuesLabel: 'Job Type values',
-                                        },checked={
-                                            jobTypeFilter === jobType.value
-                                        }
-                                    >
-                                        {jobType.label}
-                                    </Radio>
-                                ))}
-                            </Flex>
-                        </AccordionBody>
-                    </Accordion>
-                    <Divider className="my-3" />
-                    <Accordion
-                        defaultOpen
-                        className="border-0 rounded-none bg-transparent mb-1"
-                    >
-                        <AccordionHeader className="pl-0 pr-0.5 py-1 w-full bg-transparent">
-                            <Text className="font-semibold text-gray-800">
-                                Status
-                            </Text>
-                        </AccordionHeader>
-                        <AccordionBody className="pt-3 pb-1 px-0.5 w-full cursor-default bg-transparent">
-                            <Flex
-                                flexDirection="col"
-                                alignItems="start"
-                                className="gap-1.5"
-                            >
-                                <Radio
-                                    name="status"
-                                    onClick={() => setStatusFilter('')}
-                                    checked={statusFilter === ''}
-                                >
-                                    All
-                                </Radio>
-                                {allStatuses.map((status) => (
-                                    <Radio
-                                        name="status"
-                                        onClick={() => setStatusFilter(status)}
-                                        checked={statusFilter === status}
-                                    >
-                                        {status}
-                                    </Radio>
-                                ))}
-                            </Flex>
-                        </AccordionBody>
-                    </Accordion>
-                </Card> 
-                        <Flex className="pl-4">
-                            <Table
-                                id="jobs"
-                                columns={columns()}
-                                serverSideDatasource={serverSideRows}
-                                onCellClicked={(event) => {
-                                    setClickedJob(event.data)
-                                    setOpen(true)
-                                }}
-                                options={{
-                                    rowModelType: 'serverSide',
-                                    serverSideDatasource: serverSideRows,
-                                }}
-                            />
-                        </Flex>
-                    </Flex>
-                    <DrawerPanel
-                        open={open}
-                        onClose={() => setOpen(false)}
-                        title="Job Details"
-                    >
-                        <Flex flexDirection="col">
-                            {clickedJobDetails.map((item) => {
-                                return (
-                                    <Flex
-                                        flexDirection="row"
-                                        justifyContent="between"
-                                        alignItems="start"
-                                        className="mt-2"
-                                    >
-                                        <Text className="w-56 font-bold">
-                                            {item.title}
-                                        </Text>
-                                        <Text className="w-full">
-                                            {item.value}
-                                        </Text>
-                                    </Flex>
-                                )
-                            })}
-                        </Flex>
-                    </DrawerPanel>
-                </Card>
-            </Flex>
-    */
-}

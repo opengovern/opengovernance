@@ -314,7 +314,7 @@ export default function Query() {
             {isLoading ? (
                 <Spinner className="mt-56" />
             ) : (
-                <Flex alignItems="start" flexDirection="col">
+                <Flex className='w-full' alignItems="start" flexDirection="col">
                     <Flex
                         flexDirection="row"
                         className="gap-5"
