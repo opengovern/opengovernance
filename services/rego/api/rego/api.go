@@ -3,16 +3,16 @@ package rego
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/opengovern/opencomply/services/rego/api/models"
-	"github.com/opengovern/opencomply/services/rego/internal"
+	"github.com/opengovern/opencomply/services/rego/service"
 	"go.uber.org/zap"
 )
 
 type API struct {
 	logger  *zap.Logger
-	Service *internal.RegoEngine
+	Service *service.RegoEngine
 }
 
-func New(logger *zap.Logger, service *internal.RegoEngine) *API {
+func New(logger *zap.Logger, service *service.RegoEngine) *API {
 	return &API{
 		logger:  logger.Named("evaluate"),
 		Service: service,

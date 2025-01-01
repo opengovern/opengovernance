@@ -284,14 +284,21 @@ type Query struct {
 	ID              string `gorm:"primaryKey"`
 	QueryToExecute  string
 	IntegrationType pq.StringArray `gorm:"type:text[]"`
-	PrimaryTable    *string
-	ListOfTables    pq.StringArray `gorm:"type:text[]"`
 	Engine          string
-	Controls        []Control        `gorm:"foreignKey:QueryID"`
-	Parameters      []QueryParameter `gorm:"foreignKey:QueryID"`
-	Global          bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+
+	Controls []Control `gorm:"foreignKey:QueryID"`
+
+	// CloudQL Fields
+	PrimaryTable *string
+	ListOfTables pq.StringArray   `gorm:"type:text[]"`
+	Parameters   []QueryParameter `gorm:"foreignKey:QueryID"`
+	Global       bool
+
+	// Rego Fields
+	RegoPolicies pq.StringArray `gorm:"type:text[]"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (q Query) ToApi() api.Query {
@@ -301,9 +308,10 @@ func (q Query) ToApi() api.Query {
 		IntegrationType: integration_type.ParseTypes(q.IntegrationType),
 		ListOfTables:    q.ListOfTables,
 		PrimaryTable:    q.PrimaryTable,
-		Engine:          q.Engine,
+		Engine:          api.QueryEngine(q.Engine),
 		Parameters:      make([]api.QueryParameter, 0, len(q.Parameters)),
 		Global:          q.Global,
+		RegoPolicies:    q.RegoPolicies,
 		CreatedAt:       q.CreatedAt,
 		UpdatedAt:       q.UpdatedAt,
 	}
