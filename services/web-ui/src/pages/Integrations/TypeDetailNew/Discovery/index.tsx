@@ -107,9 +107,7 @@ export default function DiscoveryJobs({
     const [clickedJob, setClickedJob] =
         useState<GithubComKaytuIoKaytuEnginePkgDescribeApiJob>()
     const [searchParams, setSearchParams] = useSearchParams()
-    const [jobTypeFilter, setJobTypeFilter] = useState<string[] | undefined>(
-        findParmas('type')
-    )
+   
     const [statusFilter, setStatusFilter] = useState<string[] | undefined>(
         findParmas('status')
     )
@@ -122,7 +120,6 @@ export default function DiscoveryJobs({
 
     const [totalCount, setTotalCount] = useState(0)
     const [totalPage, setTotalPage] = useState(0)
-    const [propertyOptions, setPropertyOptions] = useState()
     const [date, setDate] = useState({
         key: 'previous-6-hours',
         amount: 6,
@@ -171,14 +168,10 @@ export default function DiscoveryJobs({
 
     useEffect(() => {
         if (
-            searchParams.getAll('type') !== jobTypeFilter ||
+          
             searchParams.get('status') !== statusFilter
         ) {
-            if (jobTypeFilter?.length != 0) {
-                searchParams.set('type', jobTypeFilter)
-            } else {
-                searchParams.delete('type')
-            }
+           
             if (statusFilter?.length != 0) {
                 searchParams.set('status', statusFilter)
             } else {
@@ -186,7 +179,7 @@ export default function DiscoveryJobs({
             }
             window.history.pushState({}, '', `?${searchParams.toString()}`)
         }
-    }, [jobTypeFilter, statusFilter])
+    }, [ statusFilter])
 
     const GetRows = () => {
         setLoading(true)
@@ -227,58 +220,25 @@ export default function DiscoveryJobs({
             if (date.type == 'relative') {
                 body.interval = `${date.amount} ${date.unit}s`
             } else {
-                body.from = date.startDate
-                body.to = date.endDate
+                body.start_time = date.startDate
+                body.end_time = date.endDate
             }
         }
 
         axios
             .post(`${url}/main/schedule/api/v3/jobs/discovery`, body, config)
             .then((resp) => {
-                const response = resp.data
-                const temp =
-                    response?.summaries
-                        ?.map((v) => {
-                            return { label: v.status, value: v.status }
-                        })
-                        .filter(
-                            (thing, i, arr) =>
-                                arr.findIndex(
-                                    (t) => t.label === thing.label
-                                ) === i
-                        ) || []
-                setAllStatuses(temp)
-                const temp_option = []
-                temp.map((item) => {
-                    temp_option.push({
-                        propertyKey: 'job_status',
-                        value: item.value,
-                    })
-                })
 
-                setPropertyOptions(temp_option)
-
-                if (resp.data.jobs) {
-                    setJobs(resp.data.jobs)
+                if (resp.data.items) {
+                    setJobs(resp.data.items)
                 } else {
                     setJobs([])
                 }
 
                 setTotalCount(
-                    resp.data.summaries
-                        ?.map((v) => v.count)
-                        ?.reduce((prev, curr) => (prev || 0) + (curr || 0), 0)
+                    resp?.data?.total_count
                 )
-                setTotalPage(
-                    Math.ceil(
-                        resp.data.summaries
-                            ?.map((v) => v.count)
-                            ?.reduce(
-                                (prev, curr) => (prev || 0) + (curr || 0),
-                                0
-                            ) / 15
-                    )
-                )
+                setTotalPage(Math.ceil(resp?.data?.total_count / 15))
                 setLoading(false)
 
                 // params.success({
@@ -301,19 +261,19 @@ export default function DiscoveryJobs({
     }, [queries, date, page, sort, sortOrder])
 
     const clickedJobDetails = [
-        { title: 'ID', value: clickedJob?.id },
+        { title: 'ID', value: clickedJob?.job_id },
         { title: 'Title', value: clickedJob?.title },
         { title: 'Type', value: clickedJob?.type },
-        { title: 'Created At', value: clickedJob?.createdAt },
-        { title: 'Updated At', value: clickedJob?.updatedAt },
+        { title: 'Created At', value: clickedJob?.created_at },
+        { title: 'Updated At', value: clickedJob?.updated_at },
         // {
         //     title: 'OpenGovernance Connection ID',
         //     value: clickedJob?.connectionID,
         // },
         // { title: 'Account ID', value: clickedJob?.connectionProviderID },
         // { title: 'Account Name', value: clickedJob?.connectionProviderName },
-        { title: 'Status', value: clickedJob?.status },
-        { title: 'Failure Reason', value: clickedJob?.failureReason },
+        { title: 'Status', value: clickedJob?.job_status },
+        { title: 'Failure Reason', value: clickedJob?.failure_message },
     ]
 
     return (
@@ -381,7 +341,7 @@ export default function DiscoveryJobs({
                             {
                                 id: 'id',
                                 header: 'Id',
-                                cell: (item) => <>{item.id}</>,
+                                cell: (item) => <>{item.job_id}</>,
                                 // sortingField: 'id',
                                 isRowHeader: true,
                                 maxWidth: 100,
@@ -390,8 +350,8 @@ export default function DiscoveryJobs({
                                 id: 'createdAt',
                                 header: 'Created At',
                                 cell: (item) => (
-                                    <>{`${item?.createdAt.split('T')[0]} ${
-                                        item?.createdAt
+                                    <>{`${item?.created_at.split('T')[0]} ${
+                                        item?.created_at
                                             .split('T')[1]
                                             .split('.')[0]
                                     } `}</>
@@ -422,7 +382,7 @@ export default function DiscoveryJobs({
                                 cell: (item) => {
                                     let jobStatus = ''
                                     let jobColor: Color = 'gray'
-                                    switch (item?.status) {
+                                    switch (item?.job_status) {
                                         case 'CREATED':
                                             jobStatus = 'created'
                                             break
@@ -439,6 +399,10 @@ export default function DiscoveryJobs({
                                             break
                                         case 'SUMMARIZER_IN_PROGRESS':
                                             jobStatus = 'summarizing'
+                                            jobColor = 'orange'
+                                            break
+                                        case 'SINK_IN_PROGRESS':
+                                            jobStatus = 'sinking'
                                             jobColor = 'orange'
                                             break
                                         case 'OLD_RESOURCE_DELETION':
@@ -483,8 +447,8 @@ export default function DiscoveryJobs({
                                 id: 'updatedAt',
                                 header: 'Updated At',
                                 cell: (item) => (
-                                    <>{`${item?.updatedAt.split('T')[0]} ${
-                                        item?.updatedAt
+                                    <>{`${item?.updated_at.split('T')[0]} ${
+                                        item?.updated_at
                                             .split('T')[1]
                                             .split('.')[0]
                                     } `}</>
@@ -562,7 +526,40 @@ export default function DiscoveryJobs({
                                     // filteringOptions={filters}
                                     filteringPlaceholder="Job Filters"
                                     // @ts-ignore
-                                    filteringOptions={propertyOptions}
+                                    filteringOptions={[
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SUCCEEDED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'FAILED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'TIMEOUT',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SUMMARIZER_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'RUNNERS_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'SINK_IN_PROGRESS',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'QUEUED',
+                                        },
+                                        {
+                                            propertyKey: 'job_status',
+                                            value: 'CREATED',
+                                        },
+                                    ]}
                                     // @ts-ignore
 
                                     filteringProperties={[
@@ -672,10 +669,10 @@ export default function DiscoveryJobs({
                         }
                         pagination={
                             <Pagination
-                                currentPageIndex={page }
+                                currentPageIndex={page}
                                 pagesCount={totalPage}
                                 onChange={({ detail }) =>
-                                    setPage(detail.currentPageIndex )
+                                    setPage(detail.currentPageIndex)
                                 }
                             />
                         }
