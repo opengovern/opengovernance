@@ -241,19 +241,19 @@ func (r *httpRoutes) GetTaskRunResult(ctx echo.Context) error {
 			r.logger.Error("failed to unmarshal params", zap.Error(err))
 			return ctx.JSON(http.StatusInternalServerError, "failed to unmarshal params")
 		}
-		var result map[string]interface{}
-		err = json.Unmarshal(task.Result.Bytes, &result)
-		if err != nil {
-			r.logger.Error("failed to unmarshal result", zap.Error(err))
-			return ctx.JSON(http.StatusInternalServerError, "failed to unmarshal result")
-		}
+		// var result map[string]interface{}
+		// err = json.Unmarshal(task.Result.Bytes, &result)
+		// if err != nil {
+		// 	r.logger.Error("failed to unmarshal result", zap.Error(err))
+		// 	return ctx.JSON(http.StatusInternalServerError, "failed to unmarshal result")
+		// }
 		taskRunResponses = append(taskRunResponses, api.TaskRun{
 			ID:             task.ID,
 			CreatedAt:      task.CreatedAt,
 			UpdatedAt:      task.UpdatedAt,
 			TaskID:         task.TaskID,
 			Status:         string(task.Status),
-			Result:         result,
+			// Result:         result,
 			Params: 	   params,
 			FailureMessage: task.FailureMessage,
 		})
