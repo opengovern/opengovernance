@@ -119,8 +119,14 @@ type GetComplianceJobsHistoryResponse struct {
 	WithIncidents   bool                `json:"with_incidents"`
 	BenchmarkId     string              `json:"benchmark_id"`
 	JobStatus       ComplianceJobStatus `json:"job_status"`
-	DateTime        time.Time           `json:"date_time"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
+	Title 		 string              `json:"title"`
 	IntegrationInfo []IntegrationInfo   `json:"integration_info"`
+}
+type GetComplianceJobsHistoryFinalResponse struct {
+	Items      []GetComplianceJobsHistoryResponse `json:"items"`
+	TotalCount int                               `json:"total_count"`
 }
 
 type BenchmarkAuditHistoryItem struct {
@@ -251,6 +257,7 @@ type ListComplianceJobsRequest struct {
 	JobStatus       []string                `json:"job_status"`
 	StartTime       time.Time               `json:"start_time"`
 	EndTime         *time.Time              `json:"end_time"`
+	Interval 	  *string                 `json:"interval"`
 	SortBy          *string                 `json:"sort_by"`
 	Cursor          *int64                  `json:"cursor"`
 	PerPage         *int64                  `json:"per_page"`

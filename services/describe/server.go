@@ -1132,7 +1132,8 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			WithIncidents: j.WithIncidents,
 			BenchmarkId:   j.FrameworkID,
 			JobStatus:     j.Status.ToApi(),
-			DateTime:      j.UpdatedAt,
+			UpdatedAt:      j.UpdatedAt,
+			CreatedAt: 	j.CreatedAt,
 		})
 	}
 	if request.SortBy != nil {
@@ -1141,9 +1142,13 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
+			})
+		case "created_at":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
 			})
 		case "benchmarkid":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -1912,11 +1917,20 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		}
 		connectionIDs = append(connectionIDs, c.IntegrationID)
 	}
+	var startTime, endTime *time.Time
+	if request.Interval != nil {
+		startTime, endTime, _ = parseTimeInterval(*request.Interval)
+		
+	} else {
+		startTime = &request.StartTime
+		endTime = request.EndTime
+	}
 
-	jobs, err := h.DB.ListComplianceJobsByFilters(nil, connectionIDs, request.BenchmarkId, request.JobStatus, &request.StartTime, request.EndTime)
+	jobs, err := h.DB.ListComplianceJobsByFilters(nil, connectionIDs, request.BenchmarkId, request.JobStatus, startTime, endTime)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
 	for _, j := range jobs {
@@ -1925,7 +1939,9 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			WithIncidents: j.WithIncidents,
 			BenchmarkId:   j.FrameworkID,
 			JobStatus:     j.Status.ToApi(),
-			DateTime:      j.UpdatedAt,
+			UpdatedAt:      j.UpdatedAt,
+			CreatedAt: j.CreatedAt,
+			
 		}
 		for _, i := range j.IntegrationIDs {
 			if info, ok := connectionInfo[i]; ok {
@@ -1941,15 +1957,19 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
 			})
-		case "benchmarkid":
+		case "created_at":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
+			})
+		case "benchmarkid","benchmark_id":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].BenchmarkId < jobsResults[j].BenchmarkId
 			})
-		case "jobstatus":
+		case "jobstatus","job_status":
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobStatus < jobsResults[j].JobStatus
 			})
@@ -1967,6 +1987,7 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
+	totalCount := len(jobsResults)
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
@@ -1975,7 +1996,11 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, jobsResults)
+
+	return ctx.JSON(http.StatusOK,api.GetComplianceJobsHistoryFinalResponse{
+		TotalCount: totalCount,
+		Items: jobsResults,
+	} )
 }
 
 // BenchmarkAuditHistory godoc
@@ -2425,7 +2450,8 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 				WithIncidents:   j.WithIncidents,
 				BenchmarkId:     j.FrameworkID,
 				JobStatus:       j.Status.ToApi(),
-				DateTime:        j.UpdatedAt,
+				UpdatedAt:        j.UpdatedAt,
+				CreatedAt: j.CreatedAt,
 				IntegrationInfo: jobIntegrations,
 			})
 		}
@@ -2437,9 +2463,13 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
+			})
+		case "created_at":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
 			})
 		case "benchmarkid":
 			sort.Slice(jobsResults, func(i, j int) bool {
