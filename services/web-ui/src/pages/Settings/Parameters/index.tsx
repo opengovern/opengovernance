@@ -172,23 +172,63 @@ export default function SettingsParameters() {
 
     return (
         <>
-        <Modal
-            visible={open}
-            onDismiss={() => setOpen(false)}
-            header="Parameter Detail"
-        >
-            <KeyValuePairs
-                columns={4}
-                items={[
-                    { label: 'Key', value: selectedItem?.key },
-                    { label: 'Value', value: selectedItem?.value },
-                    { label: 'Using control count', value: selected?.controls_count },
-                    { label: 'Using query count', value: selected?.queries_count },
-                ]}
-            />
-
-
-        </Modal>
+            <Modal
+                visible={open}
+                onDismiss={() => setOpen(false)}
+                header="Parameter Detail"
+            >
+                <KeyValuePairs
+                    columns={4}
+                    items={[
+                        { label: 'Key', value: selectedItem?.key },
+                        { label: 'Value', value: selectedItem?.value },
+                        {
+                            label: 'Using control count',
+                            value: selected?.controls_count,
+                        },
+                        {
+                            label: 'Using query count',
+                            value: selected?.queries_count,
+                        },
+                        {
+                            label: 'Controls',
+                            value: (
+                                <>
+                                    {selectedItem?.controls?.map((c: any) => {
+                                        return (
+                                            <>
+                                                <Link
+                                                    href={`/incidents/${c.id}`}
+                                                >
+                                                    {c.title}
+                                                </Link>
+                                            </>
+                                        )
+                                    })}
+                                </>
+                            ),
+                        },
+                        {
+                            label: 'Queries',
+                            value: (
+                                <>
+                                    {selectedItem?.queries?.map((c: any) => {
+                                        return (
+                                            <>
+                                                <Link
+                                                    href={`/incidents/${c.id}`}
+                                                >
+                                                    {c.title}
+                                                </Link>
+                                            </>
+                                        )
+                                    })}
+                                </>
+                            ),
+                        },
+                    ]}
+                />
+            </Modal>
             <Table
                 className="mt-2"
                 onRowClick={(event) => {
@@ -275,7 +315,7 @@ export default function SettingsParameters() {
                         }
                         className="w-full"
                     >
-                        Parameters {total !=0 ? `(${total})` : ''}
+                        Parameters {total != 0 ? `(${total})` : ''}
                     </Header>
                 }
                 pagination={
