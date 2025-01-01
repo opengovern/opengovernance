@@ -122,6 +122,7 @@ type GetComplianceJobsHistoryResponse struct {
 	CreatedAt            time.Time           `json:"created_at"`
 	UpdatedAt            time.Time           `json:"updated_at"`
 	Title 		 string              `json:"title"`
+	FailureMessage string              `json:"failure_message"`
 	IntegrationInfo []IntegrationInfo   `json:"integration_info"`
 }
 type GetComplianceJobsHistoryFinalResponse struct {

@@ -1930,10 +1930,20 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	benchmarks, err := h.Scheduler.complianceClient.ListBenchmarks(&httpclient.Context{UserRole: apiAuth.AdminRole}, nil)
+	if err != nil {
+		return err
+	}
 	
 
 	var jobsResults []api.GetComplianceJobsHistoryResponse
 	for _, j := range jobs {
+		Title := ""
+		for _, benchmark := range benchmarks {
+				if fmt.Sprintf("%v", benchmark.ID) == j.FrameworkID {
+					Title = benchmark.Title
+				}
+			}
 		jobResult := api.GetComplianceJobsHistoryResponse{
 			JobId:         j.ID,
 			WithIncidents: j.WithIncidents,
@@ -1941,6 +1951,8 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			JobStatus:     j.Status.ToApi(),
 			UpdatedAt:      j.UpdatedAt,
 			CreatedAt: j.CreatedAt,
+			FailureMessage: j.FailureMessage,
+			Title: Title,
 			
 		}
 		for _, i := range j.IntegrationIDs {
