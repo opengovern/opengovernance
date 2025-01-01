@@ -62,7 +62,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	queryParameter := v1.Group("/query_parameter")
 	queryParameter.POST("", httpserver.AuthorizeHandler(h.SetQueryParameter, api3.AdminRole))
 	queryParameter.POST("", httpserver.AuthorizeHandler(h.ListQueryParameters, api3.ViewerRole))
-	queryParameter.GET("/key", httpserver.AuthorizeHandler(h.GetQueryParameter, api3.ViewerRole))
+	queryParameter.GET("/:key", httpserver.AuthorizeHandler(h.GetQueryParameter, api3.ViewerRole))
 
 	v3 := r.Group("/api/v3")
 	v3.PUT("/sample/purge", httpserver.AuthorizeHandler(h.PurgeSampleData, api3.ViewerRole))
