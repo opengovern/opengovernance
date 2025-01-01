@@ -251,7 +251,7 @@ export default function SettingsJobs() {
                         id: '0',
                     },
                     {
-                        label: 'Complaince',
+                        label: 'Compliance',
                         content: <ComplianceJobs />,
                         id: '1',
                     },
