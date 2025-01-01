@@ -52,7 +52,8 @@ export default function SettingsParameters() {
     const [page, setPage] = useState(1)
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(false)
-    const [selectedItem, setSelectedItem] = useState(null)
+    const [selectedItem, setSelectedItem] = useState<any>()
+    const [open, setOpen] = useState(false)
     const [editValue, setEditValue] = useState({
         key: '',
         value: '',
@@ -74,10 +75,13 @@ export default function SettingsParameters() {
                 Authorization: `Bearer ${token}`,
             },
         }
-
+        const body ={
+            cursor: page,
+            per_page: 15
+        }
         axios
-            .get(
-                `${url}/main/metadata/api/v1/query_parameter?per_page=15&cursor=${page}`,
+            .post(
+                `${url}/main/metadata/api/v1/query_parameter`,body,
                 config
             )
             .then((res) => {
@@ -129,6 +133,37 @@ export default function SettingsParameters() {
                 setLoading(false)
             })
     }
+     const GetParamDetail = (key: string) => {
+        //  setLoading(true)
+         let url = ''
+         if (window.location.origin === 'http://localhost:3000') {
+             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+         } else {
+             url = window.location.origin
+         }
+         // @ts-ignore
+         const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+         const config = {
+             headers: {
+                 Authorization: `Bearer ${token}`,
+             },
+         }
+        
+         axios
+             .get(`${url}/main/metadata/api/v1/query_parameter/${key}`, config)
+             .then((res) => {
+                 if(res.data){
+                    setSelectedItem(res.data)
+                    setOpen(true)
+                 }
+                 setLoading(false)
+             })
+             .catch((err) => {
+                 console.log(err)
+                 setLoading(false)
+             })
+     }
 
     useEffect(() => {
         GetParams()
@@ -136,10 +171,27 @@ export default function SettingsParameters() {
 
     return (
         <>
+        <Modal
+            visible={open}
+            onDismiss={() => setOpen(false)}
+            header="Parameter Detail"
+        >
+            <KeyValuePairs
+                items={[
+                    { label: 'Key', value: selectedItem?.key },
+                    { label: 'Value', value: selectedItem?.value },
+                    { label: 'Using control count', value: selectedItem?.controls_count },
+                    { label: 'Using query count', value: selectedItem?.queries_count },
+                ]}
+            />
+
+
+        </Modal>
             <Table
                 className="mt-2"
                 onRowClick={(event) => {
                     const row = event.detail.item
+                    GetParamDetail(row.key)
                 }}
                 columnDefinitions={[
                     {
@@ -220,7 +272,7 @@ export default function SettingsParameters() {
                         }
                         className="w-full"
                     >
-                        Parameters{' '}
+                        Parameters {total !=0 ? `(${total})` : ''}
                     </Header>
                 }
                 pagination={
