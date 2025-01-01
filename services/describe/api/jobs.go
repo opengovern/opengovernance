@@ -100,8 +100,15 @@ type GetDescribeJobsHistoryResponse struct {
 	JobId           uint                      `json:"job_id"`
 	ResourceType    string                    `json:"resource_type"`
 	JobStatus       DescribeResourceJobStatus `json:"job_status"`
-	DateTime        time.Time                 `json:"date_time"`
+	CreatedAt            time.Time           `json:"created_at"`
+	UpdatedAt            time.Time           `json:"updated_at"`
+	Title 		 string              `json:"title"`
+	FailureMessage string              `json:"failure_message"`
 	IntegrationInfo *IntegrationInfo          `json:"integration_info"`
+}
+type GetDescribeJobsHistoryFinalResponse struct {
+	Items      []GetDescribeJobsHistoryResponse `json:"items"`
+	TotalCount int                             `json:"total_count"`
 }
 
 type GetComplianceJobsHistoryRequest struct {

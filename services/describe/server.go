@@ -1059,7 +1059,10 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 			JobId:        j.ID,
 			ResourceType: j.ResourceType,
 			JobStatus:    j.Status,
-			DateTime:     j.UpdatedAt,
+			UpdatedAt:     j.UpdatedAt,
+			CreatedAt: j.CreatedAt,
+			FailureMessage: j.FailureMessage,
+			Title: j.ResourceType,
 		})
 	}
 	if request.SortBy != nil {
@@ -1068,9 +1071,13 @@ func (h HttpServer) GetDescribeJobsHistory(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
+			})
+		case "created_at","createdat":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -1142,13 +1149,13 @@ func (h HttpServer) GetComplianceJobsHistory(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime","updated_at":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
 			})
-		case "created_at":
+		case "created_at","createdat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "benchmarkid":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -1821,7 +1828,10 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			JobId:        j.ID,
 			ResourceType: j.ResourceType,
 			JobStatus:    j.Status,
-			DateTime:     j.UpdatedAt,
+			UpdatedAt:     j.UpdatedAt,
+			CreatedAt: 	j.CreatedAt,
+			FailureMessage: j.FailureMessage,
+			Title: j.ResourceType,
 		}
 		if info, ok := connectionInfo[j.IntegrationID]; ok {
 			jobResult.IntegrationInfo = &info
@@ -1834,9 +1844,13 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
+			})
+		case "created_at","createdat":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -1856,6 +1870,7 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 			return jobsResults[i].JobId < jobsResults[j].JobId
 		})
 	}
+	TotalCount := len(jobsResults)
 	if request.PerPage != nil {
 		if request.Cursor == nil {
 			jobsResults = utils.Paginate(1, *request.PerPage, jobsResults)
@@ -1864,7 +1879,10 @@ func (h HttpServer) ListDescribeJobs(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, jobsResults)
+	return ctx.JSON(http.StatusOK, api.GetDescribeJobsHistoryFinalResponse{
+		TotalCount: TotalCount,
+		Items:       jobsResults,
+	})
 }
 
 // ListComplianceJobs godoc
@@ -1976,13 +1994,13 @@ func (h HttpServer) ListComplianceJobs(ctx echo.Context) error {
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime","updated_at":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
 			})
-		case "created_at":
+		case "created_at","createdat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "benchmarkid","benchmark_id":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -2337,7 +2355,10 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 				JobId:           j.ID,
 				ResourceType:    j.ResourceType,
 				JobStatus:       j.Status,
-				DateTime:        j.UpdatedAt,
+				UpdatedAt:        j.UpdatedAt,
+				CreatedAt: j.CreatedAt,
+				FailureMessage: j.FailureMessage,
+				Title: j.ResourceType,
 				IntegrationInfo: &c,
 			})
 		}
@@ -2349,9 +2370,13 @@ func (h HttpServer) GetDescribeJobsHistoryByIntegration(ctx echo.Context) error 
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].DateTime.Before(jobsResults[j].DateTime)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
+			})
+		case "created_at","createdat":
+			sort.Slice(jobsResults, func(i, j int) bool {
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "resourcetype":
 			sort.Slice(jobsResults, func(i, j int) bool {
@@ -2482,13 +2507,13 @@ func (h HttpServer) GetComplianceJobsHistoryByIntegration(ctx echo.Context) erro
 			sort.Slice(jobsResults, func(i, j int) bool {
 				return jobsResults[i].JobId < jobsResults[j].JobId
 			})
-		case "datetime","updated_at":
+		case "datetime","updated_at","updatedat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].UpdatedAt.Before(jobsResults[j].UpdatedAt)
+				return jobsResults[i].UpdatedAt.After(jobsResults[j].UpdatedAt)
 			})
-		case "created_at":
+		case "created_at","createdat":
 			sort.Slice(jobsResults, func(i, j int) bool {
-				return jobsResults[i].CreatedAt.Before(jobsResults[j].CreatedAt)
+				return jobsResults[i].CreatedAt.After(jobsResults[j].CreatedAt)
 			})
 		case "benchmarkid":
 			sort.Slice(jobsResults, func(i, j int) bool {
