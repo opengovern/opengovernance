@@ -169,11 +169,12 @@ export default function ResourceFindingDetail({
                         label: 'Account',
                         value: (
                             <>
-                                {resourceFinding?.providerConnectionName}
+                            
+                                {resourceFinding?.integrationType}
                                 <Text
                                     className={` w-full text-start mb-0.5 truncate`}
                                 >
-                                    {resourceFinding?.providerConnectionID}
+                                    {resourceFinding?.integrationID}
                                 </Text>
                             </>
                         ),

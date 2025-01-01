@@ -979,7 +979,7 @@ export default function ControlDetail() {
                                     // },
                                     {
                                         id: '3',
-                                        label: 'Benchmarks',
+                                        label: 'Framework',
                                         content: (
                                             <Benchmarks
                                                 benchmarks={

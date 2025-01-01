@@ -1111,7 +1111,7 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding {
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
      */
     connectionID?: string
-    connector?: SourceType
+    integrationType?: string
     evaluatedAt?: string
     failedCount?: number
     findings?: GithubComKaytuIoKaytuEnginePkgComplianceApiFinding[]
@@ -1121,12 +1121,12 @@ export interface GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding {
      * Connection ID
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
      */
-    providerConnectionID?: string
+    integrationID?: string
     /**
      * Connection ID
      * @example "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
      */
-    providerConnectionName?: string
+    integrationName?: string
     resourceLocation?: string
     resourceName?: string
     resourceType?: string

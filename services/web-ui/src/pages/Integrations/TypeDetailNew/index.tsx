@@ -33,6 +33,7 @@ import { Spinner, Tabs } from '@cloudscape-design/components'
 import IntegrationList from './Integration'
 import CredentialsList from './Credentials'
 import { OpenGovernance } from '../../../icons/icons'
+import DiscoveryJobs from './Discovery'
 
 export default function TypeDetail() {
     const navigate = useNavigate()
@@ -104,6 +105,16 @@ export default function TypeDetail() {
                                 content: (
                                     <CredentialsList
                                         schema={shcema}
+                                        name={state.name}
+                                        integration_type={type}
+                                    />
+                                ),
+                            },
+                            {
+                                id: '2',
+                                label: 'Discovery Jobs',
+                                content: (
+                                    <DiscoveryJobs
                                         name={state.name}
                                         integration_type={type}
                                     />

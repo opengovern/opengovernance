@@ -41,232 +41,7 @@ interface IImpactedResources {
     isCostOptimization?: boolean
 }
 
-const columns = (
-    controlID: string,
-    isDemo: boolean,
-    isCostOptimization: boolean
-) => {
-    const temp: IColumn<
-        GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding,
-        any
-    >[] = [
-        {
-            field: 'resourceName',
-            headerName: 'Resource name',
-            hide: false,
-            type: 'string',
-            enableRowGroup: true,
-            sortable: false,
-            filter: true,
-            resizable: true,
-            flex: 1,
-            cellRenderer: (
-                param: ICellRendererParams<
-                    GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding,
-                    any
-                >
-            ) => (
-                <Flex flexDirection="col" alignItems="start">
-                    <Text className="text-gray-800">
-                        {param.data?.resourceName ||
-                            (param.data?.findings?.at(0)?.stateActive === false
-                                ? 'Resource deleted'
-                                : '')}
-                    </Text>
-                    <Text className={isDemo ? 'blur-sm' : ''}>
-                        {param.data?.platformResourceID}
-                    </Text>
-                </Flex>
-            ),
-        },
-        {
-            field: 'resourceType',
-            headerName: 'Resource type',
-            type: 'string',
-            enableRowGroup: true,
-            sortable: true,
-            hide: true,
-            filter: true,
-            resizable: true,
-            flex: 1,
-            cellRenderer: (
-                param: ICellRendererParams<
-                    GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding,
-                    any
-                >
-            ) => (
-                <Flex flexDirection="col" alignItems="start">
-                    <Text className="text-gray-800">
-                        {param.data?.resourceTypeLabel}
-                    </Text>
-                    <Text>{param.data?.resourceType}</Text>
-                </Flex>
-            ),
-        },
-        // {
-        //     field: 'benchmarkID',
-        //     headerName: 'Benchmark',
-        //     type: 'string',
-        //     enableRowGroup: true,
-        //     sortable: false,
-        //     hide: true,
-        //     filter: true,
-        //     resizable: true,
-        //     flex: 1,
-        //     cellRenderer: (param: ICellRendererParams) => (
-        //         <Flex flexDirection="col" alignItems="start">
-        //             <Text className="text-gray-800">
-        //                 {param.data.parentBenchmarkNames[0]}
-        //             </Text>
-        //             <Text>{param.value}</Text>
-        //         </Flex>
-        //     ),
-        // },
-        {
-            field: 'providerConnectionName',
-            headerName: 'Account',
-            type: 'string',
-            enableRowGroup: true,
-            hide: false,
-            sortable: false,
-            filter: true,
-            resizable: true,
-            flex: 1,
-            cellRenderer: (
-                param: ICellRendererParams<
-                    GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding,
-                    any
-                >
-            ) => (
-                <Flex flexDirection="row" justifyContent="start">
-                    {getConnectorIcon(param.data?.connector, '-ml-2 mr-2')}
-                    <Flex
-                        flexDirection="col"
-                        alignItems="start"
-                        className={isDemo ? 'blur-sm' : ''}
-                    >
-                        <Text className="text-gray-800">
-                            {param.data?.providerConnectionName}
-                        </Text>
-                        <Text>{param.data?.providerConnectionID}</Text>
-                    </Flex>
-                </Flex>
-            ),
-        },
-        {
-            field: 'connectionID',
-            headerName: 'opencomply connection ID',
-            type: 'string',
-            hide: true,
-            enableRowGroup: true,
-            sortable: false,
-            filter: true,
-            resizable: true,
-            flex: 1,
-        },
-        // {
-        //     field: 'stateActive',
-        //     headerName: 'State',
-        //     type: 'string',
-        //     sortable: true,
-        //     filter: true,
-        //     hide: false,
-        //     resizable: true,
-        //     flex: 1,
-        //     cellRenderer: (param: ValueFormatterParams) => (
-        //         <Flex className="h-full">{activeBadge(param.value)}</Flex>
-        //     ),
-        // },
-        {
-            field: 'failedCount',
-            headerName: 'Conformance status',
-            type: 'string',
-            sortable: false,
-            filter: true,
-            hide: false,
-            resizable: true,
-            width: 160,
-            cellRenderer: (
-                param: ICellRendererParams<GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding>
-            ) => {
-                return (
-                    <Flex className="h-full">
-                        {statusBadge(
-                            param.data?.findings
-                                ?.filter((f) => f.controlID === controlID)
-                                .sort((a, b) => {
-                                    if (
-                                        (a.evaluatedAt || 0) ===
-                                        (b.evaluatedAt || 0)
-                                    ) {
-                                        return 0
-                                    }
-                                    return (a.evaluatedAt || 0) <
-                                        (b.evaluatedAt || 0)
-                                        ? 1
-                                        : -1
-                                })
-                                .map((f) => f.complianceStatus)
-                                .at(0)
-                        )}
-                    </Flex>
-                )
-            },
-        },
-        {
-            field: 'evaluatedAt',
-            headerName: 'Last checked',
-            type: 'datetime',
-            sortable: false,
-            filter: true,
-            resizable: true,
-            width: 200,
-            valueFormatter: (param: ValueFormatterParams) => {
-                return param.value ? dateTimeDisplay(param.value) : ''
-            },
-            hide: false,
-        },
-    ]
 
-    if (isCostOptimization) {
-        temp.push({
-            field: 'findings',
-            headerName: 'Potential Savings',
-            type: 'number',
-            sortable: true,
-            filter: true,
-            hide: false,
-            resizable: true,
-            width: 150,
-            cellRenderer: (
-                param: ICellRendererParams<GithubComKaytuIoKaytuEnginePkgComplianceApiResourceFinding>
-            ) => {
-                return (
-                    <Flex className="h-full">
-                        $
-                        {param.data?.findings
-                            ?.filter((f) => f.controlID === controlID)
-                            .sort((a, b) => {
-                                if (
-                                    (a.evaluatedAt || 0) ===
-                                    (b.evaluatedAt || 0)
-                                ) {
-                                    return 0
-                                }
-                                return (a.evaluatedAt || 0) <
-                                    (b.evaluatedAt || 0)
-                                    ? 1
-                                    : -1
-                            })
-                            .map((f) => f.costOptimization || 0)
-                            .at(0)}
-                    </Flex>
-                )
-            },
-        })
-    }
-    return temp
-}
 
 export default function ImpactedResources({
     controlId,
@@ -453,7 +228,7 @@ export default function ImpactedResources({
                             finding ? (
                                 <>
                                     <Flex justifyContent="start">
-                                        {getConnectorIcon(finding?.connector)}
+                                       {finding?.integrationName}
                                         <Title className="text-lg font-semibold ml-2 my-1">
                                             {finding?.resourceName}
                                         </Title>
@@ -560,7 +335,7 @@ export default function ImpactedResources({
                             },
                             {
                                 id: 'providerConnectionName',
-                                header: 'Cloud account',
+                                header: 'Integration Type',
                                 maxWidth: 100,
                                 cell: (item) => (
                                     <>
@@ -570,8 +345,8 @@ export default function ImpactedResources({
                                                 isDemo ? 'blur-sm' : ''
                                             }`}
                                         >
-                                            {getConnectorIcon(item.connector)}
-                                            <Flex
+                                            {finding?.integrationType}
+                                            {/* <Flex
                                                 flexDirection="col"
                                                 alignItems="start"
                                             >
@@ -586,7 +361,7 @@ export default function ImpactedResources({
                                             </Flex>
                                             <Card className="cursor-pointer absolute w-fit h-fit z-40 right-1 scale-0 transition-all py-1 px-4 group-hover:scale-100">
                                                 <Text color="blue">Open</Text>
-                                            </Card>
+                                            </Card> */}
                                         </Flex>
                                     </>
                                 ),

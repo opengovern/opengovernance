@@ -85,6 +85,7 @@ func (r *httpRoutes) ListTasks(ctx echo.Context) error {
 
 	}
 
+
 	totalCount := len(items)
 	if perPage != 0 {
 		if cursor == 0 {
@@ -93,10 +94,23 @@ func (r *httpRoutes) ListTasks(ctx echo.Context) error {
 			items = utils.Paginate(cursor, perPage, items)
 		}
 	}
+	var taskResponses []api.TaskResponse
+	for _, task := range items {
+		taskResponses = append(taskResponses, api.TaskResponse{
+			ID:          task.ID,
+			Name:        task.Name,
+			ResultType:  task.ResultType,
+			Description: task.Description,
+			ImageUrl:    task.ImageUrl,
+			Interval: task.Interval,
+			Timeout: task.Timeout,
+		})
+	}
+
 
 	return ctx.JSON(http.StatusOK, api.TaskListResponse{
 		TotalCount: totalCount,
-		Items:      items,
+		Items:      taskResponses,
 	})
 }
 
@@ -116,8 +130,19 @@ func (r *httpRoutes) GetTask(ctx echo.Context) error {
 		r.logger.Error("failed to get task results", zap.Error(err))
 		return ctx.JSON(http.StatusInternalServerError, "failed to get task results")
 	}
+	var taskResponse api.TaskResponse
+	taskResponse = api.TaskResponse{
+		ID:          task.ID,
+		Name:        task.Name,
+		ResultType:  task.ResultType,
+		Description: task.Description,
+		ImageUrl:    task.ImageUrl,
+		Interval: task.Interval,
+		Timeout: task.Timeout,
+	}
 
-	return ctx.JSON(http.StatusOK, task)
+
+	return ctx.JSON(http.StatusOK, taskResponse)
 }
 
 // RunTask godoc

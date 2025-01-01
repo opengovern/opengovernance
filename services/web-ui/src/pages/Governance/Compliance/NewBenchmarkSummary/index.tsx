@@ -780,8 +780,8 @@ export default function NewBenchmarkSummary() {
                                             id={benchmarkDetail?.id}
                                             benchmarkDetail={benchmarkDetail}
                                             assignmentsCount={assignments}
-                                            onEvaluate={(c,b) => {
-                                                RunBenchmark(c,b)
+                                            onEvaluate={(c, b) => {
+                                                RunBenchmark(c, b)
                                             }}
                                         />
                                     </Flex>
@@ -832,7 +832,8 @@ export default function NewBenchmarkSummary() {
                         </Flex>
                     </Flex> */}
                     <Flex flexDirection="col" className="w-full mt-4">
-                        {chart && enable && (
+                        {/* {chart && enable && ( */}
+                        {false &&  (
                             <>
                                 <Flex className="bg-white  w-full border-solid border-2    rounded-xl p-4">
                                     {/* <LineChart

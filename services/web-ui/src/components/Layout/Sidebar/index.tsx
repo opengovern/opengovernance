@@ -22,6 +22,7 @@ import {
     ArrowUpIcon,
     ChevronDoubleUpIcon,
     CalendarDateRangeIcon,
+    CommandLineIcon,
 } from '@heroicons/react/24/outline'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Popover, Transition } from '@headlessui/react'
@@ -465,6 +466,13 @@ export default function Sidebar({  currentPage }: ISidebar) {
                 //         error: false,
                 //     },
                 // ],
+            },
+            {
+                name: 'Tasks',
+                page: ['tasks', 'cloudql'],
+                icon: CommandLineIcon,
+                isPreview: false,
+               
             },
 
             {

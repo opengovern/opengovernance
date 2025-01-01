@@ -24,6 +24,22 @@ import { getErrorMessage } from '../../../types/apierror'
 import { notificationAtom } from '../../../store'
 import { searchAtom, useURLParam } from '../../../utilities/urlstate'
 import TopHeader from '../../../components/Layout/Header'
+import axios from 'axios'
+import {
+    Alert,
+    Box,
+    Header,
+    Input,
+    KeyValuePairs,
+    Link,
+    Modal,
+    Pagination,
+    RadioGroup,
+    SpaceBetween,
+    Table,
+    Toggle,
+} from '@cloudscape-design/components'
+import KButton from '@cloudscape-design/components/button'
 
 interface IParam {
     key: string
@@ -32,102 +48,194 @@ interface IParam {
 
 export default function SettingsParameters() {
     const [notif, setNotif] = useAtom(notificationAtom)
+    const [params, setParams] = useState([])
+    const [page, setPage] = useState(1)
+    const [total, setTotal] = useState(0)
+    const [loading, setLoading] = useState(false)
+    const [selectedItem, setSelectedItem] = useState(null)
+    const [editValue, setEditValue] = useState({
+        key: '',
+        value: '',
+    })
 
-    const [params, setParams] = useState<IParam[]>([])
-    const {
-        response: parameters,
-        isLoading,
-        isExecuted,
-        sendNow: refresh,
-    } = useMetadataApiV1QueryParameterList()
-
-    const {
-        isLoading: updateIsLoading,
-        isExecuted: updateIsExecuted,
-        error: updateError,
-        sendNowWithParams,
-    } = useMetadataApiV1QueryParameterCreate({}, {}, false)
-
-    useEffect(() => {
-        if (!updateIsLoading && updateIsExecuted) {
-            const err = getErrorMessage(updateError)
-            if (err !== '') {
-                setNotif({
-                    text: `Failed to update parameters due to: ${err}`,
-                    type: 'error',
-                    position: 'bottomLeft',
-                })
-            } else {
-                setNotif({
-                    text: `Successfully updated`,
-                    type: 'success',
-                    position: 'bottomLeft',
-                })
-            }
+    const GetParams = () => {
+        setLoading(true)
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
         }
-    }, [updateIsLoading])
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
 
-    useEffect(() => {
-        setParams(
-            parameters?.queryParameters?.map((p) => {
-                return {
-                    key: p.key || '',
-                    value: p.value || '',
-                }
-            }) || []
-        )
-    }, [parameters])
-    const [keyParam] = useURLParam('key', '')
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
 
-    useEffect(() => {
-        if (keyParam.length > 0) {
-            const elem = document.getElementById(keyParam)
-            elem?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'center',
+        axios
+            .get(
+                `${url}/main/metadata/api/v1/query_parameter?per_page=15&cursor=${page}`,
+                config
+            )
+            .then((res) => {
+                const data = res.data
+                setParams(data?.items)
+                setTotal(data?.total_count)
+
+                setLoading(false)
             })
+            .catch((err) => {
+                console.log(err)
+                setLoading(false)
+            })
+    }
+
+    const EditParams = () => {
+        setLoading(true)
+        let url = ''
+        if (window.location.origin === 'http://localhost:3000') {
+            url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+        } else {
+            url = window.location.origin
         }
-    }, [params])
+        // @ts-ignore
+        const token = JSON.parse(localStorage.getItem('openg_auth')).token
 
-    const updateKey = (newKey: string, idx: number) => {
-        setParams(
-            params.map((v, i) =>
-                i === idx
-                    ? {
-                          key: newKey,
-                          value: v.value,
-                      }
-                    : v
-            )
-        )
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+        const body = {
+            query_parameters: [
+                {
+                    key: editValue.key,
+                    value: editValue.value,
+                },
+            ],
+        }
+
+        axios
+            .post(`${url}/main/metadata/api/v1/query_parameter`, body, config)
+            .then((res) => {
+                GetParams()
+                setLoading(false)
+            })
+            .catch((err) => {
+                console.log(err)
+                setLoading(false)
+            })
     }
 
-    const updateValue = (newValue: string, idx: number) => {
-        setParams(
-            params.map((v, i) =>
-                i === idx
-                    ? {
-                          key: v.key,
-                          value: newValue.trim(),
-                      }
-                    : v
-            )
-        )
-    }
-
-    const deleteRow = (idx: number) => {
-        setParams(params.filter((v, i) => i !== idx))
-    }
-
-    const addRow = () => {
-        setParams([...params, { key: '', value: '' }])
-    }
+    useEffect(() => {
+        GetParams()
+    }, [page])
 
     return (
         <>
+            <Table
+                className="mt-2"
+                onRowClick={(event) => {
+                    const row = event.detail.item
+                }}
+                columnDefinitions={[
+                    {
+                        id: 'key',
+                        header: 'Key Name',
+                        cell: (item: any) => item.key,
+                        maxWidth: 150,
+                    },
+
+                    {
+                        id: 'value',
+                        header: 'Value',
+                        cell: (item: any) => item.value,
+                        editConfig: {
+                            ariaLabel: 'Value',
+                            editIconAriaLabel: 'editable',
+                            editingCell: (item, { currentValue, setValue }) => {
+                                return (
+                                    <Input
+                                        autoFocus={true}
+                                        value={currentValue ?? item.name}
+                                        onChange={(event) => {
+                                            setValue(event.detail.value)
+                                            setEditValue({
+                                                key: item.key,
+                                                value: event.detail.value,
+                                            })
+                                        }}
+                                    />
+                                )
+                            },
+                        },
+                    },
+                    {
+                        id: 'controls_count',
+                        header: 'Using control count',
+                        cell: (item: any) =>
+                            item?.controls_count ? item?.controls_count : 0,
+                    },
+
+                    {
+                        id: 'queries_count',
+                        header: 'Using query count',
+                        cell: (item: any) =>
+                            item?.queries_count ? item?.queries_count : 0,
+                    },
+                ]}
+                columnDisplay={[
+                    { id: 'key', visible: true },
+                    { id: 'value', visible: true },
+                    { id: 'controls_count', visible: true },
+                    { id: 'queries_count', visible: true },
+                ]}
+                loading={loading}
+                submitEdit={async () => {
+                    EditParams()
+                }}
+                // @ts-ignore
+                items={params ? params : []}
+                empty={
+                    <Box
+                        margin={{ vertical: 'xs' }}
+                        textAlign="center"
+                        color="inherit"
+                    >
+                        <SpaceBetween size="m">
+                            <b>No resources</b>
+                            {/* <Button>Create resource</Button> */}
+                        </SpaceBetween>
+                    </Box>
+                }
+                header={
+                    <Header
+                        actions={
+                            <>
+                                <KButton onClick={GetParams}>Reload</KButton>
+                            </>
+                        }
+                        className="w-full"
+                    >
+                        Parameters{' '}
+                    </Header>
+                }
+                pagination={
+                    <Pagination
+                        currentPageIndex={page}
+                        pagesCount={Math.ceil(total / 15)}
+                        onChange={({ detail }) =>
+                            setPage(detail.currentPageIndex)
+                        }
+                    />
+                }
+            />
+
             {/* <TopHeader /> */}
-            <Card key="summary" className="">
+            {/* <Card key="summary" className="">
                 <Flex>
                     <Title className="font-semibold">Variables</Title>
                     <Button
@@ -203,7 +311,7 @@ export default function SettingsParameters() {
                         Save
                     </Button>
                 </Flex>
-            </Card>
+            </Card> */}
         </>
     )
 }
