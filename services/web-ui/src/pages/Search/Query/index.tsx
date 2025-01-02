@@ -539,7 +539,7 @@ export default function Query() {
                                                                                                                             ) => {
                                                                                                                                 return (
                                                                                                                                     <>
-                                                                                                                                        <Flex className="pl-12 w-full">
+                                                                                                                                        <Flex className="pl-8 w-full">
                                                                                                                                             <span className=" font-semibold">
                                                                                                                                                 {
                                                                                                                                                     column.name
