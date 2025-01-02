@@ -109,7 +109,7 @@ func (s *metadataClient) SetConfigMetadata(ctx *httpclient.Context, key models.M
 func (s *metadataClient) ListQueryParameters(ctx *httpclient.Context) (api.ListQueryParametersResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/query_parameter", s.baseURL)
 	var resp api.ListQueryParametersResponse
-	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodGet, url, ctx.ToHeaders(), nil, &resp); err != nil {
+	if statusCode, err := httpclient.DoRequest(ctx.Ctx, http.MethodPost, url, ctx.ToHeaders(), nil, &resp); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return resp, echo.NewHTTPError(statusCode, err.Error())
 		}

@@ -310,7 +310,7 @@ func (h *HttpHandler) ListQueriesV2(ctx echo.Context) error {
 		tablesFilter = req.ListOfTables
 	}
 
-	queries, err := h.db.ListQueriesByFilters(search, req.Tags, req.IntegrationTypes, req.HasParameters, req.PrimaryTable,
+	queries, err := h.db.ListQueriesByFilters(req.QueryIDs, search, req.Tags, req.IntegrationTypes, req.HasParameters, req.PrimaryTable,
 		tablesFilter, nil)
 	if err != nil {
 		span.RecordError(err)

@@ -178,11 +178,15 @@ func (db Database) GetQuery(id string) (*NamedQuery, error) {
 	return &s, nil
 }
 
-func (db Database) ListQueriesByFilters(search *string, tagFilters map[string][]string, integrationTypes []string,
+func (db Database) ListQueriesByFilters(queryIds []string, search *string, tagFilters map[string][]string, integrationTypes []string,
 	hasParameters *bool, primaryTable []string, listOfTables []string, params []string) ([]NamedQuery, error) {
 	var s []NamedQuery
 
 	m := db.orm.Model(&NamedQuery{}).Distinct("named_queries.*").Preload(clause.Associations).Preload("Query.Parameters").Preload("Tags")
+
+	if len(queryIds) > 0 {
+		m = m.Where("id IN ?", queryIds)
+	}
 
 	if search != nil {
 		m = m.Where("title LIKE ?", "%"+*search+"%")
