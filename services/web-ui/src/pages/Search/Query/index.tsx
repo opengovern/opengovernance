@@ -468,6 +468,9 @@ export default function Query() {
                                                                                         .schema_ids[0]
                                                                                 )
                                                                             }
+                                                                            else{
+                                                                                setExpanded(-1)
+                                                                            }
                                                                         }}
                                                                         headerText={
                                                                             <span className=" text-sm">
@@ -516,9 +519,17 @@ export default function Query() {
                                                                                                                         table.table_name
                                                                                                                     )
                                                                                                                 }
+                                                                                                                else{
+                                                                                                                    setExpanded1(-1)
+                                                                                                                }
                                                                                                             }}
                                                                                                             headerText={
-                                                                                                                <span className=" text-sm">
+                                                                                                                <span onClick={(e)=>{
+                                                                                                                    e.preventDefault()
+                                                                                                                    e.stopPropagation()
+                                                                                                                    setCode(code + `${table?.table_name}`)
+
+                                                                                                                }} className=" text-sm">
                                                                                                                     {
                                                                                                                         table?.table_name
                                                                                                                     }
