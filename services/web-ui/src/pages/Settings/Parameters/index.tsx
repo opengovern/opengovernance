@@ -34,6 +34,7 @@ import {
     Link,
     Modal,
     Pagination,
+    PropertyFilter,
     RadioGroup,
     SpaceBetween,
     Table,
@@ -55,6 +56,15 @@ export default function SettingsParameters() {
     const [selectedItem, setSelectedItem] = useState<any>()
     const [selected, setSelected] = useState<any>()
     const [open, setOpen] = useState(false)
+    const [controls, setControls] = useState([])
+    const [queries, setQueries] = useState([])
+    const [queryDone, setQueryDone] = useState(false)
+    const [controlDone, setControlDone] = useState(false)
+    const [queryToken, setQueryToken] = useState({
+        tokens: [],
+        operation: 'and',
+    })
+    const [propertyOptions, setPropertyOptions] = useState([])
     const [editValue, setEditValue] = useState({
         key: '',
         value: '',
@@ -76,9 +86,25 @@ export default function SettingsParameters() {
                 Authorization: `Bearer ${token}`,
             },
         }
-        const body ={
+
+        let body :any ={
             cursor: page,
             per_page: 15
+        }
+        const controls: any = []
+        const queries: any = []
+        queryToken.tokens.map((t: any) => {
+            if (t.propertyKey === 'controls') {
+                controls.push(t.value)
+            } else {
+                queries.push(t.value)
+            }
+        })
+        if (controls.length > 0) {
+            body['controls'] = controls
+        }
+        if(queries.length > 0){
+            body['queries'] = queries
         }
         axios
             .post(
@@ -124,7 +150,7 @@ export default function SettingsParameters() {
         }
 
         axios
-            .post(`${url}/main/metadata/api/v1/query_parameter`, body, config)
+            .post(`${url}/main/metadata/api/v1/query_parameter/set`, body, config)
             .then((res) => {
                 GetParams()
                 setLoading(false)
@@ -165,10 +191,108 @@ export default function SettingsParameters() {
                  setLoading(false)
              })
      }
+     const GetControls = () => {
+        //  setLoading(true)
+         let url = ''
+         if (window.location.origin === 'http://localhost:3000') {
+             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+         } else {
+             url = window.location.origin
+         }
+         // @ts-ignore
+         const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+         const config = {
+             headers: {
+                 Authorization: `Bearer ${token}`,
+             },
+         }
+         const body ={
+            has_parameters: true
+         }
+
+         axios
+             .post(`${url}/main/compliance/api/v3/controls`, body,config)
+             .then((res) => {
+                 if (res.data) {
+                        setControls(res.data?.items)
+                    //  setSelectedItem(res.data)
+                    //  setOpen(true)
+                 }
+                 setControlDone(true)
+                //  setLoading(false)
+             })
+             .catch((err) => {
+                 console.log(err)
+                //  setLoading(false)
+             })
+     }
+const GetQueries = () => {
+    // setLoading(true)
+    let url = ''
+    if (window.location.origin === 'http://localhost:3000') {
+        url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
+    } else {
+        url = window.location.origin
+    }
+    // @ts-ignore
+    const token = JSON.parse(localStorage.getItem('openg_auth')).token
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    }
+    const body = {
+        has_parameters: true,
+    }
+
+    axios
+        .post(`${url}/main/inventory/api/v3/queries `, body, config)
+        .then((res) => {
+            if (res.data) {
+                setQueries(res.data?.items)
+                //  setSelectedItem(res.data)
+                //  setOpen(true)
+            }
+            setQueryDone(true)
+            // setLoading(false)
+        })
+        .catch((err) => {
+            console.log(err)
+            // setLoading(false)
+        })
+}
+
+useEffect(()=>{
+    if(queryDone && controlDone){
+        let options :any = []
+        controls.map((c: any) => {
+            options.push({
+                propertyKey: 'controls',
+                value: c.id,
+            })
+        })
+        queries.map((c: any) => {
+            options.push({
+                propertyKey: 'queries',
+                value: c.id,
+            })
+        })
+        setPropertyOptions(options)
+    }
+},[queryDone,controlDone])
+
+    
 
     useEffect(() => {
-        GetParams()
+        GetControls()
+        GetQueries()
     }, [page])
+    useEffect(() => {
+        GetParams()
+    }, [queryToken,page])
+
 
     return (
         <>
@@ -231,11 +355,6 @@ export default function SettingsParameters() {
             </Modal>
             <Table
                 className="mt-2"
-                onRowClick={(event) => {
-                    const row = event.detail.item
-                    GetParamDetail(row.key)
-                    setSelected(row)
-                }}
                 columnDefinitions={[
                     {
                         id: 'key',
@@ -281,12 +400,30 @@ export default function SettingsParameters() {
                         cell: (item: any) =>
                             item?.queries_count ? item?.queries_count : 0,
                     },
+                    {
+                        id: 'action',
+                        header: '',
+                        cell: (item) => (
+                            // @ts-ignore
+                            <KButton
+                                onClick={() => {
+                                    GetParamDetail(item.key)
+                                    setSelected(item)
+                                }}
+                                variant="inline-link"
+                                ariaLabel={`Open Detail`}
+                            >
+                                See details
+                            </KButton>
+                        ),
+                    },
                 ]}
                 columnDisplay={[
                     { id: 'key', visible: true },
                     { id: 'value', visible: true },
                     { id: 'controls_count', visible: true },
                     { id: 'queries_count', visible: true },
+                    { id: 'action', visible: true },
                 ]}
                 loading={loading}
                 submitEdit={async () => {
@@ -325,6 +462,45 @@ export default function SettingsParameters() {
                         onChange={({ detail }) =>
                             setPage(detail.currentPageIndex)
                         }
+                    />
+                }
+                filter={
+                    <PropertyFilter
+                        // @ts-ignore
+                        query={queryToken}
+                        // @ts-ignore
+                        onChange={({ detail }) => {
+                            // @ts-ignore
+                            setQueryToken(detail)
+                        }}
+                        // countText="5 matches"
+                        // enableTokenGroups
+                        expandToViewport
+                        filteringAriaLabel="Parameter Filters"
+                        // @ts-ignore
+                        // filteringOptions={filters}
+                        filteringPlaceholder="Parameter Filters"
+                        // @ts-ignore
+                        filteringOptions={propertyOptions}
+                        // @ts-ignore
+
+                        filteringProperties={[
+                            {
+                                key: 'controls',
+                                operators: ['='],
+                                propertyLabel: 'Controls',
+                                groupValuesLabel: 'Control values',
+                            },
+                            {
+                                key: 'queries',
+                                operators: ['='],
+                                propertyLabel: 'Queries',
+                                groupValuesLabel: 'Query values',
+                            },
+                        ]}
+                        // filteringProperties={
+                        //     filterOption
+                        // }
                     />
                 }
             />

@@ -25,6 +25,7 @@ import {
     FunnelIcon,
     MagnifyingGlassIcon,
     PlayCircleIcon,
+    TableCellsIcon,
 } from '@heroicons/react/24/outline'
 import { Fragment, useEffect, useMemo, useState } from 'react' // eslint-disable-next-line import/no-extraneous-dependencies
 import { highlight, languages } from 'prismjs' // eslint-disable-next-line import/no-extraneous-dependencies
@@ -59,6 +60,7 @@ import TopHeader from '../../../components/Layout/Header'
 import KTable from '@cloudscape-design/components/table'
 import {
     Box,
+    ExpandableSection,
     Header,
     Modal,
     Pagination,
@@ -80,6 +82,7 @@ import KButton from '@cloudscape-design/components/button'
 import AllQueries from '../All Query'
 import View from '../View'
 import Bookmarks from '../Bookmarks'
+import axios from 'axios'
 export const getTable = (
     headers: string[] | undefined,
     details: any[][] | undefined,
@@ -205,8 +208,19 @@ export default function Query() {
     const [engine, setEngine] = useState('cloudql')
     const [page, setPage] = useState(0)
     const [tab,setTab] = useState("0")
-
     const [preferences, setPreferences] = useState(undefined)
+    const [integrations, setIntegrations] = useState([])
+    const [selectedIntegration, setSelectedIntegration] = useState('')
+    const [tables, setTables] = useState([])
+    const [selectedTable, setSelectedTable] = useState('')
+    const [columns, setColumns] = useState([])
+    const [schemaLoading, setSchemaLoading] = useState(false)
+    const [schemaLoading1, setSchemaLoading1] = useState(false)
+    const [schemaLoading2, setSchemaLoading2] = useState(false)
+    const [expanded, setExpanded] = useState(-1)
+    const [expanded1, setExpanded1] = useState(-1)
+
+
     // const { response: categories, isLoading: categoryLoading } =
     //     useInventoryApiV2AnalyticsCategoriesList()
 
@@ -271,14 +285,9 @@ export default function Query() {
             .finally(() => {})
     }, [])
 
-    // useEffect(() => {
-    //     if (runQuery.length > 0) {
-    //         setCode(runQuery)
-    //         setShowEditor(true)
-    //         setRunQuery('')
-    //         setAutoRun(true)
-    //     }
-    // }, [runQuery])
+
+
+   
 
     const recordToArray = (record?: Record<string, string[]> | undefined) => {
         if (record === undefined) {
@@ -307,6 +316,73 @@ export default function Query() {
             }
         }, [savedQuery])
 
+ const getIntegrations =  () => {
+     setSchemaLoading(true)
+     axios
+         .get(
+             'https://raw.githubusercontent.com/opengovern/opengovernance/refs/heads/main/assets/integrations/integrations.json'
+         )
+         .then((res) => {
+             if (res.data) {
+                 const arr = res.data
+                 const temp :any =[]
+                 // arr.sort(() => Math.random() - 0.5);
+                 arr?.map((integration: any) => {
+                     if (
+                         integration.schema_ids &&
+                         integration.schema_ids.length > 0 &&
+                         integration.tier === 'Community' &&
+                         integration.SourceCode != ''
+                     ) {
+                            temp.push(integration)
+                     }
+                 })
+                 setIntegrations(temp)
+             }
+             setSchemaLoading(false)
+         })
+         .catch((err) => {
+             setSchemaLoading(false)
+         })
+ }
+  const getMasterSchema = (id: string) => {
+      setSchemaLoading1(true)
+      axios
+          .get(
+              `https://raw.githubusercontent.com/opengovern/hub/refs/heads/main/schemas/${id}.json`
+          )
+          .then((res) => {
+              if (res.data) {
+                  setTables(res.data?.tables)
+                  
+              }
+              setSchemaLoading1(false)
+          })
+          .catch((err) => {
+              setSchemaLoading1(false)
+          })
+  }
+    const getTableData = (id:string,name: string) => {
+        setSchemaLoading2(true)
+        axios
+            .get(
+                `https://raw.githubusercontent.com/opengovern/hub/refs/heads/main/schemas/${id}/${name}.json`
+            )
+            .then((res) => {
+                if (res.data) {
+                    setColumns(res.data?.columns)
+                }
+                setSchemaLoading2(false)
+            })
+            .catch((err) => {
+                setSchemaLoading2(false)
+            })
+    }
+
+ useEffect(()=>{
+    getIntegrations()
+ },[])
+
 
     return (
         <>
@@ -314,12 +390,13 @@ export default function Query() {
             {isLoading ? (
                 <Spinner className="mt-56" />
             ) : (
-                <Flex className='w-full' alignItems="start" flexDirection="col">
+                <Flex className="w-full" alignItems="start" flexDirection="col">
                     <Flex
                         flexDirection="row"
                         className="gap-5"
                         justifyContent="start"
                         alignItems="start"
+                        style={{ flex: '1 1 0' }}
                     >
                         <Modal
                             visible={openDrawer}
@@ -330,75 +407,259 @@ export default function Query() {
                         >
                             <RenderObject obj={selectedRow} />
                         </Modal>
-                        {/* {openSearch ? (
-                            <Card className="sticky w-fit h-fit max-h-[550px] min-w-max   overflow-y-scroll">
-                                <TextInput
-                                    className="w-56 mb-6"
-                                    icon={MagnifyingGlassIcon}
-                                    placeholder="Search..."
-                                    value={searchCategory}
-                                    onChange={(e) =>
-                                        setSearchCategory(e.target.value)
-                                    }
-                                />
-                                {recordToArray(
-                                    categories?.categoryResourceType
-                                ).map(
-                                    (cat) =>
-                                        !!cat.resource_types?.filter((catt) =>
-                                            catt
-                                                .toLowerCase()
-                                                .includes(
-                                                    searchCategory.toLowerCase()
-                                                )
-                                        ).length && (
-                                            <Accordion className="w-56 border-0 rounded-none bg-transparent mb-1">
-                                                <AccordionHeader className="pl-0 pr-0.5 py-1 w-full bg-transparent">
-                                                    <Text className="text-gray-800">
-                                                        {cat.value}
-                                                    </Text>
-                                                </AccordionHeader>
-                                                <AccordionBody className="p-0 w-full pr-0.5 cursor-default bg-transparent">
-                                                    <Flex
-                                                        flexDirection="col"
-                                                        justifyContent="start"
-                                                    >
-                                                        {cat.resource_types
-                                                            ?.filter((catt) =>
-                                                                catt
-                                                                    .toLowerCase()
-                                                                    .includes(
-                                                                        searchCategory.toLowerCase()
-                                                                    )
-                                                            )
-                                                            .map((subCat) => (
-                                                                <Flex
-                                                                    justifyContent="start"
-                                                                    onClick={() =>
-                                                                        setCode(
-                                                                            `select * from platform_resources where resource_type = '${subCat}'`
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Text className="ml-4 w-full truncate text-start py-2 cursor-pointer hover:text-openg-600">
-                                                                        {subCat}
-                                                                    </Text>
-                                                                </Flex>
-                                                            ))}
-                                                    </Flex>
-                                                </AccordionBody>
-                                            </Accordion>
-                                        )
-                                )}
-                                <Flex justifyContent="end" className="mt-12">
-                                    <Button
-                                        variant="light"
-                                        onClick={() => setOpenSearch(false)}
+                        {openSearch ? (
+                            <>
+                                <Card className="p-3 rounded-xl w-1/3 h-full  ">
+                                    <Flex
+                                        flexDirection="col"
+                                        justifyContent="start"
+                                        alignItems="start"
+                                        className="gap-2 overflow-y-scroll max-h-[500px]"
                                     >
-                                        <ChevronDoubleLeftIcon className="h-4" />
-                                    </Button>
-                                </Flex>
-                            </Card>
+                                        <Text className="font-bold text-xl text-black flex flex-row justify-between w-full">
+                                            Tables
+                                            <Flex
+                                                justifyContent="end"
+                                                // className="mt-12"
+                                            >
+                                                <Button
+                                                    variant="light"
+                                                    onClick={() =>
+                                                        setOpenSearch(false)
+                                                    }
+                                                >
+                                                    <ChevronDoubleLeftIcon className="h-4" />
+                                                </Button>
+                                            </Flex>
+                                        </Text>
+                                        <>
+                                            {schemaLoading ? (
+                                                <>
+                                                    <Spinner />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {integrations?.map(
+                                                        (
+                                                            integration: any,
+                                                            index
+                                                        ) => {
+                                                            return (
+                                                                <>
+                                                                    <ExpandableSection
+                                                                        expanded={
+                                                                            expanded ==
+                                                                            index
+                                                                        }
+                                                                        onChange={({
+                                                                            detail,
+                                                                        }) => {
+                                                                            if (
+                                                                                detail.expanded
+                                                                            ) {
+                                                                                setExpanded(
+                                                                                    index
+                                                                                )
+                                                                                setSelectedIntegration(
+                                                                                    integration
+                                                                                )
+                                                                                getMasterSchema(
+                                                                                    integration
+                                                                                        .schema_ids[0]
+                                                                                )
+                                                                            }
+                                                                        }}
+                                                                        headerText={
+                                                                            <span className=" text-sm">
+                                                                                {
+                                                                                    integration?.name
+                                                                                }
+                                                                            </span>
+                                                                        }
+                                                                    >
+                                                                        <>
+                                                                            {schemaLoading1 ? (
+                                                                                <>
+                                                                                    <Spinner />
+                                                                                </>
+                                                                            ) : (
+                                                                                <div className="ml-4">
+                                                                                    {' '}
+                                                                                    <>
+                                                                                        {tables?.map(
+                                                                                            (
+                                                                                                table: any,
+                                                                                                index1
+                                                                                            ) => {
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        <ExpandableSection
+                                                                                                            expanded={
+                                                                                                                expanded1 ==
+                                                                                                                index1
+                                                                                                            }
+                                                                                                            onChange={({
+                                                                                                                detail,
+                                                                                                            }) => {
+                                                                                                                if (
+                                                                                                                    detail.expanded
+                                                                                                                ) {
+                                                                                                                    setExpanded1(
+                                                                                                                        index1
+                                                                                                                    )
+                                                                                                                    setSelectedTable(
+                                                                                                                        table
+                                                                                                                    )
+                                                                                                                    getTableData(
+                                                                                                                        integration
+                                                                                                                            .schema_ids[0],
+                                                                                                                        table.table_name
+                                                                                                                    )
+                                                                                                                }
+                                                                                                            }}
+                                                                                                            headerText={
+                                                                                                                <span className=" text-sm">
+                                                                                                                    {
+                                                                                                                        table?.table_name
+                                                                                                                    }
+                                                                                                                </span>
+                                                                                                            }
+                                                                                                        >
+                                                                                                            <>
+                                                                                                                {schemaLoading2 ? (
+                                                                                                                    <>
+                                                                                                                        <Spinner />
+                                                                                                                    </>
+                                                                                                                ) : (
+                                                                                                                    <>
+                                                                                                                        {columns?.map(
+                                                                                                                            (
+                                                                                                                                column: any,
+                                                                                                                                index2
+                                                                                                                            ) => {
+                                                                                                                                return (
+                                                                                                                                    <>
+                                                                                                                                        <Flex className="pl-12 w-full">
+                                                                                                                                            <span className=" font-semibold">
+                                                                                                                                                {
+                                                                                                                                                    column.name
+                                                                                                                                                }
+                                                                                                                                            </span>
+                                                                                                                                            <span>
+                                                                                                                                                (
+                                                                                                                                                {
+                                                                                                                                                    column.type
+                                                                                                                                                }
+
+                                                                                                                                                )
+                                                                                                                                            </span>
+                                                                                                                                        </Flex>
+                                                                                                                                    </>
+                                                                                                                                )
+                                                                                                                            }
+                                                                                                                        )}
+                                                                                                                    </>
+                                                                                                                )}
+                                                                                                            </>
+                                                                                                        </ExpandableSection>
+                                                                                                    </>
+                                                                                                )
+                                                                                            }
+                                                                                        )}
+                                                                                    </>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    </ExpandableSection>
+                                                                </>
+                                                            )
+                                                        }
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
+                                    </Flex>
+                                </Card>
+                                {/* <Card className="sticky w-fit h-fit max-h-[550px] min-w-max   overflow-y-scroll">
+                                    <TextInput
+                                        className="w-56 mb-6"
+                                        icon={MagnifyingGlassIcon}
+                                        placeholder="Search..."
+                                        value={searchCategory}
+                                        onChange={(e) =>
+                                            setSearchCategory(e.target.value)
+                                        }
+                                    />
+                                    {recordToArray(
+                                        categories?.categoryResourceType
+                                    ).map(
+                                        (cat) =>
+                                            !!cat.resource_types?.filter(
+                                                (catt) =>
+                                                    catt
+                                                        .toLowerCase()
+                                                        .includes(
+                                                            searchCategory.toLowerCase()
+                                                        )
+                                            ).length && (
+                                                <Accordion className="w-56 border-0 rounded-none bg-transparent mb-1">
+                                                    <AccordionHeader className="pl-0 pr-0.5 py-1 w-full bg-transparent">
+                                                        <Text className="text-gray-800">
+                                                            {cat.value}
+                                                        </Text>
+                                                    </AccordionHeader>
+                                                    <AccordionBody className="p-0 w-full pr-0.5 cursor-default bg-transparent">
+                                                        <Flex
+                                                            flexDirection="col"
+                                                            justifyContent="start"
+                                                        >
+                                                            {cat.resource_types
+                                                                ?.filter(
+                                                                    (catt) =>
+                                                                        catt
+                                                                            .toLowerCase()
+                                                                            .includes(
+                                                                                searchCategory.toLowerCase()
+                                                                            )
+                                                                )
+                                                                .map(
+                                                                    (
+                                                                        subCat
+                                                                    ) => (
+                                                                        <Flex
+                                                                            justifyContent="start"
+                                                                            onClick={() =>
+                                                                                setCode(
+                                                                                    `select * from platform_resources where resource_type = '${subCat}'`
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Text className="ml-4 w-full truncate text-start py-2 cursor-pointer hover:text-openg-600">
+                                                                                {
+                                                                                    subCat
+                                                                                }
+                                                                            </Text>
+                                                                        </Flex>
+                                                                    )
+                                                                )}
+                                                        </Flex>
+                                                    </AccordionBody>
+                                                </Accordion>
+                                            )
+                                    )}
+                                    <Flex
+                                        justifyContent="end"
+                                        className="mt-12"
+                                    >
+                                        <Button
+                                            variant="light"
+                                            onClick={() => setOpenSearch(false)}
+                                        >
+                                            <ChevronDoubleLeftIcon className="h-4" />
+                                        </Button>
+                                    </Flex>
+                                </Card> */}
+                            </>
                         ) : (
                             <Flex
                                 flexDirection="col"
@@ -413,38 +674,45 @@ export default function Query() {
                                         flexDirection="col"
                                         className="gap-4 w-4"
                                     >
-                                        <FunnelIcon />
+                                        <TableCellsIcon />
                                         <Text className="rotate-90">
-                                            Options
+                                            Tables
                                         </Text>
                                     </Flex>
                                 </Button>
                             </Flex>
-                        )} */}
-                        <CodeEditor
-                            ace={ace}
-                            language="sql"
-                            value={code}
-                            languageLabel="SQL"
-                            onChange={({ detail }) => {
-                                setSavedQuery('')
-                                setCode(detail.value)
-                                if(tab !== "3"){
-                                    setTab("3")
+                        )}
+
+                        <Flex className="h-full">
+                            <CodeEditor
+                                ace={ace}
+                                language="sql"
+                                value={code}
+                                languageLabel="SQL"
+                                onChange={({ detail }) => {
+                                    setSavedQuery('')
+                                    setCode(detail.value)
+                                    if (tab !== '3') {
+                                        setTab('3')
+                                    }
+                                }}
+                                preferences={preferences}
+                                onPreferencesChange={(e) =>
+                                    // @ts-ignore
+                                    setPreferences(e.detail)
                                 }
-                            }}
-                            preferences={preferences}
-                            onPreferencesChange={(e) =>
-                                // @ts-ignore
-                                setPreferences(e.detail)
-                            }
-                            loading={isLoading}
-                            themes={{
-                                light: ['xcode', 'cloud_editor', 'sqlserver'],
-                                dark: ['cloud_editor_dark', 'twilight'],
-                                // @ts-ignore
-                            }}
-                        />
+                                loading={isLoading}
+                                themes={{
+                                    light: [
+                                        'xcode',
+                                        'cloud_editor',
+                                        'sqlserver',
+                                    ],
+                                    dark: ['cloud_editor_dark', 'twilight'],
+                                    // @ts-ignore
+                                }}
+                            />
+                        </Flex>
                     </Flex>
                     <Tabs
                         className="mt-2"
