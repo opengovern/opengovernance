@@ -467,13 +467,13 @@ export default function Sidebar({  currentPage }: ISidebar) {
                 //     },
                 // ],
             },
-            {
-                name: 'Tasks',
-                page: ['tasks', 'tasks'],
-                icon: CommandLineIcon,
-                isPreview: false,
+            // {
+            //     name: 'Tasks',
+            //     page: ['tasks', 'tasks'],
+            //     icon: CommandLineIcon,
+            //     isPreview: false,
                
-            },
+            // },
 
             {
                 name: 'Integrations',
