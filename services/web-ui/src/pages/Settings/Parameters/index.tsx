@@ -93,7 +93,7 @@ export default function SettingsParameters() {
         }
         const controls: any = []
         const queries: any = []
-        queryToken.tokens.map((t: any) => {
+        queryToken?.tokens?.map((t: any) => {
             if (t.propertyKey === 'controls') {
                 controls.push(t.value)
             } else {
@@ -267,13 +267,13 @@ const GetQueries = () => {
 useEffect(()=>{
     if(queryDone && controlDone){
         let options :any = []
-        controls.map((c: any) => {
+        controls?.map((c: any) => {
             options.push({
                 propertyKey: 'controls',
                 value: c.id,
             })
         })
-        queries.map((c: any) => {
+        queries?.map((c: any) => {
             options.push({
                 propertyKey: 'queries',
                 value: c.id,
