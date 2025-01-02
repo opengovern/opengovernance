@@ -84,6 +84,7 @@ type Query struct {
 }
 
 type ListQueryV2Request struct {
+	QueryIDs          []string            `json:"query_ids"`
 	TitleFilter       string              `json:"title_filter"`
 	IntegrationTypes  []string            `json:"integration_types"`
 	HasParameters     *bool               `json:"has_parameters"`

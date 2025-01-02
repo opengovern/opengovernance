@@ -21,6 +21,7 @@ import (
 	"github.com/opengovern/og-util/pkg/httpserver"
 	model2 "github.com/opengovern/opencomply/jobs/demo-importer-job/db/model"
 	"github.com/opengovern/opencomply/jobs/post-install-job/db/model"
+	complianceapi "github.com/opengovern/opencomply/services/compliance/api"
 	complianceClient "github.com/opengovern/opencomply/services/compliance/client"
 	schedulerClient "github.com/opengovern/opencomply/services/describe/client"
 	integrationApi "github.com/opengovern/opencomply/services/integration/api/models"
@@ -28,7 +29,6 @@ import (
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
 	client2 "github.com/opengovern/opencomply/services/inventory/client"
 	inventoryClient "github.com/opengovern/opencomply/services/inventory/client"
-	complianceapi "github.com/opengovern/opencomply/services/compliance/api"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -60,7 +60,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	metadata.POST("", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
 
 	queryParameter := v1.Group("/query_parameter")
-	queryParameter.POST("", httpserver.AuthorizeHandler(h.SetQueryParameter, api3.AdminRole))
+	queryParameter.POST("/set", httpserver.AuthorizeHandler(h.SetQueryParameter, api3.AdminRole))
 	queryParameter.POST("", httpserver.AuthorizeHandler(h.ListQueryParameters, api3.ViewerRole))
 	queryParameter.GET("/:key", httpserver.AuthorizeHandler(h.GetQueryParameter, api3.ViewerRole))
 
@@ -296,10 +296,8 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	cursor = request.Cursor
 	perPage = request.PerPage
 
-	
-
-	Queries := request.Queries
-	Controls := request.Controls
+	queryIDs := request.Queries
+	controlIDs := request.Controls
 
 	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := complianceClient.NewComplianceClient(complianceURL)
@@ -318,8 +316,8 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 	}
 
 	var filteredQueryParams []string
-	if Controls !=nil {
-		all_control, err := complianceClient.ListControl(clientCtx, Controls,nil)
+	if controlIDs != nil {
+		all_control, err := complianceClient.ListControl(clientCtx, controlIDs, nil)
 		if err != nil {
 			h.logger.Error("error getting control", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting control")
@@ -331,22 +329,19 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 			for _, param := range control.Query.Parameters {
 				filteredQueryParams = append(filteredQueryParams, param.Key)
 			}
-	}
-	} else if Queries != nil {
+		}
+	} else if queryIDs != nil {
 		// TODO: Fix this part and write new client on inventory
-		for _, query := range Queries {
-		query, err := inventoryClient.GetQuery(clientCtx, query)
+		queries, err := inventoryClient.ListQueriesV2(clientCtx, &inventoryApi.ListQueryV2Request{QueryIDs: queryIDs})
 		if err != nil {
 			h.logger.Error("error getting query", zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, "error getting query")
 		}
-		if query == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "query not found")
+		for _, q := range queries.Items {
+			for _, param := range q.Query.Parameters {
+				filteredQueryParams = append(filteredQueryParams, param.Key)
+			}
 		}
-		for _, param := range query.Query.Parameters {
-			filteredQueryParams = append(filteredQueryParams, param.Key)
-		}
-	}
 	}
 
 	var queryParams []models.QueryParameterValues
@@ -421,8 +416,7 @@ func (h HttpHandler) ListQueryParameters(ctx echo.Context) error {
 func (h HttpHandler) GetQueryParameter(ctx echo.Context) error {
 	key := ctx.Param("key")
 	clientCtx := &httpclient.Context{UserRole: api3.AdminRole}
-	
-	
+
 	complianceURL := strings.ReplaceAll(h.cfg.Compliance.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
 	complianceClient := complianceClient.NewComplianceClient(complianceURL)
 	inventoryURL := strings.ReplaceAll(h.cfg.Inventory.BaseURL, "%NAMESPACE%", h.cfg.OpengovernanceNamespace)
@@ -438,12 +432,12 @@ func (h HttpHandler) GetQueryParameter(ctx echo.Context) error {
 		h.logger.Error("error listing queries", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, "error listing queries")
 	}
-	
+
 	queryParam, err := h.db.GetQueryParameter(key)
-		if err != nil {
-			h.logger.Error("error getting query parameters", zap.Error(err))
-			return err
-		}
+	if err != nil {
+		h.logger.Error("error getting query parameters", zap.Error(err))
+		return err
+	}
 	var controlsList []complianceapi.Control
 	var queriesList []inventoryApi.NamedQueryItemV2
 	for _, c := range controls {
@@ -451,7 +445,7 @@ func (h HttpHandler) GetQueryParameter(ctx echo.Context) error {
 			if p.Key == key {
 				controlsList = append(controlsList, c)
 			}
-			
+
 		}
 	}
 	for _, q := range namedQueries.Items {
@@ -462,13 +456,12 @@ func (h HttpHandler) GetQueryParameter(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, api.GetQueryParamDetailsResponse{
-		Key: key,
-		Value: queryParam.Value,
+		Key:      key,
+		Value:    queryParam.Value,
 		Controls: controlsList,
-		Queries: queriesList,
+		Queries:  queriesList,
 	})
 }
-
 
 // PurgeSampleData godoc
 //
