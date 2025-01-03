@@ -224,7 +224,7 @@ export default function Settings({
         }
     }, [enableExecuted, disableExecuted, enableLoading, disableLoading])
    const GetEnabled = () => {
-       // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+       
        setLoading(true)
        let url = ''
        if (window.location.origin === 'http://localhost:3000') {
@@ -258,7 +258,7 @@ export default function Settings({
            })
    }
    const ChangeStatus = (status: string) => {
-       // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+       
        setLoading(true)
        setEnableStatus(status)
        let url = ''
@@ -294,8 +294,7 @@ export default function Settings({
            })
    }
     const ChangeStatusItem = (status: string,tracker_id: string) => {
-        console.log("salan");
-        console.log(tracker_id);
+        
         setLoading(true);
         setEnableStatus(status);
         let url = ''

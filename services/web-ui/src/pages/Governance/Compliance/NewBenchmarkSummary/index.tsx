@@ -285,7 +285,7 @@ export default function NewBenchmarkSummary() {
         endTime: activeTimeRange.end.unix(),
     })
     const GetEnabled = () => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -334,7 +334,7 @@ export default function NewBenchmarkSummary() {
             })
     }
     const GetChart = () => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -401,7 +401,7 @@ export default function NewBenchmarkSummary() {
             })
     }
     const RunBenchmark = (c: any[],b: boolean) => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL

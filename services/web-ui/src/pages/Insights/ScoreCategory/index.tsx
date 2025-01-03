@@ -397,7 +397,7 @@ export default function ScoreCategory() {
         endDate: today.toUTCString(),
     })
     const RunBenchmark = (c: any[]) => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -481,7 +481,7 @@ export default function ScoreCategory() {
     const [enable, setEnable] = useState<boolean>(false)
 
     const GetChart = () => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
@@ -539,7 +539,7 @@ export default function ScoreCategory() {
             })
     }
     const GetEnabled = () => {
-        // /compliance/api/v3/benchmark/{benchmark-id}/assignments
+        
         let url = ''
         if (window.location.origin === 'http://localhost:3000') {
             url = window.__RUNTIME_CONFIG__.REACT_APP_BASE_URL
