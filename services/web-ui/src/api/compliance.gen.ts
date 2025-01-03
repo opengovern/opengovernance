@@ -2,31 +2,23 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
     Api,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiListBenchmarksSummaryResponse,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkTrendDatapoint,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFiltersWithMetadata,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetAccountsFindingsSummaryResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkAssignedEntities,
     GithubComKaytuIoKaytuEnginePkgComplianceApiControlSummary,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiFindingKPIResponse,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkAssignment,
     GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkEvaluationSummary,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetFindingEventsResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetFindingsResponse,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiCountFindingsResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiListResourceFindingsRequest,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEventFilters,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetSingleResourceFindingRequest,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetSingleResourceFindingResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetTopFieldResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiListResourceFindingsResponse,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiBenchmarkRemediation,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiControlTrendDatapoint,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetFindingEventsRequest,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEventFiltersWithMetadata,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFindingEvent,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFinding,
-    GithubComKaytuIoKaytuEnginePkgComplianceApiAssignedBenchmark,
     GithubComKaytuIoKaytuEnginePkgComplianceApiCountFindingEventsResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiGetFindingEventsByFindingIDResponse,
     GithubComKaytuIoKaytuEnginePkgComplianceApiFindingFilters,
@@ -183,13 +175,6 @@ export const useComplianceApiV1AssignmentsBenchmarkDetail = (
         sendNowWithParams,
     }
 }
-
-
-
-
-
-
-
 
 interface IuseComplianceApiV1BenchmarksControlsDetailState {
     isLoading: boolean
@@ -365,8 +350,6 @@ export const useComplianceApiV1BenchmarksControlsDetail = (
         sendNowWithParams,
     }
 }
-
-
 
 interface IuseComplianceApiV3ControlListFilters {
     isLoading: boolean
