@@ -28,12 +28,12 @@ type GitParser struct {
 	benchmarks         []db.Benchmark
 	frameworksChildren map[string][]string
 	controls           []db.Control
-	queries            []db.Query
-	queryParams        []models.QueryParameterValues
+	policies           []db.Policy
+	queryParamValues   []models.QueryParameterValues
 	queryViews         []models.QueryView
 	queryViewsQueries  []models.Query
-	controlsQueries    map[string]db.Query
-	namedQueries       map[string]inventory.NamedQuery
+	controlsQueries    map[string]db.Policy
+	namedPolicies      map[string]inventory.NamedPolicy
 	Comparison         *git.ComparisonResultGrouped
 }
 
@@ -67,7 +67,7 @@ func (g *GitParser) ExtractNamedQueries() error {
 				return err
 			}
 
-			var item inventory.NamedQuery
+			var item inventory.NamedPolicy
 			err = yaml.Unmarshal(content, &item)
 			if err != nil {
 				g.logger.Error("failure in unmarshal", zap.String("path", path), zap.Error(err))
@@ -78,7 +78,7 @@ func (g *GitParser) ExtractNamedQueries() error {
 				id = item.ID
 			}
 
-			g.namedQueries[id] = item
+			g.namedPolicies[id] = item
 		}
 		return nil
 	})
@@ -92,66 +92,39 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 	manualRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "manual"))
 	if err != nil {
 		g.logger.Warn("failed to load manual remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded manual remediation", zap.Int("count", len(manualRemediationMap)))
 	}
 
 	cliRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "cli"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	guardrailRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "guardrail"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	programmaticRemediationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "remediation", "programmatic"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	noncomplianceCostMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "noncompliance-cost"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	usefulnessExampleMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "usefulness-example"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
 	explanationMap, err := populateMdMapFromPath(path.Join(controlEnrichmentBasePath, "tags", "explanation"))
 	if err != nil {
 		g.logger.Warn("failed to load cli remediation", zap.Error(err))
-	} else {
-		// g.logger.Info("loaded cli remediation", zap.Int("count", len(cliRemediationMap)))
 	}
 
-	// g.logger.Info("extracting controls", zap.Int("manualRemediationMap", len(manualRemediationMap)),
-	// 	zap.Int("cliRemediationMap", len(cliRemediationMap)), zap.Int("guardrailRemediationMap", len(guardrailRemediationMap)),
-	// 	zap.Int("programmaticRemediationMap", len(programmaticRemediationMap)), zap.Int("noncomplianceCostMap", len(noncomplianceCostMap)),
-	// 	zap.Int("usefulnessExampleMap", len(usefulnessExampleMap)), zap.Int("explanationMap", len(explanationMap)))
-
 	return filepath.WalkDir(complianceControlsPath, func(path string, d fs.DirEntry, err error) error {
-		//if g.Comparison != nil {
-		//	_, modified := g.Comparison.ModifiedFiles[path]
-		//	_, created := g.Comparison.CreatedFiles[path]
-		//
-		//	if !modified && !created {
-		//		return nil
-		//	}
-		//}
 		if strings.HasSuffix(path, ".yaml") {
 			content, err := os.ReadFile(path)
 			if err != nil {
@@ -243,109 +216,124 @@ func (g *GitParser) ExtractControls(complianceControlsPath string, controlEnrich
 			}
 
 			p := db.Control{
-				ID:                 control.ID,
-				Title:              control.Title,
-				Description:        control.Description,
-				Tags:               tags,
-				IntegrationType:    control.IntegrationType,
-				Enabled:            true,
-				Benchmarks:         nil,
-				Severity:           types.ParseComplianceResultSeverity(control.Severity),
-				ManualVerification: control.ManualVerification,
-				Managed:            control.Managed,
+				ID:              control.ID,
+				Title:           control.Title,
+				Description:     control.Description,
+				Tags:            tags,
+				IntegrationType: control.IntegrationType,
+				Enabled:         true,
+				Benchmarks:      nil,
+				Severity:        types.ParseComplianceResultSeverity(control.Severity),
 			}
 
-			if control.Query != nil {
-				if control.Query.QueryID != nil {
-					query, ok := g.namedQueries[*control.Query.QueryID]
+			if control.Policy != nil {
+				if control.Policy.ID != nil {
+					query, ok := g.namedPolicies[*control.Policy.ID]
 					if !ok {
 						g.logger.Error("could not find the named query", zap.String("control", control.ID),
-							zap.String("query", *control.Query.QueryID))
+							zap.String("query", *control.Policy.ID))
 					} else {
-						paramsValues := make(map[string]string)
-						for _, pv := range control.Query.Parameters {
-							if pv.DefaultValue != "" {
-								paramsValues[pv.Key] = pv.DefaultValue
-							}
-						}
 						var integrationTypes pq.StringArray
 						for _, it := range query.IntegrationTypes {
 							integrationTypes = append(integrationTypes, string(it))
 						}
-						listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
+						listOfTables, err := utils.ExtractTableRefsFromPolicy(types.PolicyLanguageSQL, query.Policy.Definition)
 						if err != nil {
 							g.logger.Error("failed to extract table refs from query", zap.String("query-id", control.ID), zap.Error(err))
-							listOfTables = query.Query.ListOfTables
+							return nil
 						}
-						q := db.Query{
+
+						parameters, err := utils.ExtractParameters(control.Policy.Language, control.Policy.Definition)
+						if err != nil {
+							g.logger.Error("extract control failed: failed to extract parameters from query", zap.String("control-id", control.ID), zap.Error(err))
+							return nil
+						}
+
+						q := db.Policy{
 							ID:              control.ID,
-							QueryToExecute:  query.Query.QueryToExecute,
+							Definition:      query.Policy.Definition,
 							IntegrationType: integrationTypes,
-							PrimaryTable:    query.Query.PrimaryTable,
-							ListOfTables:    listOfTables,
-							Engine:          query.Query.Engine,
-							Global:          query.Query.Global,
-							RegoPolicies:    query.Query.RegoPolicies,
+							PrimaryResource: query.Policy.PrimaryResource,
+							ListOfResources: listOfTables,
+							Language:        query.Policy.Language,
 						}
 						g.controlsQueries[control.ID] = q
-						for _, parameter := range query.Query.Parameters {
-							q.Parameters = append(q.Parameters, db.QueryParameter{
-								QueryID:  control.ID,
-								Key:      parameter.Key,
-								Required: parameter.Required,
+
+						controlParameterValues := make(map[string]string)
+						for _, parameter := range control.Parameters {
+							controlParameterValues[parameter.Key] = parameter.Value
+						}
+
+						for _, parameter := range parameters {
+							q.Parameters = append(q.Parameters, db.PolicyParameter{
+								PolicyID: control.ID,
+								Key:      parameter,
 							})
 
-							if v, ok := paramsValues[parameter.Key]; ok {
-								g.queryParams = append(g.queryParams, models.QueryParameterValues{
-									Key:   parameter.Key,
-									Value: v,
+							if v, ok := controlParameterValues[parameter]; ok {
+								g.queryParamValues = append(g.queryParamValues, models.QueryParameterValues{
+									Key:       parameter,
+									Value:     v,
+									ControlID: control.ID,
 								})
 							} else {
-								if parameter.DefaultValue != "" {
-									g.queryParams = append(g.queryParams, models.QueryParameterValues{
-										Key:   parameter.Key,
-										Value: parameter.DefaultValue,
-									})
-								}
+								g.logger.Error("extract control failed: control does not contain parameter value", zap.String("control-id", control.ID),
+									zap.String("parameter", parameter))
+								return nil
 							}
 						}
-						g.queries = append(g.queries, q)
-						p.QueryID = &control.ID
+						g.policies = append(g.policies, q)
+						p.PolicyID = &control.ID
 					}
 				} else {
-					listOfTables, err := utils.ExtractTableRefsFromQuery(control.Query.QueryToExecute)
+					listOfTables, err := utils.ExtractTableRefsFromPolicy(control.Policy.Language, control.Policy.Definition)
 					if err != nil {
-						g.logger.Error("failed to extract table refs from query", zap.String("query-id", control.ID), zap.Error(err))
-						listOfTables = control.Query.ListOfTables
+						g.logger.Error("extract control failed: failed to extract table refs from query", zap.String("control-id", control.ID), zap.Error(err))
+						return nil
 					}
 
-					q := db.Query{
+					parameters, err := utils.ExtractParameters(control.Policy.Language, control.Policy.Definition)
+					if err != nil {
+						g.logger.Error("extract control failed: failed to extract parameters from query", zap.String("control-id", control.ID), zap.Error(err))
+						return nil
+					}
+
+					q := db.Policy{
 						ID:              control.ID,
-						QueryToExecute:  control.Query.QueryToExecute,
+						Definition:      control.Policy.Definition,
 						IntegrationType: control.IntegrationType,
-						PrimaryTable:    control.Query.PrimaryTable,
-						ListOfTables:    listOfTables,
-						Engine:          control.Query.Engine,
-						Global:          control.Query.Global,
-						RegoPolicies:    control.Query.RegoPolicies,
+						PrimaryResource: control.Policy.PrimaryResource,
+						ListOfResources: listOfTables,
+						Language:        control.Policy.Language,
+						Trigger:         control.Policy.Trigger,
 					}
 					g.controlsQueries[control.ID] = q
-					for _, parameter := range control.Query.Parameters {
-						q.Parameters = append(q.Parameters, db.QueryParameter{
-							QueryID:  control.ID,
-							Key:      parameter.Key,
-							Required: parameter.Required,
+
+					controlParameterValues := make(map[string]string)
+					for _, parameter := range control.Parameters {
+						controlParameterValues[parameter.Key] = parameter.Value
+					}
+
+					for _, parameter := range parameters {
+						q.Parameters = append(q.Parameters, db.PolicyParameter{
+							PolicyID: control.ID,
+							Key:      parameter,
 						})
 
-						if parameter.DefaultValue != "" {
-							g.queryParams = append(g.queryParams, models.QueryParameterValues{
-								Key:   parameter.Key,
-								Value: parameter.DefaultValue,
+						if v, ok := controlParameterValues[parameter]; ok {
+							g.queryParamValues = append(g.queryParamValues, models.QueryParameterValues{
+								Key:       parameter,
+								Value:     v,
+								ControlID: control.ID,
 							})
+						} else {
+							g.logger.Error("extract control failed: control does not contain parameter value", zap.String("control-id", control.ID),
+								zap.String("parameter", parameter))
+							return nil
 						}
 					}
-					g.queries = append(g.queries, q)
-					p.QueryID = &control.ID
+					g.policies = append(g.policies, q)
+					p.PolicyID = &control.ID
 				}
 			}
 			g.controls = append(g.controls, p)
@@ -406,7 +394,6 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	if err != nil {
 		return err
 	}
-	// g.logger.Info("Extracted benchmarks 1", zap.Int("count", len(benchmarks)))
 
 	err = g.HandleBenchmarks(benchmarks)
 	if err != nil {
@@ -429,7 +416,6 @@ func (g *GitParser) ExtractBenchmarks(complianceBenchmarksPath string) error {
 	g.benchmarks = newBenchmarks
 
 	g.benchmarks, _ = fillBenchmarksIntegrationTypes(g.benchmarks)
-	g.logger.Info("Extracted benchmarks 4", zap.Int("count", len(g.benchmarks)))
 
 	return nil
 }
@@ -653,43 +639,6 @@ func (g *GitParser) CheckForDuplicate() error {
 			return fmt.Errorf("duplicate benchmark id: %s", b.ID)
 		}
 	}
-
-	//ivisited := map[uint]bool{}
-	//for _, b := range g.benchmarkTags {
-	//	if _, ok := ivisited[b.ID]; !ok {
-	//		ivisited[b.ID] = true
-	//	} else {
-	//		return fmt.Errorf("duplicate benchmark tag id: %d", b.ID)
-	//	}
-	//}
-
-	//visited = map[string]bool{}
-	//for _, b := range g.controls {
-	//	if _, ok := visited[b.ID]; !ok {
-	//		visited[b.ID] = true
-	//	} else {
-	//		return fmt.Errorf("duplicate control id: %s", b.ID)
-	//	}
-	//}
-
-	//ivisited = map[uint]bool{}
-	//for _, b := range g.controlTags {
-	//	if _, ok := ivisited[b.ID]; !ok {
-	//		ivisited[b.ID] = true
-	//	} else {
-	//		return fmt.Errorf("duplicate control tag id: %s", b.ID)
-	//	}
-	//}
-
-	//visited = map[string]bool{}
-	//for _, b := range g.queries {
-	//	if _, ok := visited[b.ID]; !ok {
-	//		visited[b.ID] = true
-	//	} else {
-	//		return fmt.Errorf("duplicate query id: %s", b.ID)
-	//	}
-	//}
-
 	return nil
 }
 
@@ -781,95 +730,38 @@ func (g *GitParser) ExtractQueryViews(viewsPath string) error {
 		}
 
 		if obj.Query != nil {
-			if obj.Query.QueryID != nil {
-				query, ok := g.namedQueries[*obj.Query.QueryID]
-				if !ok {
-					g.logger.Error("could not find the named query", zap.String("control", obj.ID),
-						zap.String("query", *obj.Query.QueryID))
-				} else {
-					paramsValues := make(map[string]string)
-					for _, pv := range obj.Query.Parameters {
-						if pv.DefaultValue != "" {
-							paramsValues[pv.Key] = pv.DefaultValue
-						}
-					}
-					var integrationTypes pq.StringArray
-					for _, it := range query.IntegrationTypes {
-						integrationTypes = append(integrationTypes, string(it))
-					}
-
-					listOfTables, err := utils.ExtractTableRefsFromQuery(query.Query.QueryToExecute)
-					if err != nil {
-						g.logger.Error("failed to extract table refs from query", zap.String("query-id", obj.ID), zap.Error(err))
-						listOfTables = query.Query.ListOfTables
-					}
-
-					q := models.Query{
-						ID:              obj.ID,
-						QueryToExecute:  query.Query.QueryToExecute,
-						IntegrationType: integrationTypes,
-						PrimaryTable:    query.Query.PrimaryTable,
-						ListOfTables:    listOfTables,
-						Engine:          query.Query.Engine,
-						Global:          query.Query.Global,
-					}
-					for _, parameter := range query.Query.Parameters {
-						q.Parameters = append(q.Parameters, models.QueryParameter{
-							QueryID:  obj.ID,
-							Key:      parameter.Key,
-							Required: parameter.Required,
-						})
-
-						if v, ok := paramsValues[parameter.Key]; ok {
-							g.queryParams = append(g.queryParams, models.QueryParameterValues{
-								Key:   parameter.Key,
-								Value: v,
-							})
-						} else {
-							if parameter.DefaultValue != "" {
-								g.queryParams = append(g.queryParams, models.QueryParameterValues{
-									Key:   parameter.Key,
-									Value: parameter.DefaultValue,
-								})
-							}
-						}
-					}
-					g.queryViewsQueries = append(g.queryViewsQueries, q)
-					qv.QueryID = &obj.ID
-				}
-			} else {
-				listOfTables, err := utils.ExtractTableRefsFromQuery(obj.Query.QueryToExecute)
-				if err != nil {
-					g.logger.Error("failed to extract table refs from query", zap.String("query-id", obj.ID), zap.Error(err))
-					listOfTables = obj.Query.ListOfTables
-				}
-
-				q := models.Query{
-					ID:             obj.ID,
-					QueryToExecute: obj.Query.QueryToExecute,
-					PrimaryTable:   obj.Query.PrimaryTable,
-					ListOfTables:   listOfTables,
-					Engine:         obj.Query.Engine,
-					Global:         obj.Query.Global,
-				}
-				for _, parameter := range obj.Query.Parameters {
-					q.Parameters = append(q.Parameters, models.QueryParameter{
-						QueryID:  obj.ID,
-						Key:      parameter.Key,
-						Required: parameter.Required,
-					})
-
-					if parameter.DefaultValue != "" {
-						g.queryParams = append(g.queryParams, models.QueryParameterValues{
-							Key:   parameter.Key,
-							Value: parameter.DefaultValue,
-						})
-					}
-				}
-				g.queryViewsQueries = append(g.queryViewsQueries, q)
-				qv.QueryID = &obj.ID
+			listOfTables, err := utils.ExtractTableRefsFromPolicy(types.PolicyLanguageSQL, obj.Query.QueryToExecute)
+			if err != nil {
+				g.logger.Error("failed to extract table refs from query", zap.String("query-id", obj.ID), zap.Error(err))
+				listOfTables = obj.Query.ListOfTables
 			}
+
+			q := models.Query{
+				ID:             obj.ID,
+				QueryToExecute: obj.Query.QueryToExecute,
+				PrimaryTable:   obj.Query.PrimaryTable,
+				ListOfTables:   listOfTables,
+				Engine:         obj.Query.Engine,
+				Global:         obj.Query.Global,
+			}
+			for _, parameter := range obj.Query.Parameters {
+				q.Parameters = append(q.Parameters, models.QueryParameter{
+					QueryID:  obj.ID,
+					Key:      parameter.Key,
+					Required: parameter.Required,
+				})
+
+				if parameter.DefaultValue != "" {
+					g.queryParamValues = append(g.queryParamValues, models.QueryParameterValues{
+						Key:   parameter.Key,
+						Value: parameter.DefaultValue,
+					})
+				}
+			}
+			g.queryViewsQueries = append(g.queryViewsQueries, q)
+			qv.QueryID = &obj.ID
 		}
+
 		g.queryViews = append(g.queryViews, qv)
 
 		return nil

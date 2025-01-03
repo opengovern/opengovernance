@@ -3094,7 +3094,7 @@ func (h *HttpHandler) GetBenchmarkControlsTree(echoCtx echo.Context) error {
 		h.logger.Error("failed to fetch queries", zap.Error(err))
 		return err
 	}
-	queryMap := make(map[string]db.Query)
+	queryMap := make(map[string]db.Policy)
 	for _, query := range queries {
 		queryMap[query.ID] = query
 	}
@@ -3522,12 +3522,12 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 				ListOfTables []string             `json:"list_of_tables"`
 				Parameters   []api.QueryParameter `json:"parameters"`
 			}{
-				PrimaryTable: control.Query.PrimaryTable,
-				ListOfTables: control.Query.ListOfTables,
-				Parameters:   make([]api.QueryParameter, 0, len(control.Query.Parameters)),
+				PrimaryTable: control.Policy.PrimaryResource,
+				ListOfTables: control.Policy.ListOfResources,
+				Parameters:   make([]api.QueryParameter, 0, len(control.Policy.Parameters)),
 			},
 		}
-		for _, p := range control.Query.Parameters {
+		for _, p := range control.Policy.Parameters {
 			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
 		}
 
@@ -3828,12 +3828,12 @@ func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
 				ListOfTables []string             `json:"list_of_tables"`
 				Parameters   []api.QueryParameter `json:"parameters"`
 			}{
-				PrimaryTable: control.Query.PrimaryTable,
-				ListOfTables: control.Query.ListOfTables,
-				Parameters:   make([]api.QueryParameter, 0, len(control.Query.Parameters)),
+				PrimaryTable: control.Policy.PrimaryResource,
+				ListOfTables: control.Policy.ListOfResources,
+				Parameters:   make([]api.QueryParameter, 0, len(control.Policy.Parameters)),
 			},
 		}
-		for _, p := range control.Query.Parameters {
+		for _, p := range control.Policy.Parameters {
 			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
 		}
 
@@ -3910,7 +3910,7 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "control not found")
 	}
 	var parameters []api.QueryParameter
-	for _, qp := range control.Query.Parameters {
+	for _, qp := range control.Policy.Parameters {
 		parameters = append(parameters, qp.ToApi())
 	}
 
@@ -3927,10 +3927,10 @@ func (h *HttpHandler) GetControlDetails(echoCtx echo.Context) error {
 			ListOfTables   []string             `json:"listOfTables"`
 			Parameters     []api.QueryParameter `json:"parameters"`
 		}{
-			Engine:         control.Query.Engine,
-			QueryToExecute: control.Query.QueryToExecute,
-			PrimaryTable:   control.Query.PrimaryTable,
-			ListOfTables:   control.Query.ListOfTables,
+			Engine:         control.Policy.Language,
+			QueryToExecute: control.Policy.Definition,
+			PrimaryTable:   control.Policy.PrimaryResource,
+			ListOfTables:   control.Policy.ListOfResources,
 			Parameters:     parameters,
 		},
 		Tags: model.TrimPrivateTags(control.GetTagsMap()),
@@ -4038,10 +4038,10 @@ func (h *HttpHandler) ListControlsSummary(echoCtx echo.Context) error {
 	for _, control := range controls {
 		apiControl := control.ToApi()
 		var resourceType *inventoryApi.ResourceType
-		if control.Query != nil {
-			apiControl.IntegrationType = control.Query.IntegrationType
-			if control.Query.PrimaryTable != nil {
-				rtName, _, err := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, integration_type.ParseTypes(control.Query.IntegrationType))
+		if control.Policy != nil {
+			apiControl.IntegrationType = control.Policy.IntegrationType
+			if control.Policy.PrimaryResource != nil {
+				rtName, _, err := runner.GetResourceTypeFromTableName(*control.Policy.PrimaryResource, integration_type.ParseTypes(control.Policy.IntegrationType))
 				if err != nil {
 					h.logger.Error("failed to get resource type from table name", zap.Error(err))
 					return err
@@ -4157,10 +4157,10 @@ func (h *HttpHandler) getControlSummary(ctx context.Context, controlID string, b
 	}
 
 	var resourceType *inventoryApi.ResourceType
-	if control.Query != nil {
-		apiControl.IntegrationType = control.Query.IntegrationType
-		if control.Query != nil && control.Query.PrimaryTable != nil {
-			rtName, _, err := runner.GetResourceTypeFromTableName(*control.Query.PrimaryTable, integration_type.ParseTypes(control.Query.IntegrationType))
+	if control.Policy != nil {
+		apiControl.IntegrationType = control.Policy.IntegrationType
+		if control.Policy != nil && control.Policy.PrimaryResource != nil {
+			rtName, _, err := runner.GetResourceTypeFromTableName(*control.Policy.PrimaryResource, integration_type.ParseTypes(control.Policy.IntegrationType))
 			if err != nil {
 				h.logger.Error("failed to get resource type from table name", zap.Error(err))
 				return nil, err
@@ -7123,7 +7123,7 @@ func (h *HttpHandler) GetControlsResourceCategories(ctx echo.Context) error {
 	}
 	tablesMap := make(map[string]bool)
 	for _, c := range controls {
-		for _, t := range c.Query.ListOfTables {
+		for _, t := range c.Policy.ListOfResources {
 			tablesMap[t] = true
 		}
 	}
@@ -7181,7 +7181,7 @@ func (h *HttpHandler) GetCategoriesControls(ctx echo.Context) error {
 
 		servicesControls := make(map[string][]api.Control)
 		for _, ctrl := range controls {
-			for _, t := range ctrl.Query.ListOfTables {
+			for _, t := range ctrl.Policy.ListOfResources {
 				if t == "" {
 					continue
 				}

@@ -3,8 +3,9 @@ package models
 import "github.com/opengovern/opencomply/services/metadata/api"
 
 type QueryParameterValues struct {
-	Key   string `gorm:"primaryKey"`
-	Value string `gorm:"type:text;not null"`
+	Key       string `gorm:"primaryKey"`
+	ControlID string `gorm:"primaryKey"`
+	Value     string `gorm:"type:text;not null"`
 }
 
 func (qp QueryParameterValues) GetKey() string {
