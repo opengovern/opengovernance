@@ -22,7 +22,6 @@ import (
 	es2 "github.com/opengovern/og-util/pkg/es"
 	"github.com/opengovern/og-util/pkg/httpclient"
 	httpserver2 "github.com/opengovern/og-util/pkg/httpserver"
-	"github.com/opengovern/og-util/pkg/integration"
 	"github.com/opengovern/og-util/pkg/model"
 	runner "github.com/opengovern/opencomply/jobs/compliance-runner-job"
 	"github.com/opengovern/opencomply/jobs/compliance-summarizer-job/types"
@@ -34,7 +33,6 @@ import (
 	"github.com/opengovern/opencomply/services/compliance/db"
 	"github.com/opengovern/opencomply/services/compliance/es"
 	schedulerapi "github.com/opengovern/opencomply/services/describe/api"
-	model3 "github.com/opengovern/opencomply/services/describe/db/model"
 	integrationapi "github.com/opengovern/opencomply/services/integration/api/models"
 	integration_type "github.com/opengovern/opencomply/services/integration/integration-type"
 	inventoryApi "github.com/opengovern/opencomply/services/inventory/api"
@@ -100,28 +98,19 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v3 := e.Group("/api/v3")
 
-	v3.GET("/benchmarks/tags", httpserver2.AuthorizeHandler(h.ListBenchmarksTags, authApi.ViewerRole))
 	v3.POST("/benchmarks", httpserver2.AuthorizeHandler(h.ListBenchmarksFiltered, authApi.ViewerRole))
 	v3.GET("/benchmarks/filters", httpserver2.AuthorizeHandler(h.ListBenchmarksFilters, authApi.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id", httpserver2.AuthorizeHandler(h.GetBenchmarkDetails, authApi.ViewerRole))
 	v3.GET("/benchmark/:benchmark_id/assignments", httpserver2.AuthorizeHandler(h.GetBenchmarkAssignments, authApi.ViewerRole))
 	v3.POST("/benchmark/:benchmark_id/assign", httpserver2.AuthorizeHandler(h.AssignBenchmarkToIntegration, authApi.ViewerRole))
-	v3.POST("/compliance/summary/integration", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfIntegration, authApi.ViewerRole))
 	v3.POST("/compliance/summary/benchmark", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfBenchmark, authApi.ViewerRole))
-	v3.GET("/compliance/summary/:job_id", httpserver2.AuthorizeHandler(h.ComplianceSummaryOfJob, authApi.ViewerRole))
 	v3.POST("/benchmarks/:benchmark_id/trend", httpserver2.AuthorizeHandler(h.GetBenchmarkTrendV3, authApi.ViewerRole))
 
 	v3.POST("/controls", httpserver2.AuthorizeHandler(h.ListControlsFiltered, authApi.ViewerRole))
-	v3.GET("/controls/categories", httpserver2.AuthorizeHandler(h.GetControlsResourceCategories, authApi.ViewerRole))
-	v3.GET("/categories/controls", httpserver2.AuthorizeHandler(h.GetCategoriesControls, authApi.ViewerRole))
 	v3.GET("/parameters/controls", httpserver2.AuthorizeHandler(h.GetParametersControls, authApi.ViewerRole))
 	v3.GET("/controls/filters", httpserver2.AuthorizeHandler(h.ListControlsFilters, authApi.ViewerRole))
-	v3.POST("/controls/summary", httpserver2.AuthorizeHandler(h.ControlsFilteredSummary, authApi.ViewerRole))
 	v3.GET("/control/:control_id", httpserver2.AuthorizeHandler(h.GetControlDetails, authApi.ViewerRole))
-	v3.GET("/controls/tags", httpserver2.AuthorizeHandler(h.ListControlsTags, authApi.ViewerRole))
-	v3.POST("/compliance_result", httpserver2.AuthorizeHandler(h.GetComplianceResultV2, authApi.ViewerRole))
 
-	v3.GET("/jobs/history", httpserver2.AuthorizeHandler(h.ListComplianceJobsHistory, authApi.ViewerRole))
 
 	v3.GET("/benchmarks/:benchmark_id/nested", httpserver2.AuthorizeHandler(h.ListBenchmarksNestedForBenchmark, authApi.ViewerRole))
 
@@ -2250,36 +2239,7 @@ func (h *HttpHandler) populateControlsMap(ctx context.Context, benchmarkID strin
 }
 
 
-// ListControlsTags godoc
-//
-//	@Summary		List controls tags
-//	@Description	Retrieving list of control possible tags
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Produce		json
-//	@Success		200	{object}	[]api.ControlTagsResult
-//	@Router			/compliance/api/v3/controls/tags [get]
-func (h *HttpHandler) ListControlsTags(ctx echo.Context) error {
-	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "new_ListControlsTags", trace.WithSpanKind(trace.SpanKindServer))
-	span.SetName("new_ListControlsTags")
 
-	controlsTags, err := h.db.GetControlsTags()
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return err
-	}
-
-	res := make([]api.ControlTagsResult, 0, len(controlsTags))
-	for _, history := range controlsTags {
-		res = append(res, history.ToApi())
-	}
-
-	span.End()
-
-	return ctx.JSON(200, res)
-}
 
 // ListControlsFiltered godoc
 //
@@ -2605,189 +2565,6 @@ func (h *HttpHandler) ListControlsFiltered(echoCtx echo.Context) error {
 	return echoCtx.JSON(http.StatusOK, response)
 }
 
-// ControlsFilteredSummary godoc
-//
-//	@Summary	List controls filtered by integrationType, benchmark, tags
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		request	body		api.ControlsFilterSummaryRequest	true	"Request Body"
-//	@Success	200		{object}	api.ControlsFilterSummaryResult
-//	@Router		/compliance/api/v3/controls/summary [post]
-func (h *HttpHandler) ControlsFilteredSummary(echoCtx echo.Context) error {
-	ctx := echoCtx.Request().Context()
-
-	var req api.ControlsFilterSummaryRequest
-	if err := bindValidate(echoCtx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var benchmarks []string
-
-	if len(req.RootBenchmark) > 0 {
-		var rootBenchmarks []string
-		for _, rootBenchmark := range req.RootBenchmark {
-			childBenchmarks, err := h.getChildBenchmarks(ctx, rootBenchmark)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
-			rootBenchmarks = append(rootBenchmarks, childBenchmarks...)
-		}
-		if len(req.ParentBenchmark) > 0 {
-			parentBenchmarks := make(map[string]bool)
-			for _, parentBenchmark := range req.ParentBenchmark {
-				parentBenchmarks[parentBenchmark] = true
-			}
-			for _, b := range rootBenchmarks {
-				if _, ok := parentBenchmarks[b]; ok {
-					benchmarks = append(benchmarks, b)
-				}
-			}
-		} else {
-			for _, b := range rootBenchmarks {
-				benchmarks = append(benchmarks, b)
-			}
-		}
-	} else if len(req.ParentBenchmark) > 0 {
-		benchmarks = req.ParentBenchmark
-	}
-
-	controls, err := h.db.ListControlsByFilter(ctx, nil, req.IntegrationTypes, req.Severity, benchmarks, req.Tags, req.HasParameters,
-		req.PrimaryTable, req.ListOfTables, nil)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var fRes map[string]map[string]int64
-
-	if req.ComplianceResultFilters != nil {
-		var esComplianceStatuses []opengovernanceTypes.ComplianceStatus
-		var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-
-		if req.ComplianceResultFilters != nil {
-			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0, len(req.ComplianceResultFilters.ComplianceStatus))
-			for _, status := range req.ComplianceResultFilters.ComplianceStatus {
-				esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
-			}
-
-			if req.ComplianceResultFilters.LastEvent.From != nil && *req.ComplianceResultFilters.LastEvent.From != 0 {
-				lastEventFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.From, 0))
-			}
-			if req.ComplianceResultFilters.LastEvent.To != nil && *req.ComplianceResultFilters.LastEvent.To != 0 {
-				lastEventTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.LastEvent.To, 0))
-			}
-			if req.ComplianceResultFilters.EvaluatedAt.From != nil && *req.ComplianceResultFilters.EvaluatedAt.From != 0 {
-				evaluatedAtFrom = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.From, 0))
-			}
-			if req.ComplianceResultFilters.EvaluatedAt.To != nil && *req.ComplianceResultFilters.EvaluatedAt.To != 0 {
-				evaluatedAtTo = utils.GetPointer(time.Unix(*req.ComplianceResultFilters.EvaluatedAt.To, 0))
-			}
-		} else {
-			esComplianceStatuses = make([]opengovernanceTypes.ComplianceStatus, 0)
-		}
-
-		var controlIDs []string
-		for _, c := range controls {
-			controlIDs = append(controlIDs, c.ID)
-		}
-		if req.ComplianceResultFilters != nil {
-			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, req.ComplianceResultFilters.ResourceID,
-				req.ComplianceResultFilters.IntegrationType, req.ComplianceResultFilters.IntegrationID, req.ComplianceResultFilters.NotIntegrationID,
-				req.ComplianceResultFilters.ResourceTypeID, req.ComplianceResultFilters.BenchmarkID, controlIDs, req.ComplianceResultFilters.Severity,
-				lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo, req.ComplianceResultFilters.StateActive, esComplianceStatuses)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
-		} else {
-			fRes, err = es.ComplianceResultsCountByControlID(ctx, h.logger, h.client, nil, nil, nil, nil,
-				nil, nil, controlIDs, nil, lastEventFrom, lastEventTo, evaluatedAtFrom,
-				evaluatedAtTo, nil, esComplianceStatuses)
-		}
-
-		h.logger.Info("ComplianceResult Counts By ControlID", zap.Any("Controls", controlIDs), zap.Any("ComplianceResults Count", fRes))
-	}
-
-	var resultControls []api.ListControlsFilterResultControl
-	uniqueIntegrationTypes := make(map[string]bool)
-	uniqueSeverities := make(map[string]bool)
-	uniquePrimaryTables := make(map[string]bool)
-	uniqueListOfTables := make(map[string]bool)
-	uniqueTags := make(map[string]map[string]bool)
-	for _, control := range controls {
-		if req.ComplianceResultFilters != nil {
-			if count, ok := fRes[control.ID]; ok {
-				if len(count) == 0 {
-					continue
-				}
-			} else {
-				continue
-			}
-		}
-
-		apiControl := api.ListControlsFilterResultControl{
-			ID:              control.ID,
-			Title:           control.Title,
-			Description:     control.Description,
-			IntegrationType: integration_type.ParseTypes(control.IntegrationType),
-			Severity:        control.Severity,
-			Tags:            filterTagsByRegex(req.TagsRegex, model.TrimPrivateTags(control.GetTagsMap())),
-			Query: struct {
-				PrimaryTable *string              `json:"primary_table"`
-				ListOfTables []string             `json:"list_of_tables"`
-				Parameters   []api.QueryParameter `json:"parameters"`
-			}{
-				PrimaryTable: control.Query.PrimaryTable,
-				ListOfTables: control.Query.ListOfTables,
-				Parameters:   make([]api.QueryParameter, 0, len(control.Query.Parameters)),
-			},
-		}
-		for _, p := range control.Query.Parameters {
-			apiControl.Query.Parameters = append(apiControl.Query.Parameters, p.ToApi())
-		}
-
-		for _, c := range apiControl.IntegrationType {
-			uniqueIntegrationTypes[c.String()] = true
-		}
-		uniqueSeverities[apiControl.Severity.String()] = true
-		for _, t := range apiControl.Query.ListOfTables {
-			if t == "" {
-				continue
-			}
-			uniqueListOfTables[t] = true
-		}
-		if apiControl.Query.PrimaryTable != nil && *apiControl.Query.PrimaryTable != "" {
-			uniquePrimaryTables[*apiControl.Query.PrimaryTable] = true
-		}
-		for k, vs := range apiControl.Tags {
-			if _, ok := uniqueTags[k]; !ok {
-				uniqueTags[k] = make(map[string]bool)
-			}
-			for _, v := range vs {
-				uniqueTags[k][v] = true
-			}
-		}
-
-		resultControls = append(resultControls, apiControl)
-	}
-
-	uniqueTagsFinal := make(map[string][]string)
-	for k, vs := range uniqueTags {
-		for v, _ := range vs {
-			uniqueTagsFinal[k] = append(uniqueTagsFinal[k], v)
-		}
-	}
-	result := api.ControlsFilterSummaryResult{
-		ControlsCount:    int64(len(resultControls)),
-		IntegrationTypes: mapToArray(uniqueIntegrationTypes),
-		Severity:         mapToArray(uniqueSeverities),
-		Tags:             uniqueTagsFinal,
-		PrimaryTable:     mapToArray(uniquePrimaryTables),
-		ListOfTables:     mapToArray(uniqueListOfTables),
-	}
-
-	return echoCtx.JSON(http.StatusOK, result)
-}
 
 // GetControlDetails godoc
 //
@@ -3949,231 +3726,7 @@ func (h *HttpHandler) GetBenchmarkAssignments(echoCtx echo.Context) error {
 	})
 }
 
-// GetComplianceResultV2 godoc
-//
-//	@Summary		Get complianceResults
-//	@Description	Retrieving all compliance run complianceResults with respect to filters.
-//	@Tags			compliance
-//	@Security		BearerToken
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		api.GetComplianceResultsRequestV2	true	"Request Body"
-//	@Success		200		{object}	api.GetComplianceResultsResponse
-//	@Router			/compliance/api/v3/compliance_result [post]
-func (h *HttpHandler) GetComplianceResultV2(echoCtx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
-	ctx := echoCtx.Request().Context()
-
-	var req api.GetComplianceResultsRequestV2
-	if err := bindValidate(echoCtx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var integrations []integrationapi.Integration
-	for _, info := range req.Filters.Integration {
-		if info.IntegrationID != nil {
-			integration, err := h.integrationClient.GetIntegration(clientCtx, *info.IntegrationID)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-			}
-			if integration != nil {
-				integrations = append(integrations, *integration)
-			}
-			continue
-		}
-		var integrationTypes []string
-		if info.IntegrationType != nil {
-			integrationTypes = []string{*info.IntegrationType}
-		}
-		var integrationIDs []string
-		if info.IntegrationID != nil {
-			integrationIDs = []string{*info.IntegrationID}
-		}
-		integrationsTmp, err := h.integrationClient.ListIntegrationsByFilters(clientCtx,
-			integrationapi.ListIntegrationsRequest{
-				IntegrationType: integrationTypes,
-				NameRegex:       info.Name,
-				ProviderIDRegex: info.ProviderID,
-				IntegrationID:   integrationIDs,
-			})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-		integrations = append(integrations, integrationsTmp.Integrations...)
-	}
-
-	var integrationIds []string
-	for _, c := range integrations {
-		integrationIds = append(integrationIds, c.IntegrationID)
-	}
-
-	var err error
-	//integrationIds, err = httpserver2.ResolveIntegrationIDs(echoCtx, integrationIds)
-	//if err != nil {
-	//	return err
-	//}
-
-	var response api.GetComplianceResultsResponse
-
-	var complianceStatuses []api.ComplianceStatus
-	if len(req.Filters.IsCompliant) == 0 {
-		complianceStatuses = []api.ComplianceStatus{api.ComplianceStatusFailed}
-	} else {
-		for _, s := range req.Filters.IsCompliant {
-			if s {
-				complianceStatuses = append(complianceStatuses, api.ComplianceStatusPassed)
-			} else {
-				complianceStatuses = append(complianceStatuses, api.ComplianceStatusFailed)
-			}
-		}
-	}
-
-	esComplianceStatuses := make([]opengovernanceTypes.ComplianceStatus, 0, len(complianceStatuses))
-	for _, status := range complianceStatuses {
-		esComplianceStatuses = append(esComplianceStatuses, status.GetEsComplianceStatuses()...)
-	}
-
-	if len(req.Sort) == 0 {
-		req.Sort = []api.ComplianceResultsSortV2{
-			{ComplianceStatus: utils.GetPointer(api.SortDirectionDescending)},
-		}
-	}
-
-	if len(req.AfterSortKey) != 0 {
-		expectedLen := len(req.Sort) + 1
-		if len(req.AfterSortKey) != expectedLen {
-			return echo.NewHTTPError(http.StatusBadRequest, "sort key length should be zero or match a returned sort key from previous response")
-		}
-	}
-
-	var lastEventFrom, lastEventTo, evaluatedAtFrom, evaluatedAtTo *time.Time
-	var notLastEventFrom, notLastEventTo *time.Time
-	if req.Filters.LastUpdated.From != nil && *req.Filters.LastUpdated.From != 0 {
-		lastEventFrom = utils.GetPointer(time.Unix(*req.Filters.LastUpdated.From, 0))
-	}
-	if req.Filters.LastUpdated.To != nil && *req.Filters.LastUpdated.To != 0 {
-		lastEventTo = utils.GetPointer(time.Unix(*req.Filters.LastUpdated.To, 0))
-	}
-	if req.Filters.NotLastUpdated.From != nil && *req.Filters.NotLastUpdated.From != 0 {
-		notLastEventFrom = utils.GetPointer(time.Unix(*req.Filters.NotLastUpdated.From, 0))
-	}
-	if req.Filters.NotLastUpdated.To != nil && *req.Filters.NotLastUpdated.To != 0 {
-		notLastEventTo = utils.GetPointer(time.Unix(*req.Filters.NotLastUpdated.To, 0))
-	}
-
-	res, totalCount, err := es.ComplianceResultsQueryV2(ctx, h.logger, h.client, req.Filters.ResourceID, req.Filters.NotResourceID, nil,
-		integrationIds, nil, req.Filters.ResourceType, req.Filters.NotResourceType, req.Filters.BenchmarkID,
-		req.Filters.NotBenchmarkID, req.Filters.ControlID, req.Filters.NotControlID,
-		req.Filters.Severity, req.Filters.NotSeverity, lastEventFrom, lastEventTo, notLastEventFrom, notLastEventTo,
-		evaluatedAtFrom, evaluatedAtTo, req.Filters.IsActive, esComplianceStatuses, req.Sort, req.Limit, req.AfterSortKey)
-	if err != nil {
-		h.logger.Error("failed to get complianceResults", zap.Error(err))
-		return err
-	}
-
-	allIntegrations, err := h.integrationClient.ListIntegrations(&httpclient.Context{UserRole: authApi.AdminRole}, nil)
-	if err != nil {
-		h.logger.Error("failed to get sources", zap.Error(err))
-		return err
-	}
-	allIntegrationsMap := make(map[string]*integrationapi.Integration)
-	for _, src := range allIntegrations.Integrations {
-		src := src
-		allIntegrationsMap[src.IntegrationID] = &src
-	}
-
-	controls, err := h.db.ListControls(ctx, nil, nil)
-	if err != nil {
-		h.logger.Error("failed to get controls", zap.Error(err))
-		return err
-	}
-	controlsMap := make(map[string]*db.Control)
-	for _, control := range controls {
-		control := control
-		controlsMap[control.ID] = &control
-	}
-
-	benchmarks, err := h.db.ListBenchmarksBare(ctx)
-	if err != nil {
-		h.logger.Error("failed to get benchmarks", zap.Error(err))
-		return err
-	}
-	benchmarksMap := make(map[string]*db.Benchmark)
-	for _, benchmark := range benchmarks {
-		benchmark := benchmark
-		benchmarksMap[benchmark.ID] = &benchmark
-	}
-
-	resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(&httpclient.Context{UserRole: authApi.AdminRole},
-		nil, nil, nil, false, nil, 10000, 1)
-	if err != nil {
-		h.logger.Error("failed to get resource type metadata", zap.Error(err))
-		return err
-	}
-	resourceTypeMetadataMap := make(map[string]*inventoryApi.ResourceType)
-	for _, item := range resourceTypeMetadata.ResourceTypes {
-		item := item
-		resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = &item
-	}
-
-	for _, h := range res {
-		finding := api.GetAPIComplianceResultFromESComplianceResult(h.Source)
-
-		for _, parentBenchmark := range h.Source.ParentBenchmarks {
-			if benchmark, ok := benchmarksMap[parentBenchmark]; ok {
-				finding.ParentBenchmarkNames = append(finding.ParentBenchmarkNames, benchmark.Title)
-			}
-		}
-
-		if control, ok := controlsMap[finding.ControlID]; ok {
-			finding.ControlTitle = control.Title
-		}
-
-		if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(finding.ResourceType)]; ok {
-			finding.ResourceTypeName = rtMetadata.ResourceLabel
-		}
-
-		finding.SortKey = h.Sort
-
-		response.ComplianceResults = append(response.ComplianceResults, finding)
-	}
-	response.TotalCount = totalCount
-
-	platformResourceIDs := make([]string, 0, len(response.ComplianceResults))
-	for _, finding := range response.ComplianceResults {
-		platformResourceIDs = append(platformResourceIDs, finding.PlatformResourceID)
-	}
-
-	lookupResourcesMap, err := es.FetchLookupByResourceIDBatch(ctx, h.client, platformResourceIDs)
-	if err != nil {
-		h.logger.Error("failed to fetch lookup resources", zap.Error(err))
-		return err
-	}
-
-	for i, finding := range response.ComplianceResults {
-		var lookupResource *es2.LookupResource
-		potentialResources := lookupResourcesMap[finding.PlatformResourceID]
-		for _, r := range potentialResources {
-			r := r
-			if strings.ToLower(r.ResourceType) == strings.ToLower(finding.ResourceType) {
-				lookupResource = &r
-				break
-			}
-		}
-		if lookupResource != nil {
-			response.ComplianceResults[i].ResourceName = lookupResource.ResourceName
-		} else {
-			h.logger.Warn("lookup resource not found",
-				zap.String("platform_resource_id", finding.PlatformResourceID),
-				zap.String("resource_id", finding.ResourceID),
-				zap.String("controlId", finding.ControlID),
-			)
-		}
-	}
-
-	return echoCtx.JSON(http.StatusOK, response)
-}
 
 // AssignBenchmarkToIntegration godoc
 //
@@ -4791,110 +4344,7 @@ func (h *HttpHandler) GetParametersControls(ctx echo.Context) error {
 	})
 }
 
-// ListComplianceJobsHistory godoc
-//
-//	@Summary	List jobs by job type and filters
-//	@Security	BearerToken
-//	@Tags		scheduler
-//	@Param		interval		query	string	true	"Time Interval to filter by"
-//	@Param		trigger_type	query	string	true	"Trigger Type: (all(default), manual, system)"
-//	@Param		created_by		query	string	true	"Created By User ID"
-//	@Param		cursor			query	int		true	"cursor"
-//	@Param		per_page		query	int		true	"per page"
-//	@Produce	json
-//	@Success	200	{object}	api.ListComplianceJobsHistoryResponse
-//	@Router		/compliance/api/v3/jobs/history [get]
-func (h *HttpHandler) ListComplianceJobsHistory(ctx echo.Context) error {
-	clientCtx := &httpclient.Context{UserRole: authApi.AdminRole}
 
-	interval := ctx.QueryParam("interval")
-	triggerType := ctx.QueryParam("trigger_type")
-	createdBy := ctx.QueryParam("created_by")
-
-	var cursor, perPage int64
-	var err error
-	cursorStr := ctx.QueryParam("cursor")
-	if cursorStr != "" {
-		cursor, err = strconv.ParseInt(cursorStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-	perPageStr := ctx.QueryParam("per_page")
-	if perPageStr != "" {
-		perPage, err = strconv.ParseInt(perPageStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	}
-
-	jobs, err := h.schedulerClient.ListComplianceJobsHistory(clientCtx, interval, triggerType, createdBy, int(cursor), int(perPage))
-	if err != nil {
-		h.logger.Error("could not get list of jobs", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "could not get list of jobs")
-	}
-	var jobIDs []string
-	for _, j := range jobs.Items {
-		jobIDs = append(jobIDs, j.SummarizerJobs...)
-	}
-
-	timeAt := time.Now()
-	summariesAtTime, err := es.ListJobsSummariesAtTime(ctx.Request().Context(), h.logger, h.client,
-		nil, jobIDs, nil, nil,
-		timeAt, true)
-	if err != nil {
-		return err
-	}
-
-	var items []api.ListComplianceJobsHistoryItem
-	for _, j := range jobs.Items {
-		var integrations []api.IntegrationInfo
-		for _, i := range j.Integrations {
-			integrations = append(integrations, api.IntegrationInfo{
-				IntegrationType: i.IntegrationType,
-				ProviderID:      &i.ProviderID,
-				Name:            &i.Name,
-				IntegrationID:   &i.IntegrationID,
-			})
-		}
-		item := api.ListComplianceJobsHistoryItem{
-			BenchmarkId:  j.BenchmarkId,
-			Integrations: integrations,
-			JobId:        j.JobId,
-			TriggerType:  j.TriggerType,
-			CreatedBy:    j.CreatedBy,
-			JobStatus:    j.JobStatus,
-			CreatedAt:    j.CreatedAt,
-			UpdatedAt:    j.UpdatedAt,
-		}
-
-		if j.JobStatus == string(model3.ComplianceJobSucceeded) {
-			summaryAtTime := summariesAtTime[j.SummarizerJobs[len(j.SummarizerJobs)-1]]
-
-			csResult := api.ComplianceStatusSummaryV2{}
-			addToResults := func(resultGroup types.ResultGroup) {
-				csResult.AddESComplianceStatusMap(resultGroup.Result.QueryResult)
-			}
-
-			addToResults(summaryAtTime.Integrations.BenchmarkResult)
-			var complianceScore float64
-			if csResult.TotalCount > 0 {
-				complianceScore = float64(csResult.PassedCount) / float64(csResult.TotalCount)
-			} else {
-				complianceScore = 0
-			}
-			item.ComplianceResultsSummary = csResult
-			item.ComplianceScore = complianceScore
-		}
-
-		items = append(items, item)
-	}
-
-	return ctx.JSON(http.StatusOK, api.ListComplianceJobsHistoryResponse{
-		Items:      items,
-		TotalCount: jobs.TotalCount,
-	})
-}
 
 // ListBenchmarksNestedForBenchmark godoc
 //
