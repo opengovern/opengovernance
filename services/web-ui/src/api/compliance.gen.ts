@@ -33,8 +33,6 @@ import {
 
 import AxiosAPI, { setWorkspace } from './ApiConfig'
 
-
-
 interface IuseComplianceApiV1AssignmentsBenchmarkDetailState {
     isLoading: boolean
     isExecuted: boolean
@@ -959,9 +957,6 @@ export const useComplianceApiV1BenchmarksSummaryDetail = (
     }
 }
 
-
-
-
 interface IuseComplianceApiV1ControlsSummaryDetailState {
     isLoading: boolean
     isExecuted: boolean
@@ -1122,8 +1117,6 @@ export const useComplianceApiV1ControlsSummaryDetail = (
         sendNowWithParams,
     }
 }
-
-
 
 interface IuseComplianceApiV1FindingEventsCreateState {
     isLoading: boolean
@@ -1855,7 +1848,6 @@ export const useComplianceApiV1FindingsCreate = (
     }
 }
 
-
 interface IuseComplianceApiV1FindingsEventsDetailState {
     isLoading: boolean
     isExecuted: boolean
@@ -2128,8 +2120,6 @@ export const useComplianceApiV1FindingsFiltersCreate = (
         sendNowWithParams,
     }
 }
-
-
 
 interface IuseComplianceApiV1FindingsResourceCreateState {
     isLoading: boolean
@@ -2966,8 +2956,6 @@ export const useComplianceApiV1FindingsServicesDetail = (
     }
 }
 
-
-
 interface IuseComplianceApiV1QueriesSyncListState {
     isLoading: boolean
     isExecuted: boolean
@@ -3262,4 +3250,3 @@ interface IuseInventoryApiV3InvenoryCategoryList {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     error?: any
 }
-

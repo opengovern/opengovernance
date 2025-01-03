@@ -13,8 +13,6 @@ import Stack from '../pages/Stack'
 import Single from '../pages/Assets/Single'
 import SingleSpend from '../pages/Spend/Single'
 // import Boostrap from '../pages/Workspaces/Bootstrap'
-import ResourceCollection from '../pages/ResourceCollection'
-import ResourceCollectionDetail from '../pages/ResourceCollection/Detail'
 import ControlDetail from '../pages/Governance/Controls/ControlSummary'
 import Findings from '../pages/Governance/Findings'
 import { SpendOverview } from '../pages/Spend/Overview'
@@ -358,16 +356,7 @@ const authRoutes = [
     //     path: '/ws/new-ws',
     //     element: <Boostrap />,
     // },
-    {
-        key: 'resource collection',
-        path: '/resource-collection',
-        element: <ResourceCollection />,
-    },
-    {
-        key: 'resource collection detail',
-        path: '/resource-collection/:resourceId',
-        element: <ResourceCollectionDetail />,
-    },
+
     
     // {
     //     key: 'resource collection assets metrics',
